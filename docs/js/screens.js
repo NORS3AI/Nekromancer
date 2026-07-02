@@ -1635,7 +1635,7 @@ const Screens = {
     const tabs = [['options', 'OPTIONS'], ['keys', 'KEYS'], ['saves', 'SAVES']];
     const tw = (pw - 48) / 3;
     tabs.forEach((t, i) => {
-      UI.btn(ctx, px + 16 + i * (tw + 8), py + 40, tw, 30, t[1], () => { UI.sel.stab = t[0]; },
+      UI.btn(ctx, px + 16 + i * (tw + 8), py + 40, tw, 30, t[1], () => { UI.sel.stab = t[0]; UI.sel.rebindAction = null; },
         { size: 12, bg: UI.sel.stab === t[0] ? 'rgba(60,52,78,0.95)' : undefined });
     });
     if (UI.sel.stab === 'saves') { this.savesTab(ctx, W, H, px, py, pw, ph); return; }

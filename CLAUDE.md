@@ -59,7 +59,9 @@ loot at the artisans. The hero is persistent (localStorage).
 - Packs sleep until the player is within ~440px (or they're hurt).
 - Items: 9 slots, affix count = rarity, socket chance by rarity, gems 5 types × 5 tiers.
 - Salvage yields: Common→Reusable Parts, Magic→Arcane Dust, Rare→Veiled Crystals,
-  Legendary→Forgotten Souls (gems survive the forge).
+  Legendary→Forgotten Souls (gems survive the forge). **Salvage is free and
+  unrestricted — any rarity crushes at any level, no gold cost (`canSalvage`
+  always true). The old epic@60/legendary@70 level-gate was removed (owner rule).**
 - Potion button sits ON the skill-cluster arc past slot 1 (angle π·0.98, radius R+54·scale)
   — verified non-overlapping at 390×750 / 844×390 / 900×500 / 1280×720.
 - XP: `60·lvl^1.5`, cap 70. Level-up = full heal + toasts for new unlocks.
