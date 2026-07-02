@@ -191,6 +191,12 @@ class Player {
       }
     }
 
+    // Smoothly trailing bar/globe values — health drains slowly when hit.
+    this.hpDisplay = this.hpDisplay === undefined ? this.hp
+      : this.hpDisplay + (this.hp - this.hpDisplay) * Math.min(1, dt * 4);
+    this.essDisplay = this.essDisplay === undefined ? this.essence
+      : this.essDisplay + (this.essence - this.essDisplay) * Math.min(1, dt * 9);
+
     World.reveal(this.x, this.y);
   }
 

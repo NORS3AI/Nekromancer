@@ -15,6 +15,9 @@
 const Input = {
   move: { x: 0, y: 0 },
   keys: {},
+  // Touch devices use the twin-stick HUD; mouse devices get the Diablo globes.
+  touchMode: (typeof window !== 'undefined') &&
+    (('ontouchstart' in window) || (navigator && navigator.maxTouchPoints > 0)),
   joy: { active: false, id: null, ox: 0, oy: 0, dx: 0, dy: 0 },
   aim: { active: false, id: null, ox: 0, oy: 0, x: 0, y: 1 },
   buttonTouches: new Map(),           // touch id -> {slot, sx, sy, angle, aiming}
@@ -67,7 +70,7 @@ const Input = {
 
       if (this.gameplayLive()) {
         if (action === 'primary') this.castQueue.push({ slot: 0, angle: null });
-        else if (action && /^skill[1-5]$/.test(action)) {
+        else if (action && /^skill[1-4]$/.test(action)) {
           const slot = +action.slice(5) + 1;   // skill1 → loadout slot 2 (slot 1 is Secondary)
           const s = Skills.slotSkill(slot);
           if (s && !s.channel) this.castQueue.push({ slot, angle: null });
@@ -164,6 +167,7 @@ const Input = {
   },
 
   onTouchStart(e) {
+    this.touchMode = true;   // confirmed a touch device → twin-stick HUD
     AudioSys.init();
     for (const t of e.changedTouches) {
       const x = t.clientX, y = t.clientY;
