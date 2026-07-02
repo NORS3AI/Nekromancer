@@ -445,21 +445,53 @@ const Items = {
   },
 
   salvageRares() {
+    this.bulkSalvage(r => r === 2, 0, 'rare');
+  },
+
+  // Blacksmith bulk salvage is the "ease of access" path and is level-gated for
+  // the finest gear: Epics from level 60, Legendaries/Sets from level 70. This
+  // does NOT restrict breaking items down one at a time from the Inventory wheel
+  // (that is always free at any level — see canSalvage). Owner rule.
+  BULK_SALVAGE_LVL: { epic: 60, legendary: 70 },
+
+  salvageEpics() {
+    if (Hero.level < this.BULK_SALVAGE_LVL.epic) {
+      UI.toast('Blacksmith bulk-salvages Epics at level ' + this.BULK_SALVAGE_LVL.epic +
+        ' — you can still break them down one at a time from your Inventory', '#b06adf');
+      AudioSys.sfx('denied');
+      return;
+    }
+    this.bulkSalvage(r => r === 3, this.BULK_SALVAGE_LVL.epic, 'Epic');
+  },
+
+  salvageLegendaries() {
+    if (Hero.level < this.BULK_SALVAGE_LVL.legendary) {
+      UI.toast('Blacksmith bulk-salvages Legendaries at level ' + this.BULK_SALVAGE_LVL.legendary +
+        ' — you can still break them down one at a time from your Inventory', '#ff8c2a');
+      AudioSys.sfx('denied');
+      return;
+    }
+    this.bulkSalvage(r => r >= 4, this.BULK_SALVAGE_LVL.legendary, 'Legendary/Set');
+  },
+
+  // Salvage every bag item matching `pred` (a rarity predicate) at once.
+  bulkSalvage(pred, minLvl, label) {
     let n = 0;
     for (let i = Hero.bag.length - 1; i >= 0; i--) {
-      if (Hero.bag[i].rarity === 2) {
+      if (pred(Hero.bag[i].rarity)) {
         const it = Hero.bag.splice(i, 1)[0];
-        Hero.mats.crystal += RARITIES[2].salvageN;
+        const R = RARITIES[it.rarity] || RARITIES[0];
+        Hero.mats[R.salvage] = (Hero.mats[R.salvage] || 0) + R.salvageN;
         for (const g of it.gems || []) Hero.gems.push(g);
         n++;
       }
     }
     if (n) {
-      UI.toast(`Salvaged ${n} rare item${n > 1 ? 's' : ''} → ${n}× Veiled Crystals`, '#ffd76a');
+      UI.toast(`Salvaged ${n} ${label} item${n > 1 ? 's' : ''}`, '#ffd76a');
       AudioSys.sfx('craft');
       Hero.save();
     } else {
-      UI.toast('No rare items in bag', '#9a9080');
+      UI.toast('No ' + label + ' items in bag', '#9a9080');
     }
   },
 

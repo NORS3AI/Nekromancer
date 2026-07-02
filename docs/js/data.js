@@ -18,11 +18,19 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.2.1-alpha';
+const GAME_VERSION = 'v0.2.2-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.2.2-alpha', date: 'July 2026',
+    notes: [
+      'Salvage clarified into two paths: INDIVIDUAL breakdown from your Inventory is ALWAYS free at any level for any item — Epics, Legendaries, everything, whenever you wish',
+      'The BLACKSMITH\'s bulk "salvage all" convenience is the level-gated one: Epics unlock at level 60, Legendaries/Sets at level 70 (common/magic and rares always available). This is just the ease-of-access mass-salvage — you can still break the finest gear down one at a time from the Inventory at any level',
+      'Blacksmith now has four bulk buttons: COM+MAG · RARES · EPICS (L60) · LEGENDS (L70)'
+    ]
+  },
   {
     v: 'v0.2.1-alpha', date: 'July 2026',
     notes: [
