@@ -242,7 +242,13 @@ const Hero = {
   },
 
   rune(skillId) {
-    return this.runes[skillId] || 'base';
+    const id = this.runes[skillId] || 'base';
+    // A rune you haven't reached the unlock level for falls back to base.
+    if (typeof SKILL_RUNES !== 'undefined' && SKILL_RUNES[skillId]) {
+      const r = SKILL_RUNES[skillId].find(x => x.id === id);
+      if (r && r.lvl && this.level < r.lvl) return 'base';
+    }
+    return id;
   },
 
   passiveSlots() {

@@ -127,6 +127,39 @@ class Player {
     if (Hero.cheats.essence) this.essence = this.maxEssence;
     this.shield = Math.max(0, this.shield - dt * 1.2);
 
+    // Devour — Aura rune: passively pull in nearby corpses for essence + 10% life.
+    if (this.auraDevour()) {
+      this.auraDevourT = (this.auraDevourT || 0) - dt;
+      if (this.auraDevourT <= 0) {
+        this.auraDevourT = 0.6;
+        let nearest = null, bd = 140;
+        for (const c of Game.corpses) {
+          if (c.gone) continue;
+          const d = dist(this.x, this.y, c.x, c.y);
+          if (d < bd) { bd = d; nearest = c; }
+        }
+        if (nearest) {
+          nearest.consume();
+          this.gainEssence(12);
+          this.heal(this.maxHp * 0.10);
+          Particles.spawn(nearest.x, nearest.y, {
+            count: 6, color: ['#6ff7c3', '#3ee6a0'], minSpeed: 60, maxSpeed: 150,
+            minLife: 0.2, maxLife: 0.45, glow: true
+          });
+        }
+      }
+    }
+    // Frailty — Aura rune: execute nearby enemies at 10% life or less.
+    if (this.auraFrailty()) {
+      for (const e of Game.enemies) {
+        if (e.dead || e.sleep || e.spawnT > 0 || e.unique) continue;
+        if (e.hp <= e.maxHp * 0.10 && dist(this.x, this.y, e.x, e.y) < 240) {
+          Particles.text(e.x, e.y - 20, 'FRAIL', { color: '#b06adf', size: 12, life: 0.6 });
+          e.hurt(e.hp + 1);
+        }
+      }
+    }
+
     // Grace of Inarius: Bone Armor buff window + the 6pc bone tornado.
     if (this.boneArmorT > 0) {
       this.boneArmorT -= dt;
@@ -213,6 +246,14 @@ class Player {
     this.essence = Math.min(this.maxEssence, this.essence + n);
   }
 
+  // Aura runes are active only while their skill is slotted and unlocked.
+  auraDevour() {
+    return Hero.loadout.includes('devour') && Hero.rune('devour') === 'aura';
+  }
+  auraFrailty() {
+    return Hero.loadout.includes('frailty') && Hero.rune('frailty') === 'aura';
+  }
+
   draw(ctx) {
     const bob = this.moving ? Math.sin(this.anim) * 2 : Math.sin(this.anim) * 0.8;
     ctx.save();
@@ -266,6 +307,19 @@ class Player {
       ctx.strokeStyle = `rgba(232,224,204,${0.3 + 0.15 * Math.sin(this.anim * 3)})`;
       ctx.lineWidth = 2.5;
       ctx.beginPath(); ctx.arc(this.x, this.y - 4, 24, 0, TAU); ctx.stroke();
+    }
+    // Aura runes: a pulsing ring — green for Devour, purple for Frailty.
+    if (this.auraDevour()) {
+      const t = Game.time * 4;
+      ctx.strokeStyle = `rgba(78,230,160,${0.22 + 0.16 * (0.5 + 0.5 * Math.sin(t))})`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(this.x, this.y - 2, 30 + 4 * Math.sin(t), 0, TAU); ctx.stroke();
+    }
+    if (this.auraFrailty()) {
+      const t = Game.time * 4 + 1.5;
+      ctx.strokeStyle = `rgba(176,106,223,${0.22 + 0.16 * (0.5 + 0.5 * Math.sin(t))})`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(this.x, this.y - 2, 38 + 4 * Math.sin(t), 0, TAU); ctx.stroke();
     }
     if (this.shrine) {
       const cols = { empowered: '#4ecbe0', frenzied: '#ff8c5a', blessed: '#ffd76a', fortune: '#4ade80' };
