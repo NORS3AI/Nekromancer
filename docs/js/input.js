@@ -39,8 +39,9 @@ const Input = {
         if (e.code === 'KeyK') UI.screen === 'skills' ? UI.close() : UI.open('skills');
         if (e.code === 'Escape') UI.screen ? UI.close() : UI.open('pause');
         if (e.code === 'KeyQ' && this.gameplayLive()) Game.player.drinkPotion();
-      } else if (e.code === 'Escape' && UI.screen) {
-        UI.close();
+      } else if (e.code === 'Escape') {
+        if (UI.screen) UI.close();
+        else if (Game.state === 'map') Game.state = 'camp';
       }
       if (this.gameplayLive()) {
         if (e.code === 'Space' || e.code === 'KeyJ') this.castQueue.push({ slot: 0, angle: null });

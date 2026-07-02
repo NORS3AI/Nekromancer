@@ -40,12 +40,24 @@ const Screens = {
     ctx.fillRect(0, 0, W, H);
   },
 
-  closeX(ctx, W) {
-    ctx.fillStyle = '#c9bfa8';
-    ctx.font = 'bold 20px Georgia';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('✕', W - 26, 26);
-    UI.register(W - 46, 6, 40, 40, () => UI.close());
+  // The one true way to dismiss a menu: a fat red ✕ (Escape works too).
+  closeX(ctx, W, opts = {}) {
+    const x = opts.x !== undefined ? opts.x : W - 26;
+    const y = opts.y !== undefined ? opts.y : 26;
+    const cb = opts.cb || (() => UI.close());
+    ctx.fillStyle = '#7a1220';
+    ctx.beginPath(); ctx.arc(x, y, 16, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#e04a5a';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y, 16, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = '#ffe0e4';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x - 6, y - 6); ctx.lineTo(x + 6, y + 6);
+    ctx.moveTo(x + 6, y - 6); ctx.lineTo(x - 6, y + 6);
+    ctx.stroke();
+    UI.register(x - 24, y - 24, 48, 48, cb);
   },
 
   // -------------------------------------------------------------- title
@@ -438,12 +450,8 @@ const Screens = {
     const target = UI.sel.gemTarget;
     if (!target) { UI.sel.gemPick = false; return; }
     this.dim(ctx, W, H);
-    // Anything outside the popup cancels it (but keeps the inventory open).
-    UI.register(0, 0, W, H, () => {
-      UI.sel.gemPick = false;
-      UI.sel.gemIdx = undefined;
-      UI.sel.gemTarget = null;
-    });
+    // Swallow every tap behind the popup; only ✕ / CANCEL dismiss it.
+    UI.register(0, 0, W, H, () => { /* blocked by popup */ });
     const pw = Math.min(430, W - 20);
     const px = W / 2 - pw / 2;
     const shown = Hero.gems.slice(0, 12);
@@ -460,6 +468,7 @@ const Screens = {
       UI.sel.gemIdx = undefined;
       UI.sel.gemTarget = null;
     };
+    this.closeX(ctx, W, { x: px + pw - 20, y: py + 20, cb: close });
 
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 12px Georgia';
@@ -1428,6 +1437,7 @@ const Screens = {
 
   devconfirm(ctx, W, H) {
     this.dim(ctx, W, H);
+    this.closeX(ctx, W);
     const pw = Math.min(360, W - 30);
     const px = W / 2 - pw / 2;
     const py = H / 2 - 90;
@@ -1597,6 +1607,7 @@ const Screens = {
 
   pause(ctx, W, H) {
     this.dim(ctx, W, H);
+    this.closeX(ctx, W);
     const bw = Math.min(280, W * 0.72);
     const cx = W / 2 - bw / 2;
     let y = H * 0.24;

@@ -86,12 +86,8 @@ const UI = {
       }
     }
     if (this.screen) {
-      // Dead space INSIDE a popup panel just swallows the tap; only taps
-      // outside the panel close the menu (reward stays until its button).
-      for (const r of this.panelRects || []) {
-        if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) return true;
-      }
-      if (this.screen !== 'reward') this.close();
+      // Menus never close from stray taps — only the red ✕, Escape, or
+      // their own buttons dismiss them. Swallow everything else.
       return true;
     }
     if ((Game.playerDeadT || 0) > 0) return true;

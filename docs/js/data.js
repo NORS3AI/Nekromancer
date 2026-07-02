@@ -15,9 +15,21 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.0.1-alpha';
+const GAME_VERSION = 'v0.0.2-alpha';
 
+// Newest entry first. OWNER RULE: append a new entry (and bump
+// GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.0.2-alpha', date: 'July 2026',
+    notes: [
+      'Menus no longer close from stray taps — dismiss with the new red ✕ or the Escape key',
+      'Gem socketing is a centered popup: tap gems to read them, then Socket / Unsocket (free) / Cancel',
+      'Breakable clutter: pots, chairs, tables, bookcases, crypts, gravestones — smashed by spells and the Inarius bone tornado',
+      'Enchanting much cheaper for low-rarity and low-level gear',
+      'Fix: artisan popups no longer let taps fall through to the camp behind them'
+    ]
+  },
   {
     v: 'v0.0.1-alpha', date: 'July 2026',
     notes: [
@@ -29,7 +41,6 @@ const PATCH_NOTES = [
       'Season of the Grace of Inarius: Nephalem Rifts at level 70, 6-piece set hunt',
       'Legendary powers: Bloodtide Blade, Krysbin\'s Sentence, Trag\'Oul\'s Corroded Fang',
       'Settings: 5 audio channels, weather, Diablo-Immortal-style gameplay options',
-      'Breakable clutter everywhere: pots, chairs, tables, bookcases, crypts, gravestones — smash them with spells (or the bone tornado) for loot',
       'Twin-stick mobile controls with drag-to-aim skills and iPhone safe-area support'
     ]
   }
