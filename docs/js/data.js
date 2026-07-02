@@ -29,6 +29,7 @@ const PATCH_NOTES = [
       'Season of the Grace of Inarius: Nephalem Rifts at level 70, 6-piece set hunt',
       'Legendary powers: Bloodtide Blade, Krysbin\'s Sentence, Trag\'Oul\'s Corroded Fang',
       'Settings: 5 audio channels, weather, Diablo-Immortal-style gameplay options',
+      'Breakable clutter everywhere: pots, chairs, tables, bookcases, crypts, gravestones — smash them with spells (or the bone tornado) for loot',
       'Twin-stick mobile controls with drag-to-aim skills and iPhone safe-area support'
     ]
   }

@@ -335,6 +335,19 @@ const AudioSys = {
       case 'tornado':
         this.noise(0.05, 0.02, 0.25, 1400, 400);
         break;
+      case 'breakPot':
+        this.noise(0.12, 0.004, 0.14, 3400, 900);
+        this.tone('square', 620, 260, 0.05, 0.004, 0.09);
+        break;
+      case 'breakWood':
+        this.noise(0.13, 0.005, 0.16, 1500, 300);
+        this.tone('square', 180, 90, 0.07, 0.005, 0.12);
+        this.noise(0.07, 0.005, 0.1, 2200, 500, 0.06);
+        break;
+      case 'breakStone':
+        this.noise(0.16, 0.006, 0.22, 800, 120);
+        this.tone('sine', 130, 50, 0.1, 0.006, 0.2);
+        break;
       case 'setdrop':
         [392, 494, 587, 784, 988].forEach((f, i) =>
           this.tone('triangle', f, f, 0.1, 0.01, 0.5, i * 0.12));
