@@ -102,14 +102,20 @@ function applyCurse(type, cx, cy, radius = 220) {
 const SKILL_FX = {
 
   boneSpikes(p, a) {
+    const rune = Hero.rune('boneSpikes');
     const pt = aimPoint(a, 150);
     fxSpikes(pt.x, pt.y);
     World.smash(pt.x, pt.y, 60);
+    const dmg = 14 * (rune === 'bonePillars' ? 1.5 : 1) * p.power(); // Bone Pillars: 225%
     let hit = 0;
     for (const e of Game.enemies) {
       if (e.dead || e.sleep || e.spawnT > 0) continue;
       if (dist(pt.x, pt.y, e.x, e.y) < 60 + e.r) {
-        e.hurt(14 * p.power(), boneOpts(angleTo(p.x, p.y, e.x, e.y), 20));
+        const o = boneOpts(angleTo(p.x, p.y, e.x, e.y), rune === 'bonePillars' ? 90 : 20);
+        if (rune === 'suddenImpact') o.root = Math.max(o.root || 0, 1);  // stun
+        if (rune === 'frostSpikes') o.slow = Math.max(o.slow || 0, 2);
+        e.hurt(dmg, o);
+        if (rune === 'bloodSpikes') p.heal(p.maxHp * 0.005);
         hit++;
       }
     }
@@ -120,6 +126,7 @@ const SKILL_FX = {
   },
 
   grimScythe(p, a) {
+    const rune = Hero.rune('grimScythe');
     p.facing = a;
     World.smash(p.x + Math.cos(a) * 55, p.y + Math.sin(a) * 55, 60);
     let hits = 0;
@@ -130,7 +137,14 @@ const SKILL_FX = {
       let da = Math.abs(((angleTo(p.x, p.y, e.x, e.y) - a) % TAU + TAU) % TAU);
       if (da > Math.PI) da = TAU - da;
       if (da > 1.15) continue;
-      e.hurt(11 * p.power(), { knock: { a: angleTo(p.x, p.y, e.x, e.y), f: 60 } });
+      const ea = angleTo(p.x, p.y, e.x, e.y);
+      // Dual Scythes pulls enemies inward instead of knocking them back.
+      e.hurt(11 * p.power(), { knock: { a: rune === 'dualScythes' ? ea + Math.PI : ea, f: 60 } });
+      if (rune === 'bloodScythe') p.heal(p.maxHp * 0.01);
+      if (rune === 'cursedScythe' && !e.curse && Math.random() < 0.15) {
+        e.curse = { type: pick(['decrepify', 'frailty', 'leech']), t: 30 };
+      }
+      if (rune === 'execution' && e.curse && !e.dead && e.hp > 0 && e.hp < e.maxHp * 0.15) e.hurt(e.hp + 1);
       hits++;
     }
     if (hits) p.gainEssence(Skills.gainFor('grimScythe') * hits);
@@ -207,18 +221,19 @@ const SKILL_FX = {
   },
 
   deathNova(p) {
+    const rune = Hero.rune('deathNova');
     // Blood Nova rune: +50% damage, paid for in blood.
-    const blood = Hero.rune('deathNova') === 'bloodNova';
+    const blood = rune === 'bloodNova';
     if (blood) {
       const lifeCost = p.maxHp * 0.02;
       if (p.hp <= lifeCost + 1) return false;
       p.hp -= lifeCost;
     }
-    const R = 190;
+    const R = rune === 'boneNova' ? 130 : 190;   // Bone Nova: tighter, harder
     fxNova(p.x, p.y, R);
     World.smash(p.x, p.y, R);
     // Bloodtide Blade: +350% Death Nova damage per enemy near you.
-    let mult = blood ? 1.5 : 1;
+    let mult = blood ? 1.5 : rune === 'boneNova' ? 1.35 : 1;
     if (p.powers && p.powers.bloodtide) {
       let near = 0;
       for (const e of Game.enemies) {
@@ -231,6 +246,8 @@ const SKILL_FX = {
       const d = dist(p.x, p.y, e.x, e.y);
       if (d < R) {
         e.hurt(34 * mult * p.power() * (1 - d / R * 0.3), { knock: { a: angleTo(p.x, p.y, e.x, e.y), f: 200 } });
+        if (rune === 'tendrilNova') p.heal(p.maxHp * 0.01);  // Tendril Nova: lifesteal
+        if (rune === 'blight') e.slow = Math.max(e.slow, 3);  // Blight: slow cloud
       }
     }
     AudioSys.sfx('nova');
@@ -281,11 +298,21 @@ const SKILL_FX = {
   },
 
   bloodRush(p, a) {
-    const cost = Math.round(p.maxHp * 0.05);
-    if (p.hp <= cost + 1) return false;
+    const rune = Hero.rune('bloodRush');
+    // Hemostasis removes the cost; Metabolism doubles it (for its 2nd charge).
+    const cost = rune === 'hemostasis' ? 0
+      : Math.round(p.maxHp * (rune === 'metabolism' ? 0.10 : 0.05));
+    if (cost > 0 && p.hp <= cost + 1) return false;
     p.hp -= cost;
+    const ox = p.x, oy = p.y;
     const pt = World.dashPoint(p.x, p.y, a, 280);
     fxBloodTrail(p.x, p.y, pt.x, pt.y);
+    if (rune === 'molting') Game.corpses.push(new Corpse(ox, oy, 'zombie')); // usable corpse
+    if (rune === 'transfusion') {                                            // heal per enemy passed
+      for (const e of Game.enemies) {
+        if (!e.dead && !e.sleep && distToSeg(e.x, e.y, ox, oy, pt.x, pt.y) < 40) p.heal(p.maxHp * 0.02);
+      }
+    }
     p.dash = { t: 0, maxT: 0.16, fx: p.x, fy: p.y, tx: pt.x, ty: pt.y };
     p.facing = a;
     AudioSys.sfx('rush');
@@ -308,8 +335,10 @@ const SKILL_FX = {
   },
 
   corpseExplosion(p, a) {
+    const ceRune = Hero.rune('corpseExplosion');
     const pt = aimPoint(a, 200);
-    const BLAST = Hero.rune('corpseExplosion') === 'bloodyMess' ? 156 : 130; // Bloody Mess: +20% radius
+    const BLAST = ceRune === 'bloodyMess' ? 156 : 130; // Bloody Mess: +20% radius
+    const ceMult = ceRune === 'closeQuarters' ? 1.26 : 1; // Close Quarters: harder hit
     let corpses;
     if (Skills.lotd > 0) {
       corpses = [{ x: pt.x, y: pt.y, consume() {} }, { x: pt.x + rand(-50, 50), y: pt.y + rand(-50, 50), consume() {} }];
@@ -329,9 +358,9 @@ const SKILL_FX = {
         if (e.dead || e.sleep) continue;
         const d = dist(c.x, c.y, e.x, e.y);
         if (d < BLAST) {
-          e.hurt(36 * p.power() * (1 - d / BLAST * 0.4), {
-            knock: { a: angleTo(c.x, c.y, e.x, e.y), f: 160 }
-          });
+          const o = { knock: { a: angleTo(c.x, c.y, e.x, e.y), f: 160 } };
+          if (ceRune === 'deadCold') o.root = 3;  // Dead Cold: freeze
+          e.hurt(36 * ceMult * p.power() * (1 - d / BLAST * 0.4), o);
         }
       }
     }

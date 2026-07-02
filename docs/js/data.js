@@ -18,11 +18,19 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.1.3-alpha';
+const GAME_VERSION = 'v0.1.4-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.1.4-alpha', date: 'July 2026',
+    notes: [
+      'Every one of the 21 skills now has its full set of 6 authentic Diablo 3 runes to choose from in the Skills menu',
+      'Newly wired rune effects include Sudden Impact / Frost Spikes / Bone Pillars / Blood Spikes, Blood Scythe / Cursed Scythe / Execution, Bone Nova / Tendril Nova / Blight, Close Quarters / Dead Cold, and Hemostasis / Molting / Transfusion — on top of the runes already active',
+      'Remaining runes are selectable and show their real D3 description; more of their effects are being wired in over coming updates'
+    ]
+  },
   {
     v: 'v0.1.3-alpha', date: 'July 2026',
     notes: [
@@ -259,40 +267,177 @@ const LEGENDARY_POWERS = {
   }
 };
 
-// Skill runes (choose one per skill in the Skills menu) — the ones the
-// Inarius Death Nova build cares about, with authentic D3 rune names.
+// Skill runes — the full Diablo 3 Necromancer rune sets (choose one per skill
+// in the Skills menu).-marked runes have their combat effect wired; the rest
+// are being rolled out and read as their authentic D3 description for now.
 const SKILL_RUNES = {
-  deathNova: [
-    { id: 'base', name: 'Death Nova', desc: 'The unruned nova of death.' },
-    { id: 'bloodNova', name: 'Blood Nova', desc: '+50% damage, but costs 2% of your life per cast.' }
-  ],
-  simulacrum: [
-    { id: 'base', name: 'Simulacrum', desc: 'A single blood clone mirrors your Secondary casts.' },
-    { id: 'bloodAndBone', name: 'Blood and Bone', desc: 'Summon TWO simulacrums.' }
-  ],
-  boneArmor: [
-    { id: 'base', name: 'Bone Armor', desc: 'Rip bone from enemies for damage and a shield.' },
-    { id: 'dislocation', name: 'Dislocation', desc: 'Enemies hit are STUNNED for 2 seconds.' }
+  boneSpikes: [
+    { id: 'base', name: 'Bone Spikes', desc: 'Summon spikes from the ground for 150% weapon damage.' },
+    { id: 'suddenImpact', name: 'Sudden Impact', desc: 'Stuns targets for 1 second.' },
+    { id: 'bonePillars', name: 'Bone Pillars', desc: 'Larger spikes for 225% damage that knock enemies up.' },
+    { id: 'frostSpikes', name: 'Frost Spikes', desc: 'Leaves a frosty patch, slowing movement by 60%.' },
+    { id: 'pathOfBones', name: 'Path of Bones', desc: 'Strikes a line, up to +100% damage to distant targets.' },
+    { id: 'bloodSpikes', name: 'Blood Spikes', desc: 'Enemies bleed for 50% and heal you 0.5% life per hit.' }
   ],
   siphonBlood: [
-    { id: 'base', name: 'Siphon Blood', desc: 'Drain one victim of blood and essence.' },
-    { id: 'powerShift', name: 'Power Shift', desc: '+10% damage per channel stack (max 10).' }
+    { id: 'base', name: 'Siphon Blood', desc: 'Channel a beam draining blood and essence, healing 2%/s.' },
+    { id: 'suppress', name: 'Suppress', desc: 'Channeled enemies are slowed by 75%.' },
+    { id: 'powerShift', name: 'Power Shift', desc: '+10% damage each stack, up to 10.' },
+    { id: 'bloodSucker', name: 'Blood Sucker', desc: 'Pulls all health globes within 40 yards while channeling.' },
+    { id: 'purityOfEssence', name: 'Purity of Essence', desc: 'Essence generation rises to 15 while at full health.' },
+    { id: 'drainLife', name: 'Drain Life', desc: 'Restores 6% health but no longer restores Essence.' }
+  ],
+  grimScythe: [
+    { id: 'base', name: 'Grim Scythe', desc: 'Slash a broad arc for 150% damage, 12 Essence per hit.' },
+    { id: 'bloodScythe', name: 'Blood Scythe', desc: 'Heals you 1% of total health per enemy hit.' },
+    { id: 'dualScythes', name: 'Dual Scythes', desc: 'Two scythes that pull enemies together.' },
+    { id: 'cursedScythe', name: 'Cursed Scythe', desc: '15% chance to afflict a random curse on hit.' },
+    { id: 'frostScythe', name: 'Frost Scythe', desc: '+1% attack speed per hit for 5s, max 15 stacks.' },
+    { id: 'execution', name: 'Execution', desc: 'Instantly kills cursed targets below 15% health.' }
   ],
   boneSpear: [
-    { id: 'base', name: 'Bone Spear', desc: 'A piercing spear of bone.' },
-    { id: 'bloodSpear', name: 'Blood Spear', desc: '+40% damage, but costs 2% of your life.' }
+    { id: 'base', name: 'Bone Spear', desc: 'A piercing projectile for 500% weapon damage.' },
+    { id: 'crystallization', name: 'Crystallization', desc: 'Hits lower enemy attack speed, raise yours (max 10).' },
+    { id: 'shatter', name: 'Shatter', desc: 'Explodes on the first enemy for 500% in 15 yards.' },
+    { id: 'blightedMarrow', name: 'Blighted Marrow', desc: '+15% damage per enemy the spear passes through.' },
+    { id: 'bloodSpear', name: 'Blood Spear', desc: '700% damage, but costs 10% health per cast.' },
+    { id: 'teeth', name: 'Teeth', desc: 'Fires 5 bone shards across an arc for 300% each.' }
+  ],
+  skeletalMage: [
+    { id: 'base', name: 'Skeletal Mage', desc: 'Summon an undead mage for 400% damage. Lasts 6s.' },
+    { id: 'giftOfDeath', name: 'Gift of Death', desc: 'Leaves a corpse when the mage expires or dies.' },
+    { id: 'skeletonArcher', name: 'Skeleton Archer', desc: '+3% attack speed per active archer, max 10.' },
+    { id: 'singularity', name: 'Singularity', desc: 'Consumes all Essence; +3% damage per point spent.' },
+    { id: 'lifeSupport', name: 'Life Support', desc: 'Costs 10% health but the mage lasts 2s longer.' },
+    { id: 'contamination', name: 'Contamination', desc: 'A decaying mage channels a blight aura for 100%/s.' }
+  ],
+  deathNova: [
+    { id: 'base', name: 'Death Nova', desc: 'A burst nova for 350% damage within 25 yards.' },
+    { id: 'tendrilNova', name: 'Tendril Nova', desc: 'Heals you 1% of total health per target hit.' },
+    { id: 'boneNova', name: 'Bone Nova', desc: 'Spines erupt for 475% damage within 12 yards.' },
+    { id: 'blight', name: 'Blight', desc: 'Leaves a cloud slowing 60% and cutting damage 30%.' },
+    { id: 'unstableCompound', name: 'Unstable Compound', desc: 'Each cast grows the next nova by 5 yards (max 2).' },
+    { id: 'bloodNova', name: 'Blood Nova', desc: '450% in a large radius, but costs 10% health.' }
   ],
   corpseExplosion: [
-    { id: 'base', name: 'Corpse Explosion', desc: 'Detonate the dead.' },
-    { id: 'bloodyMess', name: 'Bloody Mess', desc: 'Blast radius increased by 20%.' }
+    { id: 'base', name: 'Corpse Explosion', desc: 'Explode up to 5 corpses for 1050% within 20 yards.' },
+    { id: 'bloodyMess', name: 'Bloody Mess', desc: 'Explosion radius increased to 25 yards.' },
+    { id: 'closeQuarters', name: 'Close Quarters', desc: 'Explode corpses near you for 1325% damage.' },
+    { id: 'shrapnel', name: 'Shrapnel', desc: 'Debris flies out for 1050% in a cone behind.' },
+    { id: 'deadCold', name: 'Dead Cold', desc: 'Freezes all enemies hit for 3 seconds.' },
+    { id: 'finalEmbrace', name: 'Final Embrace', desc: 'Corpses crawl to the nearest enemy before exploding.' }
+  ],
+  corpseLance: [
+    { id: 'base', name: 'Corpse Lance', desc: 'Shards from corpses strike a target for 1750%.' },
+    { id: 'brittleTouch', name: 'Brittle Touch', desc: 'Each hit adds +5% chance to be crit for 5s.' },
+    { id: 'bloodLance', name: 'Blood Lance', desc: '3000% damage, but costs 2% health per lance.' },
+    { id: 'visceralImpact', name: 'Visceral Impact', desc: 'Stuns the target for 3 seconds.' },
+    { id: 'shreddingSplinters', name: 'Shredding Splinters', desc: 'Each hit slows move/attack 10% (max 5).' },
+    { id: 'ricochet', name: 'Ricochet', desc: '20% chance to ricochet to a nearby target.' }
   ],
   devour: [
-    { id: 'base', name: 'Devour', desc: 'Consume corpses to restore essence and life.' },
-    { id: 'aura', name: 'Aura', lvl: 22, desc: 'Passively devour nearby corpses for essence and 10% life. A green aura pulses around you.' }
+    { id: 'base', name: 'Devour', desc: 'Consume corpses within 60 yards for 10 Essence each.' },
+    { id: 'cannibalize', name: 'Cannibalize', desc: 'Each corpse also restores 3% total health.' },
+    { id: 'satiated', name: 'Satiated', desc: '+2% max life per corpse for 20s, max 25.' },
+    { id: 'voracious', name: 'Voracious', desc: '-2% Essence costs per corpse for 5s, max 25.' },
+    { id: 'aura', name: 'Devouring Aura', lvl: 22, desc: 'Passively devour corpses within 15 yards, healing 7% each. A green aura pulses around you.' },
+    { id: 'ruthless', name: 'Ruthless', desc: 'Also consumes minions for 10 Essence each.' }
+  ],
+  revive: [
+    { id: 'base', name: 'Revive', desc: 'Reanimate up to 10 corpses as minions for 15s.' },
+    { id: 'oblation', name: 'Oblation', desc: '+20% minion damage, but 3% health per minion.' },
+    { id: 'personalArmy', name: 'Personal Army', desc: '-1% damage taken per active revived minion.' },
+    { id: 'purgatory', name: 'Purgatory', desc: 'Revived minions leave a usable corpse when they expire.' },
+    { id: 'recklessness', name: 'Recklessness', desc: '+150% minion damage but they last only 6s.' },
+    { id: 'horrificReturn', name: 'Horrific Return', desc: 'Enemies within 20 yards flee in fear for 3s.' }
+  ],
+  commandSkeletons: [
+    { id: 'base', name: 'Command Skeletons', desc: 'Raise up to 7 skeletons; command them at a target.' },
+    { id: 'enforcer', name: 'Enforcer', desc: 'Reduces the command Essence cost by 30%.' },
+    { id: 'frenzy', name: 'Frenzy', desc: '+25% skeleton attack speed on a commanded target.' },
+    { id: 'darkMending', name: 'Dark Mending', desc: 'Skeletons heal you 0.5% max health per command hit.' },
+    { id: 'freezingGrasp', name: 'Freezing Grasp', desc: 'Commanded target is frozen for 3 seconds.' },
+    { id: 'killCommand', name: 'Kill Command', desc: 'Skeletons explode for 215% within 15 yards.' }
+  ],
+  commandGolem: [
+    { id: 'base', name: 'Command Golem', desc: 'Raise a Golem that fights for 450% damage.' },
+    { id: 'fleshGolem', name: 'Flesh Golem', desc: 'Active: collapses into 8 usable corpses.' },
+    { id: 'iceGolem', name: 'Ice Golem', desc: 'Active: freezes enemies and grants crit vs them.' },
+    { id: 'boneGolem', name: 'Bone Golem', desc: 'Active: drags nearby enemies in and stuns them.' },
+    { id: 'decayGolem', name: 'Decay Golem', desc: 'Active: eats corpses, +30% damage per corpse.' },
+    { id: 'bloodGolem', name: 'Blood Golem', desc: 'Active: sacrifices to heal you 25%, then reforms.' }
+  ],
+  armyOfTheDead: [
+    { id: 'base', name: 'Army of the Dead', desc: 'A skeletal legion strikes for 12,000% damage.' },
+    { id: 'blightedGrasp', name: 'Blighted Grasp', desc: 'Hands rise for 14,000% over 5 seconds.' },
+    { id: 'frozenArmy', name: 'Frozen Army', desc: 'Skeletons march in a line, freezing targets.' },
+    { id: 'unconventionalWar', name: 'Unconventional', desc: 'Hunt random targets for 50,000% over 4s.' },
+    { id: 'deadStorm', name: 'Dead Storm', desc: 'A storm of bone circles you for 15,500% over 5s.' },
+    { id: 'deathValley', name: 'Death Valley', desc: 'Knocks all affected enemies to the center.' }
+  ],
+  landOfTheDead: [
+    { id: 'base', name: 'Land of the Dead', desc: 'For 10s, corpse skills cost no corpses.' },
+    { id: 'frozenLands', name: 'Frozen Lands', desc: 'Periodically freezes all enemies in the area.' },
+    { id: 'plaguelands', name: 'Plaguelands', desc: 'Enemies inside take 10,000% damage over 10s.' },
+    { id: 'shallowGraves', name: 'Shallow Graves', desc: 'Every 10 kills extends the duration (max +2s).' },
+    { id: 'invigoration', name: 'Invigoration', desc: 'Your skills cost zero Essence while active.' },
+    { id: 'landOfPlenty', name: 'Land of Plenty', desc: 'Instantly heals you to full when activated.' }
+  ],
+  decrepify: [
+    { id: 'base', name: 'Decrepify', desc: 'Slows enemy move 75% and cuts damage 30% for 30s.' },
+    { id: 'enfeeblement', name: 'Enfeeblement', desc: 'Movement slow rises to 100% over 5s.' },
+    { id: 'dizzyingCurse', name: 'Dizzying Curse', desc: '10% chance to stun cursed enemies when struck.' },
+    { id: 'wither', name: 'Wither', desc: '+40% damage reduction but removes the slow.' },
+    { id: 'opportunist', name: 'Opportunist', desc: '+3% move speed per cursed enemy.' },
+    { id: 'borrowedTime', name: 'Borrowed Time', desc: '+1% cooldown reduction per cursed enemy (max 20%).' }
   ],
   frailty: [
-    { id: 'base', name: 'Frailty', desc: 'Curse enemies to take more damage and die early.' },
-    { id: 'aura', name: 'Aura', lvl: 30, desc: 'Enemies at 10% life or less near you die instantly. A purple aura pulses around you.' }
+    { id: 'base', name: 'Frailty', desc: 'Executes afflicted enemies below 15% health.' },
+    { id: 'scentOfBlood', name: 'Scent of Blood', desc: 'Minions deal +15% damage to cursed targets.' },
+    { id: 'volatileDeath', name: 'Volatile Death', desc: 'Cursed enemies explode for 100% on death.' },
+    { id: 'aura', name: 'Aura of Frailty', lvl: 30, desc: 'A 15-yard aura auto-curses and executes enemies at 10% life. A purple aura pulses around you.' },
+    { id: 'earlyGrave', name: 'Early Grave', desc: 'Execute threshold rises to 18%, duration cut to 15s.' },
+    { id: 'harvestEssence', name: 'Harvest Essence', desc: 'Gain 2 Essence when a cursed enemy dies.' }
+  ],
+  leech: [
+    { id: 'base', name: 'Leech', desc: 'Attacking a cursed enemy heals you 1% of total health.' },
+    { id: 'transmittable', name: 'Transmittable', desc: 'The curse spreads to a nearby target on death.' },
+    { id: 'sanguineEnd', name: 'Sanguine End', desc: 'Gain health when a cursed enemy dies.' },
+    { id: 'cursedGround', name: 'Cursed Ground', desc: 'Heals 1%/s per enemy standing in the zone.' },
+    { id: 'bloodFlask', name: 'Blood Flask', desc: 'Cursed deaths cut your potion cooldown by 1s.' },
+    { id: 'osmosis', name: 'Osmosis', desc: 'Each cursed enemy boosts your life regeneration.' }
+  ],
+  boneArmor: [
+    { id: 'base', name: 'Bone Armor', desc: 'Rip bone for damage and a shield (3% DR per stack).' },
+    { id: 'limitedImmunity', name: 'Limited Immunity', desc: 'Immune to control-impairing effects for 5s.' },
+    { id: 'dislocation', name: 'Dislocation', desc: 'Stuns all ripped targets for 2 seconds.' },
+    { id: 'thyFlesh', name: 'Thy Flesh', desc: '+10% life regeneration per stack.' },
+    { id: 'harvestAnguish', name: 'Harvest', desc: 'Each enemy hit grants +1% movement speed.' },
+    { id: 'vengefulArms', name: 'Vengeful Arms', desc: 'Bone Armor damage raised to 145%.' }
+  ],
+  bloodRush: [
+    { id: 'base', name: 'Blood Rush', desc: 'Teleport up to 50 yards for 5% health.' },
+    { id: 'potency', name: 'Potency', desc: '+100% armor for 2s after teleporting.' },
+    { id: 'transfusion', name: 'Transfusion', desc: 'Heal 2% max health per enemy passed through.' },
+    { id: 'molting', name: 'Molting', desc: 'Leaves a usable corpse where you departed.' },
+    { id: 'hemostasis', name: 'Hemostasis', desc: 'Removes the health cost entirely.' },
+    { id: 'metabolism', name: 'Metabolism', desc: 'A second charge, but double the health cost.' }
+  ],
+  boneSpirit: [
+    { id: 'base', name: 'Bone Spirit', desc: 'A homing skull for 4000% damage. Stores 3 charges.' },
+    { id: 'possession', name: 'Possession', desc: 'Mind-controls the target for 15s (removes charges).' },
+    { id: 'panicAttack', name: 'Panic Attack', desc: 'Terrifies enemies within 10 yards on impact.' },
+    { id: 'astralProjection', name: 'Astral', desc: '+15% damage per enemy passed through.' },
+    { id: 'poltergeist', name: 'Poltergeist', desc: 'Max charge capacity raised to 4.' },
+    { id: 'unfinishedBiz', name: 'Unfinished', desc: 'Detonates for 1250% within 10 yards on impact.' }
+  ],
+  simulacrum: [
+    { id: 'base', name: 'Simulacrum', desc: 'A blood clone duplicates your Secondary spenders for 7s.' },
+    { id: 'reservoir', name: 'Reservoir', desc: 'Doubles max Essence while the clone is active.' },
+    { id: 'selfSacrifice', name: 'Self Sacrifice', desc: 'The clone dies for you on fatal damage, healing you.' },
+    { id: 'cursedForm', name: 'Cursed Form', desc: 'Curses cost zero and apply all 3 types at once.' },
+    { id: 'bloodDebt', name: 'Blood Debt', desc: '-75% spell health costs while the clone lives.' },
+    { id: 'bloodAndBone', name: 'Blood and Bone', desc: 'Summon TWO simulacrums.' }
   ]
 };
 

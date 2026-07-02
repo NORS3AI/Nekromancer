@@ -30,6 +30,15 @@ function dist(x1, y1, x2, y2) {
   return Math.hypot(x2 - x1, y2 - y1);
 }
 
+// Distance from point (px,py) to the segment (ax,ay)-(bx,by).
+function distToSeg(px, py, ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  let t = len2 ? ((px - ax) * dx + (py - ay) * dy) / len2 : 0;
+  t = clamp(t, 0, 1);
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+
 function angleTo(x1, y1, x2, y2) {
   return Math.atan2(y2 - y1, x2 - x1);
 }
