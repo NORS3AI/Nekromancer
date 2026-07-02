@@ -307,8 +307,34 @@ const Game = {
 
   // ------------------------------------------------------- world objects
 
+  // Loot burst from smashed clutter.
+  breakLoot(b) {
+    const roll = Math.random();
+    const bonus = b.big ? 0.06 : 0;
+    if (roll < 0.38 + bonus) {
+      const g = new Pickup(b.x, b.y, 'gold');
+      g.amount = Math.round(randInt(4, 14) * DIFFICULTIES[Hero.difficulty].reward * (this.player ? this.player.goldFind : 1) * (b.big ? 2 : 1));
+      this.pickups.push(g);
+    } else if (roll < 0.45 + bonus) {
+      this.pickups.push(new Pickup(b.x, b.y, 'orb'));
+    } else if (roll < 0.475 + bonus) {
+      const pu = new Pickup(b.x, b.y, 'gem');
+      pu.gem = Items.generateGem(this.monsterLevel());
+      this.pickups.push(pu);
+    } else if (roll < 0.49 + bonus) {
+      const pu = new Pickup(b.x, b.y, 'item');
+      pu.item = Items.generate(this.monsterLevel());
+      this.pickups.push(pu);
+    }
+  },
+
   touchObjects() {
     const p = this.player;
+    // Brushing past small clutter shatters it.
+    for (const b of World.breakables) {
+      if (b.broken || b.big) continue;
+      if (dist(p.x, p.y, b.x, b.y) < p.r + b.r + 2) World.breakOne(b);
+    }
     for (const o of World.objects) {
       if (o.used) continue;
       const d = dist(p.x, p.y, o.x, o.y);

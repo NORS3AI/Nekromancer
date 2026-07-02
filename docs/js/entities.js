@@ -129,6 +129,7 @@ class Player {
               e.hurt(8 * this.power(), { knock: { a: angleTo(this.x, this.y, e.x, e.y), f: 20 } });
             }
           }
+          World.smash(this.x, this.y, R); // the tornado grinds furniture to dust
           if (Math.random() < 0.3) AudioSys.sfx('tornado');
         }
         // Orbiting bone shards.
@@ -489,6 +490,7 @@ class Enemy {
           if (this.telegraph) this.telegraph.done = true;
           fxExplosion(this.x, this.y, 165);
           AudioSys.sfx('explode');
+          World.smash(this.x, this.y, 165);
           for (const v of [Game.player, ...Game.minions]) {
             if (v.dead) continue;
             if (dist(this.x, this.y, v.x, v.y) < 165 + v.r) v.hurt(Math.round(this.dmg * 1.3));
@@ -1233,6 +1235,7 @@ class Projectile {
     }
 
     if (this.friendly) {
+      World.smash(this.x, this.y, this.r + 6); // projectiles shatter clutter
       for (const e of Game.enemies) {
         if (e.dead || e.sleep || e.spawnT > 0) continue;
         if (this.hits && this.hits.has(e)) continue;

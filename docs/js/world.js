@@ -17,7 +17,8 @@ const World = {
   explored: null,       // Uint8Array fog for the minimap
   props: [],            // colliding decorations (open zones)
   decos: [],            // flat decorations
-  objects: [],          // {type:'chest'|'shrine'|'urn', x, y, used}
+  objects: [],          // {type:'chest'|'shrine'|'urn'|'vendor', x, y, used}
+  breakables: [],       // smashable clutter {type, x, y, r, big, broken, seed}
   packs: [],            // spawn descriptors consumed by Game
   spawn: { x: 0, y: 0 },
   bossPos: { x: 0, y: 0 },
@@ -32,6 +33,7 @@ const World = {
     this.props = [];
     this.decos = [];
     this.objects = [];
+    this.breakables = [];
     this.packs = [];
     this.portal = null;
     this.patternFill = null;
@@ -75,7 +77,11 @@ const World = {
       const pt = this.openPoint(240);
       this.packs.push(pt);
     }
-    this.placeObjects(6, 2, 10, () => this.openPoint(200));
+    this.placeObjects(6, 2, 0, () => this.openPoint(200));
+    // Graveyard clutter: smash it for gold.
+    this.placeBreakables(
+      ['gravestone', 'gravestone', 'crypt', 'pot', 'pot', 'urnB', 'bonepile', 'cart'],
+      34, () => this.openPoint(120));
   },
 
   openPoint(minSpawnDist) {
@@ -150,7 +156,11 @@ const World = {
       const r = pick(midRooms.length ? midRooms : rooms);
       return { x: (r.x + rand(1.2, r.w - 1.2)) * CELL, y: (r.y + rand(1.2, r.h - 1.2)) * CELL };
     };
-    this.placeObjects(3, 2, 8, roomPoint);
+    this.placeObjects(3, 2, 0, roomPoint);
+    // Crypt furniture: pots, chairs, tables, bookcases, sarcophagi.
+    this.placeBreakables(
+      ['pot', 'pot', 'urnB', 'chair', 'chair', 'table', 'bookcase', 'bookcase', 'sarcophagus', 'bonepile'],
+      38, roomPoint);
 
     // Bone piles as decor inside floor cells.
     const decoTypes = ['skull', 'bones', 'ribcage', 'rubble', 'crack'];
@@ -175,6 +185,76 @@ const World = {
       });
     }
     return stock;
+  },
+
+  // ------------------------------------------------------------ breakables
+  // Smashable clutter. `big` pieces block movement until broken; everything
+  // shatters to spells, projectiles — and the Inarius bone tornado.
+
+  BREAKABLE_DEFS: {
+    pot:         { r: 8,  big: false, mat: 'clay' },
+    urnB:        { r: 9,  big: false, mat: 'clay' },
+    bonepile:    { r: 9,  big: false, mat: 'bone' },
+    chair:       { r: 10, big: false, mat: 'wood' },
+    table:       { r: 18, big: true,  mat: 'wood' },
+    bookcase:    { r: 16, big: true,  mat: 'wood' },
+    cart:        { r: 17, big: true,  mat: 'wood' },
+    gravestone:  { r: 13, big: true,  mat: 'stone' },
+    sarcophagus: { r: 20, big: true,  mat: 'stone' },
+    crypt:       { r: 22, big: true,  mat: 'stone' }
+  },
+
+  placeBreakables(kinds, count, pointFn) {
+    let attempts = 0;
+    while (this.breakables.length < count && attempts++ < count * 8) {
+      const pt = pointFn();
+      const type = pick(kinds);
+      const def = this.BREAKABLE_DEFS[type];
+      if (dist(pt.x, pt.y, this.spawn.x, this.spawn.y) < 120) continue;
+      if (dist(pt.x, pt.y, this.bossPos.x, this.bossPos.y) < 140) continue;
+      let ok = true;
+      for (const o of this.objects) if (dist(pt.x, pt.y, o.x, o.y) < 60) { ok = false; break; }
+      for (const b of this.breakables) if (dist(pt.x, pt.y, b.x, b.y) < def.r + b.r + 26) { ok = false; break; }
+      if (!ok) continue;
+      this.breakables.push({ type, x: pt.x, y: pt.y, r: def.r, big: def.big, mat: def.mat, broken: false, seed: Math.random() });
+    }
+  },
+
+  // Shatter everything within radius. Returns how many broke.
+  smash(x, y, radius) {
+    let n = 0;
+    for (const b of this.breakables) {
+      if (b.broken) continue;
+      if (dist(x, y, b.x, b.y) < radius + b.r) {
+        this.breakOne(b);
+        n++;
+      }
+    }
+    return n;
+  },
+
+  breakOne(b) {
+    b.broken = true;
+    const colors = {
+      clay: ['#a8674a', '#7a4a34', '#c9885e'],
+      wood: ['#8a6f4a', '#5e4a2a', '#4a3a24'],
+      stone: ['#5c5569', '#4a4356', '#37313f'],
+      bone: ['#e8e0cc', '#c9c0a8', '#a99f86']
+    }[b.mat];
+    Particles.spawn(b.x, b.y - 6, {
+      count: b.big ? 18 : 11, color: colors,
+      minSpeed: 40, maxSpeed: b.big ? 240 : 170,
+      minLife: 0.25, maxLife: 0.6, minSize: 2, maxSize: 4.5, grav: 320
+    });
+    if (b.mat === 'wood' && b.type === 'bookcase') {
+      // Loose pages flutter out.
+      Particles.spawn(b.x, b.y - 14, {
+        count: 6, color: ['#e8e0cc', '#d8cfb8'], minSpeed: 20, maxSpeed: 80,
+        minLife: 0.5, maxLife: 1.0, grav: 60, minSize: 3, maxSize: 4
+      });
+    }
+    AudioSys.sfx(b.mat === 'clay' ? 'breakPot' : b.mat === 'stone' ? 'breakStone' : b.mat === 'bone' ? 'hit' : 'breakWood');
+    if (typeof Game !== 'undefined' && Game.breakLoot) Game.breakLoot(b);
   },
 
   placeObjects(chests, shrines, urns, pointFn) {
@@ -272,6 +352,18 @@ const World = {
         e.y = p.y + dy / d * min;
       }
     }
+    // Big furniture blocks the way until it's smashed.
+    for (const b of this.breakables) {
+      if (b.broken || !b.big) continue;
+      const dx = e.x - b.x, dy = e.y - b.y;
+      const min = b.r + e.r;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < min * min && d2 > 0.001) {
+        const d = Math.sqrt(d2);
+        e.x = b.x + dx / d * min;
+        e.y = b.y + dy / d * min;
+      }
+    }
   },
 
   projBlocked(x, y, r) {
@@ -330,6 +422,28 @@ const World = {
       if (d.x < cam.x - 60 || d.x > cam.x + w + 60 || d.y < cam.y - 60 || d.y > cam.y + h + 60) continue;
       this.drawDeco(ctx, d);
     }
+    // Rubble of things already smashed lies flat on the ground.
+    for (const b of this.breakables) {
+      if (!b.broken) continue;
+      if (b.x < cam.x - 60 || b.x > cam.x + w + 60 || b.y < cam.y - 60 || b.y > cam.y + h + 60) continue;
+      this.drawDebris(ctx, b);
+    }
+  },
+
+  drawDebris(ctx, b) {
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.rotate(b.seed * TAU);
+    const cols = { clay: '#6b4534', wood: '#4a3a24', stone: '#37313f', bone: '#a99f86' };
+    ctx.fillStyle = cols[b.mat];
+    ctx.globalAlpha = 0.85;
+    for (let i = 0; i < (b.big ? 7 : 4); i++) {
+      const a = b.seed * 9 + i * 1.83;
+      const d = (b.r * 0.7) * ((i % 3) / 3 + 0.3);
+      ctx.fillRect(Math.cos(a) * d - 2, Math.sin(a) * d * 0.6 - 1.5, 4 + (i % 3) * 2, 3);
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
   },
 
   drawWalls(ctx, cam, w, h) {
@@ -437,12 +551,17 @@ const World = {
     ctx.restore();
   },
 
-  // Tall things (props + interactables + portal) for the shared y-sort pass.
+  // Tall things (props + interactables + breakables + portal) for the y-sort.
   propsInView(cam, w, h) {
     const out = [];
     for (const p of this.props) {
       if (p.x < cam.x - 80 || p.x > cam.x + w + 80 || p.y < cam.y - 120 || p.y > cam.y + h + 120) continue;
       out.push({ y: p.y, draw: ctx => this.drawProp(ctx, p) });
+    }
+    for (const b of this.breakables) {
+      if (b.broken) continue;
+      if (b.x < cam.x - 80 || b.x > cam.x + w + 80 || b.y < cam.y - 120 || b.y > cam.y + h + 120) continue;
+      out.push({ y: b.y, draw: ctx => this.drawBreakable(ctx, b) });
     }
     for (const o of this.objects) {
       if (o.x < cam.x - 80 || o.x > cam.x + w + 80 || o.y < cam.y - 120 || o.y > cam.y + h + 120) continue;
@@ -561,6 +680,157 @@ const World = {
     ctx.shadowBlur = 0;
     ctx.fillStyle = '#e8d8f4';
     ctx.beginPath(); ctx.ellipse(0, -22, 5, 14, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+  },
+
+  drawBreakable(ctx, b) {
+    const s = b.seed;
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.fillStyle = 'rgba(0,0,0,0.38)';
+    ctx.beginPath(); ctx.ellipse(0, 3, b.r + 3, (b.r + 3) * 0.4, 0, 0, TAU); ctx.fill();
+    switch (b.type) {
+      case 'pot': {
+        ctx.rotate((s - 0.5) * 0.2);
+        ctx.fillStyle = s > 0.5 ? '#a8674a' : '#8a5540';
+        ctx.beginPath();
+        ctx.moveTo(-6, 0); ctx.quadraticCurveTo(-10, -9, -4, -14);
+        ctx.lineTo(4, -14); ctx.quadraticCurveTo(10, -9, 6, 0);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#6b4534';
+        ctx.fillRect(-5, -16, 10, 3);
+        ctx.strokeStyle = 'rgba(60,35,25,0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(-7, -7); ctx.quadraticCurveTo(0, -9, 7, -7); ctx.stroke();
+        break;
+      }
+      case 'urnB': {
+        ctx.fillStyle = '#4a4356';
+        ctx.beginPath();
+        ctx.moveTo(-6, 0); ctx.quadraticCurveTo(-9, -10, -4, -15);
+        ctx.lineTo(4, -15); ctx.quadraticCurveTo(9, -10, 6, 0);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#37313f';
+        ctx.fillRect(-5, -17, 10, 3);
+        ctx.fillStyle = 'rgba(111,247,195,0.35)';
+        ctx.fillRect(-4, -9, 8, 1.5);
+        break;
+      }
+      case 'bonepile': {
+        ctx.strokeStyle = '#c9c0a8';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        for (let i = 0; i < 4; i++) {
+          const a = s * 9 + i * 1.7;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a) * 6, Math.sin(a) * 3 - 2);
+          ctx.lineTo(Math.cos(a + 2) * 8, Math.sin(a + 2) * 4 - 6);
+          ctx.stroke();
+        }
+        ctx.fillStyle = '#d8cfb8';
+        ctx.beginPath(); ctx.arc(2, -7, 4.5, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#16121b';
+        ctx.fillRect(0.5, -8.5, 1.5, 2); ctx.fillRect(3.5, -8.5, 1.5, 2);
+        break;
+      }
+      case 'chair': {
+        ctx.rotate((s - 0.5) * 0.8);
+        ctx.fillStyle = '#5e4a2a';
+        ctx.fillRect(-6, -8, 12, 3);           // seat
+        ctx.fillRect(-6, -20, 3, 12);          // back
+        ctx.fillStyle = '#4a3a24';
+        ctx.fillRect(-6, -5, 2.5, 6);
+        ctx.fillRect(3.5, -5, 2.5, 6);
+        break;
+      }
+      case 'table': {
+        ctx.fillStyle = '#5e4a2a';
+        rr(ctx, -18, -14, 36, 9, 3); ctx.fill();
+        ctx.fillStyle = '#4a3a24';
+        ctx.fillRect(-15, -6, 4, 8);
+        ctx.fillRect(11, -6, 4, 8);
+        // Clutter on top.
+        ctx.fillStyle = '#8a8577';
+        ctx.beginPath(); ctx.arc(-6, -16, 3, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#c9885e';
+        ctx.fillRect(3, -19, 5, 5);
+        break;
+      }
+      case 'bookcase': {
+        ctx.fillStyle = '#4a3a24';
+        rr(ctx, -13, -38, 26, 40, 2); ctx.fill();
+        ctx.fillStyle = '#2e2416';
+        for (let i = 0; i < 3; i++) ctx.fillRect(-11, -34 + i * 12, 22, 9);
+        // Books.
+        const bookCols = ['#8a2635', '#2c4a3a', '#8a6f4a', '#3a3448', '#6b4534'];
+        for (let i = 0; i < 3; i++) {
+          let bx = -10;
+          let k = 0;
+          while (bx < 8) {
+            const wd = 3 + ((s * 13 + i * 7 + k) % 3);
+            ctx.fillStyle = bookCols[Math.floor((s * 31 + i * 3 + k) % bookCols.length)];
+            ctx.fillRect(bx, -33 + i * 12, wd, 8);
+            bx += wd + 1;
+            k++;
+          }
+        }
+        break;
+      }
+      case 'cart': {
+        ctx.rotate((s - 0.5) * 0.3);
+        ctx.fillStyle = '#4a3a24';
+        rr(ctx, -16, -16, 32, 12, 3); ctx.fill();
+        ctx.strokeStyle = '#2e2416';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(-8, 0, 5.5, 0, TAU); ctx.stroke();
+        ctx.beginPath(); ctx.arc(8, 0, 5.5, 0, TAU); ctx.stroke();
+        ctx.fillStyle = '#8a6f4a';
+        ctx.fillRect(-13, -20, 8, 5);
+        ctx.fillRect(-1, -21, 9, 6);
+        break;
+      }
+      case 'gravestone': {
+        ctx.rotate((s - 0.5) * 0.3);
+        ctx.fillStyle = '#5c5569';
+        rr(ctx, -10, -26, 20, 28, 8); ctx.fill();
+        ctx.fillStyle = '#454050';
+        rr(ctx, -10, -26, 5, 28, 8); ctx.fill();
+        ctx.strokeStyle = '#37313f';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-4, -18); ctx.lineTo(4, -18);
+        ctx.moveTo(-4, -13); ctx.lineTo(4, -13);
+        ctx.stroke();
+        break;
+      }
+      case 'sarcophagus': {
+        ctx.rotate((s - 0.5) * 0.25);
+        ctx.fillStyle = '#4a4356';
+        rr(ctx, -20, -18, 40, 20, 4); ctx.fill();
+        ctx.fillStyle = '#5c5569';
+        rr(ctx, -18, -22, 36, 8, 3); ctx.fill();
+        ctx.strokeStyle = 'rgba(111,247,195,0.3)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(-12, -8); ctx.lineTo(12, -8); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(0, -3); ctx.stroke();
+        break;
+      }
+      case 'crypt': {
+        ctx.fillStyle = '#3a3448';
+        rr(ctx, -22, -34, 44, 36, 4); ctx.fill();
+        ctx.fillStyle = '#2c2838';
+        ctx.beginPath();
+        ctx.moveTo(-25, -34); ctx.lineTo(0, -48); ctx.lineTo(25, -34);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#16121b';
+        rr(ctx, -8, -22, 16, 24, 6); ctx.fill();
+        ctx.strokeStyle = '#4a4356';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-14, -30); ctx.lineTo(-14, -4); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(14, -30); ctx.lineTo(14, -4); ctx.stroke();
+        break;
+      }
+    }
     ctx.restore();
   },
 

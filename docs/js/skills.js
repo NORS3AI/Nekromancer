@@ -104,6 +104,7 @@ const SKILL_FX = {
   boneSpikes(p, a) {
     const pt = aimPoint(a, 150);
     fxSpikes(pt.x, pt.y);
+    World.smash(pt.x, pt.y, 60);
     let hit = 0;
     for (const e of Game.enemies) {
       if (e.dead || e.sleep || e.spawnT > 0) continue;
@@ -120,6 +121,7 @@ const SKILL_FX = {
 
   grimScythe(p, a) {
     p.facing = a;
+    World.smash(p.x + Math.cos(a) * 55, p.y + Math.sin(a) * 55, 60);
     let hits = 0;
     for (const e of Game.enemies) {
       if (e.dead || e.sleep || e.spawnT > 0) continue;
@@ -176,6 +178,7 @@ const SKILL_FX = {
   deathNova(p) {
     const R = 190;
     fxNova(p.x, p.y, R);
+    World.smash(p.x, p.y, R);
     // Bloodtide Blade: Death Nova swells with the crowd around you.
     let mult = 1;
     if (p.powers && p.powers.bloodtide) {
@@ -199,6 +202,7 @@ const SKILL_FX = {
 
   boneArmor(p) {
     const set = p.setCount || 0;
+    World.smash(p.x, p.y, 150);
     let hits = 0;
     for (const e of Game.enemies) {
       if (e.dead || e.sleep || e.spawnT > 0) continue;
@@ -276,6 +280,7 @@ const SKILL_FX = {
     for (const c of corpses) {
       c.consume();
       fxExplosion(c.x, c.y, BLAST);
+      World.smash(c.x, c.y, BLAST);
       for (const e of Game.enemies) {
         if (e.dead || e.sleep) continue;
         const d = dist(c.x, c.y, e.x, e.y);
@@ -370,6 +375,7 @@ const SKILL_FX = {
     }
     // Recast: the golem slams.
     fxExplosion(golem.x, golem.y, 150);
+    World.smash(golem.x, golem.y, 150);
     Particles.shake(5);
     for (const e of Game.enemies) {
       if (e.dead || e.sleep) continue;
@@ -387,6 +393,7 @@ const SKILL_FX = {
     const pt = aimPoint(a, 260);
     const R = 260;
     fxArmy(pt.x, pt.y, R);
+    World.smash(pt.x, pt.y, R);
     for (const e of Game.enemies) {
       if (e.dead || e.spawnT > 0) continue;
       const d = dist(pt.x, pt.y, e.x, e.y);
@@ -537,6 +544,7 @@ const Skills = {
     } else if (id === 'deathNova') {
       const R = 190;
       fxNova(sim.x, sim.y, R);
+      World.smash(sim.x, sim.y, R);
       for (const e of Game.enemies) {
         if (e.dead || e.sleep) continue;
         const d = dist(sim.x, sim.y, e.x, e.y);
