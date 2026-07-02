@@ -18,11 +18,20 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.1.4-alpha';
+const GAME_VERSION = 'v0.1.5-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.1.5-alpha', date: 'July 2026',
+    notes: [
+      'Salvaging Epics now requires level 60, and Legendary/Set items require level 70 (the SALVAGE button shows the level needed)',
+      'Salvaged socketed gems return to your pouch and are announced at the bottom of the screen',
+      'Artisans (Blacksmith, Jeweler, Mystic) now cap at level 10 instead of 100 — level 1 does basic work, level 10 crafts at your full level (top-tier items and gems). Old saves are clamped to the new scale',
+      'Manual saves are auto-labelled "Level 13 — 8:41 AM" (level and time) — no more naming prompt'
+    ]
+  },
   {
     v: 'v0.1.4-alpha', date: 'July 2026',
     notes: [

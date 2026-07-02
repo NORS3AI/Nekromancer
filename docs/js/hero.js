@@ -27,9 +27,11 @@ const Saves = {
       AudioSys.sfx('denied');
       return;
     }
+    const when = new Date();
     arr.push({
-      name: (name || 'Save ' + (arr.length + 1)).slice(0, 24),
-      date: new Date().toLocaleDateString(),
+      // Auto-labelled "Level 13 — 8:41 AM".
+      name: 'Level ' + Hero.level + ' — ' + when.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      date: when.toLocaleDateString(),
       level: Hero.level,
       data: Hero.snapshot()
     });
@@ -152,7 +154,11 @@ const Hero = {
       zonesCleared: d.zonesCleared || 0, difficulty: d.difficulty || 0,
       bestZone: d.bestZone || 0, totalKills: d.totalKills || 0,
       riftsCleared: d.riftsCleared || 0, riftKeys: d.riftKeys || 0,
-      artisans: Object.assign({ smith: 1, mystic: 1, jeweler: 1 }, d.artisans),
+      artisans: (() => {
+        const a = Object.assign({ smith: 1, mystic: 1, jeweler: 1 }, d.artisans);
+        for (const k of Object.keys(a)) a[k] = clamp(a[k], 1, 10); // artisans now cap at 10
+        return a;
+      })(),
       runes: d.runes || {},
       cheats: Object.assign({ god: false, essence: false }, d.cheats)
     });
