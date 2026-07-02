@@ -545,7 +545,8 @@ const Screens = {
       const gm = GEM_TYPES[target.gem.type];
       ctx.font = '11px Georgia';
       ctx.fillStyle = gm.color;
-      ctx.fillText(this.fitText(ctx, '◆ ' + gemName(target.gem) + ' — ' + gm.label(gemStatValue(target.gem)), pw - 170), px + 16, y + 8);
+      // Tier only — the color says which gem; the info card has the full name.
+      ctx.fillText(this.fitText(ctx, '◆ ' + GEM_TIERS[target.gem.tier] + ' — ' + gm.label(gemStatValue(target.gem)), pw - 170), px + 16, y + 8);
       UI.btn(ctx, px + pw - 136, y - 6, 120, 26, 'UNSOCKET', () => {
         Items.unsocket(target);
         UI.sel.gemIdx = undefined;
@@ -568,7 +569,7 @@ const Screens = {
         const gx = px + 16 + (gi % 4) * ((pw - 32) / 4);
         const gy = y + Math.floor(gi / 4) * 36;
         const selected = UI.sel.gemIdx === gi;
-        UI.btn(ctx, gx, gy, (pw - 32) / 4 - 6, 30, gemName(g), () => {
+        UI.btn(ctx, gx, gy, (pw - 32) / 4 - 6, 30, GEM_TIERS[g.tier], () => {
           UI.sel.gemIdx = selected ? undefined : gi;
         }, {
           size: 9, color: GEM_TYPES[g.type].color,
@@ -681,13 +682,36 @@ const Screens = {
       ctx.fillStyle = '#b5ab94';
       const desc = s.cat ? SKILL_DESCS[s.id] : s.desc;
       wrapText(ctx, desc, px + 12, fy + 33, pw - 24, 14, 2);
-      ctx.fillStyle = '#6f6552';
-      ctx.font = '11px Georgia';
-      ctx.fillText(
-        this.fitText(ctx,
-          s.cat ? `unlocks at level ${s.lvl}${s.cost ? ' · ' + s.cost + ' essence' : ''}${s.cd >= 2 ? ' · ' + s.cd + 's cooldown' : ''}` : `unlocks at level ${s.lvl}`,
-          pw - 24),
-        px + 12, fy + 65);
+      const runes = s.cat && typeof SKILL_RUNES !== 'undefined' ? SKILL_RUNES[s.id] : null;
+      if (runes && s.lvl <= Hero.level) {
+        // Rune picker: tap to choose how this skill behaves.
+        ctx.fillStyle = '#6f6552';
+        ctx.font = 'bold 10px Georgia';
+        ctx.fillText('RUNE', px + 12, fy + 63);
+        const bx0 = px + 48;
+        const bw = Math.min(160, (pw - 62 - (runes.length - 1) * 6) / runes.length);
+        runes.forEach((r, ri) => {
+          const active = Hero.rune(s.id) === r.id;
+          UI.btn(ctx, bx0 + ri * (bw + 6), fy + 52, bw, 22, r.name, () => {
+            Hero.runes[s.id] = r.id;
+            Hero.save();
+            UI.toast(r.name + ': ' + r.desc, '#6ff7c3');
+          }, {
+            size: 10,
+            bg: active ? 'rgba(70,44,90,0.95)' : undefined,
+            border: active ? '#6ff7c3' : undefined,
+            color: active ? '#6ff7c3' : undefined
+          });
+        });
+      } else {
+        ctx.fillStyle = '#6f6552';
+        ctx.font = '11px Georgia';
+        ctx.fillText(
+          this.fitText(ctx,
+            s.cat ? `unlocks at level ${s.lvl}${s.cost ? ' · ' + s.cost + ' essence' : ''}${s.cd >= 2 ? ' · ' + s.cd + 's cooldown' : ''}` : `unlocks at level ${s.lvl}`,
+            pw - 24),
+          px + 12, fy + 65);
+      }
     }
   },
 
@@ -992,9 +1016,18 @@ const Screens = {
       ctx.fillText('No gems in your pouch — monsters and chests drop them.', px + 16, y + 14);
       return;
     }
-    const detailH = 108;
-    keys.forEach(key => {
-      if (y > H - 100 - (UI.sel.gemKey ? detailH : 0)) return;
+    // Scrollable stack list — every gem is reachable via the ▲/▼ arrows.
+    const panelBot = 46 + Math.min(H - 56, 470);
+    const detailNeed = UI.sel.gemKey && groups[UI.sel.gemKey] ? 120 : 0;
+    let visRows = Math.max(1, Math.floor((panelBot - 12 - detailNeed - y) / 40));
+    let scroll = 0;
+    const overflow = keys.length > visRows;
+    if (overflow) {
+      visRows = Math.max(1, visRows - 1); // reserve a row for the arrows
+      scroll = clamp(UI.sel.jewelScroll || 0, 0, keys.length - visRows);
+      UI.sel.jewelScroll = scroll;
+    }
+    keys.slice(scroll, scroll + visRows).forEach(key => {
       const [type, tierS] = key.split(':');
       const tier = +tierS;
       const n = groups[key];
@@ -1013,13 +1046,23 @@ const Screens = {
       ctx.textAlign = 'left';
       ctx.font = 'bold 12px Georgia';
       ctx.fillStyle = gm.color;
-      ctx.fillText(`${GEM_TIERS[tier]} ${gm.name}  ×${n}`, px + 50, y + 17);
+      // Tier only — the chip color names the gem; inspecting reveals the rest.
+      ctx.fillText(`${GEM_TIERS[tier]}  ×${n}`, px + 50, y + 17);
       ctx.textAlign = 'right';
       ctx.font = '10px Georgia';
       ctx.fillStyle = '#8a8070';
       ctx.fillText(selected ? '▾' : 'tap to inspect', px + pw - 26, y + 17);
       y += 40;
     });
+    if (overflow) {
+      const maxScroll = keys.length - visRows;
+      const half = (pw - 40) / 2;
+      UI.btn(ctx, px + 16, y, half, 26, '▲', scroll > 0 ? () => { UI.sel.jewelScroll = scroll - 1; } : null,
+        { size: 12, disabled: scroll <= 0 });
+      UI.btn(ctx, px + 24 + half, y, half, 26, '▼', scroll < maxScroll ? () => { UI.sel.jewelScroll = scroll + 1; } : null,
+        { size: 12, disabled: scroll >= maxScroll });
+      y += 32;
+    }
 
     // Detail card for the selected stack.
     if (UI.sel.gemKey && groups[UI.sel.gemKey]) {
@@ -1531,10 +1574,16 @@ const Screens = {
     UI.panel(ctx, px, py, pw, ph, '☠ DEV CHEATS ☠');
     let y = py + 52;
 
-    // Toggles.
-    UI.check(ctx, px + 16, y, Game.cheats.god, () => { Game.cheats.god = !Game.cheats.god; }, 'Immortality (god mode)');
+    // Toggles — kept per save.
+    UI.check(ctx, px + 16, y, Hero.cheats.god, () => {
+      Hero.cheats.god = !Hero.cheats.god;
+      Hero.save();
+    }, 'Immortality (god mode)');
     y += 34;
-    UI.check(ctx, px + 16, y, Game.cheats.essence, () => { Game.cheats.essence = !Game.cheats.essence; }, 'Infinite essence (mana/rage/energy)');
+    UI.check(ctx, px + 16, y, Hero.cheats.essence, () => {
+      Hero.cheats.essence = !Hero.cheats.essence;
+      Hero.save();
+    }, 'Infinite essence (mana/rage/energy)');
     y += 40;
 
     const row = (label, cb, color = '#e8e0cc') => {
@@ -1583,7 +1632,7 @@ const Screens = {
     ctx.textAlign = 'center';
     ctx.font = 'italic 10px Georgia';
     ctx.fillStyle = '#6f6552';
-    ctx.fillText('Toggles last for this session. Grants are saved to the hero.', px + pw / 2, y + 8);
+    ctx.fillText('Everything here is saved with the hero.', px + pw / 2, y + 8);
   },
 
   // -------------------------------------------------------- patch notes

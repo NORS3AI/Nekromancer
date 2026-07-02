@@ -18,11 +18,22 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.0.5-alpha';
+const GAME_VERSION = 'v0.0.6-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.0.6-alpha', date: 'July 2026',
+    notes: [
+      'Legendary powers now do their REAL Diablo 3 things: Bloodtide Blade (+350% Death Nova damage per nearby enemy), Funerary Pick (Siphon Blood drains 3 targets, each grants +20% damage), Iron Rose (channeling Siphon Blood auto-casts free Death Novas), Haunted Visions (permanent Simulacrum that drains life), Wisdom of Kalan (Bone Armor up to 75% damage reduction), Krysbin\'s Sentence (triple damage to stunned/rooted)',
+      'SKILL RUNES: choose runes in the Skills menu — Blood Nova, Blood and Bone (two simulacrums), Dislocation (Bone Armor stuns), Power Shift, Blood Spear, Bloody Mess',
+      'Dev panel cheats now save with your hero',
+      'Gem chips in the socket popup show just the tier — the color is the gem; tap to read the full name',
+      'Jeweler gem list is scrollable when your collection outgrows the panel',
+      'Pages deploys switched to a maintained GitHub Actions workflow (fixes the Node.js 20 deprecation warning and deploy queue timeouts)'
+    ]
+  },
   {
     v: 'v0.0.5-alpha', date: 'July 2026',
     notes: [
@@ -145,20 +156,66 @@ const INARIUS_SET = {
   ]
 };
 
-// Legendary powers (rift loot) — the build-defining items from the guide.
+// Legendary powers (rift loot) — the Inarius Death Nova build's items, with
+// their REAL Diablo 3 effects (per the Maxroll guide).
 const LEGENDARY_POWERS = {
   bloodtide: {
     slot: 'weapon', name: 'Bloodtide Blade',
-    desc: 'Death Nova deals +8% damage per enemy near you (max 15)'
+    desc: 'Death Nova deals +350% damage for every enemy near you'
   },
-  krysbin: {
-    slot: 'ring1', name: "Krysbin's Sentence",
-    desc: 'You deal +75% damage to slowed, rooted or decrepified enemies'
+  funeraryPick: {
+    slot: 'weapon', name: 'Funerary Pick',
+    desc: 'Siphon Blood drains from 2 additional targets; each target drained grants +20% damage for 3s'
   },
   corrodedFang: {
     slot: 'weapon', name: "Trag'Oul's Corroded Fang",
     desc: 'You deal +60% damage to cursed enemies'
+  },
+  ironRose: {
+    slot: 'offhand', name: 'Iron Rose',
+    desc: 'Channeling Siphon Blood has a 50% chance to cast a free Death Nova'
+  },
+  hauntedVisions: {
+    slot: 'amulet', name: 'Haunted Visions',
+    desc: 'Simulacrum lasts forever, but drains 5% of your maximum life per second'
+  },
+  wisdomOfKalan: {
+    slot: 'amulet', name: 'Wisdom of Kalan',
+    desc: 'Bone Armor gains 5 extra stacks: up to 75% damage reduction and a larger shield'
+  },
+  krysbin: {
+    slot: 'ring1', name: "Krysbin's Sentence",
+    desc: 'You deal +75% damage to slowed enemies, TRIPLE damage to stunned or rooted ones'
   }
+};
+
+// Skill runes (choose one per skill in the Skills menu) — the ones the
+// Inarius Death Nova build cares about, with authentic D3 rune names.
+const SKILL_RUNES = {
+  deathNova: [
+    { id: 'base', name: 'Death Nova', desc: 'The unruned nova of death.' },
+    { id: 'bloodNova', name: 'Blood Nova', desc: '+50% damage, but costs 2% of your life per cast.' }
+  ],
+  simulacrum: [
+    { id: 'base', name: 'Simulacrum', desc: 'A single blood clone mirrors your Secondary casts.' },
+    { id: 'bloodAndBone', name: 'Blood and Bone', desc: 'Summon TWO simulacrums.' }
+  ],
+  boneArmor: [
+    { id: 'base', name: 'Bone Armor', desc: 'Rip bone from enemies for damage and a shield.' },
+    { id: 'dislocation', name: 'Dislocation', desc: 'Enemies hit are STUNNED for 2 seconds.' }
+  ],
+  siphonBlood: [
+    { id: 'base', name: 'Siphon Blood', desc: 'Drain one victim of blood and essence.' },
+    { id: 'powerShift', name: 'Power Shift', desc: '+10% damage per channel stack (max 10).' }
+  ],
+  boneSpear: [
+    { id: 'base', name: 'Bone Spear', desc: 'A piercing spear of bone.' },
+    { id: 'bloodSpear', name: 'Blood Spear', desc: '+40% damage, but costs 2% of your life.' }
+  ],
+  corpseExplosion: [
+    { id: 'base', name: 'Corpse Explosion', desc: 'Detonate the dead.' },
+    { id: 'bloodyMess', name: 'Bloody Mess', desc: 'Blast radius increased by 20%.' }
+  ]
 };
 
 const AFFIX_ROLLS = {

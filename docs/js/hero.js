@@ -76,6 +76,8 @@ const Hero = {
   riftsCleared: 0,
   riftKeys: 0,
   artisans: { smith: 1, mystic: 1, jeweler: 1 },
+  runes: {},                          // skillId -> rune id
+  cheats: { god: false, essence: false }, // dev panel, kept per save
   BAG_SIZE: 24,
   SAVE_VERSION: 2,   // v2: Epic rarity inserted at index 3
 
@@ -94,6 +96,8 @@ const Hero = {
     this.riftsCleared = 0;
     this.riftKeys = 0;
     this.artisans = { smith: 1, mystic: 1, jeweler: 1 };
+    this.runes = {};
+    this.cheats = { god: false, essence: false };
   },
 
   snapshot() {
@@ -105,7 +109,7 @@ const Hero = {
       zonesCleared: this.zonesCleared, difficulty: this.difficulty,
       bestZone: this.bestZone, totalKills: this.totalKills,
       riftsCleared: this.riftsCleared, riftKeys: this.riftKeys,
-      artisans: this.artisans
+      artisans: this.artisans, runes: this.runes, cheats: this.cheats
     };
   },
 
@@ -134,7 +138,9 @@ const Hero = {
       zonesCleared: d.zonesCleared || 0, difficulty: d.difficulty || 0,
       bestZone: d.bestZone || 0, totalKills: d.totalKills || 0,
       riftsCleared: d.riftsCleared || 0, riftKeys: d.riftKeys || 0,
-      artisans: Object.assign({ smith: 1, mystic: 1, jeweler: 1 }, d.artisans)
+      artisans: Object.assign({ smith: 1, mystic: 1, jeweler: 1 }, d.artisans),
+      runes: d.runes || {},
+      cheats: Object.assign({ god: false, essence: false }, d.cheats)
     });
     this.sanitize();
     this.save();
@@ -220,6 +226,10 @@ const Hero = {
     for (const slot of Object.keys(ITEM_SLOTS)) check(this.equipped[slot]);
     for (const it of this.bag) check(it);
     return owned;
+  },
+
+  rune(skillId) {
+    return this.runes[skillId] || 'base';
   },
 
   passiveSlots() {

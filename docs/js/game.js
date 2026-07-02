@@ -29,7 +29,6 @@ const Game = {
   vignette: null,
   lastT: 0,
   saveTick: 0,
-  cheats: { god: false, essence: false },   // dev panel, session-only
   riftMode: false,
   riftProgress: 0,
   guardianUp: false,
