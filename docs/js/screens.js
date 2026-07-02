@@ -376,25 +376,29 @@ const Screens = {
     const slots = Object.keys(ITEM_SLOTS);
     if (!UI.sel.slot) UI.sel.slot = 'weapon';
 
+    // On narrow (portrait phone) screens the wheel shrinks hard so the
+    // equipped card, bag list and EQUIP/SALVAGE/SOCKET actions all fit below.
     const narrow = W < 620;
     const cx = narrow ? W / 2 : W * 0.26;
-    const cy = narrow ? 168 : H * 0.5;
-    const R = narrow ? Math.min(112, W * 0.36) : Math.min(150, H * 0.32);
+    const cy = narrow ? 116 : H * 0.5;
+    const R = narrow ? Math.min(78, W * 0.30) : Math.min(150, H * 0.32);
+    const chipR = narrow ? 19 : 25;
 
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 17px Georgia';
+    ctx.font = 'bold ' + (narrow ? 14 : 17) + 'px Georgia';
     ctx.fillStyle = '#c9bfa8';
-    ctx.fillText('EQUIPMENT', cx, cy - R - 34);
+    ctx.fillText('EQUIPMENT', cx, cy - R - chipR - 8);
 
     // Character summary in the wheel's hub.
-    ctx.font = 'bold 12px Georgia';
+    ctx.font = 'bold ' + (narrow ? 9 : 12) + 'px Georgia';
     ctx.fillStyle = '#6ff7c3';
     if (p) {
-      ctx.fillText('DMG ×' + p.dmgMult.toFixed(2), cx, cy - 16);
+      const gap = narrow ? 11 : 16;
+      ctx.fillText('DMG ×' + p.dmgMult.toFixed(2), cx, cy - gap);
       ctx.fillStyle = '#e04a5a';
       ctx.fillText('LIFE ' + p.maxHp, cx, cy);
       ctx.fillStyle = '#ffb43a';
-      ctx.fillText('CRIT ' + Math.round(p.critChance * 100) + '%', cx, cy + 16);
+      ctx.fillText('CRIT ' + Math.round(p.critChance * 100) + '%', cx, cy + gap);
     }
 
     // The wheel.
@@ -405,16 +409,16 @@ const Screens = {
       const it = Hero.equipped[slot];
       const selected = UI.sel.slot === slot;
       ctx.fillStyle = selected ? '#2e2a3a' : '#16121d';
-      ctx.beginPath(); ctx.arc(bx, by, 25, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(bx, by, chipR, 0, TAU); ctx.fill();
       ctx.strokeStyle = it ? RARITIES[it.rarity].color : '#3a3448';
       ctx.lineWidth = selected ? 3 : 2;
-      ctx.beginPath(); ctx.arc(bx, by, 25, 0, TAU); ctx.stroke();
-      this.slotGlyph(ctx, slot, bx, by, 22);
+      ctx.beginPath(); ctx.arc(bx, by, chipR, 0, TAU); ctx.stroke();
+      this.slotGlyph(ctx, slot, bx, by, chipR - 3);
       if (it && it.gem) {
         ctx.fillStyle = GEM_TYPES[it.gem.type].color;
-        ctx.beginPath(); ctx.arc(bx + 17, by - 17, 4.5, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(bx + chipR * 0.68, by - chipR * 0.68, 4, 0, TAU); ctx.fill();
       }
-      UI.register(bx - 27, by - 27, 54, 54, () => {
+      UI.register(bx - chipR - 3, by - chipR - 3, chipR * 2 + 6, chipR * 2 + 6, () => {
         UI.sel.slot = slot;
         UI.sel.item = null;
         UI.sel.gemPick = false;
@@ -424,7 +428,7 @@ const Screens = {
     // Detail column.
     const dx = narrow ? 12 : W * 0.48;
     const dw = narrow ? W - 24 : W * 0.48;
-    let dy = narrow ? cy + R + 44 : 54;
+    let dy = narrow ? cy + R + chipR + 22 : 54;
     const slot = UI.sel.slot;
     const equipped = Hero.equipped[slot];
 
@@ -441,7 +445,13 @@ const Screens = {
     ctx.fillStyle = '#9a9080';
     ctx.fillText('IN BAG (' + bagItems.length + ')', dx, dy + 14);
     dy += 24;
-    const maxRows = Math.max(1, Math.floor((H - dy - 20) / 34) - (UI.sel.item ? 5 : 0));
+    // Reserve exactly the space the selected item's card + action buttons
+    // will need, so EQUIP/SALVAGE/SOCKET can never fall off screen.
+    let reserve = 0;
+    if (UI.sel.item) {
+      reserve = 30 + Items.statLines(UI.sel.item).length * 15 + 8 + 46 + 24;
+    }
+    const maxRows = Math.max(1, Math.floor((H - dy - 20 - reserve) / 34));
     bagItems.slice(0, maxRows).forEach(it => {
       const selected = UI.sel.item === it;
       UI.btn(ctx, dx, dy, dw, 30, '', () => {

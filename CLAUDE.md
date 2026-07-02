@@ -94,6 +94,18 @@ loot at the artisans. The hero is persistent (localStorage).
   cheats (god, infinite essence — session-only on `Game.cheats`; grants save).
   Game version label (bottom-right of title) opens `PATCH_NOTES`.
 
+## GitHub Pages deployment ops (learned 2026-07-02)
+
+- The "pages build and deployment" workflow is **GitHub's managed one**
+  (`dynamic/pages/pages-build-deployment`) — the repo has NO workflows of its own.
+  The "Node.js 20 deprecated" notice comes from GitHub's pinned actions inside it;
+  it is informational and nothing in this repo can or needs to change for it.
+- Deploy failures showing `Current status: deployment_queued` → `Timeout reached,
+  aborting!` are GitHub-side Pages queue congestion (seen when several merges land
+  minutes apart). Commits/pushes/merges still worked; the site just stayed on the
+  previous version. Recovery: it self-heals on the next push, or re-run the failed
+  run from the Actions tab. Avoid merging several PRs back-to-back when possible.
+
 ## Testing
 
 Headless Playwright with the preinstalled Chromium
