@@ -193,6 +193,7 @@ const Screens = {
     const cols = W > 560 ? 2 : 1;
     const bw = cols === 2 ? (pw - 12) / 2 : pw;
     const rowH = cols === 1 ? Math.min(52, (H - (56 + panelH) - 46) / items.length) : 56;
+    const showUpgrade = Items.anyUpgrade();
     items.forEach(([label, cb, col], i) => {
       const cx2 = px + (i % cols) * (bw + 12);
       const cy2 = 56 + panelH + 16 + Math.floor(i / cols) * rowH;
@@ -201,6 +202,17 @@ const Screens = {
         border: i === 0 ? '#57b894' : undefined,
         disabled: !cb
       });
+      // Red "!" on Inventory when a gear upgrade is waiting in the bag.
+      if (label === 'INVENTORY' && showUpgrade) {
+        const ex = cx2 + bw - 16, ey = cy2 + (rowH - 8) / 2;
+        ctx.fillStyle = '#e0402f';
+        ctx.beginPath(); ctx.arc(ex, ey, 8, 0, TAU); ctx.fill();
+        ctx.strokeStyle = '#12080a'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(ex, ey, 8, 0, TAU); ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 12px Georgia';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('!', ex, ey + 0.5);
+      }
     });
 
     ctx.font = '11px Georgia';
@@ -418,6 +430,18 @@ const Screens = {
         ctx.fillStyle = GEM_TYPES[it.gem.type].color;
         ctx.beginPath(); ctx.arc(bx + chipR * 0.68, by - chipR * 0.68, 4, 0, TAU); ctx.fill();
       }
+      // Red "!" badge: a better item for this slot is waiting in the bag.
+      if (Items.slotHasUpgrade(slot)) {
+        const ex = bx - chipR * 0.72, ey = by - chipR * 0.72;
+        ctx.fillStyle = '#e0402f';
+        ctx.beginPath(); ctx.arc(ex, ey, 7.5, 0, TAU); ctx.fill();
+        ctx.strokeStyle = '#12080a'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(ex, ey, 7.5, 0, TAU); ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 11px Georgia';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('!', ex, ey + 0.5);
+      }
       UI.register(bx - chipR - 3, by - chipR - 3, chipR * 2 + 6, chipR * 2 + 6, () => {
         UI.sel.slot = slot;
         UI.sel.item = null;
@@ -439,8 +463,9 @@ const Screens = {
     dy += 10;
     dy = this.itemCard(ctx, dx, dy, dw, equipped, null, false);
 
-    // Bag items for this slot, with compare arrows.
-    const bagItems = Hero.bag.filter(it => it.slot === slot);
+    // Bag items for this slot (rings share both ring slots), with compare arrows.
+    const fam = Items.slotFamily(slot);
+    const bagItems = Hero.bag.filter(it => fam.includes(it.slot));
     ctx.font = 'bold 13px Georgia';
     ctx.fillStyle = '#9a9080';
     ctx.fillText('IN BAG (' + bagItems.length + ')', dx, dy + 14);
@@ -483,7 +508,7 @@ const Screens = {
       dy = this.itemCard(ctx, dx, dy, dw, UI.sel.item, equipped, true);
       const bw = (dw - 16) / 3;
       UI.btn(ctx, dx, dy, bw, 34, 'EQUIP', () => {
-        Items.equip(UI.sel.item);
+        Items.equip(UI.sel.item, slot);
         UI.sel.item = null;
       }, { border: '#57b894', color: '#6ff7c3', size: 13 });
       UI.btn(ctx, dx + bw + 8, dy, bw, 34, 'SALVAGE', () => {
@@ -1426,16 +1451,16 @@ const Screens = {
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, 'SETTINGS');
 
-    // Tabs: options vs manual save slots.
+    // Tabs: options · keybindings · manual save slots.
     if (!UI.sel.stab) UI.sel.stab = 'options';
-    UI.btn(ctx, px + 16, py + 40, (pw - 40) / 2, 30, 'OPTIONS', () => { UI.sel.stab = 'options'; },
-      { size: 12, bg: UI.sel.stab === 'options' ? 'rgba(60,52,78,0.95)' : undefined });
-    UI.btn(ctx, px + 24 + (pw - 40) / 2, py + 40, (pw - 40) / 2, 30, 'SAVES', () => { UI.sel.stab = 'saves'; },
-      { size: 12, bg: UI.sel.stab === 'saves' ? 'rgba(60,52,78,0.95)' : undefined });
-    if (UI.sel.stab === 'saves') {
-      this.savesTab(ctx, W, H, px, py, pw, ph);
-      return;
-    }
+    const tabs = [['options', 'OPTIONS'], ['keys', 'KEYS'], ['saves', 'SAVES']];
+    const tw = (pw - 48) / 3;
+    tabs.forEach((t, i) => {
+      UI.btn(ctx, px + 16 + i * (tw + 8), py + 40, tw, 30, t[1], () => { UI.sel.stab = t[0]; },
+        { size: 12, bg: UI.sel.stab === t[0] ? 'rgba(60,52,78,0.95)' : undefined });
+    });
+    if (UI.sel.stab === 'saves') { this.savesTab(ctx, W, H, px, py, pw, ph); return; }
+    if (UI.sel.stab === 'keys') { this.keysTab(ctx, W, H, px, py, pw, ph); return; }
 
     // ---- audio: slider + mute per channel ----
     const chans = [
@@ -1574,6 +1599,79 @@ const Screens = {
     ctx.font = '10px Georgia';
     ctx.fillStyle = '#6f6552';
     ctx.fillText('Saves live in this browser (localStorage). Loading replaces your current hero.', W / 2, py + ph - 14);
+  },
+
+  // ------------------------------------------------- keybindings (desktop)
+
+  keysTab(ctx, W, H, px, py, pw, ph) {
+    const narrow = pw < 480;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.fillText(narrow ? 'Keyboard controls (desktop).'
+      : 'Keyboard controls (desktop) — tap a key to remove it, ＋ to add one.',
+      px + 16, py + 86);
+
+    const listTop = py + 104;
+    const listBot = py + ph - 44;
+    const cols = narrow ? 1 : 2;
+    const gap = 12;
+    const colW = (pw - 32 - (cols - 1) * gap) / cols;
+    const rowsPerCol = Math.ceil(KEY_ACTIONS.length / cols);
+    const rowH = Math.min(30, (listBot - listTop) / rowsPerCol);
+
+    KEY_ACTIONS.forEach(([id, label], i) => {
+      const col = Math.floor(i / rowsPerCol);
+      const row = i % rowsPerCol;
+      const x = px + 16 + col * (colW + gap);
+      const y = listTop + row * rowH;
+      const labelW = colW * 0.40;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.font = '11px Georgia'; ctx.fillStyle = '#c9bfa8';
+      ctx.fillText(this.fitText(ctx, label, labelW - 4), x, y + rowH / 2);
+
+      const chipY = y + (rowH - 18) / 2;
+      const addX = x + colW - 20;
+      let cxp = x + labelW;
+      if (UI.sel.rebindAction === id) {
+        ctx.fillStyle = '#6ff7c3'; ctx.font = 'italic 11px Georgia';
+        ctx.fillText('press a key…', cxp, y + rowH / 2);
+      } else {
+        for (const code of (Settings.keys[id] || [])) {
+          ctx.font = 'bold 10px Georgia';
+          const name = keyName(code);
+          const chw = Math.min(58, ctx.measureText(name).width + 12);
+          if (cxp + chw > addX - 4) {
+            ctx.fillStyle = '#6f6552'; ctx.font = '10px Georgia';
+            ctx.fillText('…', cxp, y + rowH / 2);
+            break;
+          }
+          ctx.fillStyle = 'rgba(44,38,58,0.95)';
+          rr(ctx, cxp, chipY, chw, 18, 4); ctx.fill();
+          ctx.strokeStyle = '#6b5f80'; ctx.lineWidth = 1;
+          rr(ctx, cxp, chipY, chw, 18, 4); ctx.stroke();
+          ctx.fillStyle = '#e8e0cc'; ctx.textAlign = 'center';
+          ctx.fillText(name, cxp + chw / 2, y + rowH / 2);
+          ctx.textAlign = 'left';
+          UI.register(cxp, chipY, chw, 18, () => Settings.unbindKey(id, code));
+          cxp += chw + 4;
+        }
+      }
+      // ＋ add — enter listening mode for the next keypress.
+      ctx.fillStyle = 'rgba(28,40,32,0.95)';
+      rr(ctx, addX, chipY, 18, 18, 4); ctx.fill();
+      ctx.strokeStyle = '#3a7a4a'; ctx.lineWidth = 1;
+      rr(ctx, addX, chipY, 18, 18, 4); ctx.stroke();
+      ctx.fillStyle = '#6ff7c3'; ctx.font = 'bold 14px Georgia';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('+', addX + 9, chipY + 9);
+      ctx.textAlign = 'left';
+      UI.register(addX, chipY, 18, 18, () => { UI.sel.rebindAction = id; });
+    });
+
+    UI.btn(ctx, px + 16, py + ph - 38, pw - 32, 28, 'RESET TO DEFAULTS', () => {
+      Settings.resetKeys();
+      UI.sel.rebindAction = null;
+    }, { size: 11, border: '#8a4550', color: '#e04a5a' });
   },
 
   // ------------------------------------------------- dev panel & cheats

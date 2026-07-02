@@ -18,11 +18,20 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.0.8-alpha';
+const GAME_VERSION = 'v0.0.9-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.0.9-alpha', date: 'July 2026',
+    notes: [
+      'A red "!" now appears on any equipment slot (and the camp INVENTORY button) that has a gear upgrade waiting in your bag — no more guessing what to equip',
+      'Fixed the two ring slots: rings now show for BOTH slots and you can wear two at once. Equipping into a ring slot drops the ring there; a unique legendary/set piece can still only be worn once',
+      'Rebindable keyboard controls: Settings → KEYS lets you tap a key to remove it or ＋ to add one, with RESET TO DEFAULTS',
+      'New default keys — I or B: Inventory · K: Skills · P: Passives · C: Character · Q: potion · 1–5: skill slots · Space/J: primary · Esc: back'
+    ]
+  },
   {
     v: 'v0.0.8-alpha', date: 'July 2026',
     notes: [
