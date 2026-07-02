@@ -47,6 +47,14 @@ const Game = {
     this.dpr = Math.min(2, window.devicePixelRatio || 1);
     this.W = window.innerWidth;
     this.H = window.innerHeight;
+    // iPhone notch / home-indicator insets.
+    try {
+      const cs = getComputedStyle(document.documentElement);
+      const px = v => parseFloat(cs.getPropertyValue(v)) || 0;
+      this.safe = { top: px('--sa-top'), right: px('--sa-right'), bottom: px('--sa-bottom'), left: px('--sa-left') };
+    } catch (e) {
+      this.safe = { top: 0, right: 0, bottom: 0, left: 0 };
+    }
     this.canvas.width = Math.round(this.W * this.dpr);
     this.canvas.height = Math.round(this.H * this.dpr);
     this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
@@ -229,6 +237,15 @@ const Game = {
         if (o.buff === 'empowered') p.essence = p.maxEssence;
         UI.toast(names[o.buff], '#6ff7c3');
         Particles.ring(o.x, o.y, 90, '#6ff7c3', 5, 0.6);
+      } else if (o.type === 'vendor') {
+        if (d < 50 && !o.near) {
+          o.near = true;
+          UI.open('vendor');       // pauses the crawl while trading
+          UI.sel.vendor = o;
+          AudioSys.sfx('gold');
+        } else if (d > 95) {
+          o.near = false;
+        }
       } else if (o.type === 'urn' && d < 30) {
         o.used = true;
         AudioSys.sfx('hit');

@@ -165,7 +165,14 @@ const Items = {
     }
   },
 
-  craftCost(slot) {
+  craftCost(master = false) {
+    if (master) {
+      return {
+        gold: (250 + Hero.level * 40) * 3,
+        parts: 6, dust: 4, crystal: 3,
+        soul: Hero.level >= 30 ? 1 : 0
+      };
+    }
     return { gold: 250 + Hero.level * 40, parts: 4, dust: 2, crystal: Hero.level >= 20 ? 1 : 0 };
   },
 
@@ -182,19 +189,42 @@ const Items = {
     for (const m of ['parts', 'dust', 'crystal', 'soul']) Hero.mats[m] -= cost[m] || 0;
   },
 
-  craft(slot) {
-    const cost = this.craftCost(slot);
+  craft(slot, master = false) {
+    const cost = this.craftCost(master);
     if (!this.canAfford(cost)) {
       UI.toast('Not enough gold or materials', '#9a9080');
       AudioSys.sfx('denied');
       return;
     }
     this.pay(cost);
-    const item = this.generate(Hero.level, 0.12, slot);
+    let item, tries = 0;
+    do {
+      item = this.generate(Hero.level, master ? 0.2 : 0.12, slot);
+    } while (master && item.rarity < 2 && tries++ < 30); // masterwork: Rare or better
+    if (master && !item.sockets) item.sockets = Math.random() < 0.5 ? 1 : 0;
     this.stash(item);
-    UI.toast('Forged: ' + item.name, RARITIES[item.rarity].color);
+    UI.toast((master ? 'Masterworked: ' : 'Forged: ') + item.name, RARITIES[item.rarity].color);
     AudioSys.sfx('craft');
     Hero.save();
+  },
+
+  salvageRares() {
+    let n = 0;
+    for (let i = Hero.bag.length - 1; i >= 0; i--) {
+      if (Hero.bag[i].rarity === 2) {
+        const it = Hero.bag.splice(i, 1)[0];
+        Hero.mats.crystal += RARITIES[2].salvageN;
+        if (it.gem) Hero.gems.push(it.gem);
+        n++;
+      }
+    }
+    if (n) {
+      UI.toast(`Salvaged ${n} rare item${n > 1 ? 's' : ''} → ${n}× Veiled Crystals`, '#ffd76a');
+      AudioSys.sfx('craft');
+      Hero.save();
+    } else {
+      UI.toast('No rare items in bag', '#9a9080');
+    }
   },
 
   // --------------------------------------------------------------- jeweler
@@ -224,6 +254,38 @@ const Items = {
     Hero.save();
   },
 
+  // Keep folding a stack 3→1 for as long as it lasts (and gold does).
+  combineAllGems(type, tier) {
+    let made = 0;
+    while (tier < GEM_TIERS.length - 1) {
+      const n = Hero.gems.filter(g => g.type === type && g.tier === tier).length;
+      const cost = 500 * (tier + 1);
+      if (n < 3 || Hero.gold < cost) break;
+      this.combineGems(type, tier);
+      made++;
+    }
+    if (!made) AudioSys.sfx('denied');
+  },
+
+  gemPrice() {
+    return { gold: 600 + Hero.level * 25, dust: 2 };
+  },
+
+  buyGem() {
+    const cost = this.gemPrice();
+    if (!this.canAfford(cost)) {
+      UI.toast('Not enough gold or dust', '#9a9080');
+      AudioSys.sfx('denied');
+      return;
+    }
+    this.pay(cost);
+    const gem = this.generateGem(Hero.level);
+    Hero.gems.push(gem);
+    UI.toast('Cut a fresh gem: ' + gemName(gem), GEM_TYPES[gem.type].color);
+    AudioSys.sfx('gem');
+    Hero.save();
+  },
+
   socketGem(item, gemIndex) {
     const gem = Hero.gems[gemIndex];
     if (!gem || !item || !item.sockets) return;
@@ -247,40 +309,48 @@ const Items = {
 
   // ---------------------------------------------------------------- mystic
 
+  // Each enchant on an item drives the next one's price up, D3-style.
   enchantCost(item) {
-    return { gold: 400 + item.mLvl * 60, dust: 3, crystal: item.rarity >= 2 ? 2 : 0, soul: item.rarity >= 3 ? 1 : 0 };
+    const n = item.enchants || 0;
+    return {
+      gold: Math.round((400 + item.mLvl * 60) * (1 + n * 0.5)),
+      dust: 3 + n,
+      crystal: item.rarity >= 2 ? 2 : 0,
+      soul: item.rarity >= 3 ? 1 : 0
+    };
   },
 
-  // Reroll one random affix on the item, D3 Mystic style.
-  enchant(item) {
+  // Reroll the affix the PLAYER chose; the rest of the item is untouched.
+  enchant(item, statKey) {
+    if (!(statKey in item.stats)) return;
     const cost = this.enchantCost(item);
     if (!this.canAfford(cost)) {
       UI.toast('Not enough gold or materials', '#9a9080');
       AudioSys.sfx('denied');
       return;
     }
-    const keys = Object.keys(item.stats);
-    if (!keys.length) return;
     this.pay(cost);
-    const key = pick(keys);
-    delete item.stats[key];
+    delete item.stats[statKey];
+    // New property: anything the item doesn't already have (incl. a fresh
+    // roll of the one just removed).
     const pool = Object.keys(AFFIX_ROLLS).filter(k => !(k in item.stats));
     const nk = pick(pool);
     const R = RARITIES[item.rarity];
     item.stats[nk] = AFFIX_ROLLS[nk].base * (nk === ITEM_SLOTS[item.slot].primary ? 1.6 : 0.85)
       * R.mult * (1 + item.mLvl * 0.11) * rand(0.85, 1.25);
+    item.enchants = (item.enchants || 0) + 1;
     this.apply();
     UI.toast(`Enchanted ${item.name}: ${AFFIX_ROLLS[nk].label(item.stats[nk])}`, '#b06adf');
     AudioSys.sfx('gem');
     Hero.save();
+    return nk;
   },
 
   // ------------------------------------------------------- derived stats
 
-  // Fold hero level + gear + gems + passives into the Player entity.
-  apply() {
-    const p = Game.player;
-    if (!p) return;
+  // Hero level + gear + gems + passives, as a plain stats object.
+  // Works with no live Player (used by the character sheet in camp).
+  computeStats() {
     let dmg = 0, hp = 0, crit = 0, ess = 0, reg = 0, gold = 0;
     const gather = it => {
       if (!it) return;
@@ -301,21 +371,35 @@ const Items = {
       }
     };
     for (const slot of Object.keys(ITEM_SLOTS)) gather(Hero.equipped[slot]);
-
     const lvl = Hero.level;
-    p.baseDmg = 1 + (lvl - 1) * 0.09;
-    p.baseMaxHp = 110 + (lvl - 1) * 14;
-    p.dmgMult = p.baseDmg * (1 + dmg);
-    const oldMax = p.maxHp || p.baseMaxHp;
-    p.maxHp = Math.round(p.baseMaxHp + hp);
+    return {
+      dmgMult: (1 + (lvl - 1) * 0.09) * (1 + dmg),
+      gearDmg: dmg,
+      maxHp: Math.round(110 + (lvl - 1) * 14 + hp),
+      critChance: 0.10 + crit,
+      essenceRegen: 2 + ess,
+      hpRegen: reg,
+      goldFind: 1 + gold,
+      maxEssence: 100 + (Hero.hasPassive('overwhelming') ? 40 : 0)
+    };
+  },
+
+  // Fold the derived stats into the live Player entity.
+  apply() {
+    const p = Game.player;
+    if (!p) return;
+    const s = this.computeStats();
+    const oldMax = p.maxHp || s.maxHp;
+    p.dmgMult = s.dmgMult;
+    p.maxHp = s.maxHp;
     if (p.hp === undefined) p.hp = p.maxHp;
     else if (p.maxHp > oldMax) p.hp += p.maxHp - oldMax;
     p.hp = Math.min(p.hp, p.maxHp);
-    p.critChance = 0.10 + crit;
-    p.essenceRegen = 2 + ess;
-    p.hpRegen = reg;
-    p.goldFind = 1 + gold;
-    p.maxEssence = 100 + (Hero.hasPassive('overwhelming') ? 40 : 0);
+    p.critChance = s.critChance;
+    p.essenceRegen = s.essenceRegen;
+    p.hpRegen = s.hpRegen;
+    p.goldFind = s.goldFind;
+    p.maxEssence = s.maxEssence;
     p.essence = Math.min(p.essence ?? 60, p.maxEssence);
   }
 };

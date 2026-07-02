@@ -160,7 +160,26 @@ const World = {
     }
   },
 
+  // A wandering merchant with a small, luck-of-the-draw stock.
+  vendorStock() {
+    const mLvl = (this.zone ? this.zone.mLvl : 1) + (Hero.difficulty || 0) * 6;
+    const stock = [];
+    for (let i = 0; i < 5; i++) {
+      // First slot leans good, the tail leans junk — caveat emptor.
+      const boost = i === 0 ? 0.3 : (i >= 3 ? -0.25 : 0);
+      const item = Items.generate(mLvl + (i === 0 ? 2 : 0), boost);
+      stock.push({
+        item,
+        price: Math.round((40 + Items.score(item) * 1.4) * (1 + item.rarity * 0.9)),
+        sold: false
+      });
+    }
+    return stock;
+  },
+
   placeObjects(chests, shrines, urns, pointFn) {
+    const vp = pointFn();
+    this.objects.push({ type: 'vendor', x: vp.x, y: vp.y, used: false, near: false, seed: Math.random(), stock: this.vendorStock() });
     for (let i = 0; i < chests; i++) {
       const pt = pointFn();
       this.objects.push({ type: 'chest', x: pt.x, y: pt.y, used: false, seed: Math.random() });
@@ -463,6 +482,48 @@ const World = {
       if (!o.used) { ctx.shadowColor = col; ctx.shadowBlur = 12; }
       ctx.beginPath(); ctx.arc(0, -40, 6 + (o.used ? 0 : Math.sin(Game.time * 4) * 1.5), 0, TAU); ctx.fill();
       ctx.shadowBlur = 0;
+    } else if (o.type === 'vendor') {
+      // Cart.
+      ctx.fillStyle = '#4a3a24';
+      rr(ctx, 8, -20, 26, 20, 3); ctx.fill();
+      ctx.fillStyle = '#5e4a2a';
+      rr(ctx, 8, -24, 26, 7, 3); ctx.fill();
+      ctx.strokeStyle = '#2e2416';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(15, 2, 6, 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.arc(28, 2, 6, 0, TAU); ctx.stroke();
+      // Wares on top.
+      ctx.fillStyle = '#ffd76a';
+      ctx.beginPath(); ctx.arc(15, -27, 2.5, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#b06adf';
+      ctx.beginPath(); ctx.arc(22, -28, 2.5, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#e04a5a';
+      ctx.beginPath(); ctx.arc(28, -27, 2.5, 0, TAU); ctx.fill();
+      // The merchant.
+      ctx.fillStyle = '#4a3c50';
+      ctx.beginPath();
+      ctx.moveTo(-8, 2);
+      ctx.quadraticCurveTo(-16, -14, -8, -26);
+      ctx.lineTo(0, -26);
+      ctx.quadraticCurveTo(4, -12, 0, 2);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#c9a06a';
+      ctx.beginPath(); ctx.arc(-4, -28, 5.5, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#4a3c50';
+      ctx.beginPath(); ctx.arc(-4, -30, 5.5, Math.PI, 0); ctx.fill();
+      // Lantern glow + trade hint.
+      const gl = 0.55 + 0.25 * Math.sin(Game.time * 3 + o.seed * 7);
+      ctx.fillStyle = `rgba(255,215,106,${gl})`;
+      ctx.shadowColor = '#ffd76a';
+      ctx.shadowBlur = 10;
+      ctx.beginPath(); ctx.arc(4, -34, 3, 0, TAU); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = '#ffd76a';
+      ctx.font = 'bold 10px Georgia';
+      ctx.textAlign = 'center';
+      ctx.fillText('TRADE', 6, -46 + Math.sin(Game.time * 2.5) * 2);
+      ctx.globalAlpha = 1;
     } else if (o.type === 'urn' && !o.used) {
       ctx.fillStyle = '#4a4356';
       ctx.beginPath();

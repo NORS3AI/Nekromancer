@@ -17,14 +17,21 @@ const UI = {
 
   // ------------------------------------------------------------ tap routing
 
-  clearHits() { this.hits = []; },
+  clearHits() {
+    this.hits = [];
+    this.overlayBarrier = 0;
+  },
 
   register(x, y, w, h, cb) {
     this.hits.push({ x, y, w, h, cb });
   },
 
   click(x, y) {
-    for (let i = this.hits.length - 1; i >= 0; i--) {
+    // Regions registered before an overlay (HUD, camp buttons) are
+    // unreachable while the overlay is up — no tapping "through" menus.
+    const overlayUp = this.screen || (Game.playerDeadT || 0) > 0;
+    const gate = overlayUp ? this.overlayBarrier : 0;
+    for (let i = this.hits.length - 1; i >= gate; i--) {
       const r = this.hits[i];
       if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
         r.cb();
@@ -32,11 +39,12 @@ const UI = {
         return true;
       }
     }
-    if (this.screen && this.screen !== 'reward') {
-      // Tap outside any control closes the menu.
-      this.close();
+    if (this.screen) {
+      // Tap outside any control closes the menu (reward stays until its button).
+      if (this.screen !== 'reward') this.close();
       return true;
     }
+    if ((Game.playerDeadT || 0) > 0) return true;
     return false;
   },
 
@@ -90,9 +98,10 @@ const UI = {
 
   layout(W, H) {
     this.buttons = [];
+    const safe = this.safe = Game.safe || { top: 0, right: 0, bottom: 0, left: 0 };
     const scale = clamp(Math.min(W, H) / 420, 0.85, 1.35);
-    const px = W - 84 * scale;
-    const py = H - 90 * scale;
+    const px = W - 84 * scale - safe.right;
+    const py = H - 90 * scale - safe.bottom * 0.7;
     this.buttons.push({ x: px, y: py, r: 42 * scale, slot: 0 });
     const R = 106 * scale;
     const angles = [Math.PI * 0.98, Math.PI * 1.14, Math.PI * 1.30, Math.PI * 1.46, Math.PI * 1.62];
@@ -104,8 +113,10 @@ const UI = {
         slot: i + 1
       });
     }
-    this.potionBtn = { x: px - R * 0.62 - 46 * scale, y: py + 26 * scale, r: 22 * scale };
-    this.menuBtn = { x: W - 30, y: 26, r: 18 };
+    // Potion sits on the cluster arc, outside skill slot 1 (no overlap).
+    const pa = Math.PI * 0.98, pr = R + 54 * scale;
+    this.potionBtn = { x: px + Math.cos(pa) * pr, y: py + Math.sin(pa) * pr + 20 * scale, r: 22 * scale };
+    this.menuBtn = { x: W - 30 - safe.right, y: 26 + safe.top, r: 18 };
   },
 
   buttonAt(x, y) {
@@ -116,7 +127,8 @@ const UI = {
   },
 
   portraitHit(x, y) {
-    return dist(x, y, 40, 38) < 36;
+    const s = this.safe || { top: 0, left: 0 };
+    return dist(x, y, 40 + s.left, 38 + s.top) < 36;
   },
 
   // ------------------------------------------------------------------ draw
@@ -127,7 +139,10 @@ const UI = {
     if (Game.state === 'camp' || Game.state === 'map') {
       if (Game.state === 'camp') Screens.camp(ctx, W, H);
       else Screens.map(ctx, W, H);
-      if (this.screen) Screens.draw(ctx, W, H);
+      if (this.screen) {
+        this.overlayBarrier = this.hits.length;
+        Screens.draw(ctx, W, H);
+      }
       this.drawToasts(ctx, W);
       return;
     }
@@ -146,14 +161,20 @@ const UI = {
     this.drawMenuButton(ctx);
     this.drawBanner(ctx, W, H);
 
-    if (Game.playerDeadT > 0) Screens.death(ctx, W, H);
-    else if (this.screen) Screens.draw(ctx, W, H);
+    if (Game.playerDeadT > 0) {
+      this.overlayBarrier = this.hits.length;
+      Screens.death(ctx, W, H);
+    } else if (this.screen) {
+      this.overlayBarrier = this.hits.length;
+      Screens.draw(ctx, W, H);
+    }
   },
 
   // ------------------------------------------------------------- HUD parts
 
   drawTopBar(ctx, W, H, p) {
-    const x0 = 14, y0 = 12;
+    const s = this.safe || { top: 0, left: 0 };
+    const x0 = 14 + s.left, y0 = 12 + s.top;
     ctx.fillStyle = 'rgba(8,5,12,0.8)';
     ctx.beginPath(); ctx.arc(x0 + 26, y0 + 26, 27, 0, TAU); ctx.fill();
     ctx.strokeStyle = '#5c5569';
@@ -215,13 +236,25 @@ const UI = {
   },
 
   drawObjective(ctx, W, H) {
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 13px Georgia';
-    ctx.fillStyle = '#c9bfa8';
-    ctx.fillText(Game.zone.name + '  ·  ' + DIFFICULTIES[Hero.difficulty].name, W / 2, 16);
-    ctx.font = '12px Georgia';
-    ctx.fillStyle = Game.bossDead ? '#b06adf' : '#ffb43a';
-    ctx.fillText(Game.bossDead ? 'Enter the portal' : 'Bounty: slay ' + Game.zone.boss, W / 2, 33);
+    const s = this.safe || { top: 0, left: 0 };
+    const st = s.top;
+    ctx.textBaseline = 'middle';
+    if (W < 560) {
+      // Narrow phones: a single bounty line under the bars (the zone name
+      // shows in the entry banner and the pause menu).
+      ctx.textAlign = 'left';
+      ctx.font = 'bold 11px Georgia';
+      ctx.fillStyle = Game.bossDead ? '#b06adf' : '#ffb43a';
+      ctx.fillText(Game.bossDead ? '◈ Enter the portal' : '☠ ' + Game.zone.boss, 14 + s.left, 86 + st);
+    } else {
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 13px Georgia';
+      ctx.fillStyle = '#c9bfa8';
+      ctx.fillText(Game.zone.name + '  ·  ' + DIFFICULTIES[Hero.difficulty].name, W / 2, 16 + st);
+      ctx.font = '12px Georgia';
+      ctx.fillStyle = Game.bossDead ? '#b06adf' : '#ffb43a';
+      ctx.fillText(Game.bossDead ? 'Enter the portal' : 'Bounty: slay ' + Game.zone.boss, W / 2, 33 + st);
+    }
 
     // Chevron pointing at the objective.
     const p = Game.player;
@@ -247,8 +280,9 @@ const UI = {
   },
 
   drawMinimap(ctx, W, H) {
+    const s = this.safe || { top: 0, right: 0 };
     const S = Math.min(110, W * 0.2);
-    const x0 = W - S - 12, y0 = 48;
+    const x0 = W - S - 12 - s.right, y0 = 48 + s.top;
     ctx.globalAlpha = 0.82;
     ctx.fillStyle = '#08060c';
     rr(ctx, x0 - 3, y0 - 3, S + 6, S + 6, 6); ctx.fill();
@@ -269,7 +303,7 @@ const UI = {
     for (const o of World.objects) {
       if (o.used || o.type === 'urn') continue;
       const cell = World.explored[Math.floor(o.y / CELL) * World.cols + Math.floor(o.x / CELL)];
-      if (cell) dot(o.x, o.y, o.type === 'chest' ? '#ffd76a' : '#6ff7c3', 2);
+      if (cell) dot(o.x, o.y, o.type === 'chest' ? '#ffd76a' : o.type === 'vendor' ? '#ffb43a' : '#6ff7c3', o.type === 'vendor' ? 3 : 2);
     }
     if (Game.bossDead && World.portal) dot(World.portal.x, World.portal.y, '#b06adf', 3.5);
     else dot(World.bossPos.x, World.bossPos.y, '#e04a5a', 3);
@@ -284,7 +318,7 @@ const UI = {
     }
     if (!boss) return;
     const w = Math.min(360, W * 0.5);
-    const x = W / 2 - w / 2, y = 46;
+    const x = W / 2 - w / 2, y = 46 + (this.safe || { top: 0 }).top;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 13px Georgia';
     ctx.lineWidth = 3;
@@ -301,10 +335,11 @@ const UI = {
     }
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 13px Georgia';
+    const st = (this.safe || { top: 0 }).top;
     this.toasts.forEach((t, i) => {
       const left = t.until - Game.time;
       ctx.globalAlpha = clamp(left / 0.5, 0, 1);
-      const y = 68 + i * 19;
+      const y = 68 + st + i * 19;
       ctx.lineWidth = 3;
       ctx.strokeStyle = 'rgba(0,0,0,0.8)';
       ctx.strokeText(t.text, W / 2, y);
