@@ -149,6 +149,30 @@ const UI = {
   layout(W, H) {
     this.buttons = [];
     const safe = this.safe = Game.safe || { top: 0, right: 0, bottom: 0, left: 0 };
+    // Desktop (mouse) gets the Diablo bottom bar + globes; touch keeps the
+    // twin-stick radial cluster.
+    this.desktop = !Input.touchMode && W >= 760;
+    this.menuBtn = { x: W - 30 - safe.right, y: 26 + safe.top, r: 18 };
+
+    if (this.desktop) {
+      // Globes anchor the corners; the action bar sits between them.
+      this.globeR = Math.min(64, H * 0.12);
+      const gr = this.globeR;
+      this.hpGlobe = { x: 20 + gr, y: H - 22 - gr - safe.bottom, r: gr };
+      this.essGlobe = { x: W - 20 - gr - safe.right, y: H - 22 - gr - safe.bottom, r: gr };
+      const order = [0, 2, 3, 4, 5, 1]; // LMB · 1 · 2 · 3 · 4 · RMB
+      const s = 28, gap = 12;
+      const totalW = order.length * s * 2 + (order.length - 1) * gap;
+      const startX = W / 2 - totalW / 2 + s;
+      const by = H - 62 - safe.bottom;
+      order.forEach((slot, i) => {
+        this.buttons.push({ x: startX + i * (s * 2 + gap), y: by, r: s, slot });
+      });
+      const potX = startX + order.length * (s * 2 + gap) - gap + s + 6;
+      this.potionBtn = { x: Math.min(potX, this.essGlobe.x - gr - 30), y: by, r: 24 };
+      return;
+    }
+
     const scale = clamp(Math.min(W, H) / 420, 0.85, 1.35);
     const px = W - 84 * scale - safe.right;
     const py = H - 90 * scale - safe.bottom * 0.7;
@@ -162,8 +186,8 @@ const UI = {
       r: 30 * scale,
       slot: 1
     });
-    const angles = [Math.PI * 0.98, Math.PI * 1.14, Math.PI * 1.30, Math.PI * 1.46, Math.PI * 1.62];
-    for (let i = 0; i < 5; i++) {
+    const angles = [Math.PI * 0.98, Math.PI * 1.16, Math.PI * 1.34, Math.PI * 1.52];
+    for (let i = 0; i < 4; i++) {
       this.buttons.push({
         x: px + Math.cos(angles[i]) * R,
         y: py + Math.sin(angles[i]) * R,
@@ -174,7 +198,11 @@ const UI = {
     // Potion sits on the cluster arc, outside skill slot 1 (no overlap).
     const pa = Math.PI * 0.98, pr = R + 54 * scale;
     this.potionBtn = { x: px + Math.cos(pa) * pr, y: py + Math.sin(pa) * pr + 20 * scale, r: 22 * scale };
-    this.menuBtn = { x: W - 30 - safe.right, y: 26 + safe.top, r: 18 };
+  },
+
+  // Key label shown on a desktop action-bar slot.
+  slotKeyLabel(slot) {
+    return slot === 0 ? 'LMB' : slot === 1 ? 'RMB' : String(slot - 1);
   },
 
   buttonAt(x, y) {
@@ -217,7 +245,8 @@ const UI = {
     // ---- playing ----
     const p = Game.player;
     if (!p) return;
-    this.drawTopBar(ctx, W, H, p);
+    if (this.desktop) this.drawDesktopHud(ctx, W, H, p);
+    else this.drawTopBar(ctx, W, H, p);
     this.drawObjective(ctx, W, H);
     this.drawMinimap(ctx, W, H);
     this.drawBossBar(ctx, W, H);
@@ -233,7 +262,7 @@ const UI = {
       ctx.fillStyle = '#e04a5a';
       ctx.fillText('DEV' + (Hero.cheats.god ? ' · GOD' : '') + (Hero.cheats.essence ? ' · ∞' : ''), W / 2, H - 12);
     }
-    this.drawJoystick(ctx);
+    if (!this.desktop) this.drawJoystick(ctx);
     this.drawSkillButtons(ctx, p);
     this.drawPotion(ctx, p);
     this.drawMenuButton(ctx);
@@ -258,6 +287,80 @@ const UI = {
   },
 
   // ------------------------------------------------------------- HUD parts
+
+  // Diablo-style desktop HUD: a health globe, an essence globe and a yellow
+  // experience bar framing the action bar.
+  drawDesktopHud(ctx, W, H, p) {
+    const hg = this.hpGlobe, eg = this.essGlobe;
+    const hpF = clamp((p.hpDisplay === undefined ? p.hp : p.hpDisplay) / p.maxHp, 0, 1);
+    const esF = clamp((p.essDisplay === undefined ? p.essence : p.essDisplay) / p.maxEssence, 0, 1);
+    this.drawGlobe(ctx, hg, hpF, '#4a0c14', '#e0402f', Math.ceil(Math.max(0, p.hp)));
+    this.drawGlobe(ctx, eg, esF, '#0d2e38', '#4ecbe0', Math.floor(p.essence));
+
+    // Shield ripple over the health globe.
+    if (p.shield > 0) {
+      ctx.strokeStyle = 'rgba(232,224,204,0.7)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(hg.x, hg.y, hg.r + 4, -Math.PI / 2,
+        -Math.PI / 2 + TAU * clamp(p.shield / (p.shieldMax + Hero.level), 0, 1));
+      ctx.stroke();
+    }
+
+    // Level badge on the health globe.
+    ctx.fillStyle = '#ffd76a';
+    ctx.font = 'bold 15px Georgia';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+    ctx.strokeText(Hero.level, hg.x, hg.y - hg.r * 0.42);
+    ctx.fillText(Hero.level, hg.x, hg.y - hg.r * 0.42);
+
+    // Gold above the essence globe.
+    ctx.fillStyle = '#ffd76a';
+    ctx.font = 'bold 12px Georgia';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(Hero.gold + ' g', eg.x, eg.y - eg.r - 10);
+
+    // Experience bar along the very bottom, spanning between the globes.
+    const bx = hg.x + hg.r + 18;
+    const bw = (eg.x - eg.r - 18) - bx;
+    const byy = H - 8 - (this.safe.bottom || 0);
+    if (bw > 40) {
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      rr(ctx, bx, byy - 6, bw, 6, 3); ctx.fill();
+      ctx.fillStyle = '#ffd76a';
+      rr(ctx, bx, byy - 6, bw * clamp(Hero.xp / XP_CURVE(Hero.level), 0, 1), 6, 3); ctx.fill();
+    }
+  },
+
+  drawGlobe(ctx, g, frac, dark, bright, label) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(g.x, g.y, g.r, 0, TAU);
+    ctx.fillStyle = '#0a070c'; ctx.fill();
+    // Liquid fills from the bottom.
+    ctx.save();
+    ctx.beginPath(); ctx.arc(g.x, g.y, g.r - 3, 0, TAU); ctx.clip();
+    const top = g.y + g.r - 2 * g.r * frac;
+    const grad = ctx.createLinearGradient(0, g.y - g.r, 0, g.y + g.r);
+    grad.addColorStop(0, bright); grad.addColorStop(1, dark);
+    ctx.fillStyle = grad;
+    ctx.fillRect(g.x - g.r, top, g.r * 2, g.r * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillRect(g.x - g.r, top, g.r * 2, 3);
+    ctx.restore();
+    // Rim + glass highlight.
+    ctx.strokeStyle = '#5c5569'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(g.x, g.y, g.r, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(g.x, g.y, g.r * 0.62, Math.PI * 1.05, Math.PI * 1.55); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 14px Georgia';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+    ctx.strokeText(label, g.x, g.y + g.r * 0.4);
+    ctx.fillText(label, g.x, g.y + g.r * 0.4);
+  },
 
   drawTopBar(ctx, W, H, p) {
     const s = this.safe || { top: 0, left: 0 };
@@ -451,7 +554,8 @@ const UI = {
     ctx.font = 'bold 13px Georgia';
     const sb = (this.safe || { bottom: 0 }).bottom || 0;
     const n = this.toasts.length;
-    const baseY = (Game.H || 700) - 30 - sb;   // newest sits at the bottom
+    // Sit above the desktop action bar; near the bottom edge on touch.
+    const baseY = (Game.H || 700) - (this.desktop ? 116 : 30) - sb;
     this.toasts.forEach((t, i) => {
       const left = t.until - Game.time;
       ctx.globalAlpha = clamp(left / 0.5, 0, 1);
@@ -501,6 +605,14 @@ const UI = {
       g.addColorStop(1, '#0d0a12');
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
+
+      // Desktop action bar: the bound key under each slot (LMB · 1-4 · RMB).
+      if (this.desktop) {
+        ctx.fillStyle = '#9a9080';
+        ctx.font = 'bold 10px Georgia';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(this.slotKeyLabel(b.slot), b.x, b.y + b.r + 9);
+      }
 
       if (!s) {
         ctx.globalAlpha = 0.5;

@@ -18,11 +18,20 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.1.1-alpha';
+const GAME_VERSION = 'v0.1.2-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.1.2-alpha', date: 'July 2026',
+    notes: [
+      'DESKTOP HUD rebuilt Diablo-style: a red health globe (left) that drains smoothly when you take damage, a teal essence globe (right), and a yellow experience bar across the bottom',
+      'Action bar is now the classic 6-slot layout — Left Click (primary), keys 1-4 (four skills) and Right Click (secondary) — each slot labels its key, with the potion beside it',
+      'The loadout is now 6 slots (primary · secondary · skills 1-4); old saves are trimmed to match',
+      'Mobile keeps its twin-stick radial controls; the globe HUD is desktop-only'
+    ]
+  },
   {
     v: 'v0.1.1-alpha', date: 'July 2026',
     notes: [
