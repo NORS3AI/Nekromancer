@@ -330,15 +330,12 @@ const Items = {
 
   // Salvaging the finest gear takes rank: Epics at level 60, Legendary/Set at 70.
   canSalvage(item) {
-    if (!item) return false;
-    if (item.rarity === 3) return Hero.level >= 60;
-    if (item.rarity >= 4) return Hero.level >= 70;
-    return true;
+    // Salvage is free and unrestricted — any gear crushes into materials at any
+    // level, no gold cost (owner rule). D3-style Blacksmith salvage.
+    return !!item;
   },
 
   salvageReq(item) {
-    if (item.rarity === 3) return 60;
-    if (item.rarity >= 4) return 70;
     return 0;
   },
 

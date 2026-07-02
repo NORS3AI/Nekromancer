@@ -18,11 +18,19 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.1.9-alpha';
+const GAME_VERSION = 'v0.2.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.2.0-alpha', date: 'July 2026',
+    notes: [
+      'FIXED: WASD / arrow movement could silently stop working after visiting Settings → Keys. Arming a key rebind and then leaving the menu could let the next keypress get "stolen" from a movement key. Rebinds now only apply while the Keys menu is open, and WASD + arrows are guaranteed to always drive movement (self-heals broken bindings on load)',
+      'If your movement keys are still stuck, open Settings → Keys → RESET TO DEFAULTS — but they should auto-repair now',
+      'SALVAGE IS FREE & UNRESTRICTED: any gear (including Epic and Legendary) can be crushed into materials at ANY level — no level requirement, no gold cost. Removed the old level-60/70 salvage gate'
+    ]
+  },
   {
     v: 'v0.1.9-alpha', date: 'July 2026',
     notes: [

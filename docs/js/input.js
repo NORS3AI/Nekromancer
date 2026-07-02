@@ -38,12 +38,18 @@ const Input = {
     window.addEventListener('keydown', e => {
       if (e.repeat) return;
       // Keys settings: while listening, the next key binds to the chosen action.
-      if (UI.sel && UI.sel.rebindAction) {
+      // ONLY consume a keypress as a rebind while the Keys menu is actually open —
+      // otherwise a stray armed rebind could hijack a movement key mid-game and
+      // silently steal it (the "WASD stopped working" bug).
+      const rebinding = UI.sel && UI.sel.rebindAction &&
+        UI.screen === 'settings' && UI.sel.stab === 'keys';
+      if (rebinding) {
         if (e.code !== 'Escape') Settings.bindKey(UI.sel.rebindAction, e.code);
         UI.sel.rebindAction = null;
         e.preventDefault();
         return;
       }
+      if (UI.sel) UI.sel.rebindAction = null; // clear any stale arm outside the menu
       this.keys[e.code] = true;
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
       const action = Settings.actionFor(e.code);

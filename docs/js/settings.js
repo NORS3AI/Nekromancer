@@ -84,6 +84,19 @@ const Settings = {
         }
       }
     } catch (e) { /* defaults */ }
+    // Movement must never break: guarantee WASD + arrows always drive the four
+    // move actions, even if a stray rebind stole one. Reclaim each default from
+    // any other action, then ensure it's present (custom extra move keys kept).
+    const moveActions = ['moveUp', 'moveDown', 'moveLeft', 'moveRight'];
+    for (const a of moveActions) if (!Array.isArray(this.keys[a])) this.keys[a] = [];
+    for (const a of moveActions) {
+      for (const code of KEY_DEFAULTS[a]) {
+        for (const other of Object.keys(this.keys)) {
+          if (other !== a) this.keys[other] = this.keys[other].filter(c => c !== code);
+        }
+        if (!this.keys[a].includes(code)) this.keys[a].push(code);
+      }
+    }
     this.rebuildKeyMap();
   },
 
