@@ -722,17 +722,19 @@ const Screens = {
     ctx.font = 'bold 12px Georgia';
     ctx.fillStyle = '#9a9080';
     ctx.fillText('LOADOUT — tap a slot, then a skill', px, sy - 14);
-    const sw = pw / 6;
-    for (let i = 0; i < 6; i++) {
+    const nSlots = Hero.loadout.length; // 7: primary · secondary · skills 1-5
+    const sw = pw / nSlots;
+    const cr = Math.min(23, sw / 2 - 3);
+    for (let i = 0; i < nSlots; i++) {
       const bx = px + i * sw + sw / 2;
       const selected = UI.sel.slotIdx === i;
       ctx.fillStyle = selected ? '#2e2a3a' : '#16121d';
-      ctx.beginPath(); ctx.arc(bx, sy + 20, 23, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(bx, sy + 20, cr, 0, TAU); ctx.fill();
       ctx.strokeStyle = selected ? '#6ff7c3' : '#3a3448';
       ctx.lineWidth = selected ? 3 : 2;
-      ctx.beginPath(); ctx.arc(bx, sy + 20, 23, 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.arc(bx, sy + 20, cr, 0, TAU); ctx.stroke();
       const id = Hero.loadout[i];
-      if (id) SKILL_ICONS[id](ctx, bx, sy + 20, 20);
+      if (id) SKILL_ICONS[id](ctx, bx, sy + 20, cr - 3);
       else {
         ctx.fillStyle = '#3a3448';
         ctx.font = '20px Georgia';
@@ -740,10 +742,10 @@ const Screens = {
         ctx.fillText('+', bx, sy + 21);
       }
       ctx.fillStyle = '#6f6552';
-      ctx.font = '9px Georgia';
+      ctx.font = i === 1 ? '8px Georgia' : '9px Georgia';
       ctx.textAlign = 'center';
-      ctx.fillText(i === 0 ? 'PRIMARY' : 'SKILL ' + i, bx, sy + 50);
-      UI.register(bx - 25, sy - 5, 50, 62, () => { UI.sel.slotIdx = i; });
+      ctx.fillText(i === 0 ? 'PRIMARY' : i === 1 ? 'SECONDARY' : 'SKILL ' + (i - 1), bx, sy + 50);
+      UI.register(bx - sw / 2 + 2, sy - 5, sw - 4, 62, () => { UI.sel.slotIdx = i; });
     }
 
     // All skills grid — row height adapts so it never collides with the footer.
@@ -1314,7 +1316,7 @@ const Screens = {
     }
     if (openSockets) tips.push(openSockets + ' empty socket' + (openSockets > 1 ? 's' : '') + ' — visit the Inventory to add gems');
     if (worst) tips.push('Weakest piece: ' + worst.name + ' (' + ITEM_SLOTS[worst.slot].label + ') — enchant or replace it');
-    const freeSlots = Hero.loadout.filter((id, i) => !id && i < 6).length;
+    const freeSlots = Hero.loadout.filter(id => !id).length;
     if (freeSlots) tips.push(freeSlots + ' empty skill slot' + (freeSlots > 1 ? 's' : '') + ' in your loadout');
     const pSlots = Hero.passiveSlots();
     const unset = Hero.passives.slice(0, pSlots).filter(p => !p).length;

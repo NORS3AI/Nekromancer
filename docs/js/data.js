@@ -18,11 +18,20 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.0.6-alpha';
+const GAME_VERSION = 'v0.0.7-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.0.7-alpha', date: 'July 2026',
+    notes: [
+      'SECONDARY skill slot, Diablo style: the loadout is now 7 slots — Primary, Secondary, and five skills',
+      'Desktop: LEFT CLICK fires the Primary, RIGHT CLICK casts the Secondary (aimed at the cursor, channels while held), keys 1-5 cast the five skill slots',
+      'Touch: the Secondary gets its own bigger button floating above the skill cluster',
+      'Old saves keep their loadout — the skill that was in slot 1 becomes the Secondary'
+    ]
+  },
   {
     v: 'v0.0.6-alpha', date: 'July 2026',
     notes: [

@@ -6,8 +6,10 @@
 //  - Skill cluster: tap = quick-cast (auto-aim); press-drag = aim, release to
 //    cast that way. Channelled skills (Siphon Blood) fire while held.
 //  - Every menu tap routes through UI.click()'s tap registry.
-//  - Desktop: WASD moves, mouse aims/fires, Space/J primary, 1-5 skills,
-//    Q potion, I inventory, K skills, Esc menu, M mute.
+//  - Desktop: WASD moves, left click aims/fires the PRIMARY, right click
+//    casts the SECONDARY (slot 1), Space/J primary, 1-5 the five skill
+//    slots, Q potion, I inventory, K skills, Esc menu, M mute.
+//  - Touch: the secondary is its own button above the skill cluster.
 // ---------------------------------------------------------------------------
 
 const Input = {
@@ -19,6 +21,7 @@ const Input = {
   castQueue: [],                      // {slot, angle|null}
   heldSlots: new Set(),
   mousePrimary: false,
+  mouseSecondary: false,      // right button held (slot 1)
   mouseSlot: undefined,
   mousePos: { x: 0, y: 0 },
   sliderTouches: new Map(),   // touch id -> slider reg
@@ -47,8 +50,9 @@ const Input = {
         if (e.code === 'Space' || e.code === 'KeyJ') this.castQueue.push({ slot: 0, angle: null });
         const m = /^Digit([1-5])$/.exec(e.code);
         if (m) {
-          const s = Skills.slotSkill(+m[1]);
-          if (s && !s.channel) this.castQueue.push({ slot: +m[1], angle: null });
+          const slot = +m[1] + 1; // keys 1-5 are slots 2-6 (1 is the secondary)
+          const s = Skills.slotSkill(slot);
+          if (s && !s.channel) this.castQueue.push({ slot, angle: null });
         }
       }
     });
@@ -65,8 +69,21 @@ const Input = {
       this.mousePos.y = e.clientY;
       if (this.mouseSlider) this.mouseSlider.set(clamp((e.clientX - this.mouseSlider.x) / this.mouseSlider.w, 0, 1));
     });
+    // Right click is the SECONDARY skill (slot 1), Diablo style.
+    canvas.addEventListener('contextmenu', e => e.preventDefault());
     canvas.addEventListener('mousedown', e => {
       AudioSys.init();
+      this.mousePos.x = e.clientX;
+      this.mousePos.y = e.clientY;
+      if (e.button === 2) {
+        if (!this.gameplayLive()) return;
+        const s = Skills.slotSkill(1);
+        if (!s) return;
+        this.mouseSecondary = true; // channelled skills fire while held
+        if (!s.channel) this.castQueue.push({ slot: 1, angle: this.mouseAngle() });
+        return;
+      }
+      if (e.button !== 0) return;
       const sl = UI.sliderAt(e.clientX, e.clientY);
       if (sl) {
         this.mouseSlider = sl;
@@ -85,7 +102,11 @@ const Input = {
         this.mousePrimary = true;
       }
     });
-    window.addEventListener('mouseup', () => {
+    window.addEventListener('mouseup', e => {
+      if (e.button === 2) {
+        this.mouseSecondary = false;
+        return;
+      }
       this.mousePrimary = false;
       this.mouseSlider = null;
       if (this.mouseSlot !== undefined) {
@@ -104,9 +125,19 @@ const Input = {
     this.mouseSlider = null;
     this.castQueue.length = 0;
     this.mousePrimary = false;
+    this.mouseSecondary = false;
     this.mouseSlot = undefined;
     this.joy.active = false; this.joy.id = null;
     this.aim.active = false; this.aim.id = null;
+  },
+
+  // World-space angle from the hero toward the mouse cursor.
+  mouseAngle() {
+    const p = Game.player;
+    if (!p) return null;
+    return Math.atan2(
+      this.mousePos.y - (p.y - Game.camera.y),
+      this.mousePos.x - (p.x - Game.camera.x));
   },
 
   fixedAnchor() {
@@ -250,7 +281,8 @@ const Input = {
       if (bt.slot === slot) return true;
     }
     if (slot === 0) return this.mousePrimary || !!this.keys['Space'] || !!this.keys['KeyJ'];
-    return !!this.keys['Digit' + slot];
+    if (slot === 1) return this.mouseSecondary;
+    return !!this.keys['Digit' + (slot - 1)];
   },
 
   heldAngle(slot) {

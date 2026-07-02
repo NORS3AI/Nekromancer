@@ -29,7 +29,7 @@ function resolveAim(explicit) {
   const p = Game.player;
   if (explicit !== null && explicit !== undefined) return explicit;
   if (Input.aim.active) return Math.atan2(Input.aim.y, Input.aim.x);
-  if (Input.mousePrimary) {
+  if (Input.mousePrimary || Input.mouseSecondary) {
     return Math.atan2(
       Input.mousePos.y - (p.y - Game.camera.y),
       Input.mousePos.x - (p.x - Game.camera.x));
@@ -559,7 +559,7 @@ const Skills = {
     for (const cast of Input.castQueue) this.tryUse(cast.slot, cast.angle);
     Input.castQueue.length = 0;
     if (Input.skillHeld(0)) this.tryUse(0, Input.heldAngle(0));
-    for (let i = 1; i < 6; i++) {
+    for (let i = 1; i < Hero.loadout.length; i++) {
       const s = this.slotSkill(i);
       if (s && s.channel && Input.skillHeld(i)) this.tryUse(i, Input.heldAngle(i));
     }
