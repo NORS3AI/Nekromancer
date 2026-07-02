@@ -529,6 +529,11 @@ const Screens = {
         UI.sel.gemPick = true;
         UI.sel.gemIdx = undefined;
       } : null, { disabled: !canSocket, border: '#7a4a8f', color: '#b06adf', size: 13 });
+      // Deposit this single item into the shared, account-wide vault.
+      const stashFull = Hero.stash.length >= Hero.STASH_SIZE;
+      UI.btn(ctx, dx, dy + 40, dw, 26, stashFull ? 'STASH FULL (' + Hero.STASH_SIZE + ')' : 'DEPOSIT TO STASH',
+        stashFull ? null : () => { if (Items.toStash(UI.sel.item)) UI.sel.item = null; },
+        { disabled: stashFull, border: '#5f7ab0', color: '#8fb0e8', size: 12 });
     } else if (equipped && (equipped.sockets || (equipped.gems && equipped.gems.length))) {
       // Socket management for the equipped piece opens the gem popup.
       UI.btn(ctx, dx, dy + 6, 150, 30, (equipped.gems && equipped.gems.length) ? 'MANAGE SOCKETS' : 'SOCKET GEM', () => {
@@ -871,8 +876,9 @@ const Screens = {
     ctx.font = 'bold 12px Georgia';
     ctx.fillStyle = '#9a9080';
     ctx.fillText(`PASSIVE SLOTS (${nSlots} unlocked)`, px, sy - 14);
-    const sw = pw / 4;
-    for (let i = 0; i < 4; i++) {
+    const nPassiveSlots = PASSIVE_SLOT_LEVELS.length;
+    const sw = pw / nPassiveSlots;
+    for (let i = 0; i < nPassiveSlots; i++) {
       const bx = px + i * sw + sw / 2;
       const locked = i >= nSlots;
       const selected = UI.sel.slotIdx === i && !locked;

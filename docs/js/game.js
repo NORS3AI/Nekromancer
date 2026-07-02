@@ -43,6 +43,7 @@ const Game = {
     this.resize();
     Settings.load();
     Skills.init();
+    Hero.loadStash();   // shared vault first, so the character load won't reseed it
     Hero.load();
     Hero.sanitize();
     World.generate(ZONES[0]);   // backdrop for the title screen
