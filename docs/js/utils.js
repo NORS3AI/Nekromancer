@@ -48,6 +48,32 @@ function lerpAngle(a, b, t) {
   return a + d * t;
 }
 
+// Draw word-wrapped text; returns the y just below the last line.
+function wrapText(ctx, text, x, y, maxW, lineH, maxLines = 4) {
+  const words = String(text).split(' ');
+  let line = '', lines = 0;
+  for (let i = 0; i < words.length; i++) {
+    const test = line ? line + ' ' + words[i] : words[i];
+    if (ctx.measureText(test).width > maxW && line) {
+      ctx.fillText(line, x, y + lines * lineH);
+      lines++;
+      if (lines >= maxLines - 1) {
+        line = words.slice(i).join(' ');
+        while (line.length > 3 && ctx.measureText(line + '…').width > maxW) {
+          line = line.slice(0, -2);
+        }
+        line += '…';
+        break;
+      }
+      line = words[i];
+    } else {
+      line = test;
+    }
+  }
+  ctx.fillText(line, x, y + lines * lineH);
+  return y + (lines + 1) * lineH;
+}
+
 // Rounded-rectangle path helper (canvas roundRect isn't everywhere).
 function rr(ctx, x, y, w, h, r) {
   r = Math.min(r, w / 2, h / 2);
