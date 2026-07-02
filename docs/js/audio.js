@@ -123,6 +123,61 @@ const AudioSys = {
       case 'bolt':
         this.tone('sawtooth', 520, 180, 0.06, 0.01, 0.12);
         break;
+      case 'swing':
+        this.noise(0.09, 0.006, 0.09, 2600, 500);
+        break;
+      case 'curse':
+        this.tone('sine', 340, 120, 0.09, 0.03, 0.4);
+        this.tone('sine', 452, 160, 0.06, 0.03, 0.4, 0.05);
+        break;
+      case 'siphon':
+        this.tone('sawtooth', 90, 130, 0.05, 0.02, 0.12);
+        break;
+      case 'rush':
+        this.noise(0.14, 0.01, 0.16, 1800, 200);
+        this.tone('sine', 300, 90, 0.08, 0.01, 0.15);
+        break;
+      case 'spirit':
+        this.tone('sine', 640, 220, 0.09, 0.05, 0.5);
+        this.tone('sine', 960, 330, 0.05, 0.05, 0.5, 0.08);
+        break;
+      case 'devour':
+        this.noise(0.1, 0.01, 0.2, 900, 200);
+        this.tone('square', 140, 70, 0.07, 0.01, 0.2);
+        break;
+      case 'army':
+        this.noise(0.24, 0.02, 0.7, 700, 90);
+        this.tone('sawtooth', 70, 40, 0.18, 0.04, 0.8);
+        this.tone('sawtooth', 105, 60, 0.12, 0.04, 0.8, 0.05);
+        break;
+      case 'potion':
+        this.tone('sine', 300, 620, 0.09, 0.03, 0.25);
+        this.noise(0.04, 0.02, 0.18, 1200, 2400);
+        break;
+      case 'craft':
+        this.noise(0.12, 0.005, 0.1, 3000, 800);
+        this.tone('square', 220, 220, 0.06, 0.005, 0.12, 0.06);
+        this.noise(0.1, 0.005, 0.08, 2600, 700, 0.12);
+        break;
+      case 'gem':
+        this.tone('sine', 880, 1320, 0.08, 0.008, 0.18);
+        this.tone('sine', 1320, 1760, 0.06, 0.008, 0.22, 0.06);
+        break;
+      case 'chest':
+        this.tone('square', 160, 90, 0.07, 0.01, 0.12);
+        this.tone('sine', 660, 990, 0.07, 0.01, 0.3, 0.1);
+        this.tone('sine', 880, 1320, 0.06, 0.01, 0.3, 0.18);
+        break;
+      case 'shrine':
+        [392, 523, 659].forEach((f, i) => this.tone('triangle', f, f, 0.08, 0.02, 0.4, i * 0.07));
+        break;
+      case 'portal':
+        this.tone('sawtooth', 60, 240, 0.12, 0.5, 0.6);
+        this.noise(0.1, 0.4, 0.6, 400, 2000);
+        break;
+      case 'click':
+        this.tone('square', 480, 400, 0.035, 0.003, 0.045);
+        break;
     }
   }
 };

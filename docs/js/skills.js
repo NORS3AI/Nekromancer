@@ -1,257 +1,841 @@
 'use strict';
 // ---------------------------------------------------------------------------
-// The Nekromancer's kit. Slot 0 is the primary (essence generator); slots
-// 1-4 are spenders on cooldown. Auto-aim picks the nearest enemy so the game
-// plays one-thumb on mobile.
+// The Diablo 3 Necromancer kit, playable: behaviors for all 21 actives,
+// passive hooks, cooldowns per skill, Land of the Dead state, Simulacrum
+// mirroring, and the aim resolution shared by every targeted cast.
 // ---------------------------------------------------------------------------
 
 function nearestEnemy(x, y, maxDist = 750) {
   let best = null, bestD = maxDist;
   for (const e of Game.enemies) {
-    if (e.dead || e.spawnT > 0) continue;
+    if (e.dead || e.sleep || e.spawnT > 0) continue;
     const d = dist(x, y, e.x, e.y);
     if (d < bestD) { best = e; bestD = d; }
   }
   return best;
 }
 
-function aimAngle() {
+function strongestEnemy(x, y, maxDist = 750) {
+  let best = null, bestHp = 0;
+  for (const e of Game.enemies) {
+    if (e.dead || e.sleep || e.spawnT > 0) continue;
+    if (dist(x, y, e.x, e.y) > maxDist) continue;
+    if (e.hp > bestHp) { best = e; bestHp = e.hp; }
+  }
+  return best;
+}
+
+function resolveAim(explicit) {
   const p = Game.player;
+  if (explicit !== null && explicit !== undefined) return explicit;
+  if (Input.aim.active) return Math.atan2(Input.aim.y, Input.aim.x);
+  if (Input.mousePrimary) {
+    return Math.atan2(
+      Input.mousePos.y - (p.y - Game.camera.y),
+      Input.mousePos.x - (p.x - Game.camera.x));
+  }
   const e = nearestEnemy(p.x, p.y);
   if (e) return angleTo(p.x, p.y, e.x, e.y);
   return p.facing;
 }
 
-const Skills = {
-  cds: [0, 0, 0, 0, 0],
+// A point to target: the nearest enemy, or a spot along the aim.
+function aimPoint(a, reach = 240) {
+  const p = Game.player;
+  const e = nearestEnemy(p.x, p.y, 480);
+  if (e) return { x: e.x, y: e.y, enemy: e };
+  return { x: p.x + Math.cos(a) * reach, y: p.y + Math.sin(a) * reach, enemy: null };
+}
 
-  list: [
-    {
-      name: 'Bone Splinters',
-      key: 'SPC',
-      cd: 0.30,
-      cost: 0,
-      desc: 'Fire 3 bone shards. Generates Essence on hit.',
-      use(p) {
-        const a = aimAngle();
-        for (let i = -1; i <= 1; i++) {
-          Game.projectiles.push(new Projectile(
-            p.x + Math.cos(a) * 14, p.y + Math.sin(a) * 14,
-            a + i * 0.13 + rand(-0.03, 0.03),
-            { speed: 540, dmg: 8 * p.dmgMult, r: 4, life: 0.85, type: 'shard' }
-          ));
-        }
-        p.facing = a;
-        AudioSys.sfx('shoot');
-        return true;
-      },
-      icon(ctx, x, y, r) {
-        ctx.strokeStyle = '#e8e0cc';
-        ctx.lineWidth = r * 0.11;
-        ctx.lineCap = 'round';
-        for (let i = -1; i <= 1; i++) {
-          const a = -Math.PI / 2 + i * 0.45;
-          ctx.beginPath();
-          ctx.moveTo(x - Math.cos(a) * r * 0.15, y - Math.sin(a) * r * 0.15 + r * 0.3);
-          ctx.lineTo(x + Math.cos(a) * r * 0.55, y + Math.sin(a) * r * 0.55);
-          ctx.stroke();
-        }
+function corpsesNear(x, y, range, max) {
+  const out = [];
+  for (const c of Game.corpses) {
+    if (!c.gone && dist(x, y, c.x, c.y) < range) {
+      out.push(c);
+      if (out.length >= max) break;
+    }
+  }
+  return out;
+}
+
+function minionCount(kind) {
+  let n = 0;
+  for (const m of Game.minions) if (!m.dead && m.kind === kind) n++;
+  return n;
+}
+
+function cullOldest(kind) {
+  for (let i = 0; i < Game.minions.length; i++) {
+    if (Game.minions[i].kind === kind) {
+      const m = Game.minions.splice(i, 1)[0];
+      fxBone(m.x, m.y, 6);
+      return;
+    }
+  }
+}
+
+function boneOpts(a, knockF = 60) {
+  const o = { knock: { a, f: knockF } };
+  if (Hero.hasPassive('rigorMortis')) o.slow = 2;
+  if (Hero.hasPassive('bonePrison') && Math.random() < 0.3) o.root = 2;
+  return o;
+}
+
+function applyCurse(type, cx, cy, radius = 220) {
+  let n = 0;
+  for (const e of Game.enemies) {
+    if (e.dead || e.sleep) continue;
+    if (dist(cx, cy, e.x, e.y) < radius) {
+      e.curse = { type, t: 30 };
+      n++;
+    }
+  }
+  const cols = { decrepify: '#b06adf', frailty: '#e04a5a', leech: '#4ade80' };
+  Particles.ring(cx, cy, radius, cols[type], 4, 0.5);
+  AudioSys.sfx('curse');
+  return n > 0;
+}
+
+// ------------------------------ behaviors ----------------------------------
+// Each returns true if the cast succeeded (resource is spent by the caller).
+
+const SKILL_FX = {
+
+  boneSpikes(p, a) {
+    const pt = aimPoint(a, 150);
+    fxSpikes(pt.x, pt.y);
+    let hit = 0;
+    for (const e of Game.enemies) {
+      if (e.dead || e.sleep || e.spawnT > 0) continue;
+      if (dist(pt.x, pt.y, e.x, e.y) < 60 + e.r) {
+        e.hurt(14 * p.power(), boneOpts(angleTo(p.x, p.y, e.x, e.y), 20));
+        hit++;
       }
-    },
-    {
-      name: 'Bone Spear',
-      key: '1',
-      cd: 2.6,
-      cost: 18,
-      desc: 'Hurl a piercing spear of bone.',
-      use(p) {
-        const a = aimAngle();
-        Game.projectiles.push(new Projectile(
-          p.x + Math.cos(a) * 16, p.y + Math.sin(a) * 16, a,
-          { speed: 720, dmg: 34 * p.dmgMult, r: 9, life: 1.15, pierce: true, type: 'spear' }
-        ));
-        p.facing = a;
-        Particles.shake(2);
-        AudioSys.sfx('spear');
-        return true;
-      },
-      icon(ctx, x, y, r) {
-        ctx.fillStyle = '#f2ecd8';
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(-Math.PI / 4);
-        ctx.beginPath();
-        ctx.moveTo(r * 0.62, 0); ctx.lineTo(r * 0.15, -r * 0.2);
-        ctx.lineTo(-r * 0.55, -r * 0.08); ctx.lineTo(-r * 0.45, 0);
-        ctx.lineTo(-r * 0.55, r * 0.08); ctx.lineTo(r * 0.15, r * 0.2);
-        ctx.closePath(); ctx.fill();
-        ctx.restore();
+    }
+    if (hit) p.gainEssence(Skills.gainFor('boneSpikes'));
+    p.facing = a;
+    AudioSys.sfx('shoot');
+    return true;
+  },
+
+  grimScythe(p, a) {
+    p.facing = a;
+    let hits = 0;
+    for (const e of Game.enemies) {
+      if (e.dead || e.sleep || e.spawnT > 0) continue;
+      const d = dist(p.x, p.y, e.x, e.y);
+      if (d > 95 + e.r) continue;
+      let da = Math.abs(((angleTo(p.x, p.y, e.x, e.y) - a) % TAU + TAU) % TAU);
+      if (da > Math.PI) da = TAU - da;
+      if (da > 1.15) continue;
+      e.hurt(11 * p.power(), { knock: { a: angleTo(p.x, p.y, e.x, e.y), f: 60 } });
+      hits++;
+    }
+    if (hits) p.gainEssence(Skills.gainFor('grimScythe') * hits);
+    fxScythe(p, a);
+    AudioSys.sfx('swing');
+    return true;
+  },
+
+  siphonBlood(p, a) {
+    const e = nearestEnemy(p.x, p.y, 340);
+    if (!e) return false;
+    e.hurt(6 * p.power());
+    p.heal(p.maxHp * 0.008);
+    p.gainEssence(Skills.gainFor('siphonBlood'));
+    p.facing = angleTo(p.x, p.y, e.x, e.y);
+    fxSiphon(p, e);
+    if (Math.random() < 0.25) AudioSys.sfx('siphon');
+    return true;
+  },
+
+  boneSpear(p, a) {
+    const o = boneOpts(a, 130);
+    Game.projectiles.push(new Projectile(
+      p.x + Math.cos(a) * 16, p.y + Math.sin(a) * 16, a,
+      {
+        speed: 720, dmg: 40 * p.power(), r: 9, life: 1.15, pierce: true, type: 'spear',
+        root: o.root ? 2 : 0, slowOnHit: o.slow || 0
       }
-    },
-    {
-      name: 'Corpse Explosion',
-      key: '2',
-      cd: 1.2,
-      cost: 8,
-      desc: 'Detonate nearby corpses.',
-      use(p) {
-        const RANGE = 270, BLAST = 120;
-        const targets = [];
-        for (const c of Game.corpses) {
-          if (!c.gone && dist(p.x, p.y, c.x, c.y) < RANGE) targets.push(c);
-          if (targets.length >= 5) break;
-        }
-        if (!targets.length) {
-          Particles.text(p.x, p.y - 40, 'No corpses!', { color: '#9aa0a8', size: 13 });
-          AudioSys.sfx('denied');
-          return false;
-        }
-        for (const c of targets) {
-          c.gone = true;
-          fxExplosion(c.x, c.y, BLAST);
-          for (const e of Game.enemies) {
-            if (e.dead) continue;
-            const d = dist(c.x, c.y, e.x, e.y);
-            if (d < BLAST) {
-              e.hurt(30 * p.dmgMult * (1 - d / BLAST * 0.4), {
-                knock: { a: angleTo(c.x, c.y, e.x, e.y), f: 160 }
-              });
-            }
-          }
-        }
-        AudioSys.sfx('explode');
-        return true;
-      },
-      icon(ctx, x, y, r) {
-        ctx.fillStyle = '#ffb43a';
-        for (let i = 0; i < 8; i++) {
-          const a = i * TAU / 8;
-          const len = i % 2 ? r * 0.55 : r * 0.34;
-          ctx.beginPath();
-          ctx.moveTo(x + Math.cos(a + 0.25) * r * 0.14, y + Math.sin(a + 0.25) * r * 0.14);
-          ctx.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len);
-          ctx.lineTo(x + Math.cos(a - 0.25) * r * 0.14, y + Math.sin(a - 0.25) * r * 0.14);
-          ctx.closePath(); ctx.fill();
-        }
-        ctx.fillStyle = '#b52033';
-        ctx.beginPath(); ctx.arc(x, y, r * 0.16, 0, TAU); ctx.fill();
+    ));
+    p.facing = a;
+    Particles.shake(2);
+    AudioSys.sfx('spear');
+    Skills.mirror('boneSpear', a);
+    return true;
+  },
+
+  skeletalMage(p, a) {
+    if (minionCount('mage') >= 4) cullOldest('mage');
+    const m = new Minion(p.x + Math.cos(a + 0.8) * 36, p.y + Math.sin(a + 0.8) * 36, 'mage');
+    Game.minions.push(m);
+    AudioSys.sfx('summon');
+    return true;
+  },
+
+  deathNova(p) {
+    const R = 190;
+    fxNova(p.x, p.y, R);
+    for (const e of Game.enemies) {
+      if (e.dead || e.sleep || e.spawnT > 0) continue;
+      const d = dist(p.x, p.y, e.x, e.y);
+      if (d < R) {
+        e.hurt(34 * p.power() * (1 - d / R * 0.3), { knock: { a: angleTo(p.x, p.y, e.x, e.y), f: 200 } });
       }
-    },
-    {
-      name: 'Skeletal Warriors',
-      key: '3',
-      cd: 7,
-      cost: 28,
-      desc: 'Raise 2 skeletal warriors (max 4).',
-      use(p) {
-        for (let i = 0; i < 2; i++) {
-          if (Game.minions.length >= 4) {
-            const old = Game.minions.shift();
-            fxBone(old.x, old.y, 8);
-          }
-          const a = p.facing + (i === 0 ? 0.7 : -0.7) + Math.PI;
-          const m = new Minion(p.x + Math.cos(a) * 34, p.y + Math.sin(a) * 34, p);
-          Game.minions.push(m);
-          fxSummon(m.x, m.y);
-        }
-        AudioSys.sfx('summon');
-        return true;
-      },
-      icon(ctx, x, y, r) {
-        ctx.strokeStyle = '#6ff7c3';
-        ctx.fillStyle = '#6ff7c3';
-        ctx.lineWidth = r * 0.09;
-        ctx.lineCap = 'round';
-        // Little skull.
-        ctx.beginPath(); ctx.arc(x, y - r * 0.18, r * 0.28, 0, TAU); ctx.fill();
-        ctx.fillStyle = '#0f2420';
-        ctx.beginPath(); ctx.arc(x - r * 0.1, y - r * 0.22, r * 0.07, 0, TAU); ctx.fill();
-        ctx.beginPath(); ctx.arc(x + r * 0.1, y - r * 0.22, r * 0.07, 0, TAU); ctx.fill();
-        // Ribs below.
-        ctx.strokeStyle = '#6ff7c3';
-        ctx.beginPath(); ctx.moveTo(x, y + r * 0.06); ctx.lineTo(x, y + r * 0.5); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x - r * 0.22, y + r * 0.2); ctx.lineTo(x + r * 0.22, y + r * 0.2); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x - r * 0.18, y + r * 0.36); ctx.lineTo(x + r * 0.18, y + r * 0.36); ctx.stroke();
+    }
+    AudioSys.sfx('nova');
+    Skills.mirror('deathNova', 0);
+    return true;
+  },
+
+  boneArmor(p) {
+    let hits = 0;
+    for (const e of Game.enemies) {
+      if (e.dead || e.sleep || e.spawnT > 0) continue;
+      if (dist(p.x, p.y, e.x, e.y) < 150 + e.r) {
+        e.hurt(12 * p.power(), boneOpts(angleTo(p.x, p.y, e.x, e.y), 80));
+        hits++;
       }
-    },
-    {
-      name: 'Blood Nova',
-      key: '4',
-      cd: 9,
-      cost: 32,
-      desc: 'Erupt in a nova of blood. Heals per enemy hit and shields you.',
-      use(p) {
-        const R = 210;
-        fxNova(p.x, p.y, R);
-        let hitCount = 0;
-        for (const e of Game.enemies) {
-          if (e.dead || e.spawnT > 0) continue;
-          const d = dist(p.x, p.y, e.x, e.y);
-          if (d < R) {
-            hitCount++;
-            e.hurt(42 * p.dmgMult * (1 - d / R * 0.35), {
-              knock: { a: angleTo(p.x, p.y, e.x, e.y), f: 260 },
-              slow: 1.5
-            });
-          }
-        }
-        if (hitCount) {
-          p.heal(hitCount * 5);
-          fxHeal(p.x, p.y);
-        }
-        p.shield = Math.min(60, p.shield + 25);
-        AudioSys.sfx('nova');
-        return true;
-      },
-      icon(ctx, x, y, r) {
-        ctx.strokeStyle = '#c22843';
-        ctx.lineWidth = r * 0.13;
-        ctx.beginPath(); ctx.arc(x, y, r * 0.42, 0, TAU); ctx.stroke();
-        ctx.fillStyle = '#c22843';
-        ctx.beginPath(); ctx.arc(x, y, r * 0.16, 0, TAU); ctx.fill();
-        ctx.lineWidth = r * 0.08;
-        for (let i = 0; i < 4; i++) {
-          const a = i * TAU / 4 + Math.PI / 4;
-          ctx.beginPath();
-          ctx.moveTo(x + Math.cos(a) * r * 0.52, y + Math.sin(a) * r * 0.52);
-          ctx.lineTo(x + Math.cos(a) * r * 0.68, y + Math.sin(a) * r * 0.68);
-          ctx.stroke();
+    }
+    p.shield = Math.min(p.shieldMax + Hero.level, p.shield + 14 + hits * 7);
+    Particles.ring(p.x, p.y, 150, '#e8e0cc', 5, 0.45);
+    fxBone(p.x, p.y, 14);
+    AudioSys.sfx('nova');
+    return true;
+  },
+
+  boneSpirit(p, a) {
+    const tgt = strongestEnemy(p.x, p.y, 800) || nearestEnemy(p.x, p.y, 800);
+    Game.projectiles.push(new Projectile(p.x, p.y - 8, a, {
+      speed: 300, dmg: 160 * p.power(), r: 10, life: 4, type: 'spirit', homing: tgt
+    }));
+    AudioSys.sfx('spirit');
+    return true;
+  },
+
+  bloodRush(p, a) {
+    const cost = Math.round(p.maxHp * 0.05);
+    if (p.hp <= cost + 1) return false;
+    p.hp -= cost;
+    const pt = World.dashPoint(p.x, p.y, a, 280);
+    fxBloodTrail(p.x, p.y, pt.x, pt.y);
+    p.dash = { t: 0, maxT: 0.16, fx: p.x, fy: p.y, tx: pt.x, ty: pt.y };
+    p.facing = a;
+    AudioSys.sfx('rush');
+    return true;
+  },
+
+  decrepify(p, a) {
+    const pt = aimPoint(a);
+    return applyCurse('decrepify', pt.x, pt.y);
+  },
+
+  frailty(p, a) {
+    const pt = aimPoint(a);
+    return applyCurse('frailty', pt.x, pt.y);
+  },
+
+  leech(p, a) {
+    const pt = aimPoint(a);
+    return applyCurse('leech', pt.x, pt.y);
+  },
+
+  corpseExplosion(p, a) {
+    const pt = aimPoint(a, 200);
+    const BLAST = 130;
+    let corpses;
+    if (Skills.lotd > 0) {
+      corpses = [{ x: pt.x, y: pt.y, consume() {} }, { x: pt.x + rand(-50, 50), y: pt.y + rand(-50, 50), consume() {} }];
+    } else {
+      corpses = corpsesNear(pt.x, pt.y, 280, 5);
+      if (!corpses.length) {
+        Particles.text(p.x, p.y - 40, 'No corpses!', { color: '#9aa0a8', size: 13 });
+        AudioSys.sfx('denied');
+        return false;
+      }
+    }
+    for (const c of corpses) {
+      c.consume();
+      fxExplosion(c.x, c.y, BLAST);
+      for (const e of Game.enemies) {
+        if (e.dead || e.sleep) continue;
+        const d = dist(c.x, c.y, e.x, e.y);
+        if (d < BLAST) {
+          e.hurt(36 * p.power() * (1 - d / BLAST * 0.4), {
+            knock: { a: angleTo(c.x, c.y, e.x, e.y), f: 160 }
+          });
         }
       }
     }
-  ],
+    AudioSys.sfx('explode');
+    return true;
+  },
+
+  corpseLance(p, a) {
+    const tgt = nearestEnemy(p.x, p.y, 620);
+    if (!tgt) return false;
+    let sources;
+    if (Skills.lotd > 0) {
+      sources = [0, 1, 2].map(() => ({ x: p.x + rand(-80, 80), y: p.y + rand(-80, 80), consume() {} }));
+    } else {
+      sources = corpsesNear(tgt.x, tgt.y, 340, 3);
+      if (!sources.length) sources = corpsesNear(p.x, p.y, 340, 3);
+      if (!sources.length) {
+        Particles.text(p.x, p.y - 40, 'No corpses!', { color: '#9aa0a8', size: 13 });
+        AudioSys.sfx('denied');
+        return false;
+      }
+    }
+    for (const c of sources) {
+      c.consume();
+      const la = angleTo(c.x, c.y, tgt.x, tgt.y);
+      Game.projectiles.push(new Projectile(c.x, c.y - 6, la, {
+        speed: 640, dmg: 48 * p.power(), r: 7, life: 1.4, type: 'lance', homing: tgt
+      }));
+      fxBone(c.x, c.y, 5);
+    }
+    AudioSys.sfx('spear');
+    return true;
+  },
+
+  devour(p) {
+    const corpses = Skills.lotd > 0
+      ? [{ x: p.x, y: p.y, consume() {} }, { x: p.x, y: p.y, consume() {} }, { x: p.x, y: p.y, consume() {} }]
+      : corpsesNear(p.x, p.y, 340, 12);
+    if (!corpses.length) {
+      Particles.text(p.x, p.y - 40, 'No corpses!', { color: '#9aa0a8', size: 13 });
+      AudioSys.sfx('denied');
+      return false;
+    }
+    for (const c of corpses) {
+      c.consume();
+      p.gainEssence(10);
+      p.heal(p.maxHp * 0.015);
+      Particles.spawn(c.x, c.y, {
+        count: 6, color: ['#6ff7c3', '#3ee6a0'], minSpeed: 60, maxSpeed: 160,
+        minLife: 0.25, maxLife: 0.5, glow: true
+      });
+    }
+    fxHeal(p.x, p.y);
+    AudioSys.sfx('devour');
+    return true;
+  },
+
+  commandSkeletons(p, a) {
+    const have = minionCount('skeleton');
+    if (have >= 7) {
+      // Recast: frenzy the warband.
+      for (const m of Game.minions) {
+        if (m.kind === 'skeleton') m.frenzyT = 6;
+      }
+      Particles.text(p.x, p.y - 40, 'ATTACK!', { color: '#ff8c5a', size: 15 });
+      AudioSys.sfx('summon');
+      return true;
+    }
+    const raise = Math.min(7 - have, 4);
+    for (let i = 0; i < raise; i++) {
+      const sa = a + Math.PI + (i - raise / 2) * 0.5;
+      Game.minions.push(new Minion(p.x + Math.cos(sa) * 38, p.y + Math.sin(sa) * 38, 'skeleton'));
+    }
+    AudioSys.sfx('summon');
+    return true;
+  },
+
+  commandGolem(p, a) {
+    let golem = null;
+    for (const m of Game.minions) if (!m.dead && m.kind === 'golem') golem = m;
+    if (!golem) {
+      Game.minions.push(new Minion(p.x + Math.cos(a + Math.PI) * 44, p.y + Math.sin(a + Math.PI) * 44, 'golem'));
+      AudioSys.sfx('summon');
+      return true;
+    }
+    // Recast: the golem slams.
+    fxExplosion(golem.x, golem.y, 150);
+    Particles.shake(5);
+    for (const e of Game.enemies) {
+      if (e.dead || e.sleep) continue;
+      const d = dist(golem.x, golem.y, e.x, e.y);
+      if (d < 150 + e.r) {
+        e.hurt(50 * p.power(), { knock: { a: angleTo(golem.x, golem.y, e.x, e.y), f: 220 }, slow: 2 });
+      }
+    }
+    AudioSys.sfx('explode');
+    Skills.cds.commandGolem = 12; // slam has its own shorter cooldown
+    return 'cdSet';
+  },
+
+  armyOfTheDead(p, a) {
+    const pt = aimPoint(a, 260);
+    const R = 260;
+    fxArmy(pt.x, pt.y, R);
+    for (const e of Game.enemies) {
+      if (e.dead || e.spawnT > 0) continue;
+      const d = dist(pt.x, pt.y, e.x, e.y);
+      if (d < R) {
+        e.wake();
+        e.hurt(220 * p.power() * (1 - d / R * 0.4), { knock: { a: angleTo(pt.x, pt.y, e.x, e.y), f: 260 } });
+      }
+    }
+    Particles.shake(9);
+    AudioSys.sfx('army');
+    return true;
+  },
+
+  revive(p) {
+    const corpses = Skills.lotd > 0
+      ? [0, 1, 2].map(() => ({ x: p.x + rand(-60, 60), y: p.y + rand(-60, 60), consume() {} }))
+      : corpsesNear(p.x, p.y, 320, 5);
+    if (!corpses.length) {
+      Particles.text(p.x, p.y - 40, 'No corpses!', { color: '#9aa0a8', size: 13 });
+      AudioSys.sfx('denied');
+      return false;
+    }
+    for (const c of corpses) {
+      c.consume();
+      if (minionCount('revived') >= 8) cullOldest('revived');
+      Game.minions.push(new Minion(c.x, c.y, 'revived'));
+    }
+    AudioSys.sfx('summon');
+    return true;
+  },
+
+  landOfTheDead(p) {
+    Skills.lotd = 8;
+    Particles.ring(p.x, p.y, 300, '#6ff7c3', 8, 0.8);
+    Particles.text(p.x, p.y - 46, 'LAND OF THE DEAD', { color: '#6ff7c3', size: 18, life: 1.6 });
+    Particles.shake(6);
+    AudioSys.sfx('army');
+    return true;
+  },
+
+  simulacrum(p, a) {
+    for (const m of Game.minions) {
+      if (!m.dead && m.kind === 'sim') m.dead = true;
+    }
+    const s = new Minion(p.x + Math.cos(a + Math.PI / 2) * 42, p.y + Math.sin(a + Math.PI / 2) * 42, 'sim');
+    s.facing = p.facing;
+    Game.minions.push(s);
+    AudioSys.sfx('curse');
+    return true;
+  }
+};
+
+// -------------------------------- Skills -----------------------------------
+
+const Skills = {
+  cds: {},          // skill id -> seconds remaining
+  lotd: 0,          // Land of the Dead time remaining
+  lotdSpawn: 0,
+  byId: {},
+
+  init() {
+    this.byId = {};
+    for (const s of SKILL_DATA) this.byId[s.id] = s;
+  },
 
   reset() {
-    this.cds = [0, 0, 0, 0, 0];
+    this.cds = {};
+    this.lotd = 0;
+  },
+
+  slotSkill(slot) {
+    const id = Hero.loadout[slot];
+    return id ? this.byId[id] : null;
+  },
+
+  gainFor(id) {
+    const base = this.byId[id].gain || 0;
+    return Math.round(base * (Hero.hasPassive('swiftHarvest') ? 1.3 : 1));
+  },
+
+  cdFor(s) {
+    let cd = s.cd;
+    if (s.cat === 'primary' && Hero.hasPassive('quickening')) cd *= 0.85;
+    return cd;
+  },
+
+  costFor(s) {
+    if (this.lotd > 0 && s.cat === 'corpse') return 0;
+    return s.cost;
   },
 
   update(dt) {
-    for (let i = 0; i < this.cds.length; i++) {
-      this.cds[i] = Math.max(0, this.cds[i] - dt);
+    for (const k of Object.keys(this.cds)) {
+      this.cds[k] = Math.max(0, this.cds[k] - dt);
     }
-    // Discrete presses buffered by Input can't be dropped between frames.
-    for (const slot of Input.pendingSlots) this.tryUse(slot);
-    Input.pendingSlots.length = 0;
-    // Held buttons fire as soon as they're ready (mobile-friendly).
-    for (let i = 0; i < this.list.length; i++) {
-      if (Input.skillHeld(i)) this.tryUse(i);
+    if (this.lotd > 0) {
+      this.lotd -= dt;
+      this.lotdSpawn -= dt;
+      if (this.lotdSpawn <= 0) {
+        this.lotdSpawn = 0.6;
+        const p = Game.player;
+        const a = rand(TAU);
+        const c = new Corpse(p.x + Math.cos(a) * rand(60, 200), p.y + Math.sin(a) * rand(60, 200), 'zombie');
+        c.maxT = 6;
+        Game.corpses.push(c);
+        fxSummon(c.x, c.y);
+      }
+    }
+
+    for (const cast of Input.castQueue) this.tryUse(cast.slot, cast.angle);
+    Input.castQueue.length = 0;
+    if (Input.skillHeld(0)) this.tryUse(0, Input.heldAngle(0));
+    for (let i = 1; i < 6; i++) {
+      const s = this.slotSkill(i);
+      if (s && s.channel && Input.skillHeld(i)) this.tryUse(i, Input.heldAngle(i));
     }
   },
 
-  tryUse(slot) {
+  tryUse(slot, angle = null) {
     const p = Game.player;
-    if (!p || p.dead || Game.state !== 'playing') return;
-    const s = this.list[slot];
-    if (this.cds[slot] > 0) return;
-    if (p.essence < s.cost) {
-      // Give feedback only on discrete presses, not every held frame.
-      return;
-    }
-    if (s.use(p)) {
-      p.essence -= s.cost;
-      this.cds[slot] = s.cd;
+    if (!p || p.dead || Game.state !== 'playing' || UI.screen) return;
+    const s = this.slotSkill(slot);
+    if (!s) return;
+    if ((this.cds[s.id] || 0) > 0) return;
+    const cost = this.costFor(s);
+    if (p.essence < cost) return;
+    const result = SKILL_FX[s.id](p, resolveAim(angle));
+    if (result) {
+      p.essence -= cost;
+      if (result !== 'cdSet') this.cds[s.id] = this.cdFor(s);
     } else {
-      this.cds[slot] = 0.35; // brief lockout after a failed cast
+      this.cds[s.id] = 0.3;
+    }
+  },
+
+  // Simulacrum copies Secondary casts at half power.
+  mirror(id, a) {
+    let sim = null;
+    for (const m of Game.minions) if (!m.dead && m.kind === 'sim') sim = m;
+    if (!sim) return;
+    const p = Game.player;
+    if (id === 'boneSpear') {
+      const tgt = nearestEnemy(sim.x, sim.y, 700);
+      const sa = tgt ? angleTo(sim.x, sim.y, tgt.x, tgt.y) : a;
+      Game.projectiles.push(new Projectile(sim.x, sim.y, sa, {
+        speed: 720, dmg: 20 * p.power(), r: 9, life: 1.15, pierce: true, type: 'spear'
+      }));
+    } else if (id === 'deathNova') {
+      const R = 190;
+      fxNova(sim.x, sim.y, R);
+      for (const e of Game.enemies) {
+        if (e.dead || e.sleep) continue;
+        const d = dist(sim.x, sim.y, e.x, e.y);
+        if (d < R) e.hurt(17 * p.power());
+      }
     }
   }
 };
+
+// ---------------------------- skill icons ----------------------------------
+// Small vector glyphs for the buttons and menus, keyed by skill id.
+
+const SKILL_ICONS = {
+  boneSpikes(ctx, x, y, r) {
+    ctx.fillStyle = '#e8e0cc';
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(x + i * r * 0.34 - r * 0.14, y + r * 0.45);
+      ctx.lineTo(x + i * r * 0.34, y - r * 0.5 + Math.abs(i) * r * 0.22);
+      ctx.lineTo(x + i * r * 0.34 + r * 0.14, y + r * 0.45);
+      ctx.closePath(); ctx.fill();
+    }
+  },
+  grimScythe(ctx, x, y, r) {
+    ctx.strokeStyle = '#c9bfa8';
+    ctx.lineWidth = r * 0.1;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x - r * 0.1, y + r * 0.55); ctx.lineTo(x + r * 0.15, y - r * 0.45); ctx.stroke();
+    ctx.lineWidth = r * 0.13;
+    ctx.beginPath(); ctx.arc(x - r * 0.12, y - r * 0.28, r * 0.42, -0.6, 1.4); ctx.stroke();
+  },
+  siphonBlood(ctx, x, y, r) {
+    ctx.strokeStyle = '#e04a5a';
+    ctx.lineWidth = r * 0.1;
+    ctx.beginPath();
+    ctx.moveTo(x - r * 0.5, y - r * 0.3);
+    ctx.quadraticCurveTo(x, y - r * 0.55, x + r * 0.45, y - r * 0.1);
+    ctx.stroke();
+    ctx.fillStyle = '#e04a5a';
+    ctx.beginPath();
+    ctx.moveTo(x, y - r * 0.05);
+    ctx.quadraticCurveTo(x + r * 0.3, y + r * 0.35, x, y + r * 0.55);
+    ctx.quadraticCurveTo(x - r * 0.3, y + r * 0.35, x, y - r * 0.05);
+    ctx.fill();
+  },
+  boneSpear(ctx, x, y, r) {
+    ctx.fillStyle = '#f2ecd8';
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(-Math.PI / 4);
+    ctx.beginPath();
+    ctx.moveTo(r * 0.62, 0); ctx.lineTo(r * 0.15, -r * 0.2);
+    ctx.lineTo(-r * 0.55, -r * 0.08); ctx.lineTo(-r * 0.45, 0);
+    ctx.lineTo(-r * 0.55, r * 0.08); ctx.lineTo(r * 0.15, r * 0.2);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  },
+  skeletalMage(ctx, x, y, r) {
+    ctx.fillStyle = '#4ecbe0';
+    ctx.beginPath(); ctx.arc(x, y - r * 0.3, r * 0.16, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#cfc6ad';
+    ctx.lineWidth = r * 0.1;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x, y - r * 0.05); ctx.lineTo(x, y + r * 0.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - r * 0.3, y + r * 0.12); ctx.lineTo(x + r * 0.3, y + r * 0.12); ctx.stroke();
+    ctx.fillStyle = '#cfc6ad';
+    ctx.beginPath(); ctx.arc(x, y - r * 0.05, r * 0.14, 0, TAU); ctx.fill();
+  },
+  deathNova(ctx, x, y, r) {
+    ctx.strokeStyle = '#4ade80';
+    ctx.lineWidth = r * 0.12;
+    ctx.beginPath(); ctx.arc(x, y, r * 0.42, 0, TAU); ctx.stroke();
+    ctx.fillStyle = '#4ade80';
+    ctx.beginPath(); ctx.arc(x, y, r * 0.15, 0, TAU); ctx.fill();
+    ctx.lineWidth = r * 0.07;
+    for (let i = 0; i < 4; i++) {
+      const a = i * TAU / 4 + Math.PI / 4;
+      ctx.beginPath();
+      ctx.moveTo(x + Math.cos(a) * r * 0.52, y + Math.sin(a) * r * 0.52);
+      ctx.lineTo(x + Math.cos(a) * r * 0.66, y + Math.sin(a) * r * 0.66);
+      ctx.stroke();
+    }
+  },
+  boneArmor(ctx, x, y, r) {
+    ctx.strokeStyle = '#e8e0cc';
+    ctx.lineWidth = r * 0.11;
+    ctx.beginPath();
+    ctx.moveTo(x, y - r * 0.5);
+    ctx.lineTo(x + r * 0.42, y - r * 0.25);
+    ctx.lineTo(x + r * 0.42, y + r * 0.15);
+    ctx.quadraticCurveTo(x + r * 0.3, y + r * 0.5, x, y + r * 0.58);
+    ctx.quadraticCurveTo(x - r * 0.3, y + r * 0.5, x - r * 0.42, y + r * 0.15);
+    ctx.lineTo(x - r * 0.42, y - r * 0.25);
+    ctx.closePath();
+    ctx.stroke();
+  },
+  boneSpirit(ctx, x, y, r) {
+    ctx.fillStyle = '#e8e0cc';
+    ctx.beginPath(); ctx.arc(x, y - r * 0.1, r * 0.3, 0, TAU); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x - r * 0.28, y);
+    ctx.quadraticCurveTo(x - r * 0.4, y + r * 0.5, x - r * 0.1, y + r * 0.42);
+    ctx.quadraticCurveTo(x, y + r * 0.55, x + r * 0.1, y + r * 0.42);
+    ctx.quadraticCurveTo(x + r * 0.4, y + r * 0.5, x + r * 0.28, y);
+    ctx.fill();
+    ctx.fillStyle = '#16121b';
+    ctx.beginPath(); ctx.arc(x - r * 0.1, y - r * 0.14, r * 0.07, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + r * 0.1, y - r * 0.14, r * 0.07, 0, TAU); ctx.fill();
+  },
+  bloodRush(ctx, x, y, r) {
+    ctx.strokeStyle = '#e04a5a';
+    ctx.lineWidth = r * 0.12;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 3; i++) {
+      ctx.globalAlpha = 0.4 + i * 0.3;
+      ctx.beginPath();
+      ctx.moveTo(x - r * 0.5 + i * r * 0.28, y + r * 0.2);
+      ctx.lineTo(x - r * 0.2 + i * r * 0.28, y - r * 0.2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  },
+  decrepify(ctx, x, y, r) {
+    ctx.strokeStyle = '#b06adf';
+    ctx.lineWidth = r * 0.1;
+    ctx.beginPath(); ctx.arc(x, y, r * 0.42, 0.6, TAU - 0.6); ctx.stroke();
+    ctx.fillStyle = '#b06adf';
+    ctx.beginPath(); ctx.arc(x, y, r * 0.14, 0, TAU); ctx.fill();
+  },
+  frailty(ctx, x, y, r) {
+    ctx.strokeStyle = '#e04a5a';
+    ctx.lineWidth = r * 0.1;
+    ctx.beginPath(); ctx.arc(x, y, r * 0.42, 0.6, TAU - 0.6); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x - r * 0.15, y - r * 0.15); ctx.lineTo(x + r * 0.15, y + r * 0.15);
+    ctx.moveTo(x + r * 0.15, y - r * 0.15); ctx.lineTo(x - r * 0.15, y + r * 0.15);
+    ctx.stroke();
+  },
+  leech(ctx, x, y, r) {
+    ctx.strokeStyle = '#4ade80';
+    ctx.lineWidth = r * 0.1;
+    ctx.beginPath(); ctx.arc(x, y, r * 0.42, 0.6, TAU - 0.6); ctx.stroke();
+    ctx.fillStyle = '#4ade80';
+    ctx.beginPath();
+    ctx.moveTo(x, y - r * 0.2);
+    ctx.quadraticCurveTo(x + r * 0.22, y + r * 0.1, x, y + r * 0.25);
+    ctx.quadraticCurveTo(x - r * 0.22, y + r * 0.1, x, y - r * 0.2);
+    ctx.fill();
+  },
+  corpseExplosion(ctx, x, y, r) {
+    ctx.fillStyle = '#ffb43a';
+    for (let i = 0; i < 8; i++) {
+      const a = i * TAU / 8;
+      const len = i % 2 ? r * 0.55 : r * 0.34;
+      ctx.beginPath();
+      ctx.moveTo(x + Math.cos(a + 0.25) * r * 0.14, y + Math.sin(a + 0.25) * r * 0.14);
+      ctx.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len);
+      ctx.lineTo(x + Math.cos(a - 0.25) * r * 0.14, y + Math.sin(a - 0.25) * r * 0.14);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = '#b52033';
+    ctx.beginPath(); ctx.arc(x, y, r * 0.16, 0, TAU); ctx.fill();
+  },
+  corpseLance(ctx, x, y, r) {
+    ctx.strokeStyle = '#ffb43a';
+    ctx.lineWidth = r * 0.1;
+    ctx.lineCap = 'round';
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(x - r * 0.5, y + i * r * 0.3);
+      ctx.lineTo(x + r * 0.45, y);
+      ctx.stroke();
+    }
+  },
+  devour(ctx, x, y, r) {
+    ctx.strokeStyle = '#6ff7c3';
+    ctx.lineWidth = r * 0.11;
+    ctx.lineCap = 'round';
+    // Jaws.
+    ctx.beginPath(); ctx.arc(x, y - r * 0.15, r * 0.4, 0.15, Math.PI - 0.15); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y + r * 0.15, r * 0.4, Math.PI + 0.15, -0.15); ctx.stroke();
+    ctx.fillStyle = '#6ff7c3';
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(x + i * r * 0.22 - r * 0.06, y - r * 0.22);
+      ctx.lineTo(x + i * r * 0.22, y - r * 0.02);
+      ctx.lineTo(x + i * r * 0.22 + r * 0.06, y - r * 0.22);
+      ctx.fill();
+    }
+  },
+  commandSkeletons(ctx, x, y, r) {
+    ctx.strokeStyle = '#6ff7c3';
+    ctx.fillStyle = '#6ff7c3';
+    ctx.lineWidth = r * 0.08;
+    ctx.lineCap = 'round';
+    for (let i = -1; i <= 1; i += 2) {
+      ctx.beginPath(); ctx.arc(x + i * r * 0.3, y - r * 0.05, r * 0.14, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x + i * r * 0.3, y + r * 0.08); ctx.lineTo(x + i * r * 0.3, y + r * 0.42); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(x, y - r * 0.3, r * 0.18, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x, y - r * 0.12); ctx.lineTo(x, y + r * 0.3); ctx.stroke();
+  },
+  commandGolem(ctx, x, y, r) {
+    ctx.fillStyle = '#b8ae93';
+    rr(ctx, x - r * 0.34, y - r * 0.42, r * 0.68, r * 0.6, r * 0.12); ctx.fill();
+    ctx.fillRect(x - r * 0.5, y - r * 0.25, r * 0.18, r * 0.5);
+    ctx.fillRect(x + r * 0.32, y - r * 0.25, r * 0.18, r * 0.5);
+    ctx.fillRect(x - r * 0.28, y + r * 0.2, r * 0.2, r * 0.38);
+    ctx.fillRect(x + r * 0.08, y + r * 0.2, r * 0.2, r * 0.38);
+    ctx.fillStyle = '#6ff7c3';
+    ctx.fillRect(x - r * 0.18, y - r * 0.26, r * 0.1, r * 0.1);
+    ctx.fillRect(x + r * 0.08, y - r * 0.26, r * 0.1, r * 0.1);
+  },
+  armyOfTheDead(ctx, x, y, r) {
+    ctx.strokeStyle = '#6ff7c3';
+    ctx.lineWidth = r * 0.09;
+    ctx.lineCap = 'round';
+    for (let i = -2; i <= 2; i++) {
+      const h = r * (0.35 + (2 - Math.abs(i)) * 0.12);
+      ctx.beginPath();
+      ctx.moveTo(x + i * r * 0.22, y + r * 0.5);
+      ctx.lineTo(x + i * r * 0.22, y + r * 0.5 - h);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x + i * r * 0.22 - r * 0.08, y + r * 0.5 - h * 0.7);
+      ctx.lineTo(x + i * r * 0.22 + r * 0.08, y + r * 0.5 - h * 0.7);
+      ctx.stroke();
+    }
+  },
+  revive(ctx, x, y, r) {
+    ctx.strokeStyle = '#4ade80';
+    ctx.lineWidth = r * 0.1;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x, y + r * 0.5); ctx.lineTo(x, y - r * 0.3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - r * 0.3, y); ctx.lineTo(x + r * 0.3, y); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x - r * 0.18, y - r * 0.28);
+    ctx.lineTo(x, y - r * 0.5);
+    ctx.lineTo(x + r * 0.18, y - r * 0.28);
+    ctx.stroke();
+  },
+  landOfTheDead(ctx, x, y, r) {
+    ctx.strokeStyle = '#6ff7c3';
+    ctx.lineWidth = r * 0.09;
+    ctx.beginPath(); ctx.ellipse(x, y + r * 0.3, r * 0.5, r * 0.18, 0, 0, TAU); ctx.stroke();
+    ctx.fillStyle = '#6ff7c3';
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(x + i * r * 0.3 - r * 0.07, y + r * 0.25);
+      ctx.lineTo(x + i * r * 0.3, y - r * 0.35 + Math.abs(i) * r * 0.15);
+      ctx.lineTo(x + i * r * 0.3 + r * 0.07, y + r * 0.25);
+      ctx.fill();
+    }
+  },
+  simulacrum(ctx, x, y, r) {
+    ctx.strokeStyle = '#e04a5a';
+    ctx.lineWidth = r * 0.1;
+    ctx.beginPath(); ctx.arc(x - r * 0.18, y, r * 0.32, 0, TAU); ctx.stroke();
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath(); ctx.arc(x + r * 0.22, y, r * 0.32, 0, TAU); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+};
+
+// ------------------------------ extra FX ------------------------------------
+
+function fxSpikes(x, y) {
+  Particles.ring(x, y, 60, '#e8e0cc', 3, 0.3);
+  Particles.spawn(x, y, {
+    count: 14, color: ['#e8e0cc', '#c9c0a8'],
+    minSpeed: 40, maxSpeed: 200, minLife: 0.2, maxLife: 0.45,
+    minSize: 2, maxSize: 4, grav: 340
+  });
+}
+
+function fxScythe(p, a) {
+  for (let i = 0; i < 9; i++) {
+    const aa = a + rand(-1.1, 1.1);
+    const rr2 = rand(50, 92);
+    Particles.spawn(p.x + Math.cos(aa) * rr2, p.y + Math.sin(aa) * rr2, {
+      count: 1, color: ['#c9bfa8', '#8f8672'], angle: aa + Math.PI / 2, spread: 0.3,
+      minSpeed: 60, maxSpeed: 150, minLife: 0.12, maxLife: 0.26, minSize: 2, maxSize: 3
+    });
+  }
+}
+
+function fxSiphon(p, e) {
+  const steps = 6;
+  for (let i = 0; i <= steps; i++) {
+    const k = i / steps;
+    const wob = Math.sin(Game.time * 30 + i) * 6;
+    Particles.spawn(lerp(p.x, e.x, k), lerp(p.y, e.y, k) + wob, {
+      count: 1, color: ['#e04a5a', '#b52033'], minSpeed: 0, maxSpeed: 20,
+      minLife: 0.08, maxLife: 0.16, minSize: 2, maxSize: 3.5, glow: true
+    });
+  }
+}
+
+function fxBloodTrail(x1, y1, x2, y2) {
+  const steps = 8;
+  for (let i = 0; i <= steps; i++) {
+    const k = i / steps;
+    Particles.spawn(lerp(x1, x2, k), lerp(y1, y2, k), {
+      count: 2, color: ['#c22843', '#8f1626'], minSpeed: 10, maxSpeed: 60,
+      minLife: 0.2, maxLife: 0.45, minSize: 2, maxSize: 4
+    });
+  }
+}
+
+function fxArmy(x, y, R) {
+  Particles.ring(x, y, R, '#6ff7c3', 8, 0.6);
+  Particles.ring(x, y, R * 0.6, '#e8e0cc', 5, 0.5);
+  for (let i = 0; i < 24; i++) {
+    const a = rand(TAU), d = rand(R * 0.15, R * 0.9);
+    Particles.spawn(x + Math.cos(a) * d, y + Math.sin(a) * d, {
+      count: 3, color: ['#e8e0cc', '#6ff7c3', '#c9c0a8'],
+      minSpeed: 30, maxSpeed: 160, minLife: 0.3, maxLife: 0.8,
+      grav: -120, glow: true
+    });
+  }
+}
