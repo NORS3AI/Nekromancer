@@ -1040,7 +1040,10 @@ class Corpse {
     this.x = x; this.y = y;
     this.type = type;
     this.t = 0;
-    this.maxT = 14;
+    // Corpses linger indefinitely (necro fuel); the field is instead capped by
+    // count in Game.update (Settings.g.corpseCap). Land of the Dead's temporary
+    // corpses override this with a short maxT so they still expire on their own.
+    this.maxT = Infinity;
     this.seed = Math.random();
     this.gone = false;
   }

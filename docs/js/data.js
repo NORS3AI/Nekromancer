@@ -18,11 +18,19 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.0.7-alpha';
+const GAME_VERSION = 'v0.0.8-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.0.8-alpha', date: 'July 2026',
+    notes: [
+      'Corpses no longer vanish after a few seconds — they linger on the battlefield as necromancer fuel',
+      'New "Corpse limit" setting: bodies pile up until this many exist, then the oldest fade. Cycle 100 / 500 / 1,000 / 2,500 / 5,000 / 10,000 to stress-test performance',
+      'The Settings menu now has an ABOUT section: "Game creator" opens the dev panel and the version button opens these patch notes (no longer only reachable from the title screen)'
+    ]
+  },
   {
     v: 'v0.0.7-alpha', date: 'July 2026',
     notes: [

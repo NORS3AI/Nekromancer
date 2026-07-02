@@ -1419,7 +1419,10 @@ const Screens = {
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
     const twoCol = pw >= 480;
-    const ph = Math.min(H - 20, twoCol ? 470 : 640);
+    const ph = Math.min(H - 16, twoCol ? 470 : 720);
+    const compact = !twoCol && H < 720;   // tighten spacing on short phones
+    const audioStep = compact ? 36 : 42;
+    const rowStep = compact ? 28 : 34;
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, 'SETTINGS');
 
@@ -1466,7 +1469,7 @@ const Screens = {
         a.mute = !a.mute;
         Settings.save();
       }, 'mute');
-      ay += 42;
+      ay += audioStep;
     }
 
     // ---- gameplay (Diablo-Immortal-style options) ----
@@ -1491,8 +1494,39 @@ const Screens = {
         Settings.g[key] = !Settings.g[key];
         Settings.save();
       }, label);
-      gy += 34;
+      gy += rowStep;
     }
+
+    // Corpse limit — corpses linger until this many exist, then the oldest fade.
+    const caps = [100, 500, 1000, 2500, 5000, 10000];
+    const curCap = Settings.g.corpseCap || 100;
+    ctx.textAlign = 'left';
+    ctx.font = '12px Georgia';
+    ctx.fillStyle = '#c9bfa8';
+    ctx.fillText('Corpse limit', gx, gy + 14);
+    UI.btn(ctx, gx + colW - 118, gy + 1, 118, 26, curCap.toLocaleString(), () => {
+      Settings.g.corpseCap = caps[(caps.indexOf(curCap) + 1) % caps.length];
+      Settings.save();
+    }, { size: 12, border: '#8a6f4a', color: '#ffd76a' });
+    gy += 30;
+    ctx.textAlign = 'left';   // UI.btn left it centered
+    ctx.font = '10px Georgia';
+    ctx.fillStyle = '#6f6552';
+    ctx.fillText(this.fitText(ctx, 'Bodies linger as necro fuel; raise it to stress-test.', colW), gx, gy + 2);
+    gy += compact ? 16 : 22;
+
+    // About — the game's creator (dev panel) and version (patch notes).
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 12px Georgia';
+    ctx.fillStyle = '#57b894';
+    ctx.fillText('— ABOUT —', gx, gy + 6);
+    gy += 14;
+    const abw = (colW - 8) / 2;
+    const abh = compact ? 28 : 30;
+    UI.btn(ctx, gx, gy, abw, abh, 'Game creator', () => UI.open('devconfirm'),
+      { size: 11, border: '#6b5f80' });
+    UI.btn(ctx, gx + abw + 8, gy, abw, abh, GAME_VERSION, () => UI.open('patchnotes'),
+      { size: 11, border: '#57b894', color: '#6ff7c3' });
   },
 
   // ------------------------------------------------------- manual saves

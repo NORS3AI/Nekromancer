@@ -487,6 +487,11 @@ const Game = {
     this.minions = this.minions.filter(m => !m.dead);
     this.projectiles = this.projectiles.filter(pr => !pr.dead);
     this.corpses = this.corpses.filter(c => !c.gone);
+    // Corpses persist; cap the field by count so the oldest fade past the limit.
+    const corpseCap = Settings.g.corpseCap || 100;
+    if (this.corpses.length > corpseCap) {
+      this.corpses.splice(0, this.corpses.length - corpseCap);
+    }
     this.pickups = this.pickups.filter(pu => !pu.gone);
     this.telegraphs = this.telegraphs.filter(t => !t.done && t.t < t.maxT + 0.2);
 
