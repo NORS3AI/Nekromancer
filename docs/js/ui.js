@@ -233,7 +233,6 @@ const UI = {
       ctx.fillStyle = '#e04a5a';
       ctx.fillText('DEV' + (Hero.cheats.god ? ' · GOD' : '') + (Hero.cheats.essence ? ' · ∞' : ''), W / 2, H - 12);
     }
-    this.drawToasts(ctx, W);
     this.drawJoystick(ctx);
     this.drawSkillButtons(ctx, p);
     this.drawPotion(ctx, p);
@@ -248,6 +247,7 @@ const UI = {
       Screens.draw(ctx, W, H);
       this.drawGlobalClose(ctx, W);
     }
+    this.drawToasts(ctx, W);   // above menus, at the bottom of the screen
   },
 
   // Every open menu gets the same red ✕, drawn ABOVE all of its content
@@ -440,20 +440,27 @@ const UI = {
     this.bar(ctx, x, y + 10, w, 9, boss.hp / boss.maxHp, '#7a1220', '#c22843');
   },
 
+  // A feed of loot / salvage / forge / enchant messages, pinned to the BOTTOM
+  // of the screen and drawn above menus so it's visible inside the artisans.
   drawToasts(ctx, W) {
     for (let i = this.toasts.length - 1; i >= 0; i--) {
       if (this.toasts[i].until < Game.time) this.toasts.splice(i, 1);
     }
+    if (!this.toasts.length) return;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 13px Georgia';
-    const st = (this.safe || { top: 0 }).top;
+    const sb = (this.safe || { bottom: 0 }).bottom || 0;
+    const n = this.toasts.length;
+    const baseY = (Game.H || 700) - 30 - sb;   // newest sits at the bottom
     this.toasts.forEach((t, i) => {
       const left = t.until - Game.time;
       ctx.globalAlpha = clamp(left / 0.5, 0, 1);
-      const y = 68 + st + i * 19;
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = 'rgba(0,0,0,0.8)';
-      ctx.strokeText(t.text, W / 2, y);
+      const y = baseY - (n - 1 - i) * 24;
+      const tw = ctx.measureText(t.text).width;
+      ctx.fillStyle = 'rgba(6,4,10,0.85)';
+      rr(ctx, W / 2 - tw / 2 - 12, y - 11, tw + 24, 22, 7); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 1;
+      rr(ctx, W / 2 - tw / 2 - 12, y - 11, tw + 24, 22, 7); ctx.stroke();
       ctx.fillStyle = t.color;
       ctx.fillText(t.text, W / 2, y);
     });

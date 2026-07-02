@@ -66,7 +66,7 @@ const Items = {
       : rarity === 1 ? pick(MAGIC_PREFIX) : '';
     const name = (prefix ? prefix + ' ' : '') + pick(def.nouns);
 
-    return { slot, rarity, name, stats, mLvl, sockets, gem: null };
+    return { slot, rarity, name, stats, mLvl, sockets, gems: [] };
   },
 
   generateGem(mLvl) {
@@ -93,7 +93,7 @@ const Items = {
     return {
       slot, rarity: 5, set: 'inarius',
       name: INARIUS_SET.pieces[slot],
-      stats, mLvl, sockets: 1, gem: null
+      stats, mLvl, sockets: 1, gems: []
     };
   },
 
@@ -114,8 +114,8 @@ const Items = {
     for (const [k, v] of Object.entries(item.stats)) {
       s += v * ({ dmg: 320, hp: 1, crit: 400, ess: 18, reg: 14, gold: 40 })[k];
     }
-    if (item.sockets) s += 15;
-    if (item.gem) s += gemStatValue(item.gem) * 30;
+    if (item.sockets) s += 15 * item.sockets;
+    for (const g of item.gems || []) s += gemStatValue(g) * 30;
     return s;
   },
 
@@ -126,8 +126,12 @@ const Items = {
       const n = this.setCount();
       lines.push('◈ Grace of Inarius (' + n + '/6 equipped)');
     }
-    if (item.sockets && !item.gem) lines.push('◇ empty socket');
-    if (item.gem) lines.push('◆ ' + gemName(item.gem) + ': ' + GEM_TYPES[item.gem.type].label(gemStatValue(item.gem)));
+    const gems = item.gems || [];
+    for (const g of gems) lines.push('◆ ' + gemName(g) + ': ' + GEM_TYPES[g.type].label(gemStatValue(g)));
+    const empty = (item.sockets || 0) - gems.length;
+    for (let i = 0; i < empty; i++) lines.push('◇ empty socket');
+    // A ruby in a weapon grants bonus weapon damage.
+    if (item.slot === 'weapon' && gems.some(g => g.type === 'ruby')) lines.push('❢ +25% weapon damage (ruby)');
     return lines;
   },
 
@@ -267,7 +271,7 @@ const Items = {
   grantSalvage(item, quiet = false) {
     const R = RARITIES[item.rarity];
     Hero.mats[R.salvage] += R.salvageN;
-    if (item.gem) Hero.gems.push(item.gem); // gems survive the forge
+    for (const g of item.gems || []) Hero.gems.push(g); // gems survive the forge
     if (!quiet) {
       UI.toast(`Salvaged ${item.name} → ${R.salvageN}× ${MATERIALS[R.salvage].name}`, MATERIALS[R.salvage].color);
       AudioSys.sfx('craft');
@@ -292,7 +296,7 @@ const Items = {
         const it = Hero.bag.splice(i, 1)[0];
         const R = RARITIES[it.rarity];
         Hero.mats[R.salvage] += R.salvageN;
-        if (it.gem) Hero.gems.push(it.gem);
+        for (const g of it.gems || []) Hero.gems.push(g);
         n++;
       }
     }
@@ -380,7 +384,7 @@ const Items = {
       if (Hero.bag[i].rarity === 2) {
         const it = Hero.bag.splice(i, 1)[0];
         Hero.mats.crystal += RARITIES[2].salvageN;
-        if (it.gem) Hero.gems.push(it.gem);
+        for (const g of it.gems || []) Hero.gems.push(g);
         n++;
       }
     }
@@ -456,20 +460,28 @@ const Items = {
   socketGem(item, gemIndex) {
     const gem = Hero.gems[gemIndex];
     if (!gem || !item || !item.sockets) return;
-    if (item.gem) Hero.gems.push(item.gem); // swap out the old one
+    item.gems = item.gems || [];
+    if (item.gems.length >= item.sockets) {   // every socket is full
+      UI.toast('No empty socket on ' + item.name, '#9a9080');
+      AudioSys.sfx('denied');
+      return;
+    }
     Hero.gems.splice(gemIndex, 1);
-    item.gem = gem;
+    item.gems.push(gem);
     this.apply();
     UI.toast(gemName(gem) + ' socketed into ' + item.name, GEM_TYPES[gem.type].color);
     AudioSys.sfx('gem');
     Hero.save();
   },
 
-  unsocket(item) {
-    if (!item || !item.gem) return;
-    Hero.gems.push(item.gem);
-    item.gem = null;
+  unsocket(item, idx) {
+    if (!item || !item.gems || !item.gems.length) return;
+    const i = (idx === undefined) ? item.gems.length - 1 : idx;
+    const g = item.gems.splice(i, 1)[0];
+    if (!g) return;
+    Hero.gems.push(g);
     this.apply();
+    UI.toast('Unsocketed ' + gemName(g) + ' from ' + item.name, GEM_TYPES[g.type].color);
     AudioSys.sfx('gem');
     Hero.save();
   },
@@ -501,6 +513,18 @@ const Items = {
       return;
     }
     this.pay(cost);
+    item.enchants = (item.enchants || 0) + 1;
+    // Rare 10% chance: the Mystic uncovers a new gem slot, up to the rarity cap.
+    const maxS = MAX_SOCKETS[item.rarity] || 0;
+    if ((item.sockets || 0) < maxS && Math.random() < 0.10) {
+      item.sockets = (item.sockets || 0) + 1;
+      this.apply();
+      UI.toast('A gem slot appears! ' + item.name + ' now has ' +
+        item.sockets + ' socket' + (item.sockets > 1 ? 's' : ''), '#6ff7c3');
+      AudioSys.sfx('gem');
+      Hero.save();
+      return 'socket';
+    }
     delete item.stats[statKey];
     // New property: anything the item doesn't already have (incl. a fresh
     // roll of the one just removed).
@@ -509,7 +533,6 @@ const Items = {
     const R = RARITIES[item.rarity];
     item.stats[nk] = AFFIX_ROLLS[nk].base * (nk === ITEM_SLOTS[item.slot].primary ? 1.6 : 0.85)
       * R.mult * (1 + item.mLvl * 0.11) * rand(0.85, 1.25);
-    item.enchants = (item.enchants || 0) + 1;
     this.apply();
     UI.toast(`Enchanted ${item.name}: ${AFFIX_ROLLS[nk].label(item.stats[nk])}`, '#b06adf');
     AudioSys.sfx('gem');
@@ -523,7 +546,7 @@ const Items = {
   // Works with no live Player (used by the character sheet in camp).
   computeStats() {
     let dmg = 0, hp = 0, crit = 0, ess = 0, reg = 0, gold = 0;
-    const gather = it => {
+    const gather = (it, slot) => {
       if (!it) return;
       dmg += it.stats.dmg || 0;
       hp += it.stats.hp || 0;
@@ -531,17 +554,19 @@ const Items = {
       ess += it.stats.ess || 0;
       reg += it.stats.reg || 0;
       gold += it.stats.gold || 0;
-      if (it.gem) {
-        const v = gemStatValue(it.gem);
-        const s = GEM_TYPES[it.gem.type].stat;
+      for (const g of it.gems || []) {
+        const v = gemStatValue(g);
+        const s = GEM_TYPES[g.type].stat;
         if (s === 'dmg') dmg += v;
         else if (s === 'hp') hp += v;
         else if (s === 'crit') crit += v;
         else if (s === 'ess') ess += v;
         else if (s === 'reg') reg += v;
       }
+      // A red gem (ruby) socketed in the weapon: +25% damage.
+      if (slot === 'weapon' && (it.gems || []).some(g => g.type === 'ruby')) dmg += 0.25;
     };
-    for (const slot of Object.keys(ITEM_SLOTS)) gather(Hero.equipped[slot]);
+    for (const slot of Object.keys(ITEM_SLOTS)) gather(Hero.equipped[slot], slot);
     const lvl = Hero.level;
     return {
       dmgMult: (1 + (lvl - 1) * 0.09) * (1 + dmg),

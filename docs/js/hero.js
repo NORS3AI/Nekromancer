@@ -80,7 +80,7 @@ const Hero = {
   runes: {},                          // skillId -> rune id
   cheats: { god: false, essence: false }, // dev panel, kept per save
   BAG_SIZE: 24,
-  SAVE_VERSION: 2,   // v2: Epic rarity inserted at index 3
+  SAVE_VERSION: 3,   // v2: Epic rarity @ index 3 · v3: item.gem → item.gems[]
 
   fresh() {
     this.level = 1; this.xp = 0; this.gold = 0;
@@ -114,17 +114,29 @@ const Hero = {
     };
   },
 
-  // Older saves predate the Epic rarity (index 3): shift Legendary/Set up.
+  // v2: Epic rarity (index 3) inserted — shift Legendary/Set up.
+  // v3: single item.gem replaced by an item.gems[] array (multi-socket).
   migrate(d) {
-    if ((d.v || 1) >= 2) return d;
-    const fix = it => {
-      if (!it) return;
-      if (it.set) it.rarity = 5;
-      else if (it.rarity >= 3) it.rarity = 4;
+    const v = d.v || 1;
+    const each = fn => {
+      (d.bag || []).forEach(fn);
+      for (const k of Object.keys(d.equipped || {})) fn(d.equipped[k]);
     };
-    (d.bag || []).forEach(fix);
-    for (const k of Object.keys(d.equipped || {})) fix(d.equipped[k]);
-    d.v = 2;
+    if (v < 2) {
+      each(it => {
+        if (!it) return;
+        if (it.set) it.rarity = 5;
+        else if (it.rarity >= 3) it.rarity = 4;
+      });
+    }
+    if (v < 3) {
+      each(it => {
+        if (!it) return;
+        if (it.gems === undefined) it.gems = it.gem ? [it.gem] : [];
+        delete it.gem;
+      });
+    }
+    d.v = 3;
     return d;
   },
 

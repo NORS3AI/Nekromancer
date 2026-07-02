@@ -18,11 +18,21 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.0.9-alpha';
+const GAME_VERSION = 'v0.1.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.1.0-alpha', date: 'July 2026',
+    notes: [
+      'Loot, salvage, forge and enchant messages now appear in a feed at the BOTTOM of the screen and stay visible inside the artisan menus',
+      'Items can hold MULTIPLE gems now — up to 4 slots on Legendary, 3 on Epic, 2 on Rare, 1 on Magic',
+      'The Mystic enchant shows the list of possible outcomes, and has a rare 10% chance to uncover a new gem slot (up to the rarity cap)',
+      'A red gem (Ruby) socketed in your weapon grants +25% damage',
+      'Existing saves upgrade automatically: a socketed gem becomes the item\'s first gem slot'
+    ]
+  },
   {
     v: 'v0.0.9-alpha', date: 'July 2026',
     notes: [
@@ -130,6 +140,10 @@ const GEM_TYPES = {
   topaz:    { name: 'Topaz',    color: '#ffd76a', stat: 'ess',  perTier: 0.7,   label: v => `+${v.toFixed(1)} essence/s` },
   diamond:  { name: 'Diamond',  color: '#bfe8f4', stat: 'reg',  perTier: 1.1,   label: v => `+${v.toFixed(1)} life/s` }
 };
+
+// Most gem slots an item can hold, by rarity (Mystic enchants can uncover them):
+// Common 0 · Magic 1 · Rare 2 · Epic 3 · Legendary 4 · Set 4.
+const MAX_SOCKETS = [0, 1, 2, 3, 4, 4];
 
 function gemStatValue(gem) {
   return GEM_TYPES[gem.type].perTier * (gem.tier + 1);

@@ -426,9 +426,11 @@ const Screens = {
       ctx.lineWidth = selected ? 3 : 2;
       ctx.beginPath(); ctx.arc(bx, by, chipR, 0, TAU); ctx.stroke();
       this.slotGlyph(ctx, slot, bx, by, chipR - 3);
-      if (it && it.gem) {
-        ctx.fillStyle = GEM_TYPES[it.gem.type].color;
-        ctx.beginPath(); ctx.arc(bx + chipR * 0.68, by - chipR * 0.68, 4, 0, TAU); ctx.fill();
+      if (it && it.gems) {
+        it.gems.forEach((g, gi) => {
+          ctx.fillStyle = GEM_TYPES[g.type].color;
+          ctx.beginPath(); ctx.arc(bx + chipR * 0.68 - gi * 6, by - chipR * 0.68, 3.5, 0, TAU); ctx.fill();
+        });
       }
       // Red "!" badge: a better item for this slot is waiting in the bag.
       if (Items.slotHasUpgrade(slot)) {
@@ -521,9 +523,9 @@ const Screens = {
         UI.sel.gemPick = true;
         UI.sel.gemIdx = undefined;
       } : null, { disabled: !canSocket, border: '#7a4a8f', color: '#b06adf', size: 13 });
-    } else if (equipped && (equipped.sockets || equipped.gem)) {
+    } else if (equipped && (equipped.sockets || (equipped.gems && equipped.gems.length))) {
       // Socket management for the equipped piece opens the gem popup.
-      UI.btn(ctx, dx, dy + 6, 150, 30, equipped.gem ? 'MANAGE SOCKET' : 'SOCKET GEM', () => {
+      UI.btn(ctx, dx, dy + 6, 150, 30, (equipped.gems && equipped.gems.length) ? 'MANAGE SOCKETS' : 'SOCKET GEM', () => {
         UI.sel.gemTarget = equipped;
         UI.sel.gemPick = true;
         UI.sel.gemIdx = undefined;
@@ -546,8 +548,10 @@ const Screens = {
     const shown = Hero.gems.slice(0, 12);
     const rows = Math.max(1, Math.ceil(shown.length / 4));
     const hasInfo = UI.sel.gemIdx !== undefined && Hero.gems[UI.sel.gemIdx];
+    const gems = target.gems || [];
+    const emptyCount = (target.sockets || 0) - gems.length;
     const ph = Math.min(H - 12,
-      118 + (target.gem ? 36 : 0) + rows * 36 + (hasInfo ? 72 : 0) + 46);
+      118 + gems.length * 30 + (emptyCount > 0 ? 18 : 0) + rows * 36 + (hasInfo ? 72 : 0) + 46);
     const py = Math.max(6, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, 'SOCKET GEM');
     UI.register(px, py, pw, ph, () => { /* dead space inside the popup */ });
@@ -565,18 +569,24 @@ const Screens = {
     ctx.fillText(this.fitText(ctx, target.name, pw - 32), px + 16, py + 50);
     let y = py + 64;
 
-    // Currently socketed gem, with a free unsocket.
-    if (target.gem) {
-      const gm = GEM_TYPES[target.gem.type];
+    // Currently socketed gems, each with a free unsocket. (Tier only — the
+    // chip colour says which gem; the info card has the full name.)
+    gems.forEach((g, gi) => {
+      const gm = GEM_TYPES[g.type];
       ctx.font = '11px Georgia';
       ctx.fillStyle = gm.color;
-      // Tier only — the color says which gem; the info card has the full name.
-      ctx.fillText(this.fitText(ctx, '◆ ' + GEM_TIERS[target.gem.tier] + ' — ' + gm.label(gemStatValue(target.gem)), pw - 170), px + 16, y + 8);
-      UI.btn(ctx, px + pw - 136, y - 6, 120, 26, 'UNSOCKET', () => {
-        Items.unsocket(target);
+      ctx.fillText(this.fitText(ctx, '◆ ' + GEM_TIERS[g.tier] + ' — ' + gm.label(gemStatValue(g)), pw - 170), px + 16, y + 8);
+      UI.btn(ctx, px + pw - 136, y - 6, 120, 24, 'UNSOCKET', () => {
+        Items.unsocket(target, gi);
         UI.sel.gemIdx = undefined;
       }, { size: 10, border: '#7a4a8f', color: '#b06adf' });
-      y += 36;
+      y += 30;
+    });
+    if (emptyCount > 0) {
+      ctx.font = 'italic 10px Georgia';
+      ctx.fillStyle = '#6f6552';
+      ctx.fillText('◇ ' + emptyCount + ' empty socket' + (emptyCount > 1 ? 's' : ''), px + 16, y + 8);
+      y += 18;
     }
 
     // Gem pouch grid — tap to read what each does.
@@ -623,16 +633,17 @@ const Screens = {
       ctx.fillText('When socketed: ' + gm.label(gemStatValue(g)), px + 32, y + 33);
       ctx.font = '11px Georgia';
       ctx.fillStyle = '#8a6f4a';
-      ctx.fillText(target.gem ? 'Replaces ' + gemName(target.gem) + ' (returned to your pouch)' : 'Fills the empty socket', px + 32, y + 49);
+      ctx.fillText(emptyCount > 0 ? 'Fills an empty socket' : 'No empty socket — unsocket one first', px + 32, y + 49);
       y += 70;
     }
 
     // Actions.
     const bw2 = (pw - 40) / 2;
-    UI.btn(ctx, px + 16, y, bw2, 36, 'SOCKET IT', hasInfo ? () => {
+    const canSock = hasInfo && emptyCount > 0;
+    UI.btn(ctx, px + 16, y, bw2, 36, 'SOCKET IT', canSock ? () => {
       Items.socketGem(target, UI.sel.gemIdx);
       close();
-    } : null, { disabled: !hasInfo, border: '#7a4a8f', color: '#b06adf', size: 13 });
+    } : null, { disabled: !canSock, border: '#7a4a8f', color: '#b06adf', size: 13 });
     UI.btn(ctx, px + 24 + bw2, y, bw2, 36, 'CANCEL', close, { size: 13 });
   },
 
@@ -665,7 +676,9 @@ const Screens = {
     ctx.textAlign = 'left';
     ctx.font = '12px Georgia';
     lines.forEach((ln, i) => {
-      ctx.fillStyle = ln.startsWith('◆') ? GEM_TYPES[item.gem.type].color : '#b5ab94';
+      ctx.fillStyle = ln[0] === '◆' ? '#8fe8c8' : ln[0] === '◇' ? '#6f6552'
+        : ln[0] === '❢' ? '#ff9a6a' : ln[0] === '★' ? '#ff8c2a'
+        : ln[0] === '◈' ? '#4ade80' : '#b5ab94';
       ctx.fillText(ln, x + 16, y + 32 + i * 15);
     });
     return y + h + 8;
@@ -1005,12 +1018,15 @@ const Screens = {
       Items.canAfford(gemCost) ? () => Items.buyGem() : null,
       { size: 11, disabled: !Items.canAfford(gemCost), border: '#7a4a8f', color: '#b06adf' });
 
-    // Socketed gear: pull gems back out, free of charge.
+    // Socketed gear: pull any gem back out, free of charge.
     let y = 162;
-    const socketed = Object.keys(ITEM_SLOTS).filter(s => Hero.equipped[s] && Hero.equipped[s].gem);
-    for (const slot of socketed.slice(0, 3)) {
+    const socketedRows = [];
+    for (const slot of Object.keys(ITEM_SLOTS)) {
       const it = Hero.equipped[slot];
-      const gm = GEM_TYPES[it.gem.type];
+      if (it && it.gems) it.gems.forEach((g, gi) => socketedRows.push({ it, gi, g }));
+    }
+    for (const { it, gi, g } of socketedRows.slice(0, 3)) {
+      const gm = GEM_TYPES[g.type];
       ctx.fillStyle = 'rgba(28,24,38,0.92)';
       rr(ctx, px + 16, y, pw - 32, 26, 5); ctx.fill();
       ctx.fillStyle = gm.color;
@@ -1022,12 +1038,12 @@ const Screens = {
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       ctx.font = '11px Georgia';
       ctx.fillStyle = '#b5ab94';
-      ctx.fillText(this.fitText(ctx, gemName(it.gem) + '  in  ' + it.name, pw - 200), px + 44, y + 13);
-      UI.btn(ctx, px + pw - 148, y + 1, 132, 24, 'UNSOCKET (free)', () => Items.unsocket(it),
+      ctx.fillText(this.fitText(ctx, gemName(g) + '  in  ' + it.name, pw - 200), px + 44, y + 13);
+      UI.btn(ctx, px + pw - 148, y + 1, 132, 24, 'UNSOCKET (free)', () => Items.unsocket(it, gi),
         { size: 10, border: '#7a4a8f', color: '#b06adf' });
       y += 30;
     }
-    if (socketed.length) y += 4;
+    if (socketedRows.length) y += 4;
 
     // Group gems.
     const groups = {};
@@ -1233,6 +1249,30 @@ const Screens = {
       y += 34;
     }
 
+    // The list of properties this reroll could produce, plus the rare socket.
+    y += 6;
+    const shortAffix = { dmg: 'Damage', hp: 'Life', crit: 'Crit', ess: 'Essence', reg: 'Life regen', gold: 'Gold find' };
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 11px Georgia';
+    ctx.fillStyle = '#9a9080';
+    ctx.fillText('POSSIBLE ENCHANTS:', px + 16, y + 6);
+    y += 16;
+    const pool = Object.keys(AFFIX_ROLLS).filter(k =>
+      UI.sel.affix ? (k === UI.sel.affix || !(k in it.stats)) : !(k in it.stats));
+    ctx.font = '11px Georgia';
+    ctx.fillStyle = '#b5ab94';
+    ctx.fillText(this.fitText(ctx, pool.map(k => shortAffix[k]).join(' · ') || '—', pw - 32), px + 16, y + 4);
+    y += 16;
+    const maxS = MAX_SOCKETS[it.rarity] || 0;
+    const room = (it.sockets || 0) < maxS;
+    ctx.font = '11px Georgia';
+    ctx.fillStyle = room ? '#6ff7c3' : '#6f6552';
+    ctx.fillText(room
+      ? `Rare 10% chance: uncover a gem slot  (${it.sockets || 0}/${maxS})`
+      : `Gem slots maxed for ${RARITIES[it.rarity].name}  (${it.sockets || 0}/${maxS})`,
+      px + 16, y + 4);
+    y += 18;
+
     const cost = Items.enchantCost(it);
     const afford = Items.canAfford(cost);
     y += 4;
@@ -1336,7 +1376,7 @@ const Screens = {
     for (const sl of Object.keys(ITEM_SLOTS)) {
       const it = Hero.equipped[sl];
       if (!it) continue;
-      if (it.sockets && !it.gem) openSockets++;
+      openSockets += (it.sockets || 0) - ((it.gems && it.gems.length) || 0);
       if (!worst || Items.score(it) < Items.score(worst)) worst = it;
     }
     if (openSockets) tips.push(openSockets + ' empty socket' + (openSockets > 1 ? 's' : '') + ' — visit the Inventory to add gems');
