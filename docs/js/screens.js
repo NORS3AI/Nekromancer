@@ -985,12 +985,20 @@ const Screens = {
     this.artisanRow(ctx, px, pw, 88, 'smith', 'FORGE');
     this.matsRow(ctx, px + 16, 114, pw - 32);
 
-    // Salvage row.
+    // Bulk salvage row (ease of access). Epics unlock at 60, Legendaries at 70;
+    // single items always break down free from the Inventory wheel.
     const half = (pw - 40) / 2;
-    UI.btn(ctx, px + 16, 124, half, 32, 'SALVAGE COMMON+MAGIC', () => Items.salvageJunk(),
-      { size: 11, border: '#8a6f4a', color: '#ffb43a' });
-    UI.btn(ctx, px + 24 + half, 124, half, 32, 'SALVAGE RARES', () => Items.salvageRares(),
-      { size: 11, border: '#8a6f4a', color: '#ffd76a' });
+    const q = (pw - 32 - 3 * 6) / 4;
+    const epicLvl = Items.BULK_SALVAGE_LVL.epic, legLvl = Items.BULK_SALVAGE_LVL.legendary;
+    const epicOk = Hero.level >= epicLvl, legOk = Hero.level >= legLvl;
+    UI.btn(ctx, px + 16 + 0 * (q + 6), 124, q, 32, 'COM+MAG', () => Items.salvageJunk(),
+      { size: 10, border: '#8a6f4a', color: '#ffb43a' });
+    UI.btn(ctx, px + 16 + 1 * (q + 6), 124, q, 32, 'RARES', () => Items.salvageRares(),
+      { size: 10, border: '#8a6f4a', color: '#ffd76a' });
+    UI.btn(ctx, px + 16 + 2 * (q + 6), 124, q, 32, epicOk ? 'EPICS' : 'EPICS L' + epicLvl, () => Items.salvageEpics(),
+      { size: 10, border: '#7a4a8f', color: epicOk ? '#b06adf' : '#6f5a7a' });
+    UI.btn(ctx, px + 16 + 3 * (q + 6), 124, q, 32, legOk ? 'LEGENDS' : 'LEG L' + legLvl, () => Items.salvageLegendaries(),
+      { size: 10, border: '#8a5a2a', color: legOk ? '#ff8c2a' : '#7a5f45' });
 
     // Forge quality selector.
     if (UI.sel.master === undefined) UI.sel.master = false;
