@@ -18,11 +18,21 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.1.2-alpha';
+const GAME_VERSION = 'v0.1.3-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.1.3-alpha', date: 'July 2026',
+    notes: [
+      'Socketing popup gains gem sort + filter chips (All / by type), sorted finest-first',
+      'Desktop: the health and essence globes now flank the action bar as one centered cluster instead of sitting in the far corners',
+      'Mobile top-left: red health bar, a half-height blue mana bar beneath it, and a half-height yellow experience bar under that, with the level on the portrait',
+      'Desktop hover tooltips: point at a skill, rune, passive, action-bar slot or equipment slot to see its name and what it does',
+      'At level 70, a green gem in your weapon is boosted +20% and a red gem is reduced 5% (weapon slot only)'
+    ]
+  },
   {
     v: 'v0.1.2-alpha', date: 'July 2026',
     notes: [

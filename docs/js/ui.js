@@ -22,6 +22,55 @@ const UI = {
     this.sliderRegs = [];
     this.panelRects = [];
     this.overlayBarrier = 0;
+    this.tipHover = null;
+  },
+
+  // Desktop hover help: if the mouse is inside this rect, remember its tooltip.
+  // The last (topmost) matching rect each frame wins.
+  tip(x, y, w, h, title, desc) {
+    if (!this.desktop || (!title && !desc)) return;
+    const m = Input.mousePos;
+    if (m.x >= x && m.x <= x + w && m.y >= y && m.y <= y + h) this.tipHover = { title, desc };
+  },
+
+  drawTooltip(ctx, W, H) {
+    const t = this.tipHover;
+    if (!t) return;
+    const m = Input.mousePos;
+    const maxW = 250;
+    ctx.font = '12px Georgia';
+    const words = (t.desc || '').split(' ');
+    const lines = [];
+    let line = '';
+    for (const wd of words) {
+      const test = line ? line + ' ' + wd : wd;
+      if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = wd; }
+      else line = test;
+    }
+    if (line) lines.push(line);
+    ctx.font = 'bold 13px Georgia';
+    const titleW = t.title ? ctx.measureText(t.title).width : 0;
+    ctx.font = '12px Georgia';
+    let bodyW = 0;
+    for (const ln of lines) bodyW = Math.max(bodyW, ctx.measureText(ln).width);
+    const boxW = Math.min(maxW + 20, Math.max(titleW, bodyW) + 20);
+    const boxH = 10 + (t.title ? 18 : 0) + lines.length * 15;
+    let bx = m.x + 16, by = m.y + 8;
+    if (bx + boxW > W - 6) bx = m.x - boxW - 12;
+    if (by + boxH > H - 6) by = H - boxH - 6;
+    if (bx < 6) bx = 6;
+    ctx.fillStyle = 'rgba(8,5,12,0.97)';
+    rr(ctx, bx, by, boxW, boxH, 6); ctx.fill();
+    ctx.strokeStyle = '#6b5f80'; ctx.lineWidth = 1.5;
+    rr(ctx, bx, by, boxW, boxH, 6); ctx.stroke();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    let ty = by + 7;
+    if (t.title) {
+      ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#e8e0cc';
+      ctx.fillText(t.title, bx + 10, ty); ty += 18;
+    }
+    ctx.font = '12px Georgia'; ctx.fillStyle = '#b5ab94';
+    for (const ln of lines) { ctx.fillText(ln, bx + 10, ty); ty += 15; }
   },
 
   register(x, y, w, h, cb) {
@@ -155,21 +204,22 @@ const UI = {
     this.menuBtn = { x: W - 30 - safe.right, y: 26 + safe.top, r: 18 };
 
     if (this.desktop) {
-      // Globes anchor the corners; the action bar sits between them.
-      this.globeR = Math.min(64, H * 0.12);
-      const gr = this.globeR;
-      this.hpGlobe = { x: 20 + gr, y: H - 22 - gr - safe.bottom, r: gr };
-      this.essGlobe = { x: W - 20 - gr - safe.right, y: H - 22 - gr - safe.bottom, r: gr };
+      // One centered cluster: [health globe] [1 2 3 4 + LMB/RMB] [essence globe] [potion].
+      const gr = this.globeR = Math.min(52, H * 0.11);
+      const s = 26, gap = 12, potR = 24;
       const order = [0, 2, 3, 4, 5, 1]; // LMB · 1 · 2 · 3 · 4 · RMB
-      const s = 28, gap = 12;
-      const totalW = order.length * s * 2 + (order.length - 1) * gap;
-      const startX = W / 2 - totalW / 2 + s;
-      const by = H - 62 - safe.bottom;
+      const barW = order.length * s * 2 + (order.length - 1) * gap;
+      const groupW = 2 * gr + gap + barW + gap + 2 * gr + gap + 2 * potR;
+      const cy = H - 20 - gr - safe.bottom;
+      let x = W / 2 - groupW / 2;
+      this.hpGlobe = { x: x + gr, y: cy, r: gr }; x += 2 * gr + gap;
       order.forEach((slot, i) => {
-        this.buttons.push({ x: startX + i * (s * 2 + gap), y: by, r: s, slot });
+        this.buttons.push({ x: x + s + i * (s * 2 + gap), y: cy, r: s, slot });
       });
-      const potX = startX + order.length * (s * 2 + gap) - gap + s + 6;
-      this.potionBtn = { x: Math.min(potX, this.essGlobe.x - gr - 30), y: by, r: 24 };
+      x += barW + gap;
+      this.essGlobe = { x: x + gr, y: cy, r: gr }; x += 2 * gr + gap;
+      this.potionBtn = { x: x + potR, y: cy, r: potR };
+      this.xpBar = { x: this.hpGlobe.x - gr, w: (this.potionBtn.x + potR) - (this.hpGlobe.x - gr), y: H - 8 - safe.bottom };
       return;
     }
 
@@ -239,6 +289,7 @@ const UI = {
         this.drawGlobalClose(ctx, W);
       }
       this.drawToasts(ctx, W);
+      this.drawTooltip(ctx, W, H);
       return;
     }
 
@@ -277,6 +328,7 @@ const UI = {
       this.drawGlobalClose(ctx, W);
     }
     this.drawToasts(ctx, W);   // above menus, at the bottom of the screen
+    this.drawTooltip(ctx, W, H);
   },
 
   // Every open menu gets the same red ✕, drawn ABOVE all of its content
@@ -321,15 +373,13 @@ const UI = {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(Hero.gold + ' g', eg.x, eg.y - eg.r - 10);
 
-    // Experience bar along the very bottom, spanning between the globes.
-    const bx = hg.x + hg.r + 18;
-    const bw = (eg.x - eg.r - 18) - bx;
-    const byy = H - 8 - (this.safe.bottom || 0);
-    if (bw > 40) {
+    // Experience bar under the whole cluster.
+    const xb = this.xpBar;
+    if (xb && xb.w > 40) {
       ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      rr(ctx, bx, byy - 6, bw, 6, 3); ctx.fill();
+      rr(ctx, xb.x, xb.y - 6, xb.w, 6, 3); ctx.fill();
       ctx.fillStyle = '#ffd76a';
-      rr(ctx, bx, byy - 6, bw * clamp(Hero.xp / XP_CURVE(Hero.level), 0, 1), 6, 3); ctx.fill();
+      rr(ctx, xb.x, xb.y - 6, xb.w * clamp(Hero.xp / XP_CURVE(Hero.level), 0, 1), 6, 3); ctx.fill();
     }
   },
 
@@ -388,22 +438,27 @@ const UI = {
     ctx.fillText(Hero.level, x0 + 45, y0 + 45);
     this.register(x0, y0, 62, 62, () => { if (!UI.screen) UI.open('radial'); else UI.close(); });
 
+    // Stacked bars: red health (full height), then a half-height blue mana
+    // bar, then a half-height yellow experience bar (matches the D3 layout).
     const bx = x0 + 62, bw = Math.min(180, W * 0.30);
-    this.bar(ctx, bx, y0 + 8, bw, 13, p.hp / p.maxHp, '#9c2733', '#e04a5a', `${Math.ceil(p.hp)} / ${p.maxHp}`);
-    this.bar(ctx, bx, y0 + 25, bw, 10, p.essence / p.maxEssence, '#1e5e6e', '#4ecbe0', Math.floor(p.essence));
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(bx, y0 + 39, bw, 4);
-    ctx.fillStyle = '#ffd76a';
-    ctx.fillRect(bx, y0 + 39, bw * clamp(Hero.xp / XP_CURVE(Hero.level), 0, 1), 4);
+    const hHp = 14, hSub = 7, gapB = 2;
+    this.bar(ctx, bx, y0 + 5, bw, hHp, p.hp / p.maxHp, '#9c2733', '#e04a5a', `${Math.ceil(p.hp)} / ${p.maxHp}`);
     if (p.shield > 0) {
       ctx.fillStyle = 'rgba(232,224,204,0.9)';
-      ctx.fillRect(bx, y0 + 5, bw * clamp(p.shield / (p.shieldMax + Hero.level), 0, 1), 2.5);
+      ctx.fillRect(bx, y0 + 2, bw * clamp(p.shield / (p.shieldMax + Hero.level), 0, 1), 2.5);
     }
+    const manaY = y0 + 5 + hHp + gapB;
+    this.bar(ctx, bx, manaY, bw, hSub, p.essence / p.maxEssence, '#1e5e6e', '#4ecbe0');
+    const xpY = manaY + hSub + gapB;
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    rr(ctx, bx - 1.5, xpY - 1.5, bw + 3, hSub + 3, 3); ctx.fill();
+    ctx.fillStyle = '#ffd76a';
+    ctx.fillRect(bx, xpY, bw * clamp(Hero.xp / XP_CURVE(Hero.level), 0, 1), hSub);
     // Gold under the bars.
     ctx.fillStyle = '#ffd76a';
-    ctx.font = 'bold 12px Georgia';
-    ctx.textAlign = 'left';
-    ctx.fillText(Hero.gold + ' g', bx, y0 + 56);
+    ctx.font = 'bold 11px Georgia';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(Hero.gold + ' g', bx, xpY + hSub + 12);
   },
 
   bar(ctx, x, y, w, h, frac, base, bright, label) {
@@ -663,6 +718,7 @@ const UI = {
         ctx.textAlign = 'center';
         ctx.fillText(cost, b.x, b.y + b.r * 0.66);
       }
+      this.tip(b.x - b.r, b.y - b.r, b.r * 2, b.r * 2, s.name, SKILL_DESCS[s.id]);
     }
     ctx.globalAlpha = 1;
   },
