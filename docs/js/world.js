@@ -19,6 +19,7 @@ const World = {
   decos: [],            // flat decorations
   objects: [],          // {type:'chest'|'shrine'|'urn'|'vendor', x, y, used}
   breakables: [],       // smashable clutter {type, x, y, r, big, broken, seed}
+  rivers: [],           // water bands (open zones) {horizontal, pos, hw, bh, bridges[]}
   packs: [],            // spawn descriptors consumed by Game
   spawn: { x: 0, y: 0 },
   bossPos: { x: 0, y: 0 },
@@ -34,6 +35,7 @@ const World = {
     this.decos = [];
     this.objects = [];
     this.breakables = [];
+    this.rivers = [];
     this.packs = [];
     this.portal = null;
     this.patternFill = null;
@@ -44,8 +46,14 @@ const World = {
   },
 
   genOpen(zone) {
-    // Rifts/Adventure carry a tile count; bounty lands stay one fixed map.
-    this.W = this.H = zone.tiles ? clamp(2000 + zone.tiles * 260, 2400, 5600) : 2600;
+    // Map size varies land to land — some are far bigger than others. A zone
+    // may pin its character with `sizeMul`; otherwise it's rolled per visit.
+    // Rifts/Adventure carry a tile count as the base.
+    const base = zone.tiles ? clamp(2000 + zone.tiles * 260, 2400, 5600) : 2600;
+    const rollW = zone.sizeMul || rand(0.82, 1.4);
+    const rollH = zone.sizeMul ? zone.sizeMul * rand(0.9, 1.12) : rand(0.82, 1.4);
+    this.W = clamp(Math.round(base * rollW), 2200, 6200);
+    this.H = clamp(Math.round(base * rollH), 2200, 6200);
     this.cols = Math.ceil(this.W / CELL);
     this.rows = Math.ceil(this.H / CELL);
     this.walls = null;
@@ -54,13 +62,19 @@ const World = {
     this.spawn = { x: 300, y: this.H - 300 };
     this.bossPos = { x: this.W - rand(280, 420), y: rand(280, 420) };
 
+    // Rivers first (with bridges) so everything else avoids the water.
+    this.makeRivers(zone);
+
     const propTypes = ['tomb', 'tomb', 'cross', 'pillar', 'tree', 'obelisk', 'rock'];
+    // Bigger maps carry proportionally more scenery.
+    const propTarget = clamp(Math.round(this.W * this.H / 110000), 50, 130);
     let attempts = 0;
-    while (this.props.length < 60 && attempts++ < 900) {
+    while (this.props.length < propTarget && attempts++ < propTarget * 16) {
       const x = rand(90, this.W - 90);
       const y = rand(90, this.H - 90);
       if (dist(x, y, this.spawn.x, this.spawn.y) < 260) continue;
       if (dist(x, y, this.bossPos.x, this.bossPos.y) < 260) continue;
+      if (this.blockedTerrain(x, y)) continue;
       let ok = true;
       for (const p of this.props) if (dist(x, y, p.x, p.y) < 115) { ok = false; break; }
       if (!ok) continue;
@@ -68,9 +82,16 @@ const World = {
       const r = { tomb: 16, cross: 13, pillar: 19, tree: 15, obelisk: 17, rock: 20 }[type];
       this.props.push({ x, y, r, type, seed: Math.random() });
     }
+
+    // Forests: dense groves of trees you weave through for cover.
+    this.makeForests(zone);
+
     const decoTypes = ['skull', 'bones', 'ribcage', 'rubble', 'crack', 'blood', 'moss', 'grass'];
-    for (let i = 0; i < 240; i++) {
-      this.decos.push({ x: rand(50, this.W - 50), y: rand(50, this.H - 50), type: pick(decoTypes), seed: Math.random() });
+    const decoTarget = Math.round(this.W * this.H / 26000);
+    for (let i = 0; i < decoTarget; i++) {
+      const x = rand(50, this.W - 50), y = rand(50, this.H - 50);
+      if (this.inWater(x, y)) continue;
+      this.decos.push({ x, y, type: pick(decoTypes), seed: Math.random() });
     }
 
     // Monster packs strung between entrance and lair.
@@ -85,24 +106,127 @@ const World = {
       34, () => this.openPoint(120));
   },
 
+  // Water bands crossed by wooden bridges. Each river spans the whole map on
+  // one axis; a guaranteed central bridge keeps the land traversable.
+  makeRivers(zone) {
+    let count;
+    if (typeof zone.rivers === 'number') count = zone.rivers;
+    else if (zone.rivers === false) count = 0;
+    else count = pick([0, 0, 1, 1, 1, 2]);   // variety: usually none or one
+    if (count <= 0) return;
+    // All rivers on a map share one orientation so they stay PARALLEL — two
+    // crossing rivers could otherwise put their bridges in opposite quadrants
+    // and wall the boss off. Parallel rivers are always independently crossable.
+    const horizontal = Math.random() < 0.5;
+    const dim = horizontal ? this.H : this.W;
+    const along = horizontal ? this.W : this.H;
+    let tries = 0;
+    while (this.rivers.length < count && tries++ < 24) {
+      const pos = rand(dim * 0.3, dim * 0.7);
+      if (this.rivers.some(r => Math.abs(r.pos - pos) < 620)) continue;  // spread them out
+      const hw = rand(36, 62);              // half-width of the water
+      const bh = 42;                        // half-width of each bridge crossing
+      const bridges = [along * rand(0.4, 0.6)];   // guaranteed central crossing
+      if (Math.random() < 0.6) bridges.push(along * rand(0.15, 0.85));
+      this.rivers.push({ horizontal, pos, hw, bh, bridges });
+    }
+  },
+
+  makeForests(zone) {
+    let clusters;
+    if (zone.forest === false) clusters = 0;
+    else if (zone.forest === true) clusters = randInt(2, 4);
+    else clusters = randInt(0, 3);
+    // Scale a little with map size.
+    clusters = Math.round(clusters * clamp(this.W * this.H / 6760000, 0.7, 1.8));
+    for (let c = 0; c < clusters; c++) {
+      let cx = 0, cy = 0, found = false;
+      for (let t = 0; t < 30 && !found; t++) {
+        cx = rand(280, this.W - 280);
+        cy = rand(280, this.H - 280);
+        if (dist(cx, cy, this.spawn.x, this.spawn.y) < 440) continue;
+        if (dist(cx, cy, this.bossPos.x, this.bossPos.y) < 380) continue;
+        if (this.inWater(cx, cy)) continue;
+        found = true;
+      }
+      if (!found) continue;
+      const R = rand(150, 280);
+      const n = randInt(12, 24);
+      let a2 = 0, placed = 0;
+      while (placed < n && a2++ < n * 6) {
+        const a = rand(TAU), d = rand(24, R);
+        const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
+        if (x < 80 || y < 80 || x > this.W - 80 || y > this.H - 80) continue;
+        if (dist(x, y, this.spawn.x, this.spawn.y) < 300) continue;
+        if (dist(x, y, this.bossPos.x, this.bossPos.y) < 260) continue;
+        if (this.blockedTerrain(x, y)) continue;
+        let ok = true;
+        for (const p of this.props) if (dist(x, y, p.x, p.y) < 50) { ok = false; break; }
+        if (!ok) continue;
+        this.props.push({ x, y, r: 13, type: 'tree', seed: Math.random(), forest: true });
+        placed++;
+      }
+      // Underbrush (non-colliding) fills out the grove floor.
+      for (let i = 0; i < 12; i++) {
+        const a = rand(TAU), d = rand(0, R);
+        const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
+        if (x < 50 || y < 50 || x > this.W - 50 || y > this.H - 50 || this.inWater(x, y)) continue;
+        this.decos.push({ x, y, type: pick(['grass', 'grass', 'moss', 'bones']), seed: Math.random() });
+      }
+    }
+  },
+
+  // Is (x,y) in impassable water? Bridge crossings read as walkable.
+  inWater(x, y) {
+    for (const rv of this.rivers) {
+      const along = rv.horizontal ? x : y;
+      const across = rv.horizontal ? y : x;
+      if (Math.abs(across - rv.pos) > rv.hw) continue;
+      if (rv.bridges.some(b => Math.abs(along - b) <= rv.bh)) continue;
+      return true;
+    }
+    return false;
+  },
+
+  // On (or near) a bridge deck — nothing should spawn here or it blocks the way.
+  onBridge(x, y) {
+    for (const rv of this.rivers) {
+      const along = rv.horizontal ? x : y;
+      const across = rv.horizontal ? y : x;
+      if (Math.abs(across - rv.pos) > rv.hw + 16) continue;
+      if (rv.bridges.some(b => Math.abs(along - b) <= rv.bh + 8)) return true;
+    }
+    return false;
+  },
+
+  // Water or a bridge deck — used to keep scenery/objects off the crossing.
+  blockedTerrain(x, y) {
+    return this.inWater(x, y) || this.onBridge(x, y);
+  },
+
   openPoint(minSpawnDist) {
-    for (let t = 0; t < 40; t++) {
+    for (let t = 0; t < 60; t++) {
       const x = rand(160, this.W - 160);
       const y = rand(160, this.H - 160);
       if (dist(x, y, this.spawn.x, this.spawn.y) < minSpawnDist + 300) continue;
+      if (this.blockedTerrain(x, y)) continue;
       return { x, y };
     }
     return { x: this.W / 2, y: this.H / 2 };
   },
 
   genDungeon(zone) {
-    this.cols = this.rows = zone.tiles ? clamp(48 + zone.tiles * 4, 52, 88) : 56;
+    const baseCells = zone.tiles ? clamp(48 + zone.tiles * 4, 52, 88) : 56;
+    const sizeMul = zone.sizeMul || rand(0.85, 1.25);   // dungeons vary in size too
+    this.cols = this.rows = clamp(Math.round(baseCells * sizeMul), 44, 110);
     this.W = this.cols * CELL;
     this.H = this.rows * CELL;
     const walls = new Uint8Array(this.cols * this.rows).fill(1);
     const rooms = [];
+    // Bigger crypts hold more rooms.
+    const roomTarget = clamp(Math.round(this.cols * this.rows / 320), 10, 28);
     let attempts = 0;
-    while (rooms.length < 14 && attempts++ < 300) {
+    while (rooms.length < roomTarget && attempts++ < roomTarget * 30) {
       const w = randInt(5, 10), h = randInt(5, 10);
       const x = randInt(2, this.cols - w - 2), y = randInt(2, this.rows - h - 2);
       let ok = true;
@@ -314,13 +438,26 @@ const World = {
 
   isFloorAt(x, y) {
     if (x < 30 || y < 30 || x > this.W - 30 || y > this.H - 30) return false;
-    if (!this.walls) return true;
-    return !this.isWall(Math.floor(x / CELL), Math.floor(y / CELL));
+    if (this.walls) return !this.isWall(Math.floor(x / CELL), Math.floor(y / CELL));
+    if (this.rivers.length && this.inWater(x, y)) return false;
+    return true;
   },
 
   collide(e) {
     e.x = clamp(e.x, 34, this.W - 34);
     e.y = clamp(e.y, 34, this.H - 34);
+    // Rivers block movement except where a bridge crosses.
+    for (const rv of this.rivers) {
+      const along = rv.horizontal ? e.x : e.y;
+      if (rv.bridges.some(b => Math.abs(along - b) <= rv.bh)) continue;
+      const across = rv.horizontal ? e.y : e.x;
+      const d = across - rv.pos;
+      const lim = rv.hw + e.r;
+      if (Math.abs(d) < lim) {
+        const to = rv.pos + (d >= 0 ? lim : -lim);
+        if (rv.horizontal) e.y = to; else e.x = to;
+      }
+    }
     if (this.walls) {
       // Circle vs the 3x3 neighborhood of wall cells.
       const cx = Math.floor(e.x / CELL), cy = Math.floor(e.y / CELL);
@@ -414,6 +551,7 @@ const World = {
 
     if (this.walls) this.drawWalls(ctx, cam, w, h);
     else {
+      this.drawWater(ctx, cam, w, h);
       ctx.strokeStyle = 'rgba(111,247,195,0.10)';
       ctx.lineWidth = 3;
       ctx.strokeRect(0, 0, this.W, this.H);
@@ -483,6 +621,68 @@ const World = {
         }
       }
     }
+  },
+
+  drawWater(ctx, cam, w, h) {
+    if (!this.rivers.length) return;
+    const t = (typeof Game !== 'undefined' && Game.time) || 0;
+    for (const rv of this.rivers) {
+      const bx = rv.horizontal ? 0 : rv.pos - rv.hw;
+      const by = rv.horizontal ? rv.pos - rv.hw : 0;
+      const bw = rv.horizontal ? this.W : rv.hw * 2;
+      const bh = rv.horizontal ? rv.hw * 2 : this.H;
+      // Deep water body + a lighter central channel.
+      ctx.fillStyle = '#0e2233';
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.fillStyle = 'rgba(38,86,116,0.5)';
+      if (rv.horizontal) ctx.fillRect(bx, rv.pos - rv.hw * 0.5, bw, rv.hw);
+      else ctx.fillRect(rv.pos - rv.hw * 0.5, by, rv.hw, bh);
+      // Shimmer ripples, only along the visible stretch.
+      ctx.strokeStyle = 'rgba(150,200,220,0.16)';
+      ctx.lineWidth = 1.5;
+      const a0 = rv.horizontal ? clamp(cam.x, 0, this.W) : clamp(cam.y, 0, this.H);
+      const a1 = rv.horizontal ? clamp(cam.x + w, 0, this.W) : clamp(cam.y + h, 0, this.H);
+      for (let a = a0; a < a1; a += 44) {
+        const off = Math.sin(a * 0.03 + t * 1.5) * rv.hw * 0.28;
+        ctx.beginPath();
+        if (rv.horizontal) { ctx.moveTo(a, rv.pos + off); ctx.lineTo(a + 26, rv.pos + off); }
+        else { ctx.moveTo(rv.pos + off, a); ctx.lineTo(rv.pos + off, a + 26); }
+        ctx.stroke();
+      }
+      // Muddy banks.
+      ctx.strokeStyle = 'rgba(20,14,10,0.55)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      if (rv.horizontal) {
+        ctx.moveTo(bx, by); ctx.lineTo(bx + bw, by);
+        ctx.moveTo(bx, by + bh); ctx.lineTo(bx + bw, by + bh);
+      } else {
+        ctx.moveTo(bx, by); ctx.lineTo(bx, by + bh);
+        ctx.moveTo(bx + bw, by); ctx.lineTo(bx + bw, by + bh);
+      }
+      ctx.stroke();
+      for (const b of rv.bridges) this.drawBridge(ctx, rv, b);
+    }
+  },
+
+  drawBridge(ctx, rv, b) {
+    const half = rv.bh;            // reach along the river
+    const over = rv.hw + 12;       // reach across (onto both banks)
+    let x, y, wdt, hgt;
+    if (rv.horizontal) { x = b - half; y = rv.pos - over; wdt = half * 2; hgt = over * 2; }
+    else { x = rv.pos - over; y = b - half; wdt = over * 2; hgt = half * 2; }
+    ctx.fillStyle = '#4a3a24';
+    ctx.fillRect(x, y, wdt, hgt);
+    ctx.strokeStyle = 'rgba(20,14,8,0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    if (rv.horizontal) { for (let py = y + 5; py < y + hgt; py += 8) { ctx.moveTo(x, py); ctx.lineTo(x + wdt, py); } }
+    else { for (let px = x + 5; px < x + wdt; px += 8) { ctx.moveTo(px, y); ctx.lineTo(px, y + hgt); } }
+    ctx.stroke();
+    // Side rails.
+    ctx.fillStyle = '#6b5330';
+    if (rv.horizontal) { ctx.fillRect(x, y, wdt, 3); ctx.fillRect(x, y + hgt - 3, wdt, 3); }
+    else { ctx.fillRect(x, y, 3, hgt); ctx.fillRect(x + wdt - 3, y, 3, hgt); }
   },
 
   drawDeco(ctx, d) {
