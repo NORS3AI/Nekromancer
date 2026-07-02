@@ -105,15 +105,20 @@ loot at the artisans. The hero is persistent (localStorage).
   minutes apart). Commits/pushes/merges still worked; the site just stayed on the
   previous version. Recovery: it self-heals on the next push, or re-run the failed
   run from the Actions tab. Avoid merging several PRs back-to-back when possible.
-- **Do NOT add a custom `actions/deploy-pages` workflow while the repo's Pages
-  source is "Deploy from a branch"** (learned the hard way, 2026-07-02, v0.0.6/7):
-  workflow-submitted deployments sit in `deployment_queued` FOREVER under the
-  legacy source (three runs, ~30 min total, zero progress), and when the deploy
-  step times out it CANCELS the deployment — which also kills GitHub's managed
-  branch deploy for the same commit. The site stayed pinned on v0.0.4 until the
-  workflow was removed. A custom workflow only works after the owner flips
-  Settings → Pages → Build and deployment → Source to "GitHub Actions" — a
-  setting neither Claude's token nor any API we have can change.
+- **The Pages source is now "GitHub Actions"** (owner flipped it in Settings on
+  2026-07-02 ~16:30 UTC). Consequences: GitHub's managed `pages build and
+  deployment` no longer runs, and `.github/workflows/pages.yml` is the ONLY
+  deployer — never delete it while the source is set to GitHub Actions, or
+  nothing deploys at all. (Deleting it was briefly done that day; the site froze.)
+- History of the trap, for the record: while the source was still "Deploy from a
+  branch", workflow-submitted deployments sat in `deployment_queued` forever
+  (three runs, ~30 min, zero progress) and the deploy step's timeout CANCELLED
+  the shared deployment, killing the managed branch deploy for the same commit —
+  the live site stayed pinned on v0.0.4 all afternoon. A custom deploy-pages
+  workflow and branch-source Pages must never coexist.
+- Claude's token cannot re-run failed Actions runs, dispatch workflows, or read
+  repo Settings (403) — recovering a failed deploy means merging a new commit,
+  or the owner clicking re-run in the Actions tab.
 
 ## Testing
 
