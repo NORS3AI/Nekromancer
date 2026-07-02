@@ -32,7 +32,8 @@ The first (and currently only) class is the Necromancer, deliberately renamed **
 | `particles.js` | `Particles` (world-space particles, floating texts, expanding rings, screenshake) + `fx*` helpers (`fxBlood`, `fxBone`, `fxExplosion`, `fxNova`, `fxSummon`, `fxLevel`, `fxHeal`, `dmgText`) |
 | `input.js` | `Input` — virtual joystick (left ~55% of screen), touch skill buttons, WASD/Space/1-4/mouse. Discrete presses are buffered in `Input.pendingSlots` so taps are never dropped between frames |
 | `world.js` | `World` — 2600×2600 graveyard. Tiled procedural ground pattern, flat decos, tall colliding props (tombstones, pillars, dead trees, rune obelisks). `collide(entity)` does circle push-out. Props join the y-sorted draw pass via `propsInView()` |
-| `entities.js` | `Player`, `Enemy` (+ `ENEMY_TYPES`: zombie, skeleton, ghoul, cultist, brute boss), `Minion` (skeletal warrior), `Corpse`, `Pickup` (gold / health orb), `Projectile` (shard / spear / enemy bolt) |
+| `entities.js` | `Player`, `Enemy` (+ `ENEMY_TYPES`: zombie, skeleton, ghoul, cultist, brute boss), `Minion` (skeletal warrior), `Corpse`, `Pickup` (gold / health orb / item), `Projectile` (shard / spear / enemy bolt) |
+| `items.js` | `Items` + `RARITIES`/`ITEM_SLOTS` — loot with 4 rarities (Common/Magic/Rare/Legendary), wave-scaled affix rolls (dmg%, life, crit, essence/s, life/s), 3 equip slots (weapon/armor/ring). Better drops auto-equip; worse ones salvage into gold. `Items.apply()` recomputes the player's derived stats from base + gear |
 | `skills.js` | `Skills` — slot 0 primary + 4 spenders, cooldowns, essence costs, auto-aim (`nearestEnemy`/`aimAngle`), procedural button icons |
 | `ui.js` | `UI` — HUD (portrait, HP/Essence/XP bars, wave, gold), joystick ghost, skill buttons with radial cooldown sweeps, wave banner, menu & death screens. `UI.buttonAt(x,y)` is the touch hit-test used by Input |
 | `game.js` | `Game` — rAF loop, states `menu`/`playing`/`over`, wave director (endless waves, brute boss every 5th), camera with lerp + shake, y-sorted compositing, vignette, low-HP heartbeat overlay |
@@ -43,8 +44,13 @@ The first (and currently only) class is the Necromancer, deliberately renamed **
 - Every non-boss enemy leaves a **Corpse** (fuel for Corpse Explosion, decays ~14s).
 - Skeletal warriors: max 4, 16s lifespan, oldest is replaced when re-summoning.
 - Enemy stats scale per wave (`1 + 0.16·(wave-1)` HP etc.), spawn cap ~26 concurrent.
-- Leveling: `xpNext = 50·level^1.45`, +12 maxHP, +9% damage, full heal per level.
-- Crits: flat 10% chance, 1.8×, orange damage numbers.
+- Leveling: `xpNext = 50·level^1.45`, +12 base maxHP, +9% base damage, full heal per level.
+  Level bonuses go to `baseMaxHp`/`baseDmg`; `Items.apply()` folds gear on top.
+- Crits: `player.critChance` (10% base + gear), 1.8×, orange damage numbers.
+- Loot: 4.5% drop chance per kill (bosses always drop, rare+). Item pickups render as
+  rarity-colored diamonds with loot beams. Gear panel: tap portrait or press `I`.
+- Persistence: best wave in `localStorage['nekromancer_best']` (shown on menu/death screen).
+  Gear is per-run (roguelite).
 
 ### Rendering / style notes
 
@@ -65,7 +71,7 @@ it is intentionally not committed).
 ## Roadmap ideas (not yet built)
 
 - More Nekromancer skills / skill selection & rune variants
-- Items and equipment (D3-style rarities), inventory UI
+- Full inventory UI (manual equip/compare) on top of the auto-equip loot
 - More classes (Barbarian, Sorcerer, ...), class select screen
 - Persistent progression via localStorage (gold, unlocked skills)
 - Bosses with mechanics (Butcher-style charge, ground telegraphs)

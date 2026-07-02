@@ -7,6 +7,17 @@
 
 const UI = {
   buttons: [],   // {x, y, r, slot}
+  toasts: [],    // {text, color, until}
+  showGear: false,
+
+  toast(text, color) {
+    this.toasts.push({ text, color, until: Game.time + 3 });
+    if (this.toasts.length > 3) this.toasts.shift();
+  },
+
+  portraitHit(x, y) {
+    return dist(x, y, 40, 38) < 36;
+  },
 
   layout(W, H) {
     this.buttons.length = 0;
@@ -39,8 +50,10 @@ const UI = {
     if (!p) return;
 
     this.drawTopBar(ctx, W, H, p);
+    this.drawToasts(ctx, W);
     this.drawJoystick(ctx);
     this.drawSkillButtons(ctx, p);
+    if (this.showGear && Game.state === 'playing') this.drawGearPanel(ctx, W, H, p);
     this.drawBanner(ctx, W, H);
     if (Game.state === 'over') this.drawDeath(ctx, W, H);
   },
@@ -108,6 +121,85 @@ const UI = {
     ctx.beginPath(); ctx.arc(W - 16, y0 + 13, 5, 0, TAU); ctx.fill();
     ctx.fillStyle = '#b8860b';
     ctx.beginPath(); ctx.arc(W - 16, y0 + 13, 2.5, 0, TAU); ctx.fill();
+  },
+
+  drawToasts(ctx, W) {
+    for (let i = this.toasts.length - 1; i >= 0; i--) {
+      if (this.toasts[i].until < Game.time) this.toasts.splice(i, 1);
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'bold 13px Georgia';
+    this.toasts.forEach((t, i) => {
+      const left = t.until - Game.time;
+      ctx.globalAlpha = clamp(left / 0.5, 0, 1);
+      const y = 62 + i * 20;
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+      ctx.strokeText(t.text, W / 2, y);
+      ctx.fillStyle = t.color;
+      ctx.fillText(t.text, W / 2, y);
+    });
+    ctx.globalAlpha = 1;
+  },
+
+  drawGearPanel(ctx, W, H, p) {
+    const w = Math.min(300, W * 0.6);
+    const x = 14, y = 74;
+    const slots = Object.keys(ITEM_SLOTS);
+    // Measure: header + per-slot block.
+    let lines = 3; // stat summary
+    for (const s of slots) {
+      const it = Items.equipped[s];
+      lines += 1 + (it ? Items.statLines(it).length : 1);
+    }
+    const h = 34 + lines * 16 + slots.length * 8;
+
+    ctx.fillStyle = 'rgba(8,5,12,0.88)';
+    rr(ctx, x, y, w, h, 8); ctx.fill();
+    ctx.strokeStyle = '#3a3448';
+    ctx.lineWidth = 1.5;
+    rr(ctx, x, y, w, h, 8); ctx.stroke();
+
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = 'bold 14px Georgia';
+    ctx.fillStyle = '#c9bfa8';
+    ctx.fillText('EQUIPMENT', x + 12, y + 18);
+    ctx.textAlign = 'right';
+    ctx.font = '11px Georgia';
+    ctx.fillStyle = '#6f6552';
+    ctx.fillText('tap portrait / I to close', x + w - 10, y + 18);
+    ctx.textAlign = 'left';
+
+    let yy = y + 40;
+    for (const s of slots) {
+      const it = Items.equipped[s];
+      ctx.font = 'bold 12px Georgia';
+      if (it) {
+        ctx.fillStyle = RARITIES[it.rarity].color;
+        ctx.fillText(`${ITEM_SLOTS[s].label}:  ${it.name}`, x + 12, yy);
+        yy += 16;
+        ctx.font = '11px Georgia';
+        ctx.fillStyle = '#9a9080';
+        for (const line of Items.statLines(it)) {
+          ctx.fillText('  ' + line, x + 20, yy);
+          yy += 16;
+        }
+      } else {
+        ctx.fillStyle = '#7d7568';
+        ctx.fillText(`${ITEM_SLOTS[s].label}:`, x + 12, yy);
+        yy += 16;
+        ctx.font = 'italic 11px Georgia';
+        ctx.fillStyle = '#544d44';
+        ctx.fillText('  — empty —', x + 20, yy);
+        yy += 16;
+      }
+      yy += 8;
+    }
+    ctx.font = '11px Georgia';
+    ctx.fillStyle = '#57b894';
+    ctx.fillText(`Damage ×${p.dmgMult.toFixed(2)}`, x + 12, yy); yy += 16;
+    ctx.fillText(`Crit ${Math.round(p.critChance * 100)}%   ·   Life ${p.maxHp}`, x + 12, yy); yy += 16;
+    ctx.fillText(`Essence ${p.essenceRegen.toFixed(1)}/s   ·   Regen ${p.hpRegen.toFixed(1)}/s`, x + 12, yy);
   },
 
   bar(ctx, x, y, w, h, frac, base, bright, label) {
@@ -272,6 +364,13 @@ const UI = {
     ctx.fillStyle = '#8a2635';
     ctx.fillText('~ Rise of the Dead ~', cx, cy + 52);
 
+    const best = Game.getBest();
+    if (best > 0) {
+      ctx.font = 'bold 14px Georgia';
+      ctx.fillStyle = '#ffd76a';
+      ctx.fillText('Best: Wave ' + best, cx, cy + 80);
+    }
+
     ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t * 3.2);
     ctx.font = 'bold 19px Georgia';
     ctx.fillStyle = '#6ff7c3';
@@ -299,6 +398,11 @@ const UI = {
     ctx.font = '16px Georgia';
     ctx.fillStyle = '#c9bfa8';
     ctx.fillText(`Wave ${Game.wave}  ·  ${Game.kills} slain  ·  Level ${Game.player.level}  ·  ${Game.gold} gold`, cx, cy + 44);
+    if (Game.newBest) {
+      ctx.font = 'bold 15px Georgia';
+      ctx.fillStyle = '#ffd76a';
+      ctx.fillText('★ NEW BEST ★', cx, cy + 68);
+    }
 
     if (Game.overT > 1.2) {
       ctx.globalAlpha = 0.6 + 0.4 * Math.sin(Game.time * 3.2);

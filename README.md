@@ -17,6 +17,7 @@ Runs in any modern browser — best experienced on a phone in landscape, but ful
 | Corpse Explosion | Skill button | `2` |
 | Skeletal Warriors | Skill button | `3` |
 | Blood Nova | Skill button | `4` |
+| Equipment panel | Tap portrait | `I` |
 | Mute | — | `M` |
 
 All skills auto-aim at the nearest enemy — one-thumb friendly.
@@ -31,7 +32,11 @@ All skills auto-aim at the nearest enemy — one-thumb friendly.
 
 ## Gameplay
 
-Endless waves of the risen dead — zombies, skeletons, ghouls, cultists — with a hulking **Brute** boss every 5th wave. Kill, level up, collect gold and health orbs, and see how deep into the night you can survive.
+Endless waves of the risen dead — zombies, skeletons, ghouls, cultists — with a hulking **Brute** boss every 5th wave. Kill, level up, collect gold and health orbs, and see how deep into the night you can survive. Your best wave is remembered between sessions.
+
+## Loot
+
+Enemies drop equipment in four rarities — **Common**, <ins>Magic</ins>, **Rare** and **Legendary** — for three slots (weapon, armor, ring), with wave-scaled affixes: damage %, life, crit chance, essence regen and life regen. Upgrades equip automatically; anything worse is salvaged into gold on pickup. Tap your portrait (or press `I`) to inspect your gear and stats. Bosses always drop Rare or better.
 
 ## Tech
 
