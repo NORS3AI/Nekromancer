@@ -18,11 +18,19 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.1.5-alpha';
+const GAME_VERSION = 'v0.1.6-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.1.6-alpha', date: 'July 2026',
+    notes: [
+      'New STASH (camp menu, after Skills & Passives): 100-slot deep storage with sort (Score/Rarity/Slot/Name), filter chips (All/Weapon/Armor/Jewelry) and a name search',
+      'Deposit your whole bag with one tap, withdraw or salvage any stashed item, with upgrade arrows vs your equipped gear',
+      'The stash is saved with your hero'
+    ]
+  },
   {
     v: 'v0.1.5-alpha', date: 'July 2026',
     notes: [

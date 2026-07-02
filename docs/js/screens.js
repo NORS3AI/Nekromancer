@@ -26,6 +26,7 @@ const Screens = {
       case 'pause': this.pause(ctx, W, H); break;
       case 'reward': this.reward(ctx, W, H); break;
       case 'character': this.character(ctx, W, H); break;
+      case 'stash': this.stash(ctx, W, H); break;
       case 'vendor': this.vendor(ctx, W, H); break;
       case 'settings': this.settings(ctx, W, H); break;
       case 'devconfirm': this.devconfirm(ctx, W, H); break;
@@ -185,6 +186,7 @@ const Screens = {
       ['⛰ THE WILDS', () => UI.open('wilds'), '#6ff7c3'],
       ['INVENTORY', () => UI.open('radial'), '#e8e0cc'],
       ['SKILLS & PASSIVES', () => UI.open('skills'), '#e8e0cc'],
+      ['STASH', () => UI.open('stash'), '#8fb0e8'],
       ['BLACKSMITH', () => UI.open('smith'), '#ffb43a'],
       ['JEWELER', () => UI.open('jeweler'), '#b06adf'],
       ['MYSTIC', () => UI.open('mystic'), '#4ecbe0'],
@@ -1436,6 +1438,105 @@ const Screens = {
     }
     if (!tips.length) tips.push('Your build is battle-ready. Sanctuary awaits.');
     return tips;
+  },
+
+  // ------------------------------------------------- stash (100 slots)
+
+  stash(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const pw = Math.min(640, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 16, 560);
+    const py = Math.max(8, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, 'STASH  (' + Hero.stash.length + ' / ' + Hero.STASH_SIZE + ')');
+
+    if (!UI.sel.stashSort) UI.sel.stashSort = 'score';
+    if (!UI.sel.stashFilter) UI.sel.stashFilter = 'all';
+    const narrow = pw < 520;
+
+    // Controls: sort · filter chips · search.
+    let cy = py + 46;
+    const sorts = { score: 'Score', rarity: 'Rarity', slot: 'Slot', name: 'Name' };
+    UI.btn(ctx, px + 16, cy, 116, 26, 'Sort: ' + sorts[UI.sel.stashSort], () => {
+      const o = Object.keys(sorts);
+      UI.sel.stashSort = o[(o.indexOf(UI.sel.stashSort) + 1) % o.length];
+    }, { size: 11, border: '#6b5f80' });
+    const fams = [['all', 'All'], ['weapon', 'Wpn'], ['armor', 'Armor'], ['jewelry', 'Jewel']];
+    const fw = narrow ? 52 : 66;
+    fams.forEach((f, i) => {
+      UI.btn(ctx, px + 140 + i * (fw + 4), cy, fw, 26, f[1], () => { UI.sel.stashFilter = f[0]; UI.sel.stashScroll = 0; },
+        { size: 10, bg: UI.sel.stashFilter === f[0] ? 'rgba(60,52,78,0.95)' : undefined });
+    });
+    UI.btn(ctx, px + pw - 150, cy, 134, 26, UI.sel.stashSearch ? '\u{1F50D} ' + this.fitText(ctx, UI.sel.stashSearch, 90) : '\u{1F50D} Search…', () => {
+      let q = null;
+      try { q = window.prompt('Search stash by name:', UI.sel.stashSearch || ''); } catch (e) { /* blocked */ }
+      if (q !== null) { UI.sel.stashSearch = q.trim() || null; UI.sel.stashScroll = 0; }
+    }, { size: 10, border: '#6b5f80' });
+    cy += 32;
+
+    UI.btn(ctx, px + 16, cy, pw - 32, 28,
+      'DEPOSIT ALL FROM BAG  (bag ' + Hero.bag.length + '/' + Hero.BAG_SIZE + ')',
+      Hero.bag.length ? () => Items.depositAll() : null,
+      { size: 11, disabled: !Hero.bag.length, border: '#57b894', color: '#6ff7c3' });
+    cy += 36;
+
+    // Filter + sort + search the view.
+    const famOf = s => (s === 'weapon' || s === 'offhand') ? 'weapon'
+      : (s === 'amulet' || s === 'ring1' || s === 'ring2') ? 'jewelry' : 'armor';
+    let view = Hero.stash.slice();
+    if (UI.sel.stashFilter !== 'all') view = view.filter(it => famOf(it.slot) === UI.sel.stashFilter);
+    if (UI.sel.stashSearch) {
+      const q = UI.sel.stashSearch.toLowerCase();
+      view = view.filter(it => it.name.toLowerCase().includes(q));
+    }
+    const sortFn = {
+      score: (a, b) => Items.score(b) - Items.score(a),
+      rarity: (a, b) => b.rarity - a.rarity || Items.score(b) - Items.score(a),
+      slot: (a, b) => a.slot.localeCompare(b.slot) || Items.score(b) - Items.score(a),
+      name: (a, b) => a.name.localeCompare(b.name)
+    }[UI.sel.stashSort];
+    view.sort(sortFn);
+
+    if (!view.length) {
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#544d44';
+      ctx.fillText(Hero.stash.length ? 'No items match this filter/search.' : 'Stash is empty — deposit items from your bag.', px + 16, cy + 18);
+      return;
+    }
+
+    const rowH = 34;
+    const listBot = py + ph - 38;
+    const visRows = Math.max(1, Math.floor((listBot - cy) / rowH));
+    const overflow = view.length > visRows;
+    const scroll = clamp(UI.sel.stashScroll || 0, 0, Math.max(0, view.length - visRows));
+    UI.sel.stashScroll = scroll;
+    view.slice(scroll, scroll + visRows).forEach((it, k) => {
+      const y = cy + k * rowH;
+      ctx.fillStyle = 'rgba(28,24,38,0.92)';
+      rr(ctx, px + 16, y, pw - 32, rowH - 4, 5); ctx.fill();
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 12px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
+      ctx.fillText(this.fitText(ctx, it.name, pw * 0.36), px + 26, y + 11);
+      ctx.font = '10px Georgia'; ctx.fillStyle = '#8a8070';
+      ctx.fillText(ITEM_SLOTS[it.slot].label + ' · lvl ' + it.mLvl, px + 26, y + 23);
+      const arrows = Items.compareArrows(it, Hero.equipped[it.slot]);
+      ctx.textAlign = 'center'; ctx.font = 'bold 12px Georgia';
+      ctx.fillStyle = arrows > 0 ? '#4ade80' : arrows < 0 ? '#e04a5a' : '#9a9080';
+      ctx.fillText(arrows > 0 ? '▲'.repeat(arrows) : arrows < 0 ? '▼'.repeat(-arrows) : '—', px + pw * 0.50, y + (rowH - 4) / 2);
+      UI.tip(px + 16, y, pw * 0.45, rowH - 4, it.name, Items.statLines(it).join(' · '));
+      UI.btn(ctx, px + pw - 178, y + 3, 84, rowH - 10, 'WITHDRAW', () => Items.fromStash(it),
+        { size: 10, border: '#57b894', color: '#6ff7c3' });
+      const canSalv = Items.canSalvage(it);
+      UI.btn(ctx, px + pw - 88, y + 3, 72, rowH - 10, canSalv ? 'SALVAGE' : 'L' + Items.salvageReq(it),
+        canSalv ? () => { const i = Hero.stash.indexOf(it); if (i >= 0) { Hero.stash.splice(i, 1); Items.grantSalvage(it); Hero.save(); } } : null,
+        { size: 10, disabled: !canSalv, border: '#8a6f4a', color: '#ffb43a' });
+    });
+    if (overflow) {
+      const half = (pw - 40) / 2, ay = py + ph - 32;
+      const maxS = view.length - visRows;
+      UI.btn(ctx, px + 16, ay, half, 24, '▲', scroll > 0 ? () => { UI.sel.stashScroll = scroll - 1; } : null, { size: 12, disabled: scroll <= 0 });
+      UI.btn(ctx, px + 24 + half, ay, half, 24, '▼', scroll < maxS ? () => { UI.sel.stashScroll = scroll + 1; } : null, { size: 12, disabled: scroll >= maxS });
+    }
   },
 
   // ------------------------------------------------- wandering vendor
