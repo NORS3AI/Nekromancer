@@ -18,11 +18,17 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.0.3-alpha';
+const GAME_VERSION = 'v0.0.4-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.0.4-alpha', date: 'July 2026',
+    notes: [
+      'Every menu now shows the red ✕ close button drawn above all content — including the bounty reward screen, the vendor, The Wilds and the Bounties map (previously some panels could cover it on phones)'
+    ]
+  },
   {
     v: 'v0.0.3-alpha', date: 'July 2026',
     notes: [

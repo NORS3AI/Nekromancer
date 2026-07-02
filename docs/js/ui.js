@@ -187,6 +187,7 @@ const UI = {
       if (this.screen) {
         this.overlayBarrier = this.hits.length;
         Screens.draw(ctx, W, H);
+        this.drawGlobalClose(ctx, W);
       }
       return;
     }
@@ -196,6 +197,7 @@ const UI = {
       if (this.screen) {
         this.overlayBarrier = this.hits.length;
         Screens.draw(ctx, W, H);
+        this.drawGlobalClose(ctx, W);
       }
       this.drawToasts(ctx, W);
       return;
@@ -233,7 +235,15 @@ const UI = {
     } else if (this.screen) {
       this.overlayBarrier = this.hits.length;
       Screens.draw(ctx, W, H);
+      this.drawGlobalClose(ctx, W);
     }
+  },
+
+  // Every open menu gets the same red ✕, drawn ABOVE all of its content
+  // (some panels used to paint over their own close button on phones).
+  drawGlobalClose(ctx, W) {
+    const s = this.safe || { top: 0, right: 0 };
+    Screens.closeX(ctx, W, { x: W - 26 - s.right, y: 26 + s.top });
   },
 
   // ------------------------------------------------------------- HUD parts

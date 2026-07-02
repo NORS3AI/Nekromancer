@@ -214,7 +214,7 @@ const Screens = {
 
   wilds(ctx, W, H) {
     this.dim(ctx, W, H);
-    this.closeX(ctx, W);
+    // (red ✕ drawn globally by UI.draw, above all content)
     const pw = Math.min(540, W - 20);
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 16, 420);
@@ -313,6 +313,9 @@ const Screens = {
     });
 
     UI.btn(ctx, px, 100 + ZONES.length * 58 + 6, pw, 40, '← BACK TO CAMP', () => { Game.state = 'camp'; }, { size: 13 });
+    // Bounties is a full state, not an overlay — give it its own red ✕.
+    const sfa = UI.safe || { top: 0, right: 0 };
+    this.closeX(ctx, W, { x: W - 26 - sfa.right, y: 26 + sfa.top, cb: () => { Game.state = 'camp'; } });
   },
 
   // ------------------------------------------------- radial inventory
@@ -368,7 +371,7 @@ const Screens = {
 
   radial(ctx, W, H) {
     this.dim(ctx, W, H);
-    this.closeX(ctx, W);
+    // (red ✕ drawn globally by UI.draw, above all content)
     const p = Game.player;
     const slots = Object.keys(ITEM_SLOTS);
     if (!UI.sel.slot) UI.sel.slot = 'weapon';
@@ -636,7 +639,7 @@ const Screens = {
 
   skills(ctx, W, H) {
     this.dim(ctx, W, H);
-    this.closeX(ctx, W);
+    // (red ✕ drawn globally by UI.draw, above all content)
     if (!UI.sel.tab) UI.sel.tab = 'actives';
     if (UI.sel.slotIdx === undefined) UI.sel.slotIdx = 0;
 
@@ -860,7 +863,7 @@ const Screens = {
 
   smith(ctx, W, H) {
     this.dim(ctx, W, H);
-    this.closeX(ctx, W);
+    // (red ✕ drawn globally by UI.draw, above all content)
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 56, 480);
@@ -922,7 +925,7 @@ const Screens = {
 
   jeweler(ctx, W, H) {
     this.dim(ctx, W, H);
-    this.closeX(ctx, W);
+    // (red ✕ drawn globally by UI.draw, above all content)
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
     UI.panel(ctx, px, 46, pw, Math.min(H - 56, 470), 'COVETOUS SHEN — JEWELER');
@@ -1083,7 +1086,7 @@ const Screens = {
 
   mystic(ctx, W, H) {
     this.dim(ctx, W, H);
-    this.closeX(ctx, W);
+    // (red ✕ drawn globally by UI.draw, above all content)
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 56, 480);
@@ -1175,7 +1178,7 @@ const Screens = {
 
   character(ctx, W, H) {
     this.dim(ctx, W, H);
-    this.closeX(ctx, W);
+    // (red ✕ drawn globally by UI.draw, above all content)
     const s = Items.computeStats();
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
@@ -1288,7 +1291,7 @@ const Screens = {
 
   vendor(ctx, W, H) {
     this.dim(ctx, W, H);
-    this.closeX(ctx, W);
+    // (red ✕ drawn globally by UI.draw, above all content)
     const o = UI.sel.vendor;
     if (!o) { UI.close(); return; }
     const pw = Math.min(540, W - 20);
@@ -1357,7 +1360,7 @@ const Screens = {
 
   settings(ctx, W, H) {
     this.dim(ctx, W, H);
-    this.closeX(ctx, W);
+    // (red ✕ drawn globally by UI.draw, above all content)
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
     const twoCol = pw >= 480;
@@ -1488,7 +1491,7 @@ const Screens = {
 
   devconfirm(ctx, W, H) {
     this.dim(ctx, W, H);
-    this.closeX(ctx, W);
+    // (red ✕ drawn globally by UI.draw, above all content)
     const pw = Math.min(360, W - 30);
     const px = W / 2 - pw / 2;
     const py = H / 2 - 90;
@@ -1510,7 +1513,7 @@ const Screens = {
 
   cheats(ctx, W, H) {
     this.dim(ctx, W, H);
-    this.closeX(ctx, W);
+    // (red ✕ drawn globally by UI.draw, above all content)
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 16, 500);
@@ -1579,7 +1582,7 @@ const Screens = {
   // scrolls inside the panel via the ▲/▼ buttons when it overflows.
   patchnotes(ctx, W, H) {
     this.dim(ctx, W, H);
-    this.closeX(ctx, W);
+    // (red ✕ drawn globally by UI.draw, above all content)
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 16, 520);
@@ -1637,7 +1640,7 @@ const Screens = {
 
   season(ctx, W, H) {
     this.dim(ctx, W, H);
-    this.closeX(ctx, W);
+    // (red ✕ drawn globally by UI.draw, above all content)
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 16, 470);
@@ -1692,7 +1695,7 @@ const Screens = {
 
   pause(ctx, W, H) {
     this.dim(ctx, W, H);
-    this.closeX(ctx, W);
+    // (red ✕ drawn globally by UI.draw, above all content)
     const bw = Math.min(280, W * 0.72);
     const cx = W / 2 - bw / 2;
     let y = H * 0.24;
@@ -1743,7 +1746,7 @@ const Screens = {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 15px Georgia';
     ctx.fillStyle = '#ffb43a';
-    ctx.fillText(Game.zone.boss + '  slain', W / 2, py + 60);
+    ctx.fillText(Game.zone ? Game.zone.boss + '  slain' : 'The bounty is done', W / 2, py + 60);
     ctx.font = '13px Georgia';
     ctx.fillStyle = '#c9bfa8';
     ctx.fillText('Horadric cache:', W / 2, py + 86);

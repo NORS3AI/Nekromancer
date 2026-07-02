@@ -430,8 +430,13 @@ const Game = {
     const dt = Math.min(0.05, (t - this.lastT) / 1000 || 0.016);
     this.lastT = t;
     this.time += dt;
-    this.update(dt);
-    this.draw();
+    // One bad frame must never kill the game loop.
+    try {
+      this.update(dt);
+      this.draw();
+    } catch (e) {
+      console.error('frame error:', e);
+    }
     requestAnimationFrame(tt => this.frame(tt));
   },
 
