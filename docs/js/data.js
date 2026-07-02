@@ -18,11 +18,21 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.1.0-alpha';
+const GAME_VERSION = 'v0.1.1-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.1.1-alpha', date: 'July 2026',
+    notes: [
+      'New passive — Grave Caller (level 3): a fresh corpse rises at your feet every 3 seconds',
+      'Devour rune — Aura (level 22): passively devours nearby corpses for essence and 10% life, with a pulsing green aura',
+      'Frailty rune — Aura (level 30): enemies at 10% life or less near you die instantly, with a pulsing purple aura',
+      'Runes can now have their own unlock level; locked runes show the level needed',
+      'Added an assets/ folder (icons, images, models, music, ambience, fx, weather) so custom media can be dropped in later'
+    ]
+  },
   {
     v: 'v0.1.0-alpha', date: 'July 2026',
     notes: [
@@ -256,6 +266,14 @@ const SKILL_RUNES = {
   corpseExplosion: [
     { id: 'base', name: 'Corpse Explosion', desc: 'Detonate the dead.' },
     { id: 'bloodyMess', name: 'Bloody Mess', desc: 'Blast radius increased by 20%.' }
+  ],
+  devour: [
+    { id: 'base', name: 'Devour', desc: 'Consume corpses to restore essence and life.' },
+    { id: 'aura', name: 'Aura', lvl: 22, desc: 'Passively devour nearby corpses for essence and 10% life. A green aura pulses around you.' }
+  ],
+  frailty: [
+    { id: 'base', name: 'Frailty', desc: 'Curse enemies to take more damage and die early.' },
+    { id: 'aura', name: 'Aura', lvl: 30, desc: 'Enemies at 10% life or less near you die instantly. A purple aura pulses around you.' }
   ]
 };
 
@@ -341,6 +359,7 @@ const SKILL_DESCS = {
 const PASSIVE_SLOT_LEVELS = [10, 20, 30, 45];
 
 const PASSIVE_DATA = [
+  { id: 'graveCaller',    name: 'Grave Caller',        lvl: 3,  desc: 'Every 3 seconds, a fresh corpse rises at your feet.' },
   { id: 'quickening',     name: 'Quickening',          lvl: 10, desc: 'Primary skills attack 15% faster.' },
   { id: 'fueledByDeath',  name: 'Fueled by Death',     lvl: 10, desc: 'Consuming a corpse grants +20% move speed for 3s.' },
   { id: 'standAlone',     name: 'Stand Alone',         lvl: 10, desc: '+25% less damage taken while you have no minions.' },

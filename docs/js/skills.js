@@ -503,6 +503,7 @@ const Skills = {
   lotd: 0,          // Land of the Dead time remaining
   lotdSpawn: 0,
   ironRoseCd: 0,    // Iron Rose free-nova throttle
+  graveTick: 3,     // Grave Caller passive corpse timer
   byId: {},
 
   init() {
@@ -514,6 +515,7 @@ const Skills = {
     this.cds = {};
     this.lotd = 0;
     this.ironRoseCd = 0;
+    this.graveTick = 3;
   },
 
   slotSkill(slot) {
@@ -542,6 +544,19 @@ const Skills = {
       this.cds[k] = Math.max(0, this.cds[k] - dt);
     }
     this.ironRoseCd = Math.max(0, this.ironRoseCd - dt);
+
+    // Grave Caller passive: a fresh corpse rises at the hero's feet every 3s.
+    if (Hero.hasPassive('graveCaller')) {
+      this.graveTick -= dt;
+      if (this.graveTick <= 0) {
+        this.graveTick = 3;
+        const p = Game.player;
+        if (p && !p.dead) {
+          Game.corpses.push(new Corpse(p.x + rand(-12, 12), p.y + rand(-12, 12), 'zombie'));
+          fxSummon(p.x, p.y);
+        }
+      }
+    }
     if (this.lotd > 0) {
       this.lotd -= dt;
       this.lotdSpawn -= dt;

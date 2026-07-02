@@ -729,13 +729,15 @@ const Screens = {
         const bx0 = px + 48;
         const bw = Math.min(160, (pw - 62 - (runes.length - 1) * 6) / runes.length);
         runes.forEach((r, ri) => {
-          const active = Hero.rune(s.id) === r.id;
-          UI.btn(ctx, bx0 + ri * (bw + 6), fy + 52, bw, 22, r.name, () => {
-            Hero.runes[s.id] = r.id;
-            Hero.save();
-            UI.toast(r.name + ': ' + r.desc, '#6ff7c3');
-          }, {
-            size: 10,
+          const locked = r.lvl && Hero.level < r.lvl;
+          const active = (Hero.runes[s.id] || 'base') === r.id && !locked;
+          UI.btn(ctx, bx0 + ri * (bw + 6), fy + 52, bw, 22,
+            locked ? r.name + ' · L' + r.lvl : r.name, locked ? null : () => {
+              Hero.runes[s.id] = r.id;
+              Hero.save();
+              UI.toast(r.name + ': ' + r.desc, '#6ff7c3');
+            }, {
+            size: 10, disabled: locked,
             bg: active ? 'rgba(70,44,90,0.95)' : undefined,
             border: active ? '#6ff7c3' : undefined,
             color: active ? '#6ff7c3' : undefined
