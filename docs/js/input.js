@@ -34,23 +34,41 @@ const Input = {
   init(canvas) {
     window.addEventListener('keydown', e => {
       if (e.repeat) return;
+      // Keys settings: while listening, the next key binds to the chosen action.
+      if (UI.sel && UI.sel.rebindAction) {
+        if (e.code !== 'Escape') Settings.bindKey(UI.sel.rebindAction, e.code);
+        UI.sel.rebindAction = null;
+        e.preventDefault();
+        return;
+      }
       this.keys[e.code] = true;
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
-      if (e.code === 'KeyM') AudioSys.enabled = !AudioSys.enabled;
+      const action = Settings.actionFor(e.code);
+      if (action === 'mute') AudioSys.enabled = !AudioSys.enabled;
+
+      // Menu shortcuts work both in the field and back at camp.
+      if (Game.state === 'playing' || Game.state === 'camp') {
+        if (action === 'inventory') UI.screen === 'radial' ? UI.close() : UI.open('radial');
+        else if (action === 'skills') {
+          if (UI.screen === 'skills' && UI.sel.tab !== 'passives') UI.close();
+          else { UI.open('skills'); UI.sel.tab = 'actives'; }
+        } else if (action === 'passives') {
+          if (UI.screen === 'skills' && UI.sel.tab === 'passives') UI.close();
+          else { UI.open('skills'); UI.sel.tab = 'passives'; }
+        } else if (action === 'character') UI.screen === 'character' ? UI.close() : UI.open('character');
+      }
       if (Game.state === 'playing') {
-        if (e.code === 'KeyI') UI.screen === 'radial' ? UI.close() : UI.open('radial');
-        if (e.code === 'KeyK') UI.screen === 'skills' ? UI.close() : UI.open('skills');
-        if (e.code === 'Escape') UI.screen ? UI.close() : UI.open('pause');
-        if (e.code === 'KeyQ' && this.gameplayLive()) Game.player.drinkPotion();
-      } else if (e.code === 'Escape') {
+        if (action === 'pause') UI.screen ? UI.close() : UI.open('pause');
+        else if (action === 'potion' && this.gameplayLive()) Game.player.drinkPotion();
+      } else if (action === 'pause') {
         if (UI.screen) UI.close();
         else if (Game.state === 'map') Game.state = 'camp';
       }
+
       if (this.gameplayLive()) {
-        if (e.code === 'Space' || e.code === 'KeyJ') this.castQueue.push({ slot: 0, angle: null });
-        const m = /^Digit([1-5])$/.exec(e.code);
-        if (m) {
-          const slot = +m[1] + 1; // keys 1-5 are slots 2-6 (1 is the secondary)
+        if (action === 'primary') this.castQueue.push({ slot: 0, angle: null });
+        else if (action && /^skill[1-5]$/.test(action)) {
+          const slot = +action.slice(5) + 1;   // skill1 → loadout slot 2 (slot 1 is Secondary)
           const s = Skills.slotSkill(slot);
           if (s && !s.channel) this.castQueue.push({ slot, angle: null });
         }
@@ -255,12 +273,19 @@ const Input = {
     this.heldSlots.delete(slot);
   },
 
+  actionHeld(action) {
+    const codes = Settings.keys[action];
+    if (!codes) return false;
+    for (const c of codes) if (this.keys[c]) return true;
+    return false;
+  },
+
   update() {
     let kx = 0, ky = 0;
-    if (this.keys['KeyA'] || this.keys['ArrowLeft']) kx -= 1;
-    if (this.keys['KeyD'] || this.keys['ArrowRight']) kx += 1;
-    if (this.keys['KeyW'] || this.keys['ArrowUp']) ky -= 1;
-    if (this.keys['KeyS'] || this.keys['ArrowDown']) ky += 1;
+    if (this.actionHeld('moveLeft')) kx -= 1;
+    if (this.actionHeld('moveRight')) kx += 1;
+    if (this.actionHeld('moveUp')) ky -= 1;
+    if (this.actionHeld('moveDown')) ky += 1;
     if (kx || ky) {
       const d = Math.hypot(kx, ky);
       this.move.x = kx / d;
@@ -280,9 +305,9 @@ const Input = {
     for (const bt of this.buttonTouches.values()) {
       if (bt.slot === slot) return true;
     }
-    if (slot === 0) return this.mousePrimary || !!this.keys['Space'] || !!this.keys['KeyJ'];
+    if (slot === 0) return this.mousePrimary || this.actionHeld('primary');
     if (slot === 1) return this.mouseSecondary;
-    return !!this.keys['Digit' + (slot - 1)];
+    return this.actionHeld('skill' + (slot - 1));
   },
 
   heldAngle(slot) {

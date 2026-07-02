@@ -165,11 +165,60 @@ const Items = {
 
   // ------------------------------------------------------------- inventory
 
+  // Rings share two interchangeable slots; every other slot is its own family.
+  slotFamily(slot) {
+    return (slot === 'ring1' || slot === 'ring2') ? ['ring1', 'ring2'] : [slot];
+  },
+
+  // The slot in an item's family that should receive it: an empty one first,
+  // otherwise the weakest currently equipped (so an upgrade bumps the worse).
+  bestTargetSlot(item) {
+    const fam = this.slotFamily(item.slot);
+    if (fam.length === 1) return item.slot;
+    let best = fam[0], bestScore = Infinity;
+    for (const s of fam) {
+      const eq = Hero.equipped[s];
+      if (!eq) return s;
+      const sc = this.score(eq);
+      if (sc < bestScore) { bestScore = sc; best = s; }
+    }
+    return best;
+  },
+
+  // A unique piece (legendary power or set item) can't be worn twice at once.
+  uniqueConflict(item, slot) {
+    if (!item.power && !item.set) return false;
+    for (const s of this.slotFamily(item.slot)) {
+      if (s === slot) continue;
+      const o = Hero.equipped[s];
+      if (o && ((item.power && o.power === item.power) ||
+                (item.set && item.name === o.name))) return true;
+    }
+    return false;
+  },
+
+  // Does any bag item beat what's worn in this slot (or fill it if empty)?
+  slotHasUpgrade(slot) {
+    const equipped = Hero.equipped[slot];
+    const fam = this.slotFamily(slot);
+    for (const it of Hero.bag) {
+      if (fam.includes(it.slot) && this.compareArrows(it, equipped) > 0) return true;
+    }
+    return false;
+  },
+
+  anyUpgrade() {
+    for (const slot of Object.keys(ITEM_SLOTS)) if (this.slotHasUpgrade(slot)) return true;
+    return false;
+  },
+
   pickup(item) {
-    const cur = Hero.equipped[item.slot];
+    const target = this.bestTargetSlot(item);
+    const cur = Hero.equipped[target];
     // Auto-equip clear upgrades on pickup (mobile-friendly); rest go to bag.
     if (!cur) {
-      Hero.equipped[item.slot] = item;
+      item.slot = target;
+      Hero.equipped[target] = item;
       this.apply();
       UI.toast('Equipped: ' + item.name, RARITIES[item.rarity].color);
       AudioSys.sfx('level');
@@ -192,12 +241,20 @@ const Items = {
     }
   },
 
-  equip(item) {
+  equip(item, targetSlot) {
     const idx = Hero.bag.indexOf(item);
     if (idx < 0) return;
+    const fam = this.slotFamily(item.slot);
+    const slot = (targetSlot && fam.includes(targetSlot)) ? targetSlot : this.bestTargetSlot(item);
+    if (this.uniqueConflict(item, slot)) {
+      UI.toast('Only one ' + item.name + ' can be worn at once', '#e04a5a');
+      AudioSys.sfx('denied');
+      return;
+    }
     Hero.bag.splice(idx, 1);
-    const cur = Hero.equipped[item.slot];
-    Hero.equipped[item.slot] = item;
+    const cur = Hero.equipped[slot];
+    item.slot = slot;              // rebrand a ring to the chosen ring slot
+    Hero.equipped[slot] = item;
     if (cur) Hero.bag.push(cur);
     this.apply();
     UI.toast('Equipped: ' + item.name, RARITIES[item.rarity].color);
