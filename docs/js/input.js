@@ -22,6 +22,7 @@ const Input = {
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
       if (e.code === 'Space' || e.code === 'Enter') this.anyTap = true;
       if (e.code === 'KeyM') AudioSys.enabled = !AudioSys.enabled;
+      if (e.code === 'KeyI' && Game.state === 'playing') UI.showGear = !UI.showGear;
       if (e.code === 'Space' || e.code === 'KeyJ') this.pendingSlots.push(0);
       const m = /^Digit([1-4])$/.exec(e.code);
       if (m) this.pendingSlots.push(+m[1]);
@@ -36,6 +37,10 @@ const Input = {
 
     canvas.addEventListener('mousedown', e => {
       this.anyTap = true;
+      if (Game.state === 'playing' && UI.portraitHit(e.clientX, e.clientY)) {
+        UI.showGear = !UI.showGear;
+        return;
+      }
       const slot = UI.buttonAt(e.clientX, e.clientY);
       if (slot !== null) {
         this.heldSlots.add(slot);
@@ -68,6 +73,10 @@ const Input = {
     this.anyTap = true;
     for (const t of e.changedTouches) {
       const x = t.clientX, y = t.clientY;
+      if (Game.state === 'playing' && UI.portraitHit(x, y)) {
+        UI.showGear = !UI.showGear;
+        continue;
+      }
       const slot = UI.buttonAt(x, y);
       if (slot !== null && Game.state === 'playing') {
         this.touchSkill.set(t.identifier, slot);

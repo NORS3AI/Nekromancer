@@ -12,13 +12,17 @@ class Player {
     this.r = 14;
     this.speed = 178;
     this.level = 1;
+    this.baseMaxHp = 120;
     this.maxHp = 120;
     this.hp = this.maxHp;
     this.maxEssence = 100;
     this.essence = 60;
     this.essenceRegen = 3.5;
+    this.hpRegen = 0;
+    this.critChance = 0.10;
     this.xp = 0;
     this.xpNext = 50;
+    this.baseDmg = 1;
     this.dmgMult = 1;
     this.facing = -Math.PI / 2;
     this.moving = false;
@@ -44,6 +48,7 @@ class Player {
     World.collide(this);
 
     this.essence = Math.min(this.maxEssence, this.essence + this.essenceRegen * dt);
+    if (this.hpRegen > 0) this.heal(this.hpRegen * dt);
     this.flash = Math.max(0, this.flash - dt * 5);
     this.invuln = Math.max(0, this.invuln - dt);
     this.shield = Math.max(0, this.shield - dt * 2); // shield slowly bleeds off
@@ -88,9 +93,10 @@ class Player {
       this.xp -= this.xpNext;
       this.level++;
       this.xpNext = Math.round(50 * Math.pow(this.level, 1.45));
-      this.maxHp += 12;
+      this.baseMaxHp += 12;
+      this.baseDmg += 0.09;
+      Items.apply();
       this.hp = this.maxHp;
-      this.dmgMult += 0.09;
       this.essence = this.maxEssence;
       fxLevel(this.x, this.y);
       Particles.text(this.x, this.y - 46, 'LEVEL ' + this.level, { color: '#ffd76a', size: 22, life: 1.4 });
@@ -282,7 +288,7 @@ class Enemy {
 
   hurt(dmg, opts = {}) {
     if (this.dead) return;
-    const crit = Math.random() < 0.10;
+    const crit = Math.random() < (Game.player ? Game.player.critChance : 0.10);
     if (crit) dmg *= 1.8;
     this.hp -= dmg;
     this.flash = 1;
@@ -309,6 +315,11 @@ class Enemy {
     }
     if (Math.random() < (this.def.boss ? 1 : 0.07)) {
       Game.pickups.push(new Pickup(this.x, this.y, 'orb'));
+    }
+    if (Math.random() < (this.def.boss ? 1 : 0.045)) {
+      const pu = new Pickup(this.x, this.y, 'item');
+      pu.item = Items.generate(Game.wave, this.def.boss);
+      Game.pickups.push(pu);
     }
     if (this.def.boss) {
       fxExplosion(this.x, this.y, 60);
@@ -691,10 +702,12 @@ class Pickup {
         Game.gold += this.amount;
         AudioSys.sfx('gold');
         Particles.text(p.x, p.y - 34, '+' + this.amount, { color: '#ffd76a', size: 13 });
-      } else {
+      } else if (this.kind === 'orb') {
         p.heal(Math.round(p.maxHp * 0.22));
         fxHeal(p.x, p.y);
         AudioSys.sfx('orb');
+      } else if (this.kind === 'item') {
+        Items.acquire(this.item);
       }
     }
   }
@@ -711,7 +724,7 @@ class Pickup {
       ctx.shadowBlur = 0;
       ctx.fillStyle = '#b8860b';
       ctx.beginPath(); ctx.arc(0, 0, 2.5, 0, TAU); ctx.fill();
-    } else {
+    } else if (this.kind === 'orb') {
       ctx.fillStyle = '#e04a5a';
       ctx.shadowColor = '#e04a5a';
       ctx.shadowBlur = 12;
@@ -719,6 +732,27 @@ class Pickup {
       ctx.shadowBlur = 0;
       ctx.fillStyle = 'rgba(255,255,255,0.5)';
       ctx.beginPath(); ctx.arc(-2, -2, 2.5, 0, TAU); ctx.fill();
+    } else if (this.kind === 'item') {
+      const col = RARITIES[this.item.rarity].color;
+      // Loot beam.
+      const bg = ctx.createLinearGradient(0, -40, 0, 0);
+      bg.addColorStop(0, 'rgba(255,255,255,0)');
+      bg.addColorStop(1, col);
+      ctx.globalAlpha = 0.45 + 0.2 * Math.sin(Game.time * 4 + this.x);
+      ctx.fillStyle = bg;
+      ctx.fillRect(-2.5, -42, 5, 42);
+      ctx.globalAlpha = 1;
+      // Rarity-colored diamond.
+      ctx.save();
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = col;
+      ctx.shadowColor = col;
+      ctx.shadowBlur = 12;
+      ctx.fillRect(-6, -6, 12, 12);
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fillRect(-6, -6, 5, 5);
+      ctx.restore();
     }
     ctx.restore();
   }

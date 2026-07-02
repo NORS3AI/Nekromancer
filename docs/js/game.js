@@ -62,8 +62,17 @@ const Game = {
     this.vignette = c;
   },
 
+  getBest() {
+    try { return +localStorage.getItem('nekromancer_best') || 0; } catch (e) { return 0; }
+  },
+
   reset() {
     this.player = new Player(World.W / 2, World.H / 2);
+    Items.reset();
+    Items.apply();
+    UI.toasts.length = 0;
+    UI.showGear = false;
+    this.newBest = false;
     this.enemies.length = 0;
     this.minions.length = 0;
     this.projectiles.length = 0;
@@ -213,6 +222,12 @@ const Game = {
     this.state = 'over';
     this.overT = 0;
     Particles.shake(10);
+    try {
+      if (this.wave > this.getBest()) {
+        localStorage.setItem('nekromancer_best', this.wave);
+        this.newBest = true;
+      }
+    } catch (e) { /* storage unavailable (private mode) */ }
   },
 
   // ------------------------------------------------------------------- draw
