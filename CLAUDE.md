@@ -24,6 +24,9 @@ loot at the artisans. The hero is persistent (localStorage).
 - Keep the README "Play Game" link intact and case-correct.
 - Pure HTML/CSS/JS, no build step, no dependencies, no binary assets. Everything
   (sprites, map, sounds) is procedural.
+- **Update `PATCH_NOTES` (data.js) with EVERY addition and bug fix** — prepend a new
+  entry (newest first) and bump `GAME_VERSION` (vX.Y.Z-alpha). The version label on
+  the title screen opens the notes; the owner reads them.
 
 ## Architecture (docs/js/, plain script tags — load order matters)
 
@@ -66,8 +69,10 @@ loot at the artisans. The hero is persistent (localStorage).
   free (Jeweler has an UNSOCKET row); salvage always returns socketed gems.
 - Enchant gold cost is rarity-scaled (0.4/0.6/1.0/1.6/1.8 ×) over a low base
   (80 + 28·mLvl) so early commons cost tens of gold, not hundreds (owner rule).
-- Popup panels swallow taps on their dead space (`UI.panelRects`, filled by
-  `UI.panel()`); only taps OUTSIDE the panel close a menu. Never regress this.
+- **Menus NEVER close from stray taps (owner rule)**: `UI.click()` swallows every
+  unmatched tap while a screen is open. The only ways out are the red ✕
+  (`Screens.closeX`, present on every screen incl. the gem popup), the Escape key,
+  or a screen's own buttons (CANCEL / LEAVE / RESUME / reward's button).
 - **Endgame (level 70)**: `SEASON` screen in camp → `Game.startRift()` (Nephalem Rift:
   kill-to-fill progress bar → Guardian → guaranteed `INARIUS_SET` piece; scaling via
   `Hero.riftsCleared`). Set bonuses hook: skills.js `boneArmor` (2/4pc) + Player.update
