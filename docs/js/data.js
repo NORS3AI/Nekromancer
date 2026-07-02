@@ -18,11 +18,17 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.0.4-alpha';
+const GAME_VERSION = 'v0.0.5-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.0.5-alpha', date: 'July 2026',
+    notes: [
+      'Equipment wheel is much smaller on portrait phones, and the bag list reserves exact space for the selected item — the EQUIP / SALVAGE / SOCKET buttons always stay on screen'
+    ]
+  },
   {
     v: 'v0.0.4-alpha', date: 'July 2026',
     notes: [
