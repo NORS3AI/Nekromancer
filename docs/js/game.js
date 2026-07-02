@@ -104,8 +104,27 @@ const Game = {
     this.startLand(ZONES[idx], idx);
   },
 
-  startRift() {
-    this.startLand(makeRiftZone(), null);
+  startAdventure() {
+    this.startLand(makeAdventureZone(), null);
+  },
+
+  // kind: 'normal' (levels 1-69, no key) | 'greater' (level 70, costs a key)
+  startRift(kind = 'greater') {
+    if (kind === 'greater') {
+      if (Hero.level < MAX_LEVEL) {
+        UI.toast('Nephalem Rifts open at level 70', '#9a9080');
+        AudioSys.sfx('denied');
+        return;
+      }
+      if (Hero.riftKeys < 1) {
+        UI.toast('You need a Rift Key — Guardians in normal Rifts drop them', '#9a9080');
+        AudioSys.sfx('denied');
+        return;
+      }
+      Hero.riftKeys--;
+      Hero.save();
+    }
+    this.startLand(makeRiftZone(kind), null);
   },
 
   startLand(zone, idx) {
@@ -214,7 +233,7 @@ const Game = {
   onBossDead(boss) {
     this.bossDead = true;
     World.portal = { x: boss.x, y: boss.y };
-    if (this.riftMode) {
+    if (this.riftMode && this.zone.riftKind === 'greater') {
       Hero.riftsCleared++;
       // The Guardian's hoard: the set hunt is the endgame.
       const owned = Hero.setPiecesOwned();
@@ -229,6 +248,18 @@ const Game = {
       }
       AudioSys.sfx('setdrop');
       this.showBanner('RIFT CLEARED', 'The Guardian yields its hoard', 3.4);
+    } else if (this.riftMode) {
+      // Normal rift Guardian: rich loot and a chance at a Rift Key.
+      const pu = new Pickup(boss.x, boss.y, 'item');
+      pu.item = Items.generate(this.monsterLevel(), 0.3);
+      this.pickups.push(pu);
+      if (Math.random() < 0.45) {
+        Hero.riftKeys++;
+        Hero.save();
+        UI.toast('◈ RIFT KEY! (' + Hero.riftKeys + ' held) — opens Nephalem Rifts at 70', '#b06adf');
+        AudioSys.sfx('setdrop');
+      }
+      this.showBanner('RIFT CLEARED', 'The Guardian falls', 3.4);
     } else {
       this.showBanner('BOUNTY COMPLETE', 'A portal tears open — step through', 3.4);
     }

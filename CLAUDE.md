@@ -73,11 +73,23 @@ loot at the artisans. The hero is persistent (localStorage).
   unmatched tap while a screen is open. The only ways out are the red ✕
   (`Screens.closeX`, present on every screen incl. the gem popup), the Escape key,
   or a screen's own buttons (CANCEL / LEAVE / RESUME / reward's button).
-- **Endgame (level 70)**: `SEASON` screen in camp → `Game.startRift()` (Nephalem Rift:
-  kill-to-fill progress bar → Guardian → guaranteed `INARIUS_SET` piece; scaling via
-  `Hero.riftsCleared`). Set bonuses hook: skills.js `boneArmor` (2/4pc) + Player.update
-  bone tornado (6pc, `vulnT` on victims); `LEGENDARY_POWERS` checked via `p.powers`
-  (bloodtide in deathNova, krysbin/corrodedFang in Enemy.hurt).
+- **THE WILDS** (camp hub menu) holds all game modes: Bounties (the renamed waypoint
+  map), Adventure Mode (`makeAdventureZone()`: randomized land at hero level),
+  normal Rifts (`Game.startRift('normal')`, levels 1–69, Guardians drop **Rift Keys**
+  45%), Nephalem Rifts (`'greater'`, level 70, consumes `Hero.riftKeys`), Seasons.
+- **Rarity indexes: 0 Common · 1 Magic · 2 Rare · 3 EPIC · 4 Legendary · 5 Set.**
+  Saves are migrated via `Hero.migrate` (SAVE_VERSION 2). Owner drop table in
+  `Items.rollRarity`: magic 20% · rare 12% · epic 7% (incl. the 4% overlap) ·
+  legendary by HERO level (1% / 2.29% @60 / 2.89% @70) + Torment legBonus;
+  common/trash absorbs the remainder.
+- **Torment I–XVI unlock at level 70** (`DIFFICULTIES` = 20 tiers, generated;
+  `legBonus` +1%…+33.3%). Stepper caps at Master below 70.
+- **Endgame (level 70)**: Nephalem Rift Guardians drop guaranteed `INARIUS_SET`
+  pieces (scaling via `Hero.riftsCleared`). Set bonuses hook: skills.js `boneArmor`
+  (2/4pc) + Player.update bone tornado (6pc, `vulnT` on victims); `LEGENDARY_POWERS`
+  checked via `p.powers` (bloodtide in deathNova, krysbin/corrodedFang in Enemy.hurt).
+- Patch notes screen shows FULL wrapped note text with ▲/▼ scrolling — never
+  ellipsize or clip notes (owner rule).
 - **Dev panel**: tap the developer credit on the title screen → confirm toggle →
   cheats (god, infinite essence — session-only on `Game.cheats`; grants save).
   Game version label (bottom-right of title) opens `PATCH_NOTES`.
