@@ -67,7 +67,8 @@ const Hero = {
   gems: [],                 // [{type, tier}]
   bag: [],                  // unequipped items
   equipped: {},             // slot -> item
-  loadout: ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null],
+  // 7 slots: 0 primary (LMB) · 1 secondary (RMB) · 2-6 skills (keys 1-5).
+  loadout: ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null, null],
   passives: [null, null, null, null],
   zonesCleared: 0,          // count of lands beaten (unlocks the next)
   difficulty: 0,
@@ -87,7 +88,7 @@ const Hero = {
     this.gems = [];
     this.bag = [];
     this.equipped = {};
-    this.loadout = ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null];
+    this.loadout = ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null, null];
     this.passives = [null, null, null, null];
     this.zonesCleared = 0;
     this.difficulty = 0;
@@ -133,7 +134,7 @@ const Hero = {
       level: d.level || 1, xp: d.xp || 0, gold: d.gold || 0,
       mats: Object.assign({ parts: 0, dust: 0, crystal: 0, soul: 0 }, d.mats),
       gems: d.gems || [], bag: d.bag || [], equipped: d.equipped || {},
-      loadout: d.loadout || ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null],
+      loadout: d.loadout || ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null, null],
       passives: d.passives || [null, null, null, null],
       zonesCleared: d.zonesCleared || 0, difficulty: d.difficulty || 0,
       bestZone: d.bestZone || 0, totalKills: d.totalKills || 0,
@@ -246,6 +247,8 @@ const Hero = {
 
   // Ensure the loadout only references unlocked skills.
   sanitize() {
+    // Pre-secondary saves had 6 slots; slot 1 becomes the secondary (RMB).
+    while (this.loadout.length < 7) this.loadout.push(null);
     for (let i = 0; i < this.loadout.length; i++) {
       const id = this.loadout[i];
       if (id && !SKILL_DATA.some(s => s.id === id && s.lvl <= this.level)) this.loadout[i] = null;

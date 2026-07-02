@@ -154,13 +154,21 @@ const UI = {
     const py = H - 90 * scale - safe.bottom * 0.7;
     this.buttons.push({ x: px, y: py, r: 42 * scale, slot: 0 });
     const R = 106 * scale;
+    // Slot 1 (SECONDARY, right click on desktop) floats above the cluster.
+    const sa = Math.PI * 1.55, sr = R + 58 * scale;
+    this.buttons.push({
+      x: Math.min(px + Math.cos(sa) * sr, W - 32 * scale - safe.right),
+      y: py + Math.sin(sa) * sr,
+      r: 30 * scale,
+      slot: 1
+    });
     const angles = [Math.PI * 0.98, Math.PI * 1.14, Math.PI * 1.30, Math.PI * 1.46, Math.PI * 1.62];
     for (let i = 0; i < 5; i++) {
       this.buttons.push({
         x: px + Math.cos(angles[i]) * R,
         y: py + Math.sin(angles[i]) * R,
         r: 27 * scale,
-        slot: i + 1
+        slot: i + 2
       });
     }
     // Potion sits on the cluster arc, outside skill slot 1 (no overlap).
