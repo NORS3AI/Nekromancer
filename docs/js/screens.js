@@ -375,7 +375,7 @@ const Screens = {
     ctx.fillStyle = '#9a9080';
     ctx.fillText('IN BAG (' + bagItems.length + ')', dx, dy + 14);
     dy += 24;
-    const maxRows = Math.max(1, Math.floor((H - dy - 20) / 34) - ((UI.sel.item || UI.sel.gemPick) ? 5 : 0));
+    const maxRows = Math.max(1, Math.floor((H - dy - 20) / 34) - (UI.sel.item ? 5 : 0));
     bagItems.slice(0, maxRows).forEach(it => {
       const selected = UI.sel.item === it;
       UI.btn(ctx, dx, dy, dw, 30, '', () => {
@@ -402,7 +402,7 @@ const Screens = {
     }
 
     // Selected bag item: card + actions.
-    if (UI.sel.item && !UI.sel.gemPick) {
+    if (UI.sel.item) {
       dy += 6;
       dy = this.itemCard(ctx, dx, dy, dw, UI.sel.item, equipped, true);
       const bw = (dw - 16) / 3;
@@ -414,79 +414,127 @@ const Screens = {
         Items.salvage(UI.sel.item);
         UI.sel.item = null;
       }, { border: '#8a6f4a', color: '#ffb43a', size: 13 });
-      const canSocket = UI.sel.item.sockets && Hero.gems.length;
-      UI.btn(ctx, dx + (bw + 8) * 2, dy, bw, 34, 'SOCKET', canSocket ? () => { UI.sel.gemPick = true; } : null,
-        { disabled: !canSocket, border: '#7a4a8f', color: '#b06adf', size: 13 });
-    } else if (!UI.sel.item && equipped) {
-      // Actions on the equipped piece.
-      const canSocket = equipped.sockets && Hero.gems.length;
-      if (canSocket && !UI.sel.gemPick) {
-        UI.btn(ctx, dx, dy + 6, 130, 30, 'SOCKET GEM', () => { UI.sel.gemPick = true; UI.sel.item = null; },
-          { border: '#7a4a8f', color: '#b06adf', size: 12 });
-      }
-      if (equipped.gem && !UI.sel.gemPick) {
-        UI.btn(ctx, dx + 140, dy + 6, 130, 30, 'REMOVE GEM', () => Items.unsocket(equipped), { size: 12 });
-      }
+      const canSocket = !!UI.sel.item.sockets;
+      UI.btn(ctx, dx + (bw + 8) * 2, dy, bw, 34, 'SOCKET', canSocket ? () => {
+        UI.sel.gemTarget = UI.sel.item;
+        UI.sel.gemPick = true;
+        UI.sel.gemIdx = undefined;
+      } : null, { disabled: !canSocket, border: '#7a4a8f', color: '#b06adf', size: 13 });
+    } else if (equipped && (equipped.sockets || equipped.gem)) {
+      // Socket management for the equipped piece opens the gem popup.
+      UI.btn(ctx, dx, dy + 6, 150, 30, equipped.gem ? 'MANAGE SOCKET' : 'SOCKET GEM', () => {
+        UI.sel.gemTarget = equipped;
+        UI.sel.gemPick = true;
+        UI.sel.gemIdx = undefined;
+      }, { border: '#7a4a8f', color: '#b06adf', size: 12 });
     }
 
-    // Gem picker for socketing: tap a gem to read it, then choose.
-    if (UI.sel.gemPick) {
-      const target = UI.sel.item || equipped;
-      dy += 6;
-      ctx.textAlign = 'left';
-      ctx.font = 'bold 12px Georgia';
-      ctx.fillStyle = '#b06adf';
-      ctx.fillText('TAP A GEM TO INSPECT IT:', dx, dy + 8);
-      dy += 18;
-      const shown = Hero.gems.slice(0, 8);
+    // The socketing popup, drawn over everything.
+    if (UI.sel.gemPick) this.gemModal(ctx, W, H);
+  },
+
+  // Centered popup: inspect gems, then socket / unsocket / cancel.
+  gemModal(ctx, W, H) {
+    const target = UI.sel.gemTarget;
+    if (!target) { UI.sel.gemPick = false; return; }
+    this.dim(ctx, W, H);
+    // Anything outside the popup cancels it (but keeps the inventory open).
+    UI.register(0, 0, W, H, () => {
+      UI.sel.gemPick = false;
+      UI.sel.gemIdx = undefined;
+      UI.sel.gemTarget = null;
+    });
+    const pw = Math.min(430, W - 20);
+    const px = W / 2 - pw / 2;
+    const shown = Hero.gems.slice(0, 12);
+    const rows = Math.max(1, Math.ceil(shown.length / 4));
+    const hasInfo = UI.sel.gemIdx !== undefined && Hero.gems[UI.sel.gemIdx];
+    const ph = Math.min(H - 12,
+      118 + (target.gem ? 36 : 0) + rows * 36 + (hasInfo ? 72 : 0) + 46);
+    const py = Math.max(6, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, 'SOCKET GEM');
+    UI.register(px, py, pw, ph, () => { /* dead space inside the popup */ });
+
+    const close = () => {
+      UI.sel.gemPick = false;
+      UI.sel.gemIdx = undefined;
+      UI.sel.gemTarget = null;
+    };
+
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = 'bold 12px Georgia';
+    ctx.fillStyle = RARITIES[target.rarity].color;
+    ctx.fillText(this.fitText(ctx, target.name, pw - 32), px + 16, py + 50);
+    let y = py + 64;
+
+    // Currently socketed gem, with a free unsocket.
+    if (target.gem) {
+      const gm = GEM_TYPES[target.gem.type];
+      ctx.font = '11px Georgia';
+      ctx.fillStyle = gm.color;
+      ctx.fillText(this.fitText(ctx, '◆ ' + gemName(target.gem) + ' — ' + gm.label(gemStatValue(target.gem)), pw - 170), px + 16, y + 8);
+      UI.btn(ctx, px + pw - 136, y - 6, 120, 26, 'UNSOCKET', () => {
+        Items.unsocket(target);
+        UI.sel.gemIdx = undefined;
+      }, { size: 10, border: '#7a4a8f', color: '#b06adf' });
+      y += 36;
+    }
+
+    // Gem pouch grid — tap to read what each does.
+    if (!shown.length) {
+      ctx.font = 'italic 12px Georgia';
+      ctx.fillStyle = '#544d44';
+      ctx.fillText('No gems in your pouch — monsters, chests and rifts drop them.', px + 16, y + 14);
+      y += 36;
+    } else {
+      ctx.font = '10px Georgia';
+      ctx.fillStyle = '#9a9080';
+      ctx.fillText('TAP A GEM TO SEE WHAT IT DOES' + (Hero.gems.length > 12 ? '  (+' + (Hero.gems.length - 12) + ' more in pouch)' : ''), px + 16, y);
+      y += 10;
       shown.forEach((g, gi) => {
-        const gx = dx + (gi % 4) * (dw / 4);
-        const gy = dy + Math.floor(gi / 4) * 34;
+        const gx = px + 16 + (gi % 4) * ((pw - 32) / 4);
+        const gy = y + Math.floor(gi / 4) * 36;
         const selected = UI.sel.gemIdx === gi;
-        UI.btn(ctx, gx, gy, dw / 4 - 6, 30, gemName(g), () => {
+        UI.btn(ctx, gx, gy, (pw - 32) / 4 - 6, 30, gemName(g), () => {
           UI.sel.gemIdx = selected ? undefined : gi;
         }, {
-          size: 10, color: GEM_TYPES[g.type].color,
+          size: 9, color: GEM_TYPES[g.type].color,
           bg: selected ? 'rgba(70,44,90,0.95)' : undefined,
           border: selected ? GEM_TYPES[g.type].color : undefined
         });
       });
-      dy += Math.ceil(shown.length / 4) * 34 + 4;
-
-      if (UI.sel.gemIdx !== undefined && Hero.gems[UI.sel.gemIdx]) {
-        const g = Hero.gems[UI.sel.gemIdx];
-        const gm = GEM_TYPES[g.type];
-        const cardH = target.gem ? 62 : 48;
-        ctx.fillStyle = 'rgba(20,17,28,0.94)';
-        rr(ctx, dx, dy, dw, cardH, 6); ctx.fill();
-        ctx.strokeStyle = gm.color;
-        ctx.lineWidth = 1.5;
-        rr(ctx, dx, dy, dw, cardH, 6); ctx.stroke();
-        ctx.textAlign = 'left';
-        ctx.font = 'bold 13px Georgia';
-        ctx.fillStyle = gm.color;
-        ctx.fillText('◆ ' + gemName(g), dx + 12, dy + 16);
-        ctx.font = '12px Georgia';
-        ctx.fillStyle = '#b5ab94';
-        ctx.fillText('When socketed: ' + gm.label(gemStatValue(g)), dx + 16, dy + 33);
-        if (target.gem) {
-          ctx.fillStyle = '#8a6f4a';
-          ctx.font = '11px Georgia';
-          ctx.fillText('Replaces ' + gemName(target.gem) + ' (returned to your pouch)', dx + 16, dy + 49);
-        }
-        dy += cardH + 6;
-        const bw2 = (dw - 8) / 2;
-        UI.btn(ctx, dx, dy, bw2, 32, 'SOCKET IT', () => {
-          Items.socketGem(target, UI.sel.gemIdx);
-          UI.sel.gemPick = false;
-          UI.sel.gemIdx = undefined;
-        }, { border: '#7a4a8f', color: '#b06adf', size: 13 });
-        UI.btn(ctx, dx + bw2 + 8, dy, bw2, 32, 'CANCEL', () => {
-          UI.sel.gemPick = false;
-          UI.sel.gemIdx = undefined;
-        }, { size: 13 });
-      }
+      y += rows * 36 + 4;
     }
+
+    // Info card for the inspected gem.
+    if (hasInfo) {
+      const g = Hero.gems[UI.sel.gemIdx];
+      const gm = GEM_TYPES[g.type];
+      ctx.fillStyle = 'rgba(20,17,28,0.94)';
+      rr(ctx, px + 16, y, pw - 32, 62, 6); ctx.fill();
+      ctx.strokeStyle = gm.color;
+      ctx.lineWidth = 1.5;
+      rr(ctx, px + 16, y, pw - 32, 62, 6); ctx.stroke();
+      ctx.textAlign = 'left';
+      ctx.font = 'bold 13px Georgia';
+      ctx.fillStyle = gm.color;
+      ctx.fillText('◆ ' + gemName(g), px + 28, y + 16);
+      ctx.font = '12px Georgia';
+      ctx.fillStyle = '#b5ab94';
+      ctx.fillText('When socketed: ' + gm.label(gemStatValue(g)), px + 32, y + 33);
+      ctx.font = '11px Georgia';
+      ctx.fillStyle = '#8a6f4a';
+      ctx.fillText(target.gem ? 'Replaces ' + gemName(target.gem) + ' (returned to your pouch)' : 'Fills the empty socket', px + 32, y + 49);
+      y += 70;
+    }
+
+    // Actions.
+    const bw2 = (pw - 40) / 2;
+    UI.btn(ctx, px + 16, y, bw2, 36, 'SOCKET IT', hasInfo ? () => {
+      Items.socketGem(target, UI.sel.gemIdx);
+      close();
+    } : null, { disabled: !hasInfo, border: '#7a4a8f', color: '#b06adf', size: 13 });
+    UI.btn(ctx, px + 24 + bw2, y, bw2, 36, 'CANCEL', close, { size: 13 });
   },
 
   // An item stat card. Returns the y below the card.
