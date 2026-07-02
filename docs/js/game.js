@@ -1,38 +1,44 @@
 'use strict';
 // ---------------------------------------------------------------------------
-// Main loop, wave director, camera and compositing.
+// Adventure flow: title → camp → waypoint map → land (dungeon crawl:
+// fight through packs, loot chests, touch shrines, slay the bounty boss,
+// take the portal home) → camp. The Hero persists across everything.
 // ---------------------------------------------------------------------------
 
 const Game = {
   canvas: null,
   ctx: null,
   W: 0, H: 0, dpr: 1,
-  state: 'menu',            // 'menu' | 'playing' | 'over'
+  state: 'menu',            // 'menu' | 'camp' | 'map' | 'playing'
   time: 0,
-  overT: 0,
   camera: { x: 0, y: 0 },
   player: null,
+  zone: null,
+  zoneIdx: 0,
   enemies: [],
   minions: [],
   projectiles: [],
   corpses: [],
   pickups: [],
-  wave: 0,
+  telegraphs: [],
   kills: 0,
-  gold: 0,
-  spawnQueue: [],
-  spawnTimer: 0,
-  restTimer: 0,
-  banner: { text: '', sub: '', t: 0, maxT: 0 },
+  bossDead: false,
+  playerDeadT: 0,
+  rewardLines: null,
+  banner: { text: '', sub: '', t: 0, maxT: 1 },
   vignette: null,
   lastT: 0,
+  saveTick: 0,
 
   init() {
     this.canvas = document.getElementById('game');
     this.ctx = this.canvas.getContext('2d');
     window.addEventListener('resize', () => this.resize());
     this.resize();
-    World.generate();
+    Skills.init();
+    Hero.load();
+    Hero.sanitize();
+    World.generate(ZONES[0]);   // backdrop for the title screen
     Input.init(this.canvas);
     requestAnimationFrame(t => this.frame(t));
   },
@@ -62,97 +68,186 @@ const Game = {
     this.vignette = c;
   },
 
-  getBest() {
-    try { return +localStorage.getItem('nekromancer_best') || 0; } catch (e) { return 0; }
+  monsterLevel() {
+    return (this.zone ? this.zone.mLvl : 1) + Hero.difficulty * 6;
   },
 
-  reset() {
-    this.player = new Player(World.W / 2, World.H / 2);
-    Items.reset();
-    Items.apply();
-    UI.toasts.length = 0;
-    UI.showGear = false;
-    this.newBest = false;
-    this.enemies.length = 0;
-    this.minions.length = 0;
-    this.projectiles.length = 0;
-    this.corpses.length = 0;
-    this.pickups.length = 0;
-    this.spawnQueue.length = 0;
-    Particles.reset();
-    Skills.reset();
-    this.wave = 0;
-    this.kills = 0;
-    this.gold = 0;
-    this.restTimer = 1.2;
-    this.camera.x = this.player.x - this.W / 2;
-    this.camera.y = this.player.y - this.H / 2;
-  },
-
-  showBanner(text, sub = '', dur = 2.4) {
+  showBanner(text, sub = '', dur = 2.6) {
     this.banner = { text, sub, t: dur, maxT: dur };
   },
 
-  // ----------------------------------------------------------- wave director
-
-  nextWave() {
-    this.wave++;
-    const n = Math.min(8 + this.wave * 3, 46);
-    const pool = ['zombie'];
-    if (this.wave >= 2) pool.push('skeleton', 'skeleton');
-    if (this.wave >= 3) pool.push('ghoul');
-    if (this.wave >= 4) pool.push('cultist');
-    if (this.wave >= 6) pool.push('ghoul', 'cultist');
-    this.spawnQueue.length = 0;
-    for (let i = 0; i < n; i++) this.spawnQueue.push(pick(pool));
-    const isBossWave = this.wave % 5 === 0;
-    if (isBossWave) {
-      const brutes = 1 + Math.floor(this.wave / 10);
-      for (let i = 0; i < brutes; i++) this.spawnQueue.push('brute');
-    }
-    this.spawnTimer = 0.5;
-    this.showBanner('WAVE ' + this.wave, isBossWave ? 'Something big stirs...' : '');
-    AudioSys.sfx('wave');
-    // A little essence to open the wave with.
-    this.player.gainEssence(20);
+  toCamp() {
+    this.state = 'camp';
+    this.playerDeadT = 0;
+    UI.close();
+    Hero.save();
   },
 
-  spawnPoint() {
-    const p = this.player;
-    const d = Math.max(this.W, this.H) * 0.6 + rand(40, 160);
-    for (let i = 0; i < 12; i++) {
-      const a = rand(TAU);
-      const x = p.x + Math.cos(a) * d;
-      const y = p.y + Math.sin(a) * d;
-      if (x > 70 && y > 70 && x < World.W - 70 && y < World.H - 70) return { x, y };
-    }
-    return { x: clamp(p.x + rand(-d, d), 70, World.W - 70), y: clamp(p.y + rand(-d, d), 70, World.H - 70) };
-  },
+  // ------------------------------------------------------------ zone flow
 
-  updateWaves(dt) {
-    if (this.restTimer > 0) {
-      this.restTimer -= dt;
-      if (this.restTimer <= 0) this.nextWave();
-      return;
-    }
-    const cap = Math.min(15 + this.wave, 26);
-    if (this.spawnQueue.length && this.enemies.length < cap) {
-      this.spawnTimer -= dt;
-      if (this.spawnTimer <= 0) {
-        this.spawnTimer = Math.max(0.3, 0.95 - this.wave * 0.04);
-        const type = this.spawnQueue.shift();
-        const pt = this.spawnPoint();
-        this.enemies.push(new Enemy(type, pt.x, pt.y, this.wave));
+  startZone(idx) {
+    this.zoneIdx = idx;
+    this.zone = ZONES[idx];
+    World.generate(this.zone);
+    this.enemies = [];
+    this.minions = [];
+    this.projectiles = [];
+    this.corpses = [];
+    this.pickups = [];
+    this.telegraphs = [];
+    Particles.reset();
+    Skills.reset();
+    this.kills = 0;
+    this.bossDead = false;
+    this.playerDeadT = 0;
+    UI.close();
+
+    this.player = new Player(World.spawn.x, World.spawn.y);
+    Items.apply();
+    this.player.hp = this.player.maxHp;
+    this.camera.x = this.player.x - this.W / 2;
+    this.camera.y = this.player.y - this.H / 2;
+
+    // Populate packs (asleep until approached).
+    for (const pk of World.packs) {
+      const n = randInt(3, 5);
+      const eliteLeader = Math.random() < 0.16;
+      for (let i = 0; i < n; i++) {
+        const a = rand(TAU), d = rand(0, 70);
+        const type = pick(this.zone.monsters);
+        const e = new Enemy(type, pk.x + Math.cos(a) * d, pk.y + Math.sin(a) * d, {
+          elite: eliteLeader && i === 0,
+          name: eliteLeader && i === 0 ? pick(ELITE_PREFIX) + pick(ELITE_SUFFIX) : undefined
+        });
+        World.collide(e);
+        this.enemies.push(e);
       }
     }
-    if (!this.spawnQueue.length && !this.enemies.length) {
-      this.restTimer = 3.2;
-      this.showBanner('WAVE CLEARED', 'The dead rest... briefly', 2);
-      this.player.gainEssence(30);
+    // The bounty boss.
+    const boss = new Enemy('brute', World.bossPos.x, World.bossPos.y, {
+      unique: true, name: this.zone.boss
+    });
+    this.enemies.push(boss);
+
+    this.state = 'playing';
+    this.showBanner(this.zone.name, 'Bounty: slay ' + this.zone.boss, 3);
+    AudioSys.sfx('wave');
+    Hero.save();
+  },
+
+  onBossDead(boss) {
+    this.bossDead = true;
+    World.portal = { x: boss.x, y: boss.y };
+    this.showBanner('BOUNTY COMPLETE', 'A portal tears open — step through', 3.4);
+    fxNova(boss.x, boss.y, 220);
+    AudioSys.sfx('portal');
+    Particles.shake(8);
+  },
+
+  completeZone() {
+    // Horadric cache.
+    const diff = DIFFICULTIES[Hero.difficulty];
+    const mLvl = this.monsterLevel();
+    const gold = Math.round((300 + mLvl * 55) * diff.reward);
+    Hero.gold += gold;
+    const lines = [[`${gold} gold`, '#ffd76a']];
+    const matGain = { parts: randInt(3, 6), dust: randInt(2, 4), crystal: mLvl >= 8 ? randInt(1, 2) : 0, soul: Hero.difficulty >= 3 && Math.random() < 0.5 ? 1 : 0 };
+    for (const [k, n] of Object.entries(matGain)) {
+      if (!n) continue;
+      Hero.mats[k] += n;
+      lines.push([`${n}× ${MATERIALS[k].name}`, MATERIALS[k].color]);
+    }
+    const gem = Items.generateGem(mLvl);
+    Hero.gems.push(gem);
+    lines.push([gemName(gem), GEM_TYPES[gem.type].color]);
+    const item = Items.generate(mLvl + 1, 0.3);
+    Items.stash(item);
+    lines.push([item.name, RARITIES[item.rarity].color]);
+    this.rewardLines = lines;
+
+    Hero.zonesCleared = Math.max(Hero.zonesCleared, this.zoneIdx + 1);
+    Hero.bestZone = Math.max(Hero.bestZone, this.zoneIdx + 1);
+    Hero.addXP(Math.round(120 * (this.zoneIdx + 1) * diff.reward));
+    Hero.save();
+    this.state = 'camp';
+    UI.open('reward');
+    AudioSys.sfx('level');
+  },
+
+  onPlayerDeath() {
+    this.playerDeadT = 0.01;
+    Hero.save();
+  },
+
+  respawn() {
+    const p = this.player;
+    p.dead = false;
+    p.hp = p.maxHp;
+    p.essence = 40;
+    p.x = World.spawn.x;
+    p.y = World.spawn.y;
+    p.invuln = 2;
+    this.playerDeadT = 0;
+    this.camera.x = p.x - this.W / 2;
+    this.camera.y = p.y - this.H / 2;
+    fxSummon(p.x, p.y);
+    AudioSys.sfx('summon');
+  },
+
+  // ------------------------------------------------------- world objects
+
+  touchObjects() {
+    const p = this.player;
+    for (const o of World.objects) {
+      if (o.used) continue;
+      const d = dist(p.x, p.y, o.x, o.y);
+      if (o.type === 'chest' && d < 46) {
+        o.used = true;
+        AudioSys.sfx('chest');
+        Particles.spawn(o.x, o.y - 10, {
+          count: 16, color: ['#ffd76a', '#ffb43a'], minSpeed: 40, maxSpeed: 180,
+          minLife: 0.3, maxLife: 0.7, grav: 200, glow: true
+        });
+        const g = new Pickup(o.x, o.y, 'gold');
+        g.amount = Math.round(rand(30, 80) * DIFFICULTIES[Hero.difficulty].reward * p.goldFind);
+        this.pickups.push(g);
+        if (Math.random() < 0.6) {
+          const pu = new Pickup(o.x, o.y, 'item');
+          pu.item = Items.generate(this.monsterLevel(), 0.1);
+          this.pickups.push(pu);
+        }
+        if (Math.random() < 0.35) {
+          const pu = new Pickup(o.x, o.y, 'gem');
+          pu.gem = Items.generateGem(this.monsterLevel());
+          this.pickups.push(pu);
+        }
+      } else if (o.type === 'shrine' && d < 42) {
+        o.used = true;
+        AudioSys.sfx('shrine');
+        const names = { empowered: 'Empowered: essence surges', frenzied: 'Frenzied: +25% damage', blessed: 'Blessed: -25% damage taken', fortune: 'Fortune: +100% gold find' };
+        p.shrine = { buff: o.buff, t: 60 };
+        if (o.buff === 'empowered') p.essence = p.maxEssence;
+        UI.toast(names[o.buff], '#6ff7c3');
+        Particles.ring(o.x, o.y, 90, '#6ff7c3', 5, 0.6);
+      } else if (o.type === 'urn' && d < 30) {
+        o.used = true;
+        AudioSys.sfx('hit');
+        fxBone(o.x, o.y, 6);
+        if (Math.random() < 0.7) {
+          const g = new Pickup(o.x, o.y, 'gold');
+          g.amount = randInt(3, 12);
+          this.pickups.push(g);
+        }
+      }
+    }
+    // Shrine 'fortune' doubles gold find while active.
+    // (applied via goldFind at pickup time)
+    if (World.portal && this.bossDead && dist(p.x, p.y, World.portal.x, World.portal.y) < 40) {
+      this.completeZone();
     }
   },
 
-  // ------------------------------------------------------------------- loop
+  // ------------------------------------------------------------------ loop
 
   frame(t) {
     const dt = Math.min(0.05, (t - this.lastT) / 1000 || 0.016);
@@ -165,46 +260,48 @@ const Game = {
 
   update(dt) {
     Input.update();
+    if (this.state !== 'playing') return;
 
-    if (this.state === 'menu') {
-      if (Input.consumeTap()) {
-        AudioSys.init();
-        this.reset();
-        this.state = 'playing';
-      }
-      return;
-    }
-
-    if (this.state === 'over') {
-      this.overT += dt;
+    if (this.playerDeadT > 0) {
+      this.playerDeadT += dt;
       Particles.update(dt);
-      if (this.overT > 1.2 && Input.consumeTap()) {
-        this.reset();
-        this.state = 'playing';
-      }
-      this.updateCamera(dt);
       return;
     }
+    if (UI.screen) return; // menus pause the crawl
 
-    Input.consumeTap();
-    this.player.update(dt);
+    const p = this.player;
+    // Fortune shrine: temporary gold find boost.
+    const baseGoldFind = p.goldFind;
+    if (p.shrine && p.shrine.buff === 'fortune') p.goldFind = baseGoldFind * 2;
+
+    p.update(dt);
     Skills.update(dt);
-    this.updateWaves(dt);
+    this.touchObjects();
 
     for (const e of this.enemies) e.update(dt);
     for (const m of this.minions) m.update(dt);
     for (const pr of this.projectiles) pr.update(dt);
     for (const c of this.corpses) c.update(dt);
     for (const pu of this.pickups) pu.update(dt);
+    for (const t of this.telegraphs) t.t += dt;
     Particles.update(dt);
+
+    p.goldFind = baseGoldFind;
 
     this.enemies = this.enemies.filter(e => !e.dead);
     this.minions = this.minions.filter(m => !m.dead);
-    this.projectiles = this.projectiles.filter(p => !p.dead);
+    this.projectiles = this.projectiles.filter(pr => !pr.dead);
     this.corpses = this.corpses.filter(c => !c.gone);
-    this.pickups = this.pickups.filter(p => !p.gone);
+    this.pickups = this.pickups.filter(pu => !pu.gone);
+    this.telegraphs = this.telegraphs.filter(t => !t.done && t.t < t.maxT + 0.2);
 
     if (this.banner.t > 0) this.banner.t -= dt;
+
+    this.saveTick += dt;
+    if (this.saveTick > 12) {
+      this.saveTick = 0;
+      Hero.save();
+    }
     this.updateCamera(dt);
   },
 
@@ -218,34 +315,88 @@ const Game = {
     this.camera.y = lerp(this.camera.y, ty, k);
   },
 
-  gameOver() {
-    this.state = 'over';
-    this.overT = 0;
-    Particles.shake(10);
-    try {
-      if (this.wave > this.getBest()) {
-        localStorage.setItem('nekromancer_best', this.wave);
-        this.newBest = true;
+  // ------------------------------------------------------------------ draw
+
+  drawTelegraphs(ctx) {
+    for (const t of this.telegraphs) {
+      const k = clamp(t.t / t.maxT, 0, 1);
+      const pulse = 0.06 * Math.sin(this.time * 14);
+      ctx.save();
+      if (t.type === 'circle') {
+        ctx.globalAlpha = 0.18 + pulse;
+        ctx.fillStyle = '#c22843';
+        ctx.beginPath(); ctx.arc(t.x, t.y, t.r, 0, TAU); ctx.fill();
+        ctx.globalAlpha = 0.30 + pulse;
+        ctx.beginPath(); ctx.arc(t.x, t.y, t.r * k, 0, TAU); ctx.fill();
+        ctx.globalAlpha = 0.7;
+        ctx.strokeStyle = '#e04a5a';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(t.x, t.y, t.r, 0, TAU); ctx.stroke();
+      } else {
+        ctx.translate(t.x, t.y);
+        ctx.rotate(t.a);
+        ctx.globalAlpha = 0.18 + pulse;
+        ctx.fillStyle = '#c22843';
+        ctx.fillRect(0, -t.w / 2, t.len, t.w);
+        ctx.globalAlpha = 0.32 + pulse;
+        ctx.fillRect(0, -t.w / 2, t.len * k, t.w);
+        ctx.globalAlpha = 0.7;
+        ctx.strokeStyle = '#e04a5a';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(0, -t.w / 2, t.len, t.w);
       }
-    } catch (e) { /* storage unavailable (private mode) */ }
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
   },
 
-  // ------------------------------------------------------------------- draw
+  drawAimIndicator(ctx) {
+    const p = this.player;
+    if (!p || p.dead) return;
+    let a = null, color = '#6ff7c3';
+    const ab = Input.aimingButton();
+    if (ab) {
+      a = ab.angle;
+      color = '#ffd76a';
+    } else if (Input.aim.active) {
+      a = Math.atan2(Input.aim.y, Input.aim.x);
+    }
+    if (a === null) return;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(a);
+    ctx.strokeStyle = color;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 3; i++) {
+      const d = 46 + i * 30;
+      ctx.globalAlpha = 0.55 - i * 0.13 + 0.1 * Math.sin(this.time * 8 - i);
+      ctx.lineWidth = 4 - i * 0.8;
+      ctx.beginPath();
+      ctx.moveTo(d - 9, -10 + i * 1.5);
+      ctx.lineTo(d, 0);
+      ctx.lineTo(d - 9, 10 - i * 1.5);
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  },
 
   draw() {
     const ctx = this.ctx;
     ctx.fillStyle = '#050308';
     ctx.fillRect(0, 0, this.W, this.H);
 
-    if (this.state === 'menu') {
-      // Slow drifting camera over the world for the title backdrop.
-      const cx = World.W / 2 + Math.cos(this.time * 0.1) * 300 - this.W / 2;
-      const cy = World.H / 2 + Math.sin(this.time * 0.07) * 300 - this.H / 2;
+    if (this.state !== 'playing') {
+      // Drifting world backdrop behind menus.
+      const cx = World.W / 2 + Math.cos(this.time * 0.08) * 260 - this.W / 2;
+      const cy = World.H / 2 + Math.sin(this.time * 0.06) * 260 - this.H / 2;
       ctx.save();
       ctx.translate(-cx, -cy);
       World.drawGround(ctx, { x: cx, y: cy }, this.W, this.H);
       for (const d of World.propsInView({ x: cx, y: cy }, this.W, this.H)) d.draw(ctx);
       ctx.restore();
+      ctx.fillStyle = 'rgba(5,3,8,0.55)';
+      ctx.fillRect(0, 0, this.W, this.H);
       ctx.drawImage(this.vignette, 0, 0);
       UI.draw(ctx, this.W, this.H);
       return;
@@ -260,15 +411,17 @@ const Game = {
     ctx.translate(-cam.x, -cam.y);
 
     World.drawGround(ctx, cam, this.W, this.H);
+    this.drawTelegraphs(ctx);
 
-    // Flat layer: corpses then pickups.
     for (const c of this.corpses) c.draw(ctx);
     for (const p of this.pickups) p.draw(ctx);
 
-    // Y-sorted tall layer: props + all actors.
+    this.drawAimIndicator(ctx);
+
     const drawables = World.propsInView(cam, this.W, this.H);
-    for (const e of this.enemies) drawables.push({ y: e.y, draw: c => e.draw(c) });
-    for (const m of this.minions) drawables.push({ y: m.y, draw: c => m.draw(c) });
+    const inView = e => e.x > cam.x - 90 && e.x < cam.x + this.W + 90 && e.y > cam.y - 110 && e.y < cam.y + this.H + 110;
+    for (const e of this.enemies) if (inView(e)) drawables.push({ y: e.y, draw: c => e.draw(c) });
+    for (const m of this.minions) if (inView(m)) drawables.push({ y: m.y, draw: c => m.draw(c) });
     if (!this.player.dead) drawables.push({ y: this.player.y, draw: c => this.player.draw(c) });
     drawables.sort((a, b) => a.y - b.y);
     for (const d of drawables) d.draw(ctx);
@@ -280,7 +433,12 @@ const Game = {
 
     ctx.drawImage(this.vignette, 0, 0);
 
-    // Low-health heartbeat.
+    // Land of the Dead ambience.
+    if (Skills.lotd > 0) {
+      ctx.fillStyle = `rgba(60,180,140,${0.05 + 0.03 * Math.sin(this.time * 5)})`;
+      ctx.fillRect(0, 0, this.W, this.H);
+    }
+
     const p = this.player;
     if (p && !p.dead && p.hp / p.maxHp < 0.3) {
       const pulse = 0.16 + 0.13 * Math.sin(this.time * 6);

@@ -1,137 +1,321 @@
 'use strict';
 // ---------------------------------------------------------------------------
-// Loot & equipment: D3-style rarities, affix rolls that scale with the wave,
-// auto-equip on upgrade (worse drops are salvaged into gold), and a gear
-// panel toggled from the portrait (or the I key).
+// Items: generation with level-scaled affixes, sockets & gems, the artisans
+// (Blacksmith salvage/craft, Jeweler combine/socket, Mystic enchant), and
+// Items.apply() which derives the Player's stats from Hero gear + passives.
 // ---------------------------------------------------------------------------
 
-const RARITIES = [
-  { name: 'Common',    color: '#c9bfa8', mult: 1.0,  salvage: 4 },
-  { name: 'Magic',     color: '#6a9aff', mult: 1.4,  salvage: 12 },
-  { name: 'Rare',      color: '#ffd76a', mult: 1.9,  salvage: 28 },
-  { name: 'Legendary', color: '#ff8c2a', mult: 2.6,  salvage: 70 }
-];
-
-// Stat keys: dmg (× damage), hp (+max life), crit (+crit chance),
-// ess (+essence regen/s), reg (+life regen/s).
-const ITEM_SLOTS = {
-  weapon: {
-    label: 'Weapon',
-    nouns: ['Scythe', 'Bone Blade', 'Grim Sickle', 'Grave Reaper', 'Femur Cleaver'],
-    primary: { stat: 'dmg', base: 0.10 },
-    secondaries: ['crit', 'ess']
-  },
-  armor: {
-    label: 'Armor',
-    nouns: ['Shroud', 'Carapace', 'Grave Plate', 'Cadaver Mail', 'Pall of Woe'],
-    primary: { stat: 'hp', base: 24 },
-    secondaries: ['reg', 'ess']
-  },
-  ring: {
-    label: 'Ring',
-    nouns: ['Band', 'Signet', 'Knucklebone Loop', 'Death Seal', 'Wraith Coil'],
-    primary: { stat: 'crit', base: 0.035 },
-    secondaries: ['dmg', 'hp']
-  }
-};
-
-const AFFIX_ROLLS = {
-  dmg:  { base: 0.06, label: v => `+${Math.round(v * 100)}% damage` },
-  hp:   { base: 16,   label: v => `+${Math.round(v)} life` },
-  crit: { base: 0.03, label: v => `+${Math.round(v * 100)}% crit chance` },
-  ess:  { base: 0.8,  label: v => `+${v.toFixed(1)} essence/s` },
-  reg:  { base: 1.2,  label: v => `+${v.toFixed(1)} life/s` }
-};
-
-const LEGENDARY_PREFIX = ['Maltherion\'s', 'The Widow\'s', 'Rathma\'s', 'Xul\'s', 'Trag\'Oul\'s'];
-const RARE_PREFIX = ['Cruel', 'Vicious', 'Dread', 'Baleful', 'Sinister'];
-const MAGIC_PREFIX = ['Sturdy', 'Sharp', 'Grim', 'Cold', 'Hungry'];
-
 const Items = {
-  equipped: { weapon: null, armor: null, ring: null },
 
-  reset() {
-    this.equipped = { weapon: null, armor: null, ring: null };
-  },
+  // ------------------------------------------------------------ generation
 
-  rollRarity(boss) {
-    const r = Math.random();
-    if (boss) return r < 0.25 ? 3 : 2;               // bosses drop rare+
-    if (r < 0.03) return 3;
-    if (r < 0.16) return 2;
-    if (r < 0.48) return 1;
+  rollRarity(boost = 0) {
+    const r = Math.random() - boost;
+    if (r < 0.035) return 3;
+    if (r < 0.17) return 2;
+    if (r < 0.50) return 1;
     return 0;
   },
 
-  generate(wave, boss = false) {
-    const slot = pick(Object.keys(ITEM_SLOTS));
+  generate(mLvl, boost = 0, forceSlot = null) {
+    const slot = forceSlot || pick(Object.keys(ITEM_SLOTS));
     const def = ITEM_SLOTS[slot];
-    const rarity = this.rollRarity(boss);
+    const rarity = this.rollRarity(boost);
     const R = RARITIES[rarity];
-    const waveScale = 1 + wave * 0.09;
+    const lvlScale = 1 + mLvl * 0.11;
 
     const stats = {};
-    const addStat = (key, scale) => {
-      const roll = AFFIX_ROLLS[key].base * scale * waveScale * rand(0.8, 1.2);
+    const addStat = (key, mult) => {
+      const roll = AFFIX_ROLLS[key].base * mult * lvlScale * rand(0.8, 1.2);
       stats[key] = (stats[key] || 0) + roll;
     };
-    addStat(def.primary.stat, (def.primary.base / AFFIX_ROLLS[def.primary.stat].base) * R.mult);
-    if (rarity >= 1) addStat(pick(def.secondaries), R.mult * 0.8);
-    if (rarity >= 3) addStat(pick(def.secondaries), R.mult * 0.8);
+    addStat(def.primary, 1.6 * R.mult);
+    const pool = Object.keys(AFFIX_ROLLS).filter(k => k !== def.primary);
+    for (let i = 0; i < rarity; i++) addStat(pick(pool), 0.85 * R.mult);
+
+    // Sockets: rarer items are likelier to bear one.
+    const sockets = Math.random() < [0.06, 0.14, 0.25, 0.5][rarity] ? 1 : 0;
 
     const prefix = rarity === 3 ? pick(LEGENDARY_PREFIX)
       : rarity === 2 ? pick(RARE_PREFIX)
       : rarity === 1 ? pick(MAGIC_PREFIX) : '';
     const name = (prefix ? prefix + ' ' : '') + pick(def.nouns);
 
-    return { slot, rarity, name, stats, score: this.score(stats) };
+    return { slot, rarity, name, stats, mLvl, sockets, gem: null };
   },
 
-  score(stats) {
-    return (stats.dmg || 0) * 320 + (stats.hp || 0) * 1 +
-      (stats.crit || 0) * 400 + (stats.ess || 0) * 18 + (stats.reg || 0) * 14;
+  generateGem(mLvl) {
+    const tier = clamp(Math.floor(mLvl / 8) + (Math.random() < 0.25 ? 1 : 0), 0, GEM_TIERS.length - 1);
+    return { type: pick(Object.keys(GEM_TYPES)), tier };
+  },
+
+  score(item) {
+    let s = 0;
+    for (const [k, v] of Object.entries(item.stats)) {
+      s += v * ({ dmg: 320, hp: 1, crit: 400, ess: 18, reg: 14, gold: 40 })[k];
+    }
+    if (item.sockets) s += 15;
+    if (item.gem) s += gemStatValue(item.gem) * 30;
+    return s;
   },
 
   statLines(item) {
-    return Object.entries(item.stats).map(([k, v]) => AFFIX_ROLLS[k].label(v));
+    const lines = Object.entries(item.stats).map(([k, v]) => AFFIX_ROLLS[k].label(v));
+    if (item.sockets && !item.gem) lines.push('◇ empty socket');
+    if (item.gem) lines.push('◆ ' + gemName(item.gem) + ': ' + GEM_TYPES[item.gem.type].label(gemStatValue(item.gem)));
+    return lines;
   },
 
-  // Recompute the player's derived stats from base + gear.
+  // D3-console-style compare arrows: -1 worse, 0 even, +1 better (per tier).
+  compareArrows(item, against) {
+    if (!against) return 3;
+    const d = this.score(item) - this.score(against);
+    const rel = d / Math.max(30, this.score(against));
+    if (rel > 0.35) return 3;
+    if (rel > 0.12) return 2;
+    if (rel > 0.02) return 1;
+    if (rel < -0.35) return -3;
+    if (rel < -0.12) return -2;
+    if (rel < -0.02) return -1;
+    return 0;
+  },
+
+  // ------------------------------------------------------------- inventory
+
+  pickup(item) {
+    const cur = Hero.equipped[item.slot];
+    // Auto-equip clear upgrades on pickup (mobile-friendly); rest go to bag.
+    if (!cur) {
+      Hero.equipped[item.slot] = item;
+      this.apply();
+      UI.toast('Equipped: ' + item.name, RARITIES[item.rarity].color);
+      AudioSys.sfx('level');
+    } else {
+      this.stash(item);
+      UI.toast(item.name + '  →  bag', RARITIES[item.rarity].color);
+    }
+    Hero.save();
+  },
+
+  stash(item) {
+    Hero.bag.push(item);
+    if (Hero.bag.length > Hero.BAG_SIZE) {
+      let worst = 0;
+      for (let i = 1; i < Hero.bag.length; i++) {
+        if (this.score(Hero.bag[i]) < this.score(Hero.bag[worst])) worst = i;
+      }
+      const junk = Hero.bag.splice(worst, 1)[0];
+      this.grantSalvage(junk, true);
+    }
+  },
+
+  equip(item) {
+    const idx = Hero.bag.indexOf(item);
+    if (idx < 0) return;
+    Hero.bag.splice(idx, 1);
+    const cur = Hero.equipped[item.slot];
+    Hero.equipped[item.slot] = item;
+    if (cur) Hero.bag.push(cur);
+    this.apply();
+    UI.toast('Equipped: ' + item.name, RARITIES[item.rarity].color);
+    AudioSys.sfx('level');
+    Hero.save();
+  },
+
+  // ------------------------------------------------------------ blacksmith
+
+  grantSalvage(item, quiet = false) {
+    const R = RARITIES[item.rarity];
+    Hero.mats[R.salvage] += R.salvageN;
+    if (item.gem) Hero.gems.push(item.gem); // gems survive the forge
+    if (!quiet) {
+      UI.toast(`Salvaged ${item.name} → ${R.salvageN}× ${MATERIALS[R.salvage].name}`, MATERIALS[R.salvage].color);
+      AudioSys.sfx('craft');
+    } else {
+      UI.toast(`Bag full — auto-salvaged ${item.name}`, '#9a9080');
+    }
+  },
+
+  salvage(item) {
+    const idx = Hero.bag.indexOf(item);
+    if (idx < 0) return;
+    Hero.bag.splice(idx, 1);
+    this.grantSalvage(item);
+    Hero.save();
+  },
+
+  salvageJunk() {
+    // Salvage all common+magic in the bag at once.
+    let n = 0;
+    for (let i = Hero.bag.length - 1; i >= 0; i--) {
+      if (Hero.bag[i].rarity <= 1) {
+        const it = Hero.bag.splice(i, 1)[0];
+        const R = RARITIES[it.rarity];
+        Hero.mats[R.salvage] += R.salvageN;
+        if (it.gem) Hero.gems.push(it.gem);
+        n++;
+      }
+    }
+    if (n) {
+      UI.toast(`Salvaged ${n} items`, '#c9bfa8');
+      AudioSys.sfx('craft');
+      Hero.save();
+    } else {
+      UI.toast('No common or magic items in bag', '#9a9080');
+    }
+  },
+
+  craftCost(slot) {
+    return { gold: 250 + Hero.level * 40, parts: 4, dust: 2, crystal: Hero.level >= 20 ? 1 : 0 };
+  },
+
+  canAfford(cost) {
+    if ((cost.gold || 0) > Hero.gold) return false;
+    for (const m of ['parts', 'dust', 'crystal', 'soul']) {
+      if ((cost[m] || 0) > Hero.mats[m]) return false;
+    }
+    return true;
+  },
+
+  pay(cost) {
+    Hero.gold -= cost.gold || 0;
+    for (const m of ['parts', 'dust', 'crystal', 'soul']) Hero.mats[m] -= cost[m] || 0;
+  },
+
+  craft(slot) {
+    const cost = this.craftCost(slot);
+    if (!this.canAfford(cost)) {
+      UI.toast('Not enough gold or materials', '#9a9080');
+      AudioSys.sfx('denied');
+      return;
+    }
+    this.pay(cost);
+    const item = this.generate(Hero.level, 0.12, slot);
+    this.stash(item);
+    UI.toast('Forged: ' + item.name, RARITIES[item.rarity].color);
+    AudioSys.sfx('craft');
+    Hero.save();
+  },
+
+  // --------------------------------------------------------------- jeweler
+
+  // Combine 3 identical gems into one of the next tier.
+  combineGems(type, tier) {
+    if (tier >= GEM_TIERS.length - 1) return;
+    const matching = Hero.gems.filter(g => g.type === type && g.tier === tier);
+    const cost = 500 * (tier + 1);
+    if (matching.length < 3 || Hero.gold < cost) {
+      UI.toast(matching.length < 3 ? 'Need 3 matching gems' : 'Not enough gold', '#9a9080');
+      AudioSys.sfx('denied');
+      return;
+    }
+    Hero.gold -= cost;
+    let removed = 0;
+    for (let i = Hero.gems.length - 1; i >= 0 && removed < 3; i--) {
+      if (Hero.gems[i].type === type && Hero.gems[i].tier === tier) {
+        Hero.gems.splice(i, 1);
+        removed++;
+      }
+    }
+    const gem = { type, tier: tier + 1 };
+    Hero.gems.push(gem);
+    UI.toast('Combined: ' + gemName(gem), GEM_TYPES[type].color);
+    AudioSys.sfx('gem');
+    Hero.save();
+  },
+
+  socketGem(item, gemIndex) {
+    const gem = Hero.gems[gemIndex];
+    if (!gem || !item || !item.sockets) return;
+    if (item.gem) Hero.gems.push(item.gem); // swap out the old one
+    Hero.gems.splice(gemIndex, 1);
+    item.gem = gem;
+    this.apply();
+    UI.toast(gemName(gem) + ' socketed into ' + item.name, GEM_TYPES[gem.type].color);
+    AudioSys.sfx('gem');
+    Hero.save();
+  },
+
+  unsocket(item) {
+    if (!item || !item.gem) return;
+    Hero.gems.push(item.gem);
+    item.gem = null;
+    this.apply();
+    AudioSys.sfx('gem');
+    Hero.save();
+  },
+
+  // ---------------------------------------------------------------- mystic
+
+  enchantCost(item) {
+    return { gold: 400 + item.mLvl * 60, dust: 3, crystal: item.rarity >= 2 ? 2 : 0, soul: item.rarity >= 3 ? 1 : 0 };
+  },
+
+  // Reroll one random affix on the item, D3 Mystic style.
+  enchant(item) {
+    const cost = this.enchantCost(item);
+    if (!this.canAfford(cost)) {
+      UI.toast('Not enough gold or materials', '#9a9080');
+      AudioSys.sfx('denied');
+      return;
+    }
+    const keys = Object.keys(item.stats);
+    if (!keys.length) return;
+    this.pay(cost);
+    const key = pick(keys);
+    delete item.stats[key];
+    const pool = Object.keys(AFFIX_ROLLS).filter(k => !(k in item.stats));
+    const nk = pick(pool);
+    const R = RARITIES[item.rarity];
+    item.stats[nk] = AFFIX_ROLLS[nk].base * (nk === ITEM_SLOTS[item.slot].primary ? 1.6 : 0.85)
+      * R.mult * (1 + item.mLvl * 0.11) * rand(0.85, 1.25);
+    this.apply();
+    UI.toast(`Enchanted ${item.name}: ${AFFIX_ROLLS[nk].label(item.stats[nk])}`, '#b06adf');
+    AudioSys.sfx('gem');
+    Hero.save();
+  },
+
+  // ------------------------------------------------------- derived stats
+
+  // Fold hero level + gear + gems + passives into the Player entity.
   apply() {
     const p = Game.player;
     if (!p) return;
-    let dmg = 0, hp = 0, crit = 0, ess = 0, reg = 0;
-    for (const slot of Object.keys(this.equipped)) {
-      const it = this.equipped[slot];
-      if (!it) continue;
+    let dmg = 0, hp = 0, crit = 0, ess = 0, reg = 0, gold = 0;
+    const gather = it => {
+      if (!it) return;
       dmg += it.stats.dmg || 0;
       hp += it.stats.hp || 0;
       crit += it.stats.crit || 0;
       ess += it.stats.ess || 0;
       reg += it.stats.reg || 0;
-    }
+      gold += it.stats.gold || 0;
+      if (it.gem) {
+        const v = gemStatValue(it.gem);
+        const s = GEM_TYPES[it.gem.type].stat;
+        if (s === 'dmg') dmg += v;
+        else if (s === 'hp') hp += v;
+        else if (s === 'crit') crit += v;
+        else if (s === 'ess') ess += v;
+        else if (s === 'reg') reg += v;
+      }
+    };
+    for (const slot of Object.keys(ITEM_SLOTS)) gather(Hero.equipped[slot]);
+
+    const lvl = Hero.level;
+    p.baseDmg = 1 + (lvl - 1) * 0.09;
+    p.baseMaxHp = 110 + (lvl - 1) * 14;
     p.dmgMult = p.baseDmg * (1 + dmg);
-    const oldMax = p.maxHp;
+    const oldMax = p.maxHp || p.baseMaxHp;
     p.maxHp = Math.round(p.baseMaxHp + hp);
-    if (p.maxHp > oldMax) p.hp += p.maxHp - oldMax;
+    if (p.hp === undefined) p.hp = p.maxHp;
+    else if (p.maxHp > oldMax) p.hp += p.maxHp - oldMax;
     p.hp = Math.min(p.hp, p.maxHp);
     p.critChance = 0.10 + crit;
-    p.essenceRegen = 3.5 + ess;
+    p.essenceRegen = 2 + ess;
     p.hpRegen = reg;
-  },
-
-  acquire(item) {
-    const cur = this.equipped[item.slot];
-    const R = RARITIES[item.rarity];
-    if (!cur || item.score > cur.score) {
-      this.equipped[item.slot] = item;
-      this.apply();
-      UI.toast('Equipped: ' + item.name, R.color);
-      AudioSys.sfx('level');
-    } else {
-      Game.gold += R.salvage;
-      UI.toast(`Salvaged ${item.name}  (+${R.salvage} gold)`, '#9a9080');
-      AudioSys.sfx('gold');
-    }
+    p.goldFind = 1 + gold;
+    p.maxEssence = 100 + (Hero.hasPassive('overwhelming') ? 40 : 0);
+    p.essence = Math.min(p.essence ?? 60, p.maxEssence);
   }
 };
