@@ -18,11 +18,18 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.2.0-alpha';
+const GAME_VERSION = 'v0.2.1-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.2.1-alpha', date: 'July 2026',
+    notes: [
+      'Salvage hardening: ALL loot is now guaranteed salvageable — including Epic vendor buys like the Fabled Soul Vessel. Any item, any rarity, any level, no cost. Added a safety fallback so even an odd/legacy item can never be un-salvageable',
+      'Note: if you saw a "can\'t salvage" message earlier, it was the old level-60 Epic gate on a stale deployment — that gate is gone'
+    ]
+  },
   {
     v: 'v0.2.0-alpha', date: 'July 2026',
     notes: [

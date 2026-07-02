@@ -313,8 +313,9 @@ const Items = {
   // ------------------------------------------------------------ blacksmith
 
   grantSalvage(item, quiet = false) {
-    const R = RARITIES[item.rarity];
-    Hero.mats[R.salvage] += R.salvageN;
+    // Fallback keeps ALL loot salvageable even if an item has a missing/odd rarity.
+    const R = RARITIES[item.rarity] || RARITIES[0];
+    Hero.mats[R.salvage] = (Hero.mats[R.salvage] || 0) + R.salvageN;
     const gems = item.gems || [];
     for (const g of gems) Hero.gems.push(g); // socketed gems survive, back to the pouch
     if (gems.length) {
@@ -328,10 +329,9 @@ const Items = {
     }
   },
 
-  // Salvaging the finest gear takes rank: Epics at level 60, Legendary/Set at 70.
+  // ALL loot is salvageable — any gear, any rarity, any level, no gold cost
+  // (owner rule). D3-style Blacksmith salvage.
   canSalvage(item) {
-    // Salvage is free and unrestricted — any gear crushes into materials at any
-    // level, no gold cost (owner rule). D3-style Blacksmith salvage.
     return !!item;
   },
 
