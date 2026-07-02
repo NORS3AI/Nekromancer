@@ -29,12 +29,19 @@ const Game = {
   vignette: null,
   lastT: 0,
   saveTick: 0,
+  cheats: { god: false, essence: false },   // dev panel, session-only
+  riftMode: false,
+  riftProgress: 0,
+  guardianUp: false,
+  riftSpawnT: 0,
+  fps: 60,
 
   init() {
     this.canvas = document.getElementById('game');
     this.ctx = this.canvas.getContext('2d');
     window.addEventListener('resize', () => this.resize());
     this.resize();
+    Settings.load();
     Skills.init();
     Hero.load();
     Hero.sanitize();
@@ -94,8 +101,20 @@ const Game = {
   // ------------------------------------------------------------ zone flow
 
   startZone(idx) {
-    this.zoneIdx = idx;
-    this.zone = ZONES[idx];
+    this.startLand(ZONES[idx], idx);
+  },
+
+  startRift() {
+    this.startLand(makeRiftZone(), null);
+  },
+
+  startLand(zone, idx) {
+    this.zoneIdx = idx === null ? -1 : idx;
+    this.zone = zone;
+    this.riftMode = !!zone.rift;
+    this.riftProgress = 0;
+    this.guardianUp = false;
+    this.riftSpawnT = 0;
     World.generate(this.zone);
     this.enemies = [];
     this.minions = [];
@@ -131,22 +150,88 @@ const Game = {
         this.enemies.push(e);
       }
     }
-    // The bounty boss.
-    const boss = new Enemy('brute', World.bossPos.x, World.bossPos.y, {
-      unique: true, name: this.zone.boss
-    });
-    this.enemies.push(boss);
+    // The bounty boss (rifts summon their Guardian only when the bar fills).
+    if (!this.riftMode) {
+      const boss = new Enemy('brute', World.bossPos.x, World.bossPos.y, {
+        unique: true, name: this.zone.boss
+      });
+      this.enemies.push(boss);
+    }
 
     this.state = 'playing';
-    this.showBanner(this.zone.name, 'Bounty: slay ' + this.zone.boss, 3);
+    this.showBanner(this.zone.name,
+      this.riftMode ? 'Slay everything. Fill the rift.' : 'Bounty: slay ' + this.zone.boss, 3);
     AudioSys.sfx('wave');
     Hero.save();
+  },
+
+  // ------------------------------------------------------------- rifts
+
+  riftKill(enemy) {
+    if (!this.riftMode || this.guardianUp || this.riftProgress >= 100) return;
+    this.riftProgress = Math.min(100, this.riftProgress + (enemy.elite ? 4.5 : 1.6));
+    if (this.riftProgress >= 100) {
+      this.guardianUp = true;
+      const pt = this.spawnNear(this.player, 420);
+      const g = new Enemy('brute', pt.x, pt.y, { unique: true, name: this.zone.boss });
+      g.wake();
+      this.enemies.push(g);
+      World.bossPos = pt;
+      this.showBanner('THE RIFT GUARDIAN RISES', this.zone.boss, 3.2);
+      AudioSys.sfx('die');
+      Particles.shake(8);
+    }
+  },
+
+  spawnNear(p, d) {
+    for (let i = 0; i < 20; i++) {
+      const a = rand(TAU);
+      const x = p.x + Math.cos(a) * d;
+      const y = p.y + Math.sin(a) * d;
+      if (World.isFloorAt(x, y)) return { x, y };
+    }
+    return { x: World.spawn.x, y: World.spawn.y };
+  },
+
+  updateRiftSpawns(dt) {
+    if (!this.riftMode || this.riftProgress >= 100) return;
+    // Keep the shard crawling with prey.
+    if (this.enemies.length < 26) {
+      this.riftSpawnT -= dt;
+      if (this.riftSpawnT <= 0) {
+        this.riftSpawnT = 2.6;
+        const pt = this.spawnNear(this.player, Math.max(this.W, this.H) * 0.62);
+        const elite = Math.random() < 0.12;
+        for (let i = 0; i < randInt(2, 4); i++) {
+          const e = new Enemy(pick(this.zone.monsters), pt.x + rand(-60, 60), pt.y + rand(-60, 60), { elite: elite && i === 0 });
+          World.collide(e);
+          this.enemies.push(e);
+        }
+      }
+    }
   },
 
   onBossDead(boss) {
     this.bossDead = true;
     World.portal = { x: boss.x, y: boss.y };
-    this.showBanner('BOUNTY COMPLETE', 'A portal tears open — step through', 3.4);
+    if (this.riftMode) {
+      Hero.riftsCleared++;
+      // The Guardian's hoard: the set hunt is the endgame.
+      const owned = Hero.setPiecesOwned();
+      const pu = new Pickup(boss.x, boss.y, 'item');
+      pu.item = owned.size < 6 ? Items.generateSetPiece(this.monsterLevel())
+        : (Math.random() < 0.5 ? Items.generatePowerItem(this.monsterLevel()) : Items.generateSetPiece(this.monsterLevel()));
+      this.pickups.push(pu);
+      if (Math.random() < 0.45) {
+        const pu2 = new Pickup(boss.x, boss.y, 'item');
+        pu2.item = Items.generatePowerItem(this.monsterLevel());
+        this.pickups.push(pu2);
+      }
+      AudioSys.sfx('setdrop');
+      this.showBanner('RIFT CLEARED', 'The Guardian yields its hoard', 3.4);
+    } else {
+      this.showBanner('BOUNTY COMPLETE', 'A portal tears open — step through', 3.4);
+    }
     fxNova(boss.x, boss.y, 220);
     AudioSys.sfx('portal');
     Particles.shake(8);
@@ -156,10 +241,28 @@ const Game = {
     // Horadric cache.
     const diff = DIFFICULTIES[Hero.difficulty];
     const mLvl = this.monsterLevel();
+    if (this.riftMode) {
+      const gold = Math.round((500 + mLvl * 70) * diff.reward);
+      Hero.gold += gold;
+      const lines = [[gold + ' gold', '#ffd76a']];
+      Hero.mats.soul += 2;
+      lines.push(['2× Forgotten Souls', MATERIALS.soul.color]);
+      const gem = Items.generateGem(mLvl + 4);
+      Hero.gems.push(gem);
+      lines.push([gemName(gem), GEM_TYPES[gem.type].color]);
+      lines.push(['Rifts cleared: ' + Hero.riftsCleared, '#b06adf']);
+      this.rewardLines = lines;
+      Hero.addXP(Math.round(400 * diff.reward));
+      Hero.save();
+      this.state = 'camp';
+      UI.open('reward');
+      AudioSys.sfx('level');
+      return;
+    }
     const gold = Math.round((300 + mLvl * 55) * diff.reward);
     Hero.gold += gold;
     const lines = [[`${gold} gold`, '#ffd76a']];
-    const matGain = { parts: randInt(3, 6), dust: randInt(2, 4), crystal: mLvl >= 8 ? randInt(1, 2) : 0, soul: Hero.difficulty >= 3 && Math.random() < 0.5 ? 1 : 0 };
+    const matGain = { parts: randInt(3, 6), dust: randInt(2, 4), crystal: mLvl >= 8 ? randInt(1, 2) : 0, soul: Math.random() < 0.45 + Hero.difficulty * 0.12 ? 1 : 0 };
     for (const [k, n] of Object.entries(matGain)) {
       if (!n) continue;
       Hero.mats[k] += n;
@@ -277,6 +380,19 @@ const Game = {
 
   update(dt) {
     Input.update();
+    this.fps = lerp(this.fps, 1 / Math.max(dt, 0.001), 0.05);
+
+    // Route the soundscape: zone ambience/weather vs camp hush.
+    if (AudioSys.ctx) {
+      if (this.state === 'playing' && this.zone) {
+        AudioSys.setAmbience(this.zone.kind === 'dungeon' ? 'crypt' : 'wilds');
+        AudioSys.setWeather(this.zone.weather || null);
+      } else {
+        AudioSys.setAmbience('camp');
+        AudioSys.setWeather(null);
+      }
+    }
+
     if (this.state !== 'playing') return;
 
     if (this.playerDeadT > 0) {
@@ -293,6 +409,7 @@ const Game = {
 
     p.update(dt);
     Skills.update(dt);
+    this.updateRiftSpawns(dt);
     this.touchObjects();
 
     for (const e of this.enemies) e.update(dt);
@@ -367,7 +484,35 @@ const Game = {
     ctx.globalAlpha = 1;
   },
 
+  // Screen-space weather: rain streaks / drifting dust, honoring settings.
+  drawWeather(ctx) {
+    if (!this.zone || !this.zone.weather) return;
+    const n = Settings.g.lowFx ? 28 : 60;
+    const t = this.time;
+    if (this.zone.weather === 'rain') {
+      ctx.strokeStyle = 'rgba(150,170,200,0.22)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const speed = 520 + (i % 7) * 40;
+        const x = ((i * 137.51 + t * 90) % (this.W + 60)) - 30;
+        const y = ((i * 211.73 + t * speed) % (this.H + 40)) - 20;
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 3, y + 13);
+      }
+      ctx.stroke();
+    } else if (this.zone.weather === 'wind') {
+      ctx.fillStyle = 'rgba(190,170,130,0.14)';
+      for (let i = 0; i < n * 0.6; i++) {
+        const x = ((i * 173.13 + t * (160 + (i % 5) * 60)) % (this.W + 40)) - 20;
+        const y = (i * 97.77 + Math.sin(t * 1.4 + i) * 30) % this.H;
+        ctx.fillRect(x, y, 3 + (i % 3), 1.5);
+      }
+    }
+  },
+
   drawAimIndicator(ctx) {
+    if (!Settings.g.aimIndicator) return;
     const p = this.player;
     if (!p || p.dead) return;
     let a = null, color = '#6ff7c3';
@@ -448,6 +593,7 @@ const Game = {
 
     ctx.restore();
 
+    this.drawWeather(ctx);
     ctx.drawImage(this.vignette, 0, 0);
 
     // Land of the Dead ambience.

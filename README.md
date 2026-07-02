@@ -54,6 +54,16 @@ Essence; spenders burn it; every kill leaves a corpse to detonate, devour or rai
 | Skills & passives | Menu ▸ Skills | `K` |
 | Menu / pause | ☰ button | `Esc` |
 
+## Endgame — Season of the Grace of Inarius
+
+At level 70 the season begins: enter **Nephalem Rifts** — randomized shards where slaughter fills the rift bar until the **Rift Guardian** rises. Guardians always drop pieces of the six-piece **Grace of Inarius** set (Bone Armor damage ×10, damage reduction per enemy hit, and the swirling **bone tornado**), plus build-defining legendaries like the *Bloodtide Blade* and *Krysbin's Sentence*. Matching gear to skills — Bone Armor uptime feeding Death Nova — is the heart of the endgame, as it should be.
+
+## Settings & extras
+
+Five audio channels (master, SFX, generative music, ambience, weather) with sliders and mutes; gameplay options in the Diablo Immortal style (damage numbers, camera shake, health bars, fixed joystick, reduced effects, large minimap, FPS); 20 named manual save slots; rain and windstorms over the lands; patch notes behind the version tag; and a certain developer credit on the title screen that curious necromancers may wish to tap…
+
+*Sterling Grant, 2026 | A fan-built game made with love for the Necromancer's of Rathma*
+
 ## Tech
 
 Everything — sprites, five procedural lands (including room-and-corridor dungeons

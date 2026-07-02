@@ -27,6 +27,11 @@ const Screens = {
       case 'reward': this.reward(ctx, W, H); break;
       case 'character': this.character(ctx, W, H); break;
       case 'vendor': this.vendor(ctx, W, H); break;
+      case 'settings': this.settings(ctx, W, H); break;
+      case 'devconfirm': this.devconfirm(ctx, W, H); break;
+      case 'cheats': this.cheats(ctx, W, H); break;
+      case 'patchnotes': this.patchnotes(ctx, W, H); break;
+      case 'season': this.season(ctx, W, H); break;
     }
   },
 
@@ -104,8 +109,24 @@ const Screens = {
     ctx.font = '11px Georgia';
     ctx.fillStyle = '#6f6552';
     ctx.textAlign = 'center';
-    ctx.fillText('Left thumb: move · Right thumb: aim & cast · Tap portrait: gear', cx, H - 30);
-    ctx.fillText('Keys: WASD + Space/1-5 · Q potion · I gear · K skills · Esc menu', cx, H - 14);
+    ctx.fillText('Left thumb: move · Right thumb: aim & cast · Tap portrait: gear', cx, H - 62);
+
+    // Developer credit — taps open the dev panel gate.
+    ctx.font = 'italic 11px Georgia';
+    ctx.fillStyle = '#8a8070';
+    const credit = 'Sterling Grant, 2026 | A fan-built game made with love for the Necromancer’s of Rathma';
+    ctx.fillText(this.fitText(ctx, credit, W - 90), cx, H - 36);
+    UI.register(cx - Math.min(W - 90, 420) / 2, H - 48, Math.min(W - 90, 420), 24, () => {
+      UI.open('devconfirm');
+    });
+
+    // Version — taps open the patch notes.
+    ctx.font = 'bold 11px Georgia';
+    ctx.fillStyle = '#57b894';
+    ctx.textAlign = 'right';
+    ctx.fillText(GAME_VERSION, W - 12, H - 14);
+    UI.register(W - 110, H - 28, 104, 24, () => UI.open('patchnotes'));
+    ctx.textAlign = 'center';
   },
 
   // --------------------------------------------------------------- camp
@@ -153,7 +174,10 @@ const Screens = {
       ['SKILLS & PASSIVES', () => UI.open('skills'), '#e8e0cc'],
       ['BLACKSMITH', () => UI.open('smith'), '#ffb43a'],
       ['JEWELER', () => UI.open('jeweler'), '#b06adf'],
-      ['MYSTIC', () => UI.open('mystic'), '#4ecbe0']
+      ['MYSTIC', () => UI.open('mystic'), '#4ecbe0'],
+      [Hero.level >= MAX_LEVEL ? '◈ SEASON: THE RIFT' : '◈ SEASON (level 70)',
+        Hero.level >= MAX_LEVEL ? () => UI.open('season') : null, '#4ade80'],
+      ['SETTINGS', () => UI.open('settings'), '#9a9080']
     ];
     const cols = W > 560 ? 2 : 1;
     const bw = cols === 2 ? (pw - 12) / 2 : pw;
@@ -161,7 +185,11 @@ const Screens = {
     items.forEach(([label, cb, col], i) => {
       const cx2 = px + (i % cols) * (bw + 12);
       const cy2 = 56 + panelH + 16 + Math.floor(i / cols) * rowH;
-      UI.btn(ctx, cx2, cy2, bw, rowH - 8, label, cb, { size: narrow ? 13 : 15, color: col, border: i === 0 ? '#57b894' : undefined });
+      UI.btn(ctx, cx2, cy2, bw, rowH - 8, label, cb, {
+        size: narrow ? 13 : 15, color: col,
+        border: i === 0 ? '#57b894' : undefined,
+        disabled: !cb
+      });
     });
 
     ctx.font = '11px Georgia';
@@ -729,61 +757,59 @@ const Screens = {
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 56, 480);
     UI.panel(ctx, px, 46, pw, ph, 'HAEDRIG — BLACKSMITH');
-    this.matsRow(ctx, px + 16, 100, pw - 32);
+    this.artisanRow(ctx, px, pw, 88, 'smith', 'FORGE');
+    this.matsRow(ctx, px + 16, 114, pw - 32);
 
     // Salvage row.
     const half = (pw - 40) / 2;
-    UI.btn(ctx, px + 16, 112, half, 36, 'SALVAGE COMMON+MAGIC', () => Items.salvageJunk(),
+    UI.btn(ctx, px + 16, 124, half, 32, 'SALVAGE COMMON+MAGIC', () => Items.salvageJunk(),
       { size: 11, border: '#8a6f4a', color: '#ffb43a' });
-    UI.btn(ctx, px + 24 + half, 112, half, 36, 'SALVAGE RARES', () => Items.salvageRares(),
+    UI.btn(ctx, px + 24 + half, 124, half, 32, 'SALVAGE RARES', () => Items.salvageRares(),
       { size: 11, border: '#8a6f4a', color: '#ffd76a' });
 
     // Forge quality selector.
     if (UI.sel.master === undefined) UI.sel.master = false;
     const stdCost = Items.craftCost(false);
     const mwCost = Items.craftCost(true);
-    ctx.textAlign = 'left';
-    ctx.font = 'bold 12px Georgia';
-    ctx.fillStyle = '#9a9080';
-    ctx.fillText('FORGE A NEW PIECE', px + 16, 168);
-    UI.btn(ctx, px + 16, 178, half, 44, '', () => { UI.sel.master = false; },
+    UI.btn(ctx, px + 16, 166, half, 42, '', () => { UI.sel.master = false; },
       { bg: !UI.sel.master ? 'rgba(60,52,78,0.95)' : undefined, border: !UI.sel.master ? '#c9bfa8' : undefined });
-    UI.btn(ctx, px + 24 + half, 178, half, 44, '', () => { UI.sel.master = true; },
+    UI.btn(ctx, px + 24 + half, 166, half, 42, '', () => { UI.sel.master = true; },
       { bg: UI.sel.master ? 'rgba(70,54,30,0.95)' : undefined, border: UI.sel.master ? '#ffd76a' : undefined });
     ctx.textAlign = 'center';
     ctx.font = 'bold 12px Georgia';
     ctx.fillStyle = '#c9bfa8';
-    ctx.fillText('STANDARD', px + 16 + half / 2, 192);
+    ctx.fillText('STANDARD', px + 16 + half / 2, 180);
     ctx.fillStyle = '#ffd76a';
-    ctx.fillText('MASTERWORK', px + 24 + half * 1.5, 192);
+    ctx.fillText('MASTERWORK', px + 24 + half * 1.5, 180);
     ctx.font = '9px Georgia';
     ctx.fillStyle = '#8a8070';
-    ctx.fillText(this.fitText(ctx, this.costLabel(stdCost), half - 12), px + 16 + half / 2, 207);
-    ctx.fillText(this.fitText(ctx, this.costLabel(mwCost), half - 12), px + 24 + half * 1.5, 207);
+    ctx.fillText(this.fitText(ctx, this.costLabel(stdCost), half - 12), px + 16 + half / 2, 196);
+    ctx.fillText(this.fitText(ctx, this.costLabel(mwCost), half - 12), px + 24 + half * 1.5, 196);
 
     const cost = Items.craftCost(UI.sel.master);
     const afford = Items.canAfford(cost);
     ctx.font = '10px Georgia';
     ctx.fillStyle = UI.sel.master ? '#ffd76a' : '#6f6552';
     ctx.textAlign = 'left';
-    ctx.fillText(UI.sel.master
+    ctx.fillText(this.fitText(ctx, UI.sel.master
       ? 'Masterwork: guaranteed Rare or better, 50% chance of a socket.'
-      : 'Standard: a quick roll of the dice for the chosen slot.', px + 16, 234);
+      : 'Standard: a quick roll of the dice for the chosen slot.', pw - 32), px + 16, 220);
 
     const slots = Object.keys(ITEM_SLOTS);
-    const cols = 3;
+    const cols = pw >= 480 ? 4 : 3;
     const bw = (pw - 32 - (cols - 1) * 8) / cols;
     slots.forEach((slot, i) => {
       const bx = px + 16 + (i % cols) * (bw + 8);
-      const by = 246 + Math.floor(i / cols) * 44;
-      UI.btn(ctx, bx, by, bw, 36, ITEM_SLOTS[slot].label, () => Items.craft(slot, UI.sel.master),
-        { size: 12, disabled: !afford, border: UI.sel.master ? '#8a6f4a' : undefined });
+      const by = 232 + Math.floor(i / cols) * 40;
+      UI.btn(ctx, bx, by, bw, 34, ITEM_SLOTS[slot].label, () => Items.craft(slot, UI.sel.master),
+        { size: 11, disabled: !afford, border: UI.sel.master ? '#8a6f4a' : undefined });
     });
 
     ctx.textAlign = 'center';
-    ctx.font = '11px Georgia';
+    ctx.font = '10px Georgia';
     ctx.fillStyle = '#6f6552';
-    ctx.fillText(this.fitText(ctx, 'Salvage single items from the Inventory wheel. Gems survive the forge.', pw - 24), px + pw / 2, 246 + 3 * 44 + 14);
+    ctx.fillText(this.fitText(ctx, 'Salvage single items from the Inventory wheel. Gems survive the forge.', pw - 24),
+      px + pw / 2, 232 + Math.ceil(slots.length / cols) * 40 + 10);
   },
 
   jeweler(ctx, W, H) {
@@ -792,10 +818,11 @@ const Screens = {
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
     UI.panel(ctx, px, 46, pw, Math.min(H - 56, 470), 'COVETOUS SHEN — JEWELER');
+    this.artisanRow(ctx, px, pw, 88, 'jeweler', 'GEMCRAFT');
     ctx.textAlign = 'left';
     ctx.font = 'bold 12px Georgia';
     ctx.fillStyle = '#ffd76a';
-    ctx.fillText(Hero.gold + ' gold', px + 16, 98);
+    ctx.fillText(Hero.gold + ' gold', px + 16, 104);
     ctx.font = '11px Georgia';
     ctx.fillStyle = '#9a9080';
     ctx.fillText(this.fitText(ctx, 'Combine 3 matching gems into a finer one. Socket via the Inventory wheel.', pw - 32), px + 16, 114);
@@ -805,6 +832,30 @@ const Screens = {
       `CUT A RANDOM GEM — ${this.costLabel(gemCost)}`,
       Items.canAfford(gemCost) ? () => Items.buyGem() : null,
       { size: 11, disabled: !Items.canAfford(gemCost), border: '#7a4a8f', color: '#b06adf' });
+
+    // Socketed gear: pull gems back out, free of charge.
+    let y = 162;
+    const socketed = Object.keys(ITEM_SLOTS).filter(s => Hero.equipped[s] && Hero.equipped[s].gem);
+    for (const slot of socketed.slice(0, 3)) {
+      const it = Hero.equipped[slot];
+      const gm = GEM_TYPES[it.gem.type];
+      ctx.fillStyle = 'rgba(28,24,38,0.92)';
+      rr(ctx, px + 16, y, pw - 32, 26, 5); ctx.fill();
+      ctx.fillStyle = gm.color;
+      ctx.save();
+      ctx.translate(px + 30, y + 13);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillRect(-4, -4, 8, 8);
+      ctx.restore();
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.font = '11px Georgia';
+      ctx.fillStyle = '#b5ab94';
+      ctx.fillText(this.fitText(ctx, gemName(it.gem) + '  in  ' + it.name, pw - 200), px + 44, y + 13);
+      UI.btn(ctx, px + pw - 148, y + 1, 132, 24, 'UNSOCKET (free)', () => Items.unsocket(it),
+        { size: 10, border: '#7a4a8f', color: '#b06adf' });
+      y += 30;
+    }
+    if (socketed.length) y += 4;
 
     // Group gems.
     const groups = {};
@@ -816,10 +867,10 @@ const Screens = {
     if (!keys.length) {
       ctx.font = 'italic 13px Georgia';
       ctx.fillStyle = '#544d44';
-      ctx.fillText('No gems yet — monsters and chests drop them.', px + 16, 178);
+      ctx.textAlign = 'left';
+      ctx.fillText('No gems in your pouch — monsters and chests drop them.', px + 16, y + 14);
       return;
     }
-    let y = 164;
     const detailH = 108;
     keys.forEach(key => {
       if (y > H - 100 - (UI.sel.gemKey ? detailH : 0)) return;
@@ -897,6 +948,22 @@ const Screens = {
     }
   },
 
+  // Artisan level + train row shared by the three shops.
+  artisanRow(ctx, px, pw, y, which, label) {
+    const lvl = Hero.artisans[which];
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 11px Georgia';
+    ctx.fillStyle = '#ffd76a';
+    ctx.fillText(label + '  ·  LEVEL ' + lvl + (lvl >= 100 ? '  (MAX)' : ''), px + 16, y + 8);
+    if (lvl < 100) {
+      const cost = Items.trainCost(which);
+      UI.btn(ctx, px + pw - 156, y - 6, 140, 26, `TRAIN  (${cost}g)`,
+        Hero.gold >= cost ? () => Items.train(which) : null,
+        { size: 10, disabled: Hero.gold < cost, border: '#8a6f4a', color: '#ffd76a' });
+    }
+    return y + 22;
+  },
+
   costLabel(cost) {
     const bits = [cost.gold + 'g'];
     if (cost.parts) bits.push(cost.parts + ' parts');
@@ -913,15 +980,16 @@ const Screens = {
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 56, 480);
     UI.panel(ctx, px, 46, pw, ph, 'MYRIAM — MYSTIC');
+    this.artisanRow(ctx, px, pw, 88, 'mystic', 'ENCHANTING');
 
     // ---- pick an item ----
     if (!UI.sel.item) {
       ctx.textAlign = 'left';
       ctx.font = '12px Georgia';
       ctx.fillStyle = '#9a9080';
-      ctx.fillText('Enchanting: choose an equipped item, then the exact', px + 16, 98);
-      ctx.fillText('property to reroll. The rest of the item is untouched.', px + 16, 114);
-      let y = 130;
+      ctx.fillText('Choose an equipped item, then the exact property', px + 16, 112);
+      ctx.fillText('to reroll. The rest of the item is untouched.', px + 16, 128);
+      let y = 142;
       for (const slot of Object.keys(ITEM_SLOTS)) {
         const it = Hero.equipped[slot];
         if (y > 46 + ph - 40) break;
@@ -1151,14 +1219,16 @@ const Screens = {
     });
 
     if (UI.sel.buy && !UI.sel.buy.sold) {
+      // Tap once = full stat card; then an explicit BUY or CANCEL.
       const entry = UI.sel.buy;
       y += 2;
       y = this.itemCard(ctx, px + 14, y, pw - 28, entry.item, Hero.equipped[entry.item.slot], true);
       const afford = Hero.gold >= entry.price;
       const arrows = Items.compareArrows(entry.item, Hero.equipped[entry.item.slot]);
-      const hint = arrows > 0 ? '▲ upgrade' : arrows < 0 ? '▼ worse than yours' : '— sidegrade';
-      UI.btn(ctx, px + 14, y, pw - 28, 36,
-        afford ? `BUY — ${entry.price} gold   (${hint})` : `NOT ENOUGH GOLD (${entry.price})`,
+      const hint = arrows > 0 ? '▲ upgrade' : arrows < 0 ? '▼ worse' : '— sidegrade';
+      const bw2 = (pw - 36) * 0.62;
+      UI.btn(ctx, px + 14, y, bw2, 36,
+        afford ? `BUY — ${entry.price}g  (${hint})` : `NEED ${entry.price} GOLD`,
         afford ? () => {
           Hero.gold -= entry.price;
           entry.sold = true;
@@ -1169,9 +1239,310 @@ const Screens = {
           UI.sel.buy = null;
         } : null,
         { size: 12, disabled: !afford, border: '#8a6f4a', color: '#ffd76a' });
+      UI.btn(ctx, px + 22 + bw2, y, pw - 36 - bw2, 36, 'CANCEL', () => { UI.sel.buy = null; }, { size: 12 });
     } else {
       UI.btn(ctx, px + 14, y + 2, pw - 28, 32, 'LEAVE', () => UI.close(), { size: 12 });
     }
+  },
+
+  // ------------------------------------------------------------ settings
+
+  settings(ctx, W, H) {
+    this.dim(ctx, W, H);
+    this.closeX(ctx, W);
+    const pw = Math.min(560, W - 20);
+    const px = W / 2 - pw / 2;
+    const twoCol = pw >= 480;
+    const ph = Math.min(H - 20, twoCol ? 470 : 640);
+    const py = Math.max(8, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, 'SETTINGS');
+
+    // Tabs: options vs manual save slots.
+    if (!UI.sel.stab) UI.sel.stab = 'options';
+    UI.btn(ctx, px + 16, py + 40, (pw - 40) / 2, 30, 'OPTIONS', () => { UI.sel.stab = 'options'; },
+      { size: 12, bg: UI.sel.stab === 'options' ? 'rgba(60,52,78,0.95)' : undefined });
+    UI.btn(ctx, px + 24 + (pw - 40) / 2, py + 40, (pw - 40) / 2, 30, 'SAVES', () => { UI.sel.stab = 'saves'; },
+      { size: 12, bg: UI.sel.stab === 'saves' ? 'rgba(60,52,78,0.95)' : undefined });
+    if (UI.sel.stab === 'saves') {
+      this.savesTab(ctx, W, H, px, py, pw, ph);
+      return;
+    }
+
+    // ---- audio: slider + mute per channel ----
+    const chans = [
+      ['master', 'Master volume'],
+      ['sfx', 'Sound FX'],
+      ['music', 'Music'],
+      ['ambience', 'Ambience FX'],
+      ['weather', 'Weather FX']
+    ];
+    const colW = twoCol ? (pw - 44) / 2 : pw - 32;
+    let ay = py + 92;
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 12px Georgia';
+    ctx.fillStyle = '#57b894';
+    ctx.fillText('— AUDIO —', px + 16, ay);
+    ay += 14;
+    for (const [chan, label] of chans) {
+      const a = Settings.audio[chan];
+      ctx.font = '12px Georgia';
+      ctx.fillStyle = '#c9bfa8';
+      ctx.textAlign = 'left';
+      ctx.fillText(label, px + 16, ay + 6);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = a.mute ? '#8a5a5a' : '#9a9080';
+      ctx.fillText(a.mute ? 'muted' : Math.round(a.v * 100) + '%', px + 16 + colW - 66, ay + 6);
+      UI.slider(ctx, px + 16, ay + 12, colW - 76, a.v, v => {
+        a.v = v;
+        Settings.save();
+      });
+      UI.check(ctx, px + 16 + colW - 56, ay + 2, a.mute, () => {
+        a.mute = !a.mute;
+        Settings.save();
+      }, 'mute');
+      ay += 42;
+    }
+
+    // ---- gameplay (Diablo-Immortal-style options) ----
+    let gx = twoCol ? px + 28 + colW : px + 16;
+    let gy = twoCol ? py + 106 : ay + 8;
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 12px Georgia';
+    ctx.fillStyle = '#57b894';
+    ctx.fillText('— GAMEPLAY —', gx, gy - 14);
+    const toggles = [
+      ['dmgNumbers', 'Damage numbers'],
+      ['shake', 'Camera shake'],
+      ['healthBars', 'Enemy health bars'],
+      ['aimIndicator', 'Aim indicator'],
+      ['fixedJoy', 'Fixed movement joystick'],
+      ['bigMinimap', 'Large minimap'],
+      ['lowFx', 'Reduced effects (battery saver)'],
+      ['showFps', 'Show frame rate']
+    ];
+    for (const [key, label] of toggles) {
+      UI.check(ctx, gx, gy, Settings.g[key], () => {
+        Settings.g[key] = !Settings.g[key];
+        Settings.save();
+      }, label);
+      gy += 34;
+    }
+  },
+
+  // ------------------------------------------------------- manual saves
+
+  savesTab(ctx, W, H, px, py, pw, ph) {
+    const saves = Saves.list();
+    UI.btn(ctx, px + 16, py + 84, pw - 32, 38,
+      saves.length >= Saves.MAX ? 'ALL 20 SLOTS FULL' : '＋ SAVE CURRENT HERO  (' + saves.length + ' / ' + Saves.MAX + ')',
+      saves.length >= Saves.MAX ? null : () => {
+        let name = null;
+        try { name = window.prompt('Name this save:', 'Level ' + Hero.level + ' Nekromancer'); } catch (e) { /* blocked */ }
+        if (name === null && saves.length) name = 'Save ' + (saves.length + 1);
+        Saves.add(name || 'Level ' + Hero.level + ' Nekromancer');
+      },
+      { size: 13, disabled: saves.length >= Saves.MAX, border: '#57b894', color: '#6ff7c3' });
+
+    if (!saves.length) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'italic 12px Georgia';
+      ctx.fillStyle = '#544d44';
+      ctx.fillText('No manual saves yet. The game still autosaves constantly.', W / 2, py + 150);
+      return;
+    }
+    let y = py + 132;
+    const rowH = Math.min(30, (ph - 150) / Math.max(1, saves.length));
+    saves.forEach((s, i) => {
+      if (y > py + ph - 26) return;
+      ctx.fillStyle = 'rgba(28,24,38,0.92)';
+      rr(ctx, px + 16, y, pw - 32, rowH - 4, 5); ctx.fill();
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 11px Georgia';
+      ctx.fillStyle = '#e8e0cc';
+      ctx.fillText(this.fitText(ctx, s.name, pw - 240), px + 26, y + rowH / 2 - 2);
+      ctx.font = '10px Georgia';
+      ctx.fillStyle = '#8a8070';
+      ctx.textAlign = 'right';
+      ctx.fillText('lvl ' + (s.level || '?') + ' · ' + (s.date || ''), px + pw - 148, y + rowH / 2 - 2);
+      UI.btn(ctx, px + pw - 138, y + 1, 74, rowH - 6, 'LOAD', () => Saves.load(i),
+        { size: 10, border: '#57b894', color: '#6ff7c3' });
+      UI.btn(ctx, px + pw - 58, y + 1, 42, rowH - 6, '✕', () => Saves.remove(i),
+        { size: 10, border: '#8a4550', color: '#e04a5a' });
+      y += rowH;
+    });
+    ctx.textAlign = 'center';
+    ctx.font = '10px Georgia';
+    ctx.fillStyle = '#6f6552';
+    ctx.fillText('Saves live in this browser (localStorage). Loading replaces your current hero.', W / 2, py + ph - 14);
+  },
+
+  // ------------------------------------------------- dev panel & cheats
+
+  devconfirm(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const pw = Math.min(360, W - 30);
+    const px = W / 2 - pw / 2;
+    const py = H / 2 - 90;
+    UI.panel(ctx, px, py, pw, 180, 'DEVELOPER');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '13px Georgia';
+    ctx.fillStyle = '#c9bfa8';
+    ctx.fillText('Would you like to open the dev panel?', W / 2, py + 58);
+    if (UI.sel.devToggle === undefined) UI.sel.devToggle = false;
+    UI.check(ctx, px + pw / 2 - 60, py + 76, UI.sel.devToggle, () => {
+      UI.sel.devToggle = !UI.sel.devToggle;
+    }, 'yes, I am sure');
+    const bw = (pw - 44) / 2;
+    UI.btn(ctx, px + 16, py + 118, bw, 38, 'OPEN',
+      UI.sel.devToggle ? () => UI.open('cheats') : null,
+      { size: 13, disabled: !UI.sel.devToggle, border: '#c22843', color: '#e04a5a' });
+    UI.btn(ctx, px + 28 + bw, py + 118, bw, 38, 'CANCEL', () => UI.close(), { size: 13 });
+  },
+
+  cheats(ctx, W, H) {
+    this.dim(ctx, W, H);
+    this.closeX(ctx, W);
+    const pw = Math.min(560, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 16, 500);
+    const py = Math.max(8, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, '☠ DEV CHEATS ☠');
+    let y = py + 52;
+
+    // Toggles.
+    UI.check(ctx, px + 16, y, Game.cheats.god, () => { Game.cheats.god = !Game.cheats.god; }, 'Immortality (god mode)');
+    y += 34;
+    UI.check(ctx, px + 16, y, Game.cheats.essence, () => { Game.cheats.essence = !Game.cheats.essence; }, 'Infinite essence (mana/rage/energy)');
+    y += 40;
+
+    const row = (label, cb, color = '#e8e0cc') => {
+      UI.btn(ctx, px + 16, y, pw - 32, 30, label, cb, { size: 12, color });
+      y += 36;
+    };
+    row('Add 100 of each crafting resource', () => {
+      for (const k of Object.keys(MATERIALS)) Hero.mats[k] += 100;
+      UI.toast('+100 of every material', '#ffd76a');
+      Hero.save();
+    });
+    row('Add 6 of each gem type', () => {
+      for (const type of Object.keys(GEM_TYPES)) {
+        for (let i = 0; i < 6; i++) Hero.gems.push({ type, tier: 2 });
+      }
+      UI.toast('+6 of every gem', '#b06adf');
+      Hero.save();
+    });
+    // Gold row: five amounts.
+    const golds = [100, 1000, 10000, 100000, 1000000];
+    const gw = (pw - 32 - 4 * 6) / 5;
+    golds.forEach((g, i) => {
+      UI.btn(ctx, px + 16 + i * (gw + 6), y, gw, 30,
+        g >= 1000000 ? '1m g' : g >= 1000 ? (g / 1000) + 'k g' : g + ' g',
+        () => { Hero.gold += g; UI.toast('+' + g + ' gold', '#ffd76a'); Hero.save(); },
+        { size: 11, color: '#ffd76a' });
+    });
+    y += 36;
+    // Level row.
+    const lvls = [1, 5, 10];
+    const lw = (pw - 32 - 2 * 6) / 3;
+    lvls.forEach((n, i) => {
+      UI.btn(ctx, px + 16 + i * (lw + 6), y, lw, 30, '+' + n + ' level' + (n > 1 ? 's' : ''),
+        () => Hero.grantLevels(n), { size: 11 });
+    });
+    y += 36;
+    row('Max level Blacksmith (100)', () => {
+      Hero.artisans.smith = 100; UI.toast('Blacksmith mastered', '#ffb43a'); Hero.save();
+    }, '#ffb43a');
+    row('Max level Enchantress (100)', () => {
+      Hero.artisans.mystic = 100; UI.toast('Mystic mastered', '#b06adf'); Hero.save();
+    }, '#b06adf');
+    row('Max level Gem Crafter (100)', () => {
+      Hero.artisans.jeweler = 100; UI.toast('Jeweler mastered', '#4ecbe0'); Hero.save();
+    }, '#4ecbe0');
+    ctx.textAlign = 'center';
+    ctx.font = 'italic 10px Georgia';
+    ctx.fillStyle = '#6f6552';
+    ctx.fillText('Toggles last for this session. Grants are saved to the hero.', px + pw / 2, y + 8);
+  },
+
+  // -------------------------------------------------------- patch notes
+
+  patchnotes(ctx, W, H) {
+    this.dim(ctx, W, H);
+    this.closeX(ctx, W);
+    const pw = Math.min(560, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 16, 480);
+    const py = Math.max(8, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, 'PATCH NOTES');
+    let y = py + 54;
+    for (const patch of PATCH_NOTES) {
+      ctx.textAlign = 'left';
+      ctx.font = 'bold 14px Georgia';
+      ctx.fillStyle = '#57b894';
+      ctx.fillText(patch.v + '   —   ' + patch.date, px + 16, y);
+      y += 20;
+      ctx.font = '11px Georgia';
+      ctx.fillStyle = '#b5ab94';
+      for (const n of patch.notes) {
+        if (y > py + ph - 20) break;
+        y = wrapText(ctx, '• ' + n, px + 22, y, pw - 44, 14, 2) + 4;
+      }
+      y += 10;
+    }
+  },
+
+  // ------------------------------------------------------------- season
+
+  season(ctx, W, H) {
+    this.dim(ctx, W, H);
+    this.closeX(ctx, W);
+    const pw = Math.min(560, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 16, 470);
+    const py = Math.max(8, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, SEASON.name.toUpperCase());
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'italic 12px Georgia';
+    ctx.fillStyle = '#9a9080';
+    wrapText(ctx, SEASON.desc, W / 2, py + 54, pw - 40, 15, 2);
+
+    // The set hunt.
+    const owned = Hero.setPiecesOwned();
+    ctx.font = 'bold 14px Georgia';
+    ctx.fillStyle = '#4ade80';
+    ctx.fillText('GRACE OF INARIUS  —  ' + owned.size + ' / 6', W / 2, py + 96);
+    let y = py + 114;
+    ctx.textAlign = 'left';
+    for (const [slot, name] of Object.entries(INARIUS_SET.pieces)) {
+      const has = owned.has(slot);
+      ctx.font = 'bold 12px Georgia';
+      ctx.fillStyle = has ? '#4ade80' : '#544d44';
+      ctx.fillText((has ? '◆  ' : '◇  ') + name, px + 24, y);
+      ctx.textAlign = 'right';
+      ctx.font = '10px Georgia';
+      ctx.fillStyle = has ? '#3a7a4a' : '#453f52';
+      ctx.fillText(ITEM_SLOTS[slot].label, px + pw - 24, y);
+      ctx.textAlign = 'left';
+      y += 22;
+    }
+    y += 4;
+    ctx.font = '11px Georgia';
+    ctx.fillStyle = '#8a8070';
+    for (const b of INARIUS_SET.bonuses) {
+      const active = Items.setCount() >= b.pieces;
+      ctx.fillStyle = active ? '#4ade80' : '#6f6552';
+      y = wrapText(ctx, `(${b.pieces}) ${b.desc}` + (active ? '  ✓' : ''), px + 24, y, pw - 48, 14, 2) + 2;
+    }
+    y += 8;
+    UI.btn(ctx, px + 16, y, pw - 32, 44, '◈ ENTER THE NEPHALEM RIFT', () => {
+      UI.close();
+      Game.startRift();
+    }, { size: 14, border: '#3a7a4a', color: '#4ade80' });
+    y += 52;
+    ctx.textAlign = 'center';
+    ctx.font = '10px Georgia';
+    ctx.fillStyle = '#6f6552';
+    ctx.fillText('Rifts cleared: ' + Hero.riftsCleared + '  ·  Guardians always drop set pieces', W / 2, y);
   },
 
   // ------------------------------------------------------ pause / death
@@ -1190,6 +1561,8 @@ const Screens = {
     UI.btn(ctx, cx, y, bw, 40, 'INVENTORY', () => UI.open('radial'), { size: 13 });
     y += 50;
     UI.btn(ctx, cx, y, bw, 40, 'SKILLS & PASSIVES', () => UI.open('skills'), { size: 13 });
+    y += 50;
+    UI.btn(ctx, cx, y, bw, 40, 'SETTINGS', () => UI.open('settings'), { size: 13 });
     y += 50;
     UI.btn(ctx, cx, y, bw, 40, 'ABANDON BOUNTY → CAMP', () => Game.toCamp(), { size: 13, border: '#8a4550', color: '#e04a5a' });
   },

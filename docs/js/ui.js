@@ -19,11 +19,56 @@ const UI = {
 
   clearHits() {
     this.hits = [];
+    this.sliderRegs = [];
     this.overlayBarrier = 0;
   },
 
   register(x, y, w, h, cb) {
     this.hits.push({ x, y, w, h, cb });
+  },
+
+  sliderAt(x, y) {
+    for (const s of this.sliderRegs || []) {
+      if (x >= s.x - 12 && x <= s.x + s.w + 12 && y >= s.y && y <= s.y + s.h) return s;
+    }
+    return null;
+  },
+
+  // A draggable volume slider (0..1). Registers itself for touch/mouse drags.
+  slider(ctx, x, y, w, value, set) {
+    ctx.fillStyle = '#241f30';
+    rr(ctx, x, y + 8, w, 8, 4); ctx.fill();
+    ctx.fillStyle = '#57b894';
+    rr(ctx, x, y + 8, Math.max(4, w * value), 8, 4); ctx.fill();
+    ctx.fillStyle = '#e8e0cc';
+    ctx.beginPath(); ctx.arc(x + w * value, y + 12, 9, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#57b894';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x + w * value, y + 12, 9, 0, TAU); ctx.stroke();
+    this.sliderRegs.push({ x, y: y - 6, w, h: 36, set });
+  },
+
+  // A checkbox with label; returns width consumed.
+  check(ctx, x, y, checked, cb, label) {
+    ctx.fillStyle = checked ? '#2c4a3a' : '#241f30';
+    rr(ctx, x, y, 22, 22, 5); ctx.fill();
+    ctx.strokeStyle = checked ? '#57b894' : '#4a4356';
+    ctx.lineWidth = 2;
+    rr(ctx, x, y, 22, 22, 5); ctx.stroke();
+    if (checked) {
+      ctx.strokeStyle = '#6ff7c3';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(x + 5, y + 11); ctx.lineTo(x + 9, y + 16); ctx.lineTo(x + 17, y + 6);
+      ctx.stroke();
+    }
+    if (label) {
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.font = '12px Georgia';
+      ctx.fillStyle = '#c9bfa8';
+      ctx.fillText(label, x + 30, y + 12);
+    }
+    this.register(x - 6, y - 6, (label ? 34 + ctx.measureText(label || '').width : 22) + 12, 34, cb);
   },
 
   click(x, y) {
@@ -135,7 +180,14 @@ const UI = {
 
   draw(ctx, W, H) {
     this.clearHits();
-    if (Game.state === 'menu') { Screens.title(ctx, W, H); return; }
+    if (Game.state === 'menu') {
+      Screens.title(ctx, W, H);
+      if (this.screen) {
+        this.overlayBarrier = this.hits.length;
+        Screens.draw(ctx, W, H);
+      }
+      return;
+    }
     if (Game.state === 'camp' || Game.state === 'map') {
       if (Game.state === 'camp') Screens.camp(ctx, W, H);
       else Screens.map(ctx, W, H);
@@ -154,6 +206,18 @@ const UI = {
     this.drawObjective(ctx, W, H);
     this.drawMinimap(ctx, W, H);
     this.drawBossBar(ctx, W, H);
+    if (Settings.g.showFps) {
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.font = '11px Georgia';
+      ctx.fillStyle = '#57b894';
+      ctx.fillText(Math.round(Game.fps) + ' fps', 8 + (this.safe ? this.safe.left : 0), H - 12);
+    }
+    if (Game.cheats.god || Game.cheats.essence) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 11px Georgia';
+      ctx.fillStyle = '#e04a5a';
+      ctx.fillText('DEV' + (Game.cheats.god ? ' · GOD' : '') + (Game.cheats.essence ? ' · ∞' : ''), W / 2, H - 12);
+    }
     this.drawToasts(ctx, W);
     this.drawJoystick(ctx);
     this.drawSkillButtons(ctx, p);
@@ -239,6 +303,27 @@ const UI = {
     const s = this.safe || { top: 0, left: 0 };
     const st = s.top;
     ctx.textBaseline = 'middle';
+    if (Game.riftMode) {
+      // Rift: a progress bar is the objective.
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 13px Georgia';
+      ctx.fillStyle = '#b06adf';
+      ctx.fillText(Game.zone.name + '  ·  ' + DIFFICULTIES[Hero.difficulty].name, W / 2, 16 + st);
+      const bw = Math.min(240, W * 0.36);
+      if (Game.bossDead) {
+        ctx.font = '12px Georgia';
+        ctx.fillText('Enter the portal', W / 2, 33 + st);
+      } else if (Game.guardianUp) {
+        ctx.font = '12px Georgia';
+        ctx.fillStyle = '#e04a5a';
+        ctx.fillText('Slay ' + Game.zone.boss, W / 2, 33 + st);
+      } else {
+        this.bar(ctx, W / 2 - bw / 2, 27 + st, bw, 10, Game.riftProgress / 100, '#5a2a7a', '#b06adf',
+          Math.floor(Game.riftProgress) + '%');
+      }
+      if (Game.guardianUp || Game.bossDead) this.drawObjectiveArrow(ctx, W, H);
+      return;
+    }
     if (W < 560) {
       // Narrow phones: a single bounty line under the bars (the zone name
       // shows in the entry banner and the pause menu).
@@ -255,7 +340,10 @@ const UI = {
       ctx.fillStyle = Game.bossDead ? '#b06adf' : '#ffb43a';
       ctx.fillText(Game.bossDead ? 'Enter the portal' : 'Bounty: slay ' + Game.zone.boss, W / 2, 33 + st);
     }
+    this.drawObjectiveArrow(ctx, W, H);
+  },
 
+  drawObjectiveArrow(ctx, W, H) {
     // Chevron pointing at the objective.
     const p = Game.player;
     const tgt = Game.bossDead ? World.portal : World.bossPos;
@@ -281,7 +369,7 @@ const UI = {
 
   drawMinimap(ctx, W, H) {
     const s = this.safe || { top: 0, right: 0 };
-    const S = Math.min(110, W * 0.2);
+    const S = Math.min(Settings.g.bigMinimap ? 160 : 110, W * (Settings.g.bigMinimap ? 0.3 : 0.2));
     const x0 = W - S - 12 - s.right, y0 = 48 + s.top;
     ctx.globalAlpha = 0.82;
     ctx.fillStyle = '#08060c';
@@ -306,7 +394,7 @@ const UI = {
       if (cell) dot(o.x, o.y, o.type === 'chest' ? '#ffd76a' : o.type === 'vendor' ? '#ffb43a' : '#6ff7c3', o.type === 'vendor' ? 3 : 2);
     }
     if (Game.bossDead && World.portal) dot(World.portal.x, World.portal.y, '#b06adf', 3.5);
-    else dot(World.bossPos.x, World.bossPos.y, '#e04a5a', 3);
+    else if (!Game.riftMode || Game.guardianUp) dot(World.bossPos.x, World.bossPos.y, '#e04a5a', 3);
     dot(Game.player.x, Game.player.y, '#e8e0cc', 3);
     ctx.globalAlpha = 1;
   },
@@ -351,6 +439,16 @@ const UI = {
 
   drawJoystick(ctx) {
     const j = Input.joy;
+    if (!j.active && Settings.g.fixedJoy && Game.state === 'playing' && !this.screen) {
+      const a = Input.fixedAnchor();
+      ctx.globalAlpha = 0.16;
+      ctx.strokeStyle = '#c9bfa8';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(a.x, a.y, 52, 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.arc(a.x, a.y, 22, 0, TAU); ctx.stroke();
+      ctx.globalAlpha = 1;
+      return;
+    }
     if (!j.active) return;
     ctx.globalAlpha = 0.35;
     ctx.strokeStyle = '#c9bfa8';

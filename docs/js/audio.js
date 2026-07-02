@@ -1,12 +1,21 @@
 'use strict';
 // ---------------------------------------------------------------------------
-// Procedural WebAudio SFX — no assets, everything synthesized on the fly.
+// Procedural WebAudio — no assets. Five mixed channels (master → sfx / music /
+// ambience / weather), a generative dark-ambient score, per-zone ambience
+// drones and weather loops (rain, wind). All levels driven by Settings.
 // ---------------------------------------------------------------------------
 
 const AudioSys = {
   ctx: null,
   master: null,
+  ch: {},               // sfx / music / ambience / weather gain nodes
   enabled: true,
+  musicTimer: null,
+  musicRoot: 110,
+  ambienceNodes: null,
+  weatherNodes: null,
+  currentAmbience: null,
+  currentWeather: null,
 
   // Must be called from a user gesture (tap/click) to satisfy autoplay rules.
   init() {
@@ -17,11 +26,27 @@ const AudioSys = {
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
       this.master = this.ctx.createGain();
-      this.master.gain.value = 0.5;
       this.master.connect(this.ctx.destination);
+      for (const name of ['sfx', 'music', 'ambience', 'weather']) {
+        const g = this.ctx.createGain();
+        g.connect(this.master);
+        this.ch[name] = g;
+      }
+      this.setVolumes();
+      this.startMusic();
     } catch (e) {
       this.enabled = false;
     }
+  },
+
+  setVolumes() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this.master.gain.setTargetAtTime(Settings.volume('master') * 0.6, t, 0.05);
+    this.ch.sfx.gain.setTargetAtTime(Settings.volume('sfx'), t, 0.05);
+    this.ch.music.gain.setTargetAtTime(Settings.volume('music'), t, 0.05);
+    this.ch.ambience.gain.setTargetAtTime(Settings.volume('ambience'), t, 0.05);
+    this.ch.weather.gain.setTargetAtTime(Settings.volume('weather'), t, 0.05);
   },
 
   now() { return this.ctx.currentTime; },
@@ -29,11 +54,11 @@ const AudioSys = {
   env(gainNode, t, peak, attack, decay) {
     const g = gainNode.gain;
     g.setValueAtTime(0.0001, t);
-    g.exponentialRampToValueAtTime(peak, t + attack);
+    g.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + attack);
     g.exponentialRampToValueAtTime(0.0001, t + attack + decay);
   },
 
-  tone(type, freq, freqEnd, peak, attack, decay, delay = 0) {
+  tone(type, freq, freqEnd, peak, attack, decay, delay = 0, channel = 'sfx') {
     if (!this.ctx || !this.enabled) return;
     const t = this.now() + delay;
     const o = this.ctx.createOscillator();
@@ -42,12 +67,12 @@ const AudioSys = {
     o.frequency.setValueAtTime(freq, t);
     if (freqEnd) o.frequency.exponentialRampToValueAtTime(Math.max(20, freqEnd), t + attack + decay);
     this.env(g, t, peak, attack, decay);
-    o.connect(g).connect(this.master);
+    o.connect(g).connect(this.ch[channel] || this.master);
     o.start(t);
     o.stop(t + attack + decay + 0.05);
   },
 
-  noise(peak, attack, decay, filterFreq, filterEnd, delay = 0) {
+  noise(peak, attack, decay, filterFreq, filterEnd, delay = 0, channel = 'sfx') {
     if (!this.ctx || !this.enabled) return;
     const t = this.now() + delay;
     const len = Math.ceil(this.ctx.sampleRate * (attack + decay + 0.05));
@@ -62,10 +87,139 @@ const AudioSys = {
     if (filterEnd) f.frequency.exponentialRampToValueAtTime(Math.max(40, filterEnd), t + attack + decay);
     const g = this.ctx.createGain();
     this.env(g, t, peak, attack, decay);
-    src.connect(f).connect(g).connect(this.master);
+    src.connect(f).connect(g).connect(this.ch[channel] || this.master);
     src.start(t);
     src.stop(t + attack + decay + 0.05);
   },
+
+  // ------------------------------------------------------------- music
+
+  // A slow generative dirge: sparse minor-scale swells over a low drone.
+  startMusic() {
+    if (this.musicTimer) return;
+    const MINOR = [1, 1.189, 1.335, 1.498, 1.587, 1.782]; // aeolian-ish ratios
+    let step = 0;
+    this.musicTimer = setInterval(() => {
+      if (!this.ctx || !this.enabled || this.ctx.state !== 'running') return;
+      if (Settings.volume('master') === 0 || Settings.volume('music') === 0) return;
+      step++;
+      const root = this.musicRoot;
+      // Low drone every 4th step.
+      if (step % 4 === 1) {
+        this.tone('sine', root / 2, root / 2, 0.16, 1.6, 2.6, 0, 'music');
+        this.tone('sine', root / 2 * 1.5, root / 2 * 1.5, 0.05, 1.8, 2.4, 0.2, 'music');
+      }
+      // A wandering note most steps.
+      if (Math.random() < 0.8) {
+        const f = root * pick(MINOR) * (Math.random() < 0.25 ? 2 : 1);
+        this.tone('triangle', f, f * rand(0.995, 1.005), 0.07, rand(0.8, 1.6), rand(1.6, 2.6), rand(0, 0.5), 'music');
+      }
+      // A distant bell, rarely.
+      if (Math.random() < 0.12) {
+        const f = root * 4 * pick(MINOR);
+        this.tone('sine', f, f, 0.04, 0.01, 2.8, rand(0, 1), 'music');
+      }
+    }, 2200);
+  },
+
+  // --------------------------------------------------- ambience / weather
+
+  makeLoop(build) {
+    // Returns {gain, stop()} — a looping source chain into the given channel.
+    const src = this.ctx.createBufferSource();
+    const seconds = 2;
+    const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * seconds, this.ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    src.buffer = buf;
+    src.loop = true;
+    return build(src);
+  },
+
+  // ambienceKind: 'wilds' | 'crypt' | 'camp' | null
+  setAmbience(kind) {
+    if (!this.ctx || kind === this.currentAmbience) return;
+    this.currentAmbience = kind;
+    if (this.ambienceNodes) {
+      this.ambienceNodes.forEach(n => { try { n.stop ? n.stop() : n.disconnect(); } catch (e) { /* */ } });
+      this.ambienceNodes = null;
+    }
+    if (!kind) return;
+    const nodes = [];
+    const t = this.now();
+    // Wind / air bed.
+    const bed = this.makeLoop(src => {
+      const f = this.ctx.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.value = kind === 'crypt' ? 220 : 480;
+      const g = this.ctx.createGain();
+      g.gain.value = kind === 'camp' ? 0.05 : 0.09;
+      // Slow swell LFO.
+      const lfo = this.ctx.createOscillator();
+      lfo.frequency.value = kind === 'crypt' ? 0.07 : 0.13;
+      const lfoG = this.ctx.createGain();
+      lfoG.gain.value = kind === 'camp' ? 0.02 : 0.045;
+      lfo.connect(lfoG).connect(g.gain);
+      lfo.start(t);
+      src.connect(f).connect(g).connect(this.ch.ambience);
+      src.start(t);
+      return { nodes: [src, lfo, g, f] };
+    });
+    nodes.push(...bed.nodes);
+    // Crypt gets a deep drone.
+    if (kind === 'crypt') {
+      const o = this.ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = 55;
+      const g = this.ctx.createGain();
+      g.gain.value = 0.05;
+      o.connect(g).connect(this.ch.ambience);
+      o.start(t);
+      nodes.push(o, g);
+    }
+    this.ambienceNodes = nodes;
+  },
+
+  // weatherKind: 'rain' | 'wind' | null
+  setWeather(kind) {
+    if (!this.ctx || kind === this.currentWeather) return;
+    this.currentWeather = kind;
+    if (this.weatherNodes) {
+      this.weatherNodes.forEach(n => { try { n.stop ? n.stop() : n.disconnect(); } catch (e) { /* */ } });
+      this.weatherNodes = null;
+    }
+    if (!kind) return;
+    const t = this.now();
+    const out = this.makeLoop(src => {
+      const f = this.ctx.createBiquadFilter();
+      const g = this.ctx.createGain();
+      if (kind === 'rain') {
+        f.type = 'highpass';
+        f.frequency.value = 1600;
+        g.gain.value = 0.10;
+      } else {
+        f.type = 'bandpass';
+        f.frequency.value = 300;
+        f.Q.value = 0.7;
+        g.gain.value = 0.12;
+        const lfo = this.ctx.createOscillator();
+        lfo.frequency.value = 0.16;
+        const lfoG = this.ctx.createGain();
+        lfoG.gain.value = 160;
+        lfo.connect(lfoG).connect(f.frequency);
+        lfo.start(t);
+        src.connect(f).connect(g).connect(this.ch.weather);
+        src.start(t);
+        return { nodes: [src, lfo, g, f] };
+      }
+      src.connect(f).connect(g).connect(this.ch.weather);
+      src.start(t);
+      return { nodes: [src, g, f] };
+    });
+    this.weatherNodes = out.nodes;
+  },
+
+  // ----------------------------------------------------------------- sfx
 
   sfx(name) {
     if (!this.ctx || !this.enabled) return;
@@ -177,6 +331,13 @@ const AudioSys = {
         break;
       case 'click':
         this.tone('square', 480, 400, 0.035, 0.003, 0.045);
+        break;
+      case 'tornado':
+        this.noise(0.05, 0.02, 0.25, 1400, 400);
+        break;
+      case 'setdrop':
+        [392, 494, 587, 784, 988].forEach((f, i) =>
+          this.tone('triangle', f, f, 0.1, 0.01, 0.5, i * 0.12));
         break;
     }
   }

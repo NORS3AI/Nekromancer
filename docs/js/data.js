@@ -11,7 +11,27 @@ const RARITIES = [
   { name: 'Common',    color: '#c9bfa8', mult: 1.0, salvage: 'parts',   salvageN: 2 },
   { name: 'Magic',     color: '#6a9aff', mult: 1.4, salvage: 'dust',    salvageN: 2 },
   { name: 'Rare',      color: '#ffd76a', mult: 1.9, salvage: 'crystal', salvageN: 1 },
-  { name: 'Legendary', color: '#ff8c2a', mult: 2.7, salvage: 'soul',    salvageN: 1 }
+  { name: 'Legendary', color: '#ff8c2a', mult: 2.7, salvage: 'soul',    salvageN: 1 },
+  { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
+];
+
+const GAME_VERSION = 'v0.0.1-alpha';
+
+const PATCH_NOTES = [
+  {
+    v: 'v0.0.1-alpha', date: 'July 2026',
+    notes: [
+      'The full Diablo 3 Nekromancer kit: 21 actives at authentic unlock levels, 12 passives',
+      'Five lands of Sanctuary — open wilds and true crypts — with kill bounties',
+      'PS5-console-style radial equipment wheel, gems, sockets',
+      'Artisans: Blacksmith (masterwork forging), Jeweler, Mystic (choose-your-affix enchanting)',
+      'Wandering vendors, treasure chests, shrines, telegraphed bounty bosses',
+      'Season of the Grace of Inarius: Nephalem Rifts at level 70, 6-piece set hunt',
+      'Legendary powers: Bloodtide Blade, Krysbin\'s Sentence, Trag\'Oul\'s Corroded Fang',
+      'Settings: 5 audio channels, weather, Diablo-Immortal-style gameplay options',
+      'Twin-stick mobile controls with drag-to-aim skills and iPhone safe-area support'
+    ]
+  }
 ];
 
 // --------------------------- crafting materials ----------------------------
@@ -46,15 +66,61 @@ function gemName(gem) {
 // ---------------------------- equipment slots -------------------------------
 
 const ITEM_SLOTS = {
-  weapon: { label: 'Weapon',      nouns: ['Scythe', 'Bone Blade', 'Grim Sickle', 'Grave Reaper', 'Femur Cleaver'], primary: 'dmg' },
-  offhand:{ label: 'Phylactery',  nouns: ['Phylactery', 'Death Urn', 'Soul Vessel', 'Grim Codex'], primary: 'dmg' },
-  helm:   { label: 'Helm',        nouns: ['Skullcap', 'Grave Crown', 'Deathmask', 'Hood of Rathma'], primary: 'hp' },
-  chest:  { label: 'Chest',       nouns: ['Shroud', 'Carapace', 'Grave Plate', 'Cadaver Mail'], primary: 'hp' },
-  gloves: { label: 'Gloves',      nouns: ['Grips', 'Bonefists', 'Corpsehands', 'Reaping Claws'], primary: 'crit' },
-  boots:  { label: 'Boots',       nouns: ['Treads', 'Gravewalkers', 'Marrow Striders', 'Tomb Boots'], primary: 'hp' },
-  amulet: { label: 'Amulet',      nouns: ['Amulet', 'Death Locket', 'Vial Pendant', 'Rathma Charm'], primary: 'crit' },
-  ring1:  { label: 'Ring',        nouns: ['Band', 'Signet', 'Knucklebone Loop', 'Death Seal', 'Wraith Coil'], primary: 'crit' },
-  ring2:  { label: 'Ring',        nouns: ['Band', 'Signet', 'Knucklebone Loop', 'Death Seal', 'Wraith Coil'], primary: 'crit' }
+  weapon:   { label: 'Weapon',     nouns: ['Scythe', 'Bone Blade', 'Grim Sickle', 'Grave Reaper', 'Femur Cleaver'], primary: 'dmg' },
+  offhand:  { label: 'Phylactery', nouns: ['Phylactery', 'Death Urn', 'Soul Vessel', 'Grim Codex'], primary: 'dmg' },
+  helm:     { label: 'Helm',       nouns: ['Skullcap', 'Grave Crown', 'Deathmask', 'Hood of Rathma'], primary: 'hp' },
+  shoulders:{ label: 'Shoulders',  nouns: ['Spaulders', 'Bone Mantle', 'Grave Guards', 'Pall Pads'], primary: 'hp' },
+  chest:    { label: 'Chest',      nouns: ['Shroud', 'Carapace', 'Grave Plate', 'Cadaver Mail'], primary: 'hp' },
+  gloves:   { label: 'Gloves',     nouns: ['Grips', 'Bonefists', 'Corpsehands', 'Reaping Claws'], primary: 'crit' },
+  legs:     { label: 'Legs',       nouns: ['Greaves', 'Tomb Leggings', 'Marrow Wraps', 'Cerecloth Pants'], primary: 'hp' },
+  boots:    { label: 'Boots',      nouns: ['Treads', 'Gravewalkers', 'Marrow Striders', 'Tomb Boots'], primary: 'hp' },
+  amulet:   { label: 'Amulet',     nouns: ['Amulet', 'Death Locket', 'Vial Pendant', 'Rathma Charm'], primary: 'crit' },
+  ring1:    { label: 'Ring',       nouns: ['Band', 'Signet', 'Knucklebone Loop', 'Death Seal', 'Wraith Coil'], primary: 'crit' },
+  ring2:    { label: 'Ring',       nouns: ['Band', 'Signet', 'Knucklebone Loop', 'Death Seal', 'Wraith Coil'], primary: 'crit' }
+};
+
+// ------------------------- Season: Grace of Inarius -------------------------
+// The endgame (per the D3 Inarius Death Nova build): keep Bone Armor up for
+// the bone tornado, spend everything on Death Nova. Set pieces drop from
+// Nephalem Rift Guardians once the hero reaches max level.
+
+const SEASON = {
+  name: 'Season of the Grace of Inarius',
+  desc: 'Reach the Nephalem Rifts. Claim all six pieces of the Grace of Inarius. Become the storm of bone.'
+};
+
+const INARIUS_SET = {
+  id: 'inarius',
+  name: 'Grace of Inarius',
+  pieces: {
+    helm:      "Inarius's Will",
+    shoulders: "Inarius's Conviction",
+    chest:     "Inarius's Understanding",
+    gloves:    "Inarius's Reticence",
+    legs:      "Inarius's Perseverance",
+    boots:     "Inarius's Martyrdom"
+  },
+  bonuses: [
+    { pieces: 2, desc: 'Bone Armor damage ×10 and its shield is doubled' },
+    { pieces: 4, desc: 'Bone Armor grants 3% damage reduction per enemy hit (max 60%)' },
+    { pieces: 6, desc: 'Bone Armor raises a swirling bone tornado; enemies it strikes take +50% damage from you' }
+  ]
+};
+
+// Legendary powers (rift loot) — the build-defining items from the guide.
+const LEGENDARY_POWERS = {
+  bloodtide: {
+    slot: 'weapon', name: 'Bloodtide Blade',
+    desc: 'Death Nova deals +8% damage per enemy near you (max 15)'
+  },
+  krysbin: {
+    slot: 'ring1', name: "Krysbin's Sentence",
+    desc: 'You deal +75% damage to slowed, rooted or decrepified enemies'
+  },
+  corrodedFang: {
+    slot: 'weapon', name: "Trag'Oul's Corroded Fang",
+    desc: 'You deal +60% damage to cursed enemies'
+  }
 };
 
 const AFFIX_ROLLS = {
@@ -175,7 +241,7 @@ const ELITE_SUFFIX = ['maw', 'fang', 'howl', 'rot', 'claw', 'shriek'];
 const ZONES = [
   {
     id: 'hollow', name: 'The Weeping Hollow', kind: 'open', mLvl: 1,
-    ground: '#16121b', accent: '#2c4230',
+    ground: '#16121b', accent: '#2c4230', weather: 'rain',
     monsters: ['zombie', 'zombie', 'skeleton', 'ghoul'],
     boss: 'The Grave Warden', packs: 11,
     desc: 'A drowned graveyard where the dead refuse to rest.'
@@ -189,14 +255,14 @@ const ZONES = [
   },
   {
     id: 'sands', name: 'The Desolate Sands', kind: 'open', mLvl: 10,
-    ground: '#1e1812', accent: '#4a3c28',
+    ground: '#1e1812', accent: '#4a3c28', weather: 'wind',
     monsters: ['imp', 'imp', 'ghoul', 'archer', 'cultist'],
     boss: 'Sar\'Khan the Sunscoured', packs: 13,
     desc: 'A burned waste of dunes, imps and buried idols.'
   },
   {
     id: 'marsh', name: 'The Blood Marsh', kind: 'open', mLvl: 16,
-    ground: '#121a16', accent: '#2c4230',
+    ground: '#121a16', accent: '#2c4230', weather: 'rain',
     monsters: ['zombie', 'ghoul', 'ghoul', 'cultist', 'imp'],
     boss: 'Mother of Maggots', packs: 14,
     desc: 'Rotting fens where the cult drains its offerings.'
@@ -223,3 +289,20 @@ const DIFFICULTIES = [
 
 const XP_CURVE = lvl => Math.round(60 * Math.pow(lvl, 1.5));
 const MAX_LEVEL = 70;
+
+// Endless endgame dungeon: filled by slaughter, capped by a Guardian.
+const RIFT_GUARDIANS = ['Blighter', 'The Choker', 'Bloodmaw', 'Sand Shaper', 'Erethon', 'Man Carver'];
+
+function makeRiftZone() {
+  const theme = pick(ZONES);
+  return {
+    id: 'rift', name: 'Nephalem Rift', kind: Math.random() < 0.5 ? 'dungeon' : 'open',
+    mLvl: 26 + Math.min(44, (Hero.riftsCleared || 0) * 2),
+    ground: theme.ground, accent: theme.accent,
+    weather: pick(['rain', 'wind', null]),
+    monsters: ['zombie', 'skeleton', 'archer', 'ghoul', 'imp', 'cultist'],
+    boss: pick(RIFT_GUARDIANS) + ', Rift Guardian', packs: 18,
+    desc: 'A shard of a broken realm. Fill the rift; face its guardian.',
+    rift: true
+  };
+}

@@ -21,6 +21,8 @@ const Input = {
   mousePrimary: false,
   mouseSlot: undefined,
   mousePos: { x: 0, y: 0 },
+  sliderTouches: new Map(),   // touch id -> slider reg
+  mouseSlider: null,
 
   gameplayLive() {
     return Game.state === 'playing' && !UI.screen && Game.playerDeadT <= 0;
@@ -60,9 +62,16 @@ const Input = {
     canvas.addEventListener('mousemove', e => {
       this.mousePos.x = e.clientX;
       this.mousePos.y = e.clientY;
+      if (this.mouseSlider) this.mouseSlider.set(clamp((e.clientX - this.mouseSlider.x) / this.mouseSlider.w, 0, 1));
     });
     canvas.addEventListener('mousedown', e => {
       AudioSys.init();
+      const sl = UI.sliderAt(e.clientX, e.clientY);
+      if (sl) {
+        this.mouseSlider = sl;
+        sl.set(clamp((e.clientX - sl.x) / sl.w, 0, 1));
+        return;
+      }
       if (UI.click(e.clientX, e.clientY)) return;
       if (!this.gameplayLive()) return;
       const slot = UI.buttonAt(e.clientX, e.clientY);
@@ -77,6 +86,7 @@ const Input = {
     });
     window.addEventListener('mouseup', () => {
       this.mousePrimary = false;
+      this.mouseSlider = null;
       if (this.mouseSlot !== undefined) {
         this.heldSlots.delete(this.mouseSlot);
         this.mouseSlot = undefined;
@@ -89,6 +99,8 @@ const Input = {
     this.keys = {};
     this.heldSlots.clear();
     this.buttonTouches.clear();
+    this.sliderTouches.clear();
+    this.mouseSlider = null;
     this.castQueue.length = 0;
     this.mousePrimary = false;
     this.mouseSlot = undefined;
@@ -96,10 +108,21 @@ const Input = {
     this.aim.active = false; this.aim.id = null;
   },
 
+  fixedAnchor() {
+    const s = Game.safe || { left: 0, bottom: 0 };
+    return { x: 96 + s.left, y: Game.H - 108 - s.bottom };
+  },
+
   onTouchStart(e) {
     AudioSys.init();
     for (const t of e.changedTouches) {
       const x = t.clientX, y = t.clientY;
+      const sl = UI.sliderAt(x, y);
+      if (sl) {
+        this.sliderTouches.set(t.identifier, sl);
+        sl.set(clamp((x - sl.x) / sl.w, 0, 1));
+        continue;
+      }
       if (UI.click(x, y)) continue;
       if (!this.gameplayLive()) continue;
       const slot = UI.buttonAt(x, y);
@@ -109,8 +132,18 @@ const Input = {
       } else if (!this.joy.active && x < Game.W * 0.5) {
         this.joy.active = true;
         this.joy.id = t.identifier;
-        this.joy.ox = x; this.joy.oy = y;
-        this.joy.dx = 0; this.joy.dy = 0;
+        if (Settings.g.fixedJoy) {
+          const a = this.fixedAnchor();
+          this.joy.ox = a.x; this.joy.oy = a.y;
+          const dx = x - a.x, dy = y - a.y;
+          const d = Math.hypot(dx, dy) || 1;
+          const k = Math.min(1, d / 64);
+          this.joy.dx = dx / d * k;
+          this.joy.dy = dy / d * k;
+        } else {
+          this.joy.ox = x; this.joy.oy = y;
+          this.joy.dx = 0; this.joy.dy = 0;
+        }
       } else if (!this.aim.active) {
         this.aim.active = true;
         this.aim.id = t.identifier;
@@ -122,6 +155,11 @@ const Input = {
 
   onTouchMove(e) {
     for (const t of e.changedTouches) {
+      const sl = this.sliderTouches.get(t.identifier);
+      if (sl) {
+        sl.set(clamp((t.clientX - sl.x) / sl.w, 0, 1));
+        continue;
+      }
       if (t.identifier === this.joy.id) {
         const R = 64;
         let dx = t.clientX - this.joy.ox;
@@ -153,6 +191,7 @@ const Input = {
 
   onTouchEnd(e) {
     for (const t of e.changedTouches) {
+      this.sliderTouches.delete(t.identifier);
       if (t.identifier === this.joy.id) {
         this.joy.active = false; this.joy.id = null;
         this.joy.dx = 0; this.joy.dy = 0;
