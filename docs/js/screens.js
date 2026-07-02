@@ -1210,7 +1210,7 @@ const Screens = {
     ctx.font = 'bold 11px Georgia';
     ctx.fillStyle = '#ffd76a';
     ctx.fillText(label + '  ·  LEVEL ' + lvl + ' / 10' + (lvl >= 10 ? '  (MAX)' : ''), px + 16, y + 8);
-    if (lvl < 100) {
+    if (lvl < 10) {
       const cost = Items.trainCost(which);
       UI.btn(ctx, px + pw - 156, y - 6, 140, 26, `TRAIN  (${cost}g)`,
         Hero.gold >= cost ? () => Items.train(which) : null,
@@ -1324,10 +1324,26 @@ const Screens = {
     const cost = Items.enchantCost(it);
     const afford = Items.canAfford(cost);
     y += 4;
+    // Show each cost as owned/needed so you can see your souls at a glance,
+    // red when you're short.
     ctx.textAlign = 'left';
     ctx.font = '11px Georgia';
-    ctx.fillStyle = afford ? '#c9bfa8' : '#8a5a5a';
-    ctx.fillText('Cost: ' + this.costLabel(cost), px + 16, y + 6);
+    let cxp = px + 16;
+    ctx.fillStyle = '#9a9080';
+    ctx.fillText('Cost: ', cxp, y + 6); cxp += ctx.measureText('Cost: ').width;
+    const owned = { gold: Hero.gold, parts: Hero.mats.parts, dust: Hero.mats.dust, crystal: Hero.mats.crystal, soul: Hero.mats.soul };
+    const parts = [];
+    if (cost.gold) parts.push(['gold', owned.gold, cost.gold, '#ffd76a']);
+    if (cost.parts) parts.push(['parts', owned.parts, cost.parts, MATERIALS.parts.color]);
+    if (cost.dust) parts.push(['dust', owned.dust, cost.dust, MATERIALS.dust.color]);
+    if (cost.crystal) parts.push(['crystals', owned.crystal, cost.crystal, MATERIALS.crystal.color]);
+    if (cost.soul) parts.push(['soul' + (cost.soul > 1 ? 's' : ''), owned.soul, cost.soul, MATERIALS.soul.color]);
+    parts.forEach(([name, have, need], i) => {
+      const txt = have + '/' + need + ' ' + name;
+      ctx.fillStyle = have >= need ? '#c9bfa8' : '#e04a5a';
+      ctx.fillText(txt, cxp, y + 6); cxp += ctx.measureText(txt).width;
+      if (i < parts.length - 1) { ctx.fillStyle = '#6f6552'; ctx.fillText('  ·  ', cxp, y + 6); cxp += ctx.measureText('  ·  ').width; }
+    });
     ctx.fillStyle = '#6f6552';
     ctx.fillText('Each enchant on this item raises the next one\'s price.', px + 16, y + 21);
     y += 32;
