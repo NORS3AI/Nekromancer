@@ -39,4 +39,10 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        timeout-minutes: 20
+        timeout-minutes: 25
+        with:
+          # The Pages deployment queue can back up for >10 minutes (the
+          # action's default timeout); wait 20 so congestion doesn't turn
+          # into a cancelled deployment.
+          timeout: 1200000
+          error_count: 15
