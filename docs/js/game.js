@@ -164,21 +164,30 @@ const Game = {
     this.camera.x = this.player.x - this.W / 2;
     this.camera.y = this.player.y - this.H / 2;
 
-    // Populate packs (asleep until approached).
-    for (const pk of World.packs) {
-      const n = randInt(3, 5);
-      // Rifts crawl with rare-elite packs — they carry the orbs.
-      const eliteLeader = Math.random() < (this.riftMode ? 0.5 : 0.16);
+    // Difficulty pours on more monsters: bigger packs and extra packs.
+    const em = DIFFICULTIES[Hero.difficulty].enemyMult || 1;
+    const packSize = () => clamp(Math.round(randInt(3, 5) * em), 3, 14);
+    const spawnPack = (x, y, eliteChance) => {
+      const eliteLeader = Math.random() < eliteChance;
+      const n = packSize();
       for (let i = 0; i < n; i++) {
         const a = rand(TAU), d = rand(0, 70);
-        const type = pick(this.zone.monsters);
-        const e = new Enemy(type, pk.x + Math.cos(a) * d, pk.y + Math.sin(a) * d, {
+        const e = new Enemy(pick(this.zone.monsters), x + Math.cos(a) * d, y + Math.sin(a) * d, {
           elite: eliteLeader && i === 0,
           name: eliteLeader && i === 0 ? pick(ELITE_PREFIX) + pick(ELITE_SUFFIX) : undefined
         });
         World.collide(e);
         this.enemies.push(e);
       }
+    };
+    // Populate packs (asleep until approached). Rifts crawl with rare elites.
+    for (const pk of World.packs) spawnPack(pk.x, pk.y, this.riftMode ? 0.5 : 0.16);
+    // Extra packs scattered across the map as difficulty climbs.
+    const extra = Math.min(30, Math.round(World.packs.length * Math.min(em - 1, 3)));
+    for (let k = 0; k < extra; k++) {
+      let ex, ey, tries = 0;
+      do { ex = rand(120, World.W - 120); ey = rand(120, World.H - 120); } while (!World.isFloorAt(ex, ey) && tries++ < 12);
+      spawnPack(ex, ey, this.riftMode ? 0.5 : 0.25);
     }
     // The bounty boss (rifts summon their Guardian only when the bar fills).
     if (!this.riftMode) {
@@ -230,20 +239,26 @@ const Game = {
 
   updateRiftSpawns(dt) {
     if (!this.riftMode || this.guardianUp || this.riftProgress >= this.riftGoal) return;
-    // Endlessly repopulate the shard with rare-elite packs so orbs keep flowing.
-    if (this.enemies.length < 30) {
+    // Endlessly repopulate with rare-elite packs; harder tiers keep far more
+    // on the field and spawn them faster (T16 becomes a swarm).
+    const em = DIFFICULTIES[Hero.difficulty].enemyMult || 1;
+    const cap = clamp(Math.round(24 * Math.pow(em, 0.42)), 30, 260);
+    if (this.enemies.length < cap) {
       this.riftSpawnT -= dt;
       if (this.riftSpawnT <= 0) {
-        this.riftSpawnT = 2.4;
-        const pt = this.spawnNear(this.player, Math.max(this.W, this.H) * 0.6);
-        const elite = Math.random() < 0.55;
-        for (let i = 0; i < randInt(3, 4); i++) {
-          const e = new Enemy(pick(this.zone.monsters), pt.x + rand(-60, 60), pt.y + rand(-60, 60), {
-            elite: elite && i === 0,
-            name: elite && i === 0 ? pick(ELITE_PREFIX) + pick(ELITE_SUFFIX) : undefined
-          });
-          World.collide(e);
-          this.enemies.push(e);
+        this.riftSpawnT = clamp(2.4 / Math.sqrt(em), 0.5, 2.4);
+        const waves = clamp(Math.round(em * 0.5), 1, 6);
+        for (let w = 0; w < waves && this.enemies.length < cap; w++) {
+          const pt = this.spawnNear(this.player, Math.max(this.W, this.H) * 0.6);
+          const elite = Math.random() < 0.55;
+          for (let i = 0; i < randInt(3, 4); i++) {
+            const e = new Enemy(pick(this.zone.monsters), pt.x + rand(-60, 60), pt.y + rand(-60, 60), {
+              elite: elite && i === 0,
+              name: elite && i === 0 ? pick(ELITE_PREFIX) + pick(ELITE_SUFFIX) : undefined
+            });
+            World.collide(e);
+            this.enemies.push(e);
+          }
         }
       }
     }

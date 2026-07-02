@@ -18,11 +18,20 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.1.7-alpha';
+const GAME_VERSION = 'v0.1.8-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.1.8-alpha', date: 'July 2026',
+    notes: [
+      'DIFFICULTY NOW CONTROLS THE HORDE: each difficulty step above Normal spawns +10% more monsters (Hard/Expert/Master), and every Torment tier multiplies the swarm by ×1.35 on top of that',
+      'Torment XVI is wild — hundreds-to-thousands of enemies flood the land in dense packs, with far more roaming the map and endless waves in Rifts',
+      'Packs are larger, extra roaming packs scatter across the floor, and Rift concurrent-enemy caps and wave sizes scale with the difficulty so the screen truly fills up at high Torment',
+      'Normal difficulty is unchanged — the swarm only grows as you climb'
+    ]
+  },
   {
     v: 'v0.1.7-alpha', date: 'July 2026',
     notes: [
@@ -627,16 +636,19 @@ const ZONES = [
 // Reaching level 70 unlocks Torment I–XVI; each Torment adds a flat bonus to
 // the legendary drop chance (T1 +1% … T16 +33.3%, owner-specified).
 const ROMANS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI'];
+// enemyMult scales how many monsters spawn: +10% per base tier, then +35% per
+// Torment tier (compounding) — so Torment XVI is a wild, swarming meat grinder.
 const DIFFICULTIES = [
-  { name: 'Normal', mult: 1.0, reward: 1.0, legBonus: 0 },
-  { name: 'Hard',   mult: 1.6, reward: 1.35, legBonus: 0 },
-  { name: 'Expert', mult: 2.6, reward: 1.8, legBonus: 0 },
-  { name: 'Master', mult: 4.2, reward: 2.4, legBonus: 0 }
+  { name: 'Normal', mult: 1.0, reward: 1.0, legBonus: 0, enemyMult: 1.0 },
+  { name: 'Hard',   mult: 1.6, reward: 1.35, legBonus: 0, enemyMult: 1.1 },
+  { name: 'Expert', mult: 2.6, reward: 1.8, legBonus: 0, enemyMult: 1.2 },
+  { name: 'Master', mult: 4.2, reward: 2.4, legBonus: 0, enemyMult: 1.3 }
 ].concat(ROMANS.map((numeral, i) => ({
   name: 'Torment ' + numeral,
   mult: +(7.0 * Math.pow(1.45, i)).toFixed(1),
   reward: +(3.2 * Math.pow(1.17, i)).toFixed(2),
   legBonus: +(0.01 + (0.333 - 0.01) * (i / 15)).toFixed(4),
+  enemyMult: +(1.3 * Math.pow(1.35, i + 1)).toFixed(2),
   torment: i + 1
 })));
 
