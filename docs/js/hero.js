@@ -7,6 +7,9 @@
 
 const SAVE_KEY = 'nekromancer_hero_v1';
 const SAVES_KEY = 'nekromancer_saves_v1';
+// Shared, account-wide stash — one vault for ALL characters/saves, stored
+// separately from any single hero so it never travels with a save slot.
+const STASH_KEY = 'nekromancer_stash_v1';
 
 // Named manual save slots (up to 20), separate from the rolling autosave.
 const Saves = {
@@ -73,7 +76,7 @@ const Hero = {
   // 6 slots, Diablo action bar: 0 primary (LMB) · 1 secondary (RMB) ·
   // 2-5 skills (keys 1-4).
   loadout: ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null],
-  passives: [null, null, null, null],
+  passives: [null, null, null, null, null],
   zonesCleared: 0,          // count of lands beaten (unlocks the next)
   difficulty: 0,
   bestZone: 0,
@@ -93,10 +96,11 @@ const Hero = {
     this.mats = { parts: 0, dust: 0, crystal: 0, soul: 0 };
     this.gems = [];
     this.bag = [];
-    this.stash = [];
+    // NOTE: stash is account-wide (shared vault) — a fresh character does NOT
+    // clear it. It is loaded/kept via loadStash()/saveStash().
     this.equipped = {};
     this.loadout = ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null];
-    this.passives = [null, null, null, null];
+    this.passives = [null, null, null, null, null];
     this.zonesCleared = 0;
     this.difficulty = 0;
     this.bestZone = 0;
@@ -113,7 +117,7 @@ const Hero = {
     return {
       v: this.SAVE_VERSION,
       level: this.level, xp: this.xp, gold: this.gold, mats: this.mats,
-      gems: this.gems, bag: this.bag, stash: this.stash, equipped: this.equipped,
+      gems: this.gems, bag: this.bag, equipped: this.equipped,
       loadout: this.loadout, passives: this.passives,
       zonesCleared: this.zonesCleared, difficulty: this.difficulty,
       bestZone: this.bestZone, totalKills: this.totalKills,
@@ -154,9 +158,9 @@ const Hero = {
     Object.assign(this, {
       level: d.level || 1, xp: d.xp || 0, gold: d.gold || 0,
       mats: Object.assign({ parts: 0, dust: 0, crystal: 0, soul: 0 }, d.mats),
-      gems: d.gems || [], bag: d.bag || [], stash: d.stash || [], equipped: d.equipped || {},
+      gems: d.gems || [], bag: d.bag || [], equipped: d.equipped || {},
       loadout: d.loadout || ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null],
-      passives: d.passives || [null, null, null, null],
+      passives: d.passives || [null, null, null, null, null],
       zonesCleared: d.zonesCleared || 0, difficulty: d.difficulty || 0,
       bestZone: d.bestZone || 0, totalKills: d.totalKills || 0,
       riftsCleared: d.riftsCleared || 0, riftKeys: d.riftKeys || 0, masterKeys: d.masterKeys || 0,
@@ -168,6 +172,12 @@ const Hero = {
       runes: d.runes || {},
       cheats: Object.assign({ god: false, essence: false }, d.cheats)
     });
+    // Legacy migration: pre-shared saves embedded a per-character stash. If the
+    // shared vault is still empty, absorb those items so nothing is lost.
+    if (d.stash && d.stash.length && (!this.stash || !this.stash.length)) {
+      this.stash = d.stash.slice(0, this.STASH_SIZE);
+      this.saveStash();
+    }
     this.sanitize();
     this.save();
     Items.apply();
@@ -177,6 +187,31 @@ const Hero = {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(this.snapshot()));
     } catch (e) { /* storage unavailable */ }
+    this.saveStash();
+  },
+
+  // Persist the shared vault to its own key (never inside a save slot).
+  saveStash() {
+    try {
+      localStorage.setItem(STASH_KEY, JSON.stringify(this.stash || []));
+    } catch (e) { /* storage unavailable */ }
+  },
+
+  // Load the shared vault. On first run after the shared-stash update, seed it
+  // from the active character's legacy embedded stash (one-time migration).
+  loadStash() {
+    try {
+      const raw = localStorage.getItem(STASH_KEY);
+      if (raw !== null) { this.stash = JSON.parse(raw) || []; return; }
+      // No shared vault yet — migrate from the current hero save if present.
+      let seed = [];
+      try {
+        const hraw = localStorage.getItem(SAVE_KEY);
+        if (hraw) { const hd = this.migrate(JSON.parse(hraw)); seed = hd.stash || []; }
+      } catch (e) { /* ignore */ }
+      this.stash = seed.slice(0, this.STASH_SIZE);
+      this.saveStash();
+    } catch (e) { this.stash = this.stash || []; }
   },
 
   load() {
@@ -286,5 +321,8 @@ const Hero = {
       if (id && !SKILL_DATA.some(s => s.id === id && s.lvl <= this.level)) this.loadout[i] = null;
     }
     if (!this.loadout[0]) this.loadout[0] = 'boneSpikes';
+    // Pad passives to the number of slots (a new lvl-3 slot was added).
+    while (this.passives.length < PASSIVE_SLOT_LEVELS.length) this.passives.push(null);
+    if (this.passives.length > PASSIVE_SLOT_LEVELS.length) this.passives.length = PASSIVE_SLOT_LEVELS.length;
   }
 };

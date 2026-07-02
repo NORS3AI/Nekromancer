@@ -18,11 +18,20 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.1.8-alpha';
+const GAME_VERSION = 'v0.1.9-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.1.9-alpha', date: 'July 2026',
+    notes: [
+      'SHARED STASH: the Stash is now one account-wide vault shared by ALL characters and save slots — deposit on one hero, withdraw on another. It lives in its own storage and never travels with a single save',
+      'Deposit individual items: the inventory now has a DEPOSIT TO STASH button on any selected bag item (the Stash screen still has DEPOSIT ALL and per-item WITHDRAW)',
+      'Existing stashes are migrated into the shared vault automatically on first load',
+      'NEW PASSIVE SLOT AT LEVEL 3: you now unlock your first passive slot at level 3 (slots now unlock at 3 / 10 / 20 / 30 / 45 — five total)'
+    ]
+  },
   {
     v: 'v0.1.8-alpha', date: 'July 2026',
     notes: [
@@ -556,7 +565,7 @@ const SKILL_DESCS = {
 // ------------------------------- passives ----------------------------------
 // Slots unlock at hero levels 10 / 20 / 30 / 45.
 
-const PASSIVE_SLOT_LEVELS = [10, 20, 30, 45];
+const PASSIVE_SLOT_LEVELS = [3, 10, 20, 30, 45];
 
 const PASSIVE_DATA = [
   { id: 'graveCaller',    name: 'Grave Caller',        lvl: 3,  desc: 'Every 3 seconds, a fresh corpse rises at your feet.' },
