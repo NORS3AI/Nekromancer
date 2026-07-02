@@ -39,6 +39,11 @@ class Player {
     this.goldFind = 1;
     this.maxEssence = 100;
     this.essence = 60;
+    this.setCount = 0;
+    this.powers = {};
+    this.boneArmorT = 0;     // Inarius: Bone Armor buff window
+    this.boneArmorDR = 0;    // 4pc damage reduction
+    this.tornadoTick = 0;    // 6pc bone tornado
   }
 
   // Effective damage multiplier including auras and shrines.
@@ -105,7 +110,38 @@ class Player {
     }
     if (regen > 0) this.heal(regen * dt);
     this.essence = clamp(this.essence + this.essenceRegen * dt, 0, this.maxEssence);
+    if (Game.cheats.essence) this.essence = this.maxEssence;
     this.shield = Math.max(0, this.shield - dt * 1.2);
+
+    // Grace of Inarius: Bone Armor buff window + the 6pc bone tornado.
+    if (this.boneArmorT > 0) {
+      this.boneArmorT -= dt;
+      if (this.boneArmorT <= 0) this.boneArmorDR = 0;
+      if (this.setCount >= 6) {
+        this.tornadoTick -= dt;
+        if (this.tornadoTick <= 0) {
+          this.tornadoTick = 0.25;
+          const R = 150;
+          for (const e of Game.enemies) {
+            if (e.dead || e.sleep || e.spawnT > 0) continue;
+            if (dist(this.x, this.y, e.x, e.y) < R + e.r) {
+              e.vulnT = 3;
+              e.hurt(8 * this.power(), { knock: { a: angleTo(this.x, this.y, e.x, e.y), f: 20 } });
+            }
+          }
+          if (Math.random() < 0.3) AudioSys.sfx('tornado');
+        }
+        // Orbiting bone shards.
+        const oa = Game.time * 7;
+        for (let i = 0; i < 2; i++) {
+          const a = oa + i * Math.PI;
+          Particles.spawn(this.x + Math.cos(a) * rand(40, 120), this.y + Math.sin(a) * rand(40, 120) * 0.6, {
+            count: 1, color: ['#e8e0cc', '#c9c0a8'], angle: a + Math.PI / 2, spread: 0.3,
+            minSpeed: 60, maxSpeed: 140, minLife: 0.15, maxLife: 0.35, minSize: 2, maxSize: 3.5
+          });
+        }
+      }
+    }
 
     World.reveal(this.x, this.y);
   }
@@ -120,8 +156,10 @@ class Player {
 
   hurt(dmg) {
     if (this.dead || this.invuln > 0 || this.dash) return;
+    if (Game.cheats.god) return;
     if (Hero.hasPassive('standAlone') && Game.minions.length === 0) dmg *= 0.75;
     if (this.shrine && this.shrine.buff === 'blessed') dmg *= 0.75;
+    if (this.boneArmorT > 0 && this.boneArmorDR > 0) dmg *= 1 - this.boneArmorDR;
     if (this.shield > 0) {
       const absorbed = Math.min(this.shield, dmg);
       this.shield -= absorbed;
@@ -253,6 +291,7 @@ class Enemy {
     this.slow = 0;
     this.root = 0;
     this.curse = null;      // {type:'decrepify'|'frailty'|'leech', t}
+    this.vulnT = 0;         // Inarius tornado vulnerability
     this.frenzyT = 0;       // set on the player's Command Skeletons target
     this.kbx = 0; this.kby = 0;
     this.dead = false;
@@ -295,6 +334,7 @@ class Enemy {
     this.lungeCd = Math.max(0, this.lungeCd - dt);
     this.slow = Math.max(0, this.slow - dt);
     this.root = Math.max(0, this.root - dt);
+    this.vulnT = Math.max(0, this.vulnT - dt);
     if (this.curse) {
       this.curse.t -= dt;
       if (this.curse.t <= 0) this.curse = null;
@@ -472,7 +512,14 @@ class Enemy {
     if (this.curse) {
       if (this.curse.type === 'frailty') dmg *= 1.15;
       if (this.curse.type === 'leech' && p && !p.dead) p.heal(p.maxHp * 0.012);
+      if (p && p.powers && p.powers.corrodedFang) dmg *= 1.6; // Trag'Oul's Corroded Fang
     }
+    // Krysbin's Sentence: punished while controlled.
+    if (p && p.powers && p.powers.krysbin &&
+        (this.slow > 0 || this.root > 0 || (this.curse && this.curse.type === 'decrepify'))) {
+      dmg *= 1.75;
+    }
+    if (this.vulnT > 0) dmg *= 1.5; // Inarius 6pc: shredded by the tornado
     this.hp -= dmg;
     this.flash = 1;
     dmgText(this.x, this.y, dmg, crit);
@@ -494,6 +541,7 @@ class Enemy {
     if (this.telegraph) this.telegraph.done = true;
     Game.kills++;
     Hero.totalKills++;
+    if (!this.unique) Game.riftKill(this);
     fxBlood(this.x, this.y, this.unique ? 30 : 12);
     if (this.type === 'skeleton' || this.type === 'archer') fxBone(this.x, this.y, 12);
     Game.corpses.push(new Corpse(this.x, this.y, this.type));
@@ -585,7 +633,7 @@ class Enemy {
     }
     ctx.restore();
 
-    if (this.hp < this.maxHp && !this.unique) {
+    if (this.hp < this.maxHp && !this.unique && Settings.g.healthBars) {
       const w = this.elite ? 34 : 26;
       const yo = this.r + 12;
       ctx.fillStyle = 'rgba(0,0,0,0.6)';

@@ -176,11 +176,20 @@ const SKILL_FX = {
   deathNova(p) {
     const R = 190;
     fxNova(p.x, p.y, R);
+    // Bloodtide Blade: Death Nova swells with the crowd around you.
+    let mult = 1;
+    if (p.powers && p.powers.bloodtide) {
+      let near = 0;
+      for (const e of Game.enemies) {
+        if (!e.dead && !e.sleep && dist(p.x, p.y, e.x, e.y) < 220) near++;
+      }
+      mult = 1 + 0.08 * Math.min(15, near);
+    }
     for (const e of Game.enemies) {
       if (e.dead || e.sleep || e.spawnT > 0) continue;
       const d = dist(p.x, p.y, e.x, e.y);
       if (d < R) {
-        e.hurt(34 * p.power() * (1 - d / R * 0.3), { knock: { a: angleTo(p.x, p.y, e.x, e.y), f: 200 } });
+        e.hurt(34 * mult * p.power() * (1 - d / R * 0.3), { knock: { a: angleTo(p.x, p.y, e.x, e.y), f: 200 } });
       }
     }
     AudioSys.sfx('nova');
@@ -189,15 +198,25 @@ const SKILL_FX = {
   },
 
   boneArmor(p) {
+    const set = p.setCount || 0;
     let hits = 0;
     for (const e of Game.enemies) {
       if (e.dead || e.sleep || e.spawnT > 0) continue;
       if (dist(p.x, p.y, e.x, e.y) < 150 + e.r) {
-        e.hurt(12 * p.power(), boneOpts(angleTo(p.x, p.y, e.x, e.y), 80));
+        // Inarius 2pc: Bone Armor damage x10.
+        e.hurt(12 * (set >= 2 ? 10 : 1) * p.power(), boneOpts(angleTo(p.x, p.y, e.x, e.y), 80));
         hits++;
       }
     }
-    p.shield = Math.min(p.shieldMax + Hero.level, p.shield + 14 + hits * 7);
+    const shieldGain = (14 + hits * 7) * (set >= 2 ? 2 : 1);
+    p.shield = Math.min((p.shieldMax + Hero.level) * (set >= 2 ? 2 : 1), p.shield + shieldGain);
+    // Inarius 4pc: damage reduction per enemy hit; 6pc: the tornado spins up.
+    p.boneArmorT = 15;
+    p.boneArmorDR = set >= 4 ? Math.min(0.6, hits * 0.03) : 0;
+    if (set >= 6) {
+      Particles.ring(p.x, p.y, 150, '#4ade80', 5, 0.6);
+      AudioSys.sfx('tornado');
+    }
     Particles.ring(p.x, p.y, 150, '#e8e0cc', 5, 0.45);
     fxBone(p.x, p.y, 14);
     AudioSys.sfx('nova');

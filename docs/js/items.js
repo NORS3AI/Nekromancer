@@ -49,6 +49,41 @@ const Items = {
     return { type: pick(Object.keys(GEM_TYPES)), tier };
   },
 
+  // A Grace of Inarius piece the hero doesn't own yet (or a re-roll if all
+  // six are claimed). Rift Guardian loot.
+  generateSetPiece(mLvl) {
+    const owned = Hero.setPiecesOwned();
+    const missing = Object.keys(INARIUS_SET.pieces).filter(s => !owned.has(s));
+    const slot = missing.length ? pick(missing) : pick(Object.keys(INARIUS_SET.pieces));
+    const def = ITEM_SLOTS[slot];
+    const R = RARITIES[4];
+    const lvlScale = 1 + mLvl * 0.11;
+    const stats = {};
+    const addStat = (key, mult) => {
+      stats[key] = (stats[key] || 0) + AFFIX_ROLLS[key].base * mult * lvlScale * rand(0.9, 1.2);
+    };
+    addStat(def.primary, 1.8 * R.mult);
+    const pool = Object.keys(AFFIX_ROLLS).filter(k => k !== def.primary);
+    for (let i = 0; i < 3; i++) addStat(pick(pool), 0.9 * R.mult);
+    return {
+      slot, rarity: 4, set: 'inarius',
+      name: INARIUS_SET.pieces[slot],
+      stats, mLvl, sockets: 1, gem: null
+    };
+  },
+
+  // Build-defining legendaries from the Inarius guide.
+  generatePowerItem(mLvl) {
+    const key = pick(Object.keys(LEGENDARY_POWERS));
+    const P = LEGENDARY_POWERS[key];
+    const item = this.generate(mLvl, 0, P.slot);
+    item.rarity = 3;
+    item.name = P.name;
+    item.power = key;
+    if (!item.sockets) item.sockets = Math.random() < 0.4 ? 1 : 0;
+    return item;
+  },
+
   score(item) {
     let s = 0;
     for (const [k, v] of Object.entries(item.stats)) {
@@ -61,9 +96,32 @@ const Items = {
 
   statLines(item) {
     const lines = Object.entries(item.stats).map(([k, v]) => AFFIX_ROLLS[k].label(v));
+    if (item.power) lines.push('★ ' + LEGENDARY_POWERS[item.power].desc);
+    if (item.set === 'inarius') {
+      const n = this.setCount();
+      lines.push('◈ Grace of Inarius (' + n + '/6 equipped)');
+    }
     if (item.sockets && !item.gem) lines.push('◇ empty socket');
     if (item.gem) lines.push('◆ ' + gemName(item.gem) + ': ' + GEM_TYPES[item.gem.type].label(gemStatValue(item.gem)));
     return lines;
+  },
+
+  setCount() {
+    let n = 0;
+    for (const slot of Object.keys(ITEM_SLOTS)) {
+      const it = Hero.equipped[slot];
+      if (it && it.set === 'inarius') n++;
+    }
+    return n;
+  },
+
+  equippedPowers() {
+    const p = {};
+    for (const slot of Object.keys(ITEM_SLOTS)) {
+      const it = Hero.equipped[slot];
+      if (it && it.power) p[it.power] = true;
+    }
+    return p;
   },
 
   // D3-console-style compare arrows: -1 worse, 0 even, +1 better (per tier).
@@ -165,15 +223,40 @@ const Items = {
     }
   },
 
+  // Artisan levels (1–100) sweeten every service.
+  artisanDiscount(which) {
+    return 1 - 0.4 * (Hero.artisans[which] - 1) / 99;
+  },
+
+  trainCost(which) {
+    return Math.round(400 * Math.pow(Hero.artisans[which], 1.25));
+  },
+
+  train(which) {
+    if (Hero.artisans[which] >= 100) return;
+    const cost = this.trainCost(which);
+    if (Hero.gold < cost) {
+      UI.toast('Not enough gold to train', '#9a9080');
+      AudioSys.sfx('denied');
+      return;
+    }
+    Hero.gold -= cost;
+    Hero.artisans[which]++;
+    UI.toast(({ smith: 'Blacksmith', mystic: 'Mystic', jeweler: 'Jeweler' })[which] + ' trained to level ' + Hero.artisans[which], '#ffd76a');
+    AudioSys.sfx('craft');
+    Hero.save();
+  },
+
   craftCost(master = false) {
+    const d = this.artisanDiscount('smith');
     if (master) {
       return {
-        gold: (250 + Hero.level * 40) * 3,
+        gold: Math.round((250 + Hero.level * 40) * 3 * d),
         parts: 6, dust: 4, crystal: 3,
         soul: Hero.level >= 30 ? 1 : 0
       };
     }
-    return { gold: 250 + Hero.level * 40, parts: 4, dust: 2, crystal: Hero.level >= 20 ? 1 : 0 };
+    return { gold: Math.round((250 + Hero.level * 40) * d), parts: 4, dust: 2, crystal: Hero.level >= 20 ? 1 : 0 };
   },
 
   canAfford(cost) {
@@ -197,9 +280,10 @@ const Items = {
       return;
     }
     this.pay(cost);
+    const craftLvl = Hero.level + Math.floor(Hero.artisans.smith / 10);
     let item, tries = 0;
     do {
-      item = this.generate(Hero.level, master ? 0.2 : 0.12, slot);
+      item = this.generate(craftLvl, master ? 0.2 : 0.12, slot);
     } while (master && item.rarity < 2 && tries++ < 30); // masterwork: Rare or better
     if (master && !item.sockets) item.sockets = Math.random() < 0.5 ? 1 : 0;
     this.stash(item);
@@ -267,8 +351,9 @@ const Items = {
     if (!made) AudioSys.sfx('denied');
   },
 
+  // Jeweler trades in gold and gems only.
   gemPrice() {
-    return { gold: 600 + Hero.level * 25, dust: 2 };
+    return { gold: Math.round((600 + Hero.level * 25) * this.artisanDiscount('jeweler')) };
   },
 
   buyGem() {
@@ -279,7 +364,7 @@ const Items = {
       return;
     }
     this.pay(cost);
-    const gem = this.generateGem(Hero.level);
+    const gem = this.generateGem(Hero.level + Math.floor(Hero.artisans.jeweler / 4));
     Hero.gems.push(gem);
     UI.toast('Cut a fresh gem: ' + gemName(gem), GEM_TYPES[gem.type].color);
     AudioSys.sfx('gem');
@@ -310,13 +395,15 @@ const Items = {
   // ---------------------------------------------------------------- mystic
 
   // Each enchant on an item drives the next one's price up, D3-style.
+  // The Mystic trades in gold and Forgotten Souls only; training softens
+  // both the base price and the escalation.
   enchantCost(item) {
     const n = item.enchants || 0;
+    const d = this.artisanDiscount('mystic');
+    const escal = 0.5 * (1 - Hero.artisans.mystic / 200);
     return {
-      gold: Math.round((400 + item.mLvl * 60) * (1 + n * 0.5)),
-      dust: 3 + n,
-      crystal: item.rarity >= 2 ? 2 : 0,
-      soul: item.rarity >= 3 ? 1 : 0
+      gold: Math.round((400 + item.mLvl * 60) * (1 + n * escal) * d),
+      soul: (item.rarity >= 3 ? 2 : 1) + Math.floor(n / 2)
     };
   },
 
@@ -380,7 +467,9 @@ const Items = {
       essenceRegen: 2 + ess,
       hpRegen: reg,
       goldFind: 1 + gold,
-      maxEssence: 100 + (Hero.hasPassive('overwhelming') ? 40 : 0)
+      maxEssence: 100 + (Hero.hasPassive('overwhelming') ? 40 : 0),
+      setCount: this.setCount(),
+      powers: this.equippedPowers()
     };
   },
 
@@ -400,6 +489,8 @@ const Items = {
     p.hpRegen = s.hpRegen;
     p.goldFind = s.goldFind;
     p.maxEssence = s.maxEssence;
+    p.setCount = s.setCount;
+    p.powers = s.powers;
     p.essence = Math.min(p.essence ?? 60, p.maxEssence);
   }
 };

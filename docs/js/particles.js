@@ -20,11 +20,13 @@ const Particles = {
   },
 
   shake(n) {
+    if (typeof Settings !== 'undefined' && !Settings.g.shake) return;
     this.shakeAmt = Math.min(16, this.shakeAmt + n);
   },
 
   spawn(x, y, o = {}) {
-    const n = o.count || 6;
+    let n = o.count || 6;
+    if (typeof Settings !== 'undefined' && Settings.g.lowFx) n = Math.ceil(n / 2);
     for (let i = 0; i < n; i++) {
       if (this.list.length >= this.MAX) this.list.shift();
       const spread = o.spread !== undefined ? o.spread : Math.PI;
@@ -135,6 +137,7 @@ const Particles = {
 // --------------------------- effect shorthands -----------------------------
 
 function dmgText(x, y, amount, crit = false) {
+  if (typeof Settings !== 'undefined' && !Settings.g.dmgNumbers) return;
   Particles.text(x, y - 24, Math.round(amount), {
     color: crit ? '#ffb43a' : '#f3ede0',
     size: crit ? 22 : 15,

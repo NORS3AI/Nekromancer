@@ -29,11 +29,12 @@ loot at the artisans. The hero is persistent (localStorage).
 
 | File | Responsibility |
 |---|---|
-| `utils.js` | math helpers (`rand`, `clamp`, `lerp`, `dist`, `lerpAngle`, `rr`, `hash2`) |
-| `audio.js` | `AudioSys` — all SFX synthesized with WebAudio. `init()` needs a user gesture |
+| `utils.js` | math helpers (`rand`, `clamp`, `lerp`, `dist`, `lerpAngle`, `rr`, `hash2`, `wrapText`) |
+| `settings.js` | `Settings` — 5 audio channels (master/sfx/music/ambience/weather, each volume+mute) and DI-style gameplay toggles (damage numbers, shake, health bars, aim indicator, fixed joystick, low FX, big minimap, FPS). Persisted separately from the hero |
+| `audio.js` | `AudioSys` — all SFX synthesized with WebAudio, mixed through per-channel gains. Generative dark-ambient music loop, per-zone ambience beds (wilds/crypt/camp), weather loops (rain/wind). `init()` needs a user gesture |
 | `particles.js` | `Particles` (particles, floating texts, rings, screenshake) + `fx*` helpers |
-| `data.js` | ALL static data: `SKILL_DATA` (the 21 real D3 necro actives w/ real unlock levels), `PASSIVE_DATA` (12), `ZONES` (5 lands), `MONSTERS`, `RARITIES`, `ITEM_SLOTS` (9 equip slots), `GEM_TYPES`/`GEM_TIERS`, `MATERIALS`, `DIFFICULTIES` (Normal→Torment III), `XP_CURVE` |
-| `hero.js` | `Hero` — the persistent character: level/xp, gold, materials, gems, bag (24), equipped, skill `loadout` (6 slots), `passives` (4 slots @ lvl 10/20/30/45), zone progress, difficulty. `save()/load()` → `localStorage['nekromancer_hero_v1']` |
+| `data.js` | ALL static data: `SKILL_DATA` (the 21 real D3 necro actives w/ real unlock levels), `PASSIVE_DATA` (12), `ZONES` (5 lands, some with `weather`), `MONSTERS`, `RARITIES` (incl. index 4 = Set, green), `ITEM_SLOTS` (**11** equip slots incl. shoulders/legs), `GEM_TYPES`/`GEM_TIERS`, `MATERIALS`, `DIFFICULTIES`, `XP_CURVE`, `GAME_VERSION`/`PATCH_NOTES`, `SEASON`/`INARIUS_SET`/`LEGENDARY_POWERS`, `makeRiftZone()` |
+| `hero.js` | `Hero` — the persistent character: level/xp, gold, materials, gems, bag (24), equipped, skill `loadout` (6 slots), `passives` (4 slots @ lvl 10/20/30/45), zone progress, difficulty, `riftsCleared`, `artisans` levels (smith/mystic/jeweler 1–100). `snapshot()/applySnapshot()`; autosave → `localStorage['nekromancer_hero_v1']`. `Saves` — up to 20 named manual slots (`nekromancer_saves_v1`), named via `window.prompt` |
 | `input.js` | Twin-stick touch: left joystick moves, right-side drag aims (and fires primary), skill buttons tap = quick-cast / press-drag = directional cast, channel skills fire while held. All menu taps go through `UI.click()` registry. Keys: WASD, Space/J, 1-5, Q potion, I inventory, K skills, Esc |
 | `world.js` | `World.generate(zone)` — two generators: `open` wilderness (props) and `dungeon` (rooms + corridors, real wall collision via cell grid, `CELL=48`). Produces spawn, boss lair, packs, chests/shrines/urns, **one wandering vendor per land** (`vendorStock()`: 5 items, good-to-crap spread, priced by score/rarity), exit portal, fog-of-war `explored` grid for the minimap. `collide`, `projBlocked`, `dashPoint` (Blood Rush through walls) |
 | `entities.js` | `Player` (stats derived by `Items.apply()` — NOTE: constructor sets safe defaults; `Items.apply()` must be called AFTER `Game.player` is assigned), `Enemy` (sleep/wake packs, elites, curses, telegraphed boss charge+slam, bounty uniques), `Minion` (skeleton×7 permanent, mage×4 timed, golem, revived, simulacrum clone), `Corpse` (consume() honors corpse passives), `Pickup` (gold/orb/item/gem), `Projectile` (incl. homing lances/spirit) |
@@ -60,6 +61,17 @@ loot at the artisans. The hero is persistent (localStorage).
   — verified non-overlapping at 390×750 / 844×390 / 900×500 / 1280×720.
 - XP: `60·lvl^1.5`, cap 70. Level-up = full heal + toasts for new unlocks.
 - Difficulty unlocks: up to Master until all 5 lands cleared, then Torment I–III.
+- **Artisan resource lanes (owner rule)**: Blacksmith = gold/parts/dust/crystals;
+  Mystic = gold + Forgotten Souls ONLY; Jeweler = gold + gems ONLY. Unsocketing is
+  free (Jeweler has an UNSOCKET row); salvage always returns socketed gems.
+- **Endgame (level 70)**: `SEASON` screen in camp → `Game.startRift()` (Nephalem Rift:
+  kill-to-fill progress bar → Guardian → guaranteed `INARIUS_SET` piece; scaling via
+  `Hero.riftsCleared`). Set bonuses hook: skills.js `boneArmor` (2/4pc) + Player.update
+  bone tornado (6pc, `vulnT` on victims); `LEGENDARY_POWERS` checked via `p.powers`
+  (bloodtide in deathNova, krysbin/corrodedFang in Enemy.hurt).
+- **Dev panel**: tap the developer credit on the title screen → confirm toggle →
+  cheats (god, infinite essence — session-only on `Game.cheats`; grants save).
+  Game version label (bottom-right of title) opens `PATCH_NOTES`.
 
 ## Testing
 
