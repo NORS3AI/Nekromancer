@@ -68,6 +68,7 @@ const Hero = {
   mats: { parts: 0, dust: 0, crystal: 0, soul: 0 },
   gems: [],                 // [{type, tier}]
   bag: [],                  // unequipped items
+  stash: [],                // deep storage (up to STASH_SIZE)
   equipped: {},             // slot -> item
   // 6 slots, Diablo action bar: 0 primary (LMB) · 1 secondary (RMB) ·
   // 2-5 skills (keys 1-4).
@@ -83,6 +84,7 @@ const Hero = {
   runes: {},                          // skillId -> rune id
   cheats: { god: false, essence: false }, // dev panel, kept per save
   BAG_SIZE: 24,
+  STASH_SIZE: 100,
   SAVE_VERSION: 3,   // v2: Epic rarity @ index 3 · v3: item.gem → item.gems[]
 
   fresh() {
@@ -90,6 +92,7 @@ const Hero = {
     this.mats = { parts: 0, dust: 0, crystal: 0, soul: 0 };
     this.gems = [];
     this.bag = [];
+    this.stash = [];
     this.equipped = {};
     this.loadout = ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null];
     this.passives = [null, null, null, null];
@@ -108,7 +111,7 @@ const Hero = {
     return {
       v: this.SAVE_VERSION,
       level: this.level, xp: this.xp, gold: this.gold, mats: this.mats,
-      gems: this.gems, bag: this.bag, equipped: this.equipped,
+      gems: this.gems, bag: this.bag, stash: this.stash, equipped: this.equipped,
       loadout: this.loadout, passives: this.passives,
       zonesCleared: this.zonesCleared, difficulty: this.difficulty,
       bestZone: this.bestZone, totalKills: this.totalKills,
@@ -123,6 +126,7 @@ const Hero = {
     const v = d.v || 1;
     const each = fn => {
       (d.bag || []).forEach(fn);
+      (d.stash || []).forEach(fn);
       for (const k of Object.keys(d.equipped || {})) fn(d.equipped[k]);
     };
     if (v < 2) {
@@ -148,7 +152,7 @@ const Hero = {
     Object.assign(this, {
       level: d.level || 1, xp: d.xp || 0, gold: d.gold || 0,
       mats: Object.assign({ parts: 0, dust: 0, crystal: 0, soul: 0 }, d.mats),
-      gems: d.gems || [], bag: d.bag || [], equipped: d.equipped || {},
+      gems: d.gems || [], bag: d.bag || [], stash: d.stash || [], equipped: d.equipped || {},
       loadout: d.loadout || ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null],
       passives: d.passives || [null, null, null, null],
       zonesCleared: d.zonesCleared || 0, difficulty: d.difficulty || 0,

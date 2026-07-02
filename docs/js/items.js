@@ -270,6 +270,46 @@ const Items = {
     Hero.save();
   },
 
+  // --------------------------------------------------------------- stash
+
+  toStash(item) {
+    const i = Hero.bag.indexOf(item);
+    if (i < 0) return false;
+    if (Hero.stash.length >= Hero.STASH_SIZE) {
+      UI.toast('Stash is full (' + Hero.STASH_SIZE + ')', '#9a9080');
+      AudioSys.sfx('denied');
+      return false;
+    }
+    Hero.bag.splice(i, 1);
+    Hero.stash.push(item);
+    Hero.save();
+    return true;
+  },
+
+  fromStash(item) {
+    const i = Hero.stash.indexOf(item);
+    if (i < 0) return false;
+    if (Hero.bag.length >= Hero.BAG_SIZE) {
+      UI.toast('Your bag is full', '#9a9080');
+      AudioSys.sfx('denied');
+      return false;
+    }
+    Hero.stash.splice(i, 1);
+    Hero.bag.push(item);
+    Hero.save();
+    return true;
+  },
+
+  depositAll() {
+    let n = 0;
+    for (let i = Hero.bag.length - 1; i >= 0 && Hero.stash.length < Hero.STASH_SIZE; i--) {
+      Hero.stash.push(Hero.bag.splice(i, 1)[0]);
+      n++;
+    }
+    if (n) { UI.toast('Stashed ' + n + ' item' + (n > 1 ? 's' : ''), '#6ff7c3'); Hero.save(); }
+    else { AudioSys.sfx('denied'); }
+  },
+
   // ------------------------------------------------------------ blacksmith
 
   grantSalvage(item, quiet = false) {
