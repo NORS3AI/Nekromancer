@@ -18,11 +18,18 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.2.2-alpha';
+const GAME_VERSION = 'v0.2.3-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.2.3-alpha', date: 'July 2026',
+    notes: [
+      'The TRAIN button now disappears once an artisan (Blacksmith / Jeweler / Mystic) reaches max level 10 — the header shows "LEVEL 10 / 10 (MAX)"',
+      'Mystic enchant cost now shows what you OWN vs what it needs, per material — e.g. "6/72 souls · 500/1591 gold" — turning red when you\'re short, so you can see your Forgotten Souls at a glance'
+    ]
+  },
   {
     v: 'v0.2.2-alpha', date: 'July 2026',
     notes: [
