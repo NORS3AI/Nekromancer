@@ -617,7 +617,11 @@ class Enemy {
     if (this.telegraph) this.telegraph.done = true;
     Game.kills++;
     Hero.totalKills++;
-    if (!this.unique) Game.riftKill(this);
+    // Rifts: a slain rare-elite pack scatters 1-3 purple orbs (10 pts each).
+    if (Game.riftMode && this.elite && !this.guardian && !this.unique && Game.riftProgress < Game.riftGoal) {
+      const n = randInt(1, 3);
+      for (let i = 0; i < n; i++) Game.pickups.push(new Pickup(this.x, this.y, 'riftorb'));
+    }
     fxBlood(this.x, this.y, this.unique ? 30 : 12);
     if (this.type === 'skeleton' || this.type === 'archer') fxBone(this.x, this.y, 12);
     Game.corpses.push(new Corpse(this.x, this.y, this.type));
@@ -1191,6 +1195,13 @@ class Pickup {
         p.heal(Math.round(p.maxHp * 0.20));
         fxHeal(p.x, p.y);
         AudioSys.sfx('orb');
+      } else if (this.kind === 'riftorb') {
+        Game.addRiftPoints(10);
+        Particles.spawn(p.x, p.y - 10, {
+          count: 8, color: ['#b06adf', '#d8b4f0'], minSpeed: 40, maxSpeed: 130,
+          minLife: 0.2, maxLife: 0.5, glow: true
+        });
+        AudioSys.sfx('gem');
       } else if (this.kind === 'item') {
         Items.pickup(this.item);
       } else if (this.kind === 'gem') {
@@ -1222,6 +1233,17 @@ class Pickup {
       ctx.shadowBlur = 0;
       ctx.fillStyle = 'rgba(255,255,255,0.5)';
       ctx.beginPath(); ctx.arc(-2, -2, 2.5, 0, TAU); ctx.fill();
+    } else if (this.kind === 'riftorb') {
+      const pulse = 1 + Math.sin(Game.time * 8 + this.x) * 0.18;
+      ctx.fillStyle = '#b06adf';
+      ctx.shadowColor = '#b06adf';
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      ctx.moveTo(0, -8 * pulse); ctx.lineTo(6 * pulse, 0); ctx.lineTo(0, 8 * pulse); ctx.lineTo(-6 * pulse, 0);
+      ctx.closePath(); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.beginPath(); ctx.moveTo(0, -8 * pulse); ctx.lineTo(3, -1); ctx.lineTo(-3, -1); ctx.closePath(); ctx.fill();
     } else if (this.kind === 'item') {
       const col = RARITIES[this.item.rarity].color;
       const bg = ctx.createLinearGradient(0, -40, 0, 0);

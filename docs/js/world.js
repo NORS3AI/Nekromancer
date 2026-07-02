@@ -44,7 +44,8 @@ const World = {
   },
 
   genOpen(zone) {
-    this.W = 2600; this.H = 2600;
+    // Rifts/Adventure carry a tile count; bounty lands stay one fixed map.
+    this.W = this.H = zone.tiles ? clamp(2000 + zone.tiles * 260, 2400, 5600) : 2600;
     this.cols = Math.ceil(this.W / CELL);
     this.rows = Math.ceil(this.H / CELL);
     this.walls = null;
@@ -95,7 +96,7 @@ const World = {
   },
 
   genDungeon(zone) {
-    this.cols = 56; this.rows = 56;
+    this.cols = this.rows = zone.tiles ? clamp(48 + zone.tiles * 4, 52, 88) : 56;
     this.W = this.cols * CELL;
     this.H = this.rows * CELL;
     const walls = new Uint8Array(this.cols * this.rows).fill(1);

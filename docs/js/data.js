@@ -18,11 +18,21 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.1.6-alpha';
+const GAME_VERSION = 'v0.1.7-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.1.7-alpha', date: 'July 2026',
+    notes: [
+      'RIFTS REBUILT: slay rare-elite packs to scatter purple orbs (10 points each) and fill a pulsing purple bar — top of screen on desktop/tablet, under your portrait on mobile',
+      'Point goals: normal Rift 250 · Nephalem Rift 750 · Master (Season) Rift 1500. Rifts are large, endlessly repopulating maps you roam to hunt elites',
+      'At the goal a distinct Rift Guardian rises; slay it. It has a 50/50 key drop (Nephalem Rift Keys from normal rifts, Master Nephalem Rift Keys from Nephalem/Season rifts) and a legendary chance scaling 5% at Torment I to 30% at Torment XVI',
+      'Seasons now require a Master Nephalem Rift Key and run a 1500-point Master Nephalem Rift',
+      'Adventure Mode is now a 3–9 tile land; Bounties remain a single map'
+    ]
+  },
   {
     v: 'v0.1.6-alpha', date: 'July 2026',
     notes: [
@@ -230,7 +240,7 @@ const ITEM_SLOTS = {
 
 const SEASON = {
   name: 'Season of the Grace of Inarius',
-  desc: 'Reach the Nephalem Rifts. Claim all six pieces of the Grace of Inarius. Become the storm of bone.'
+  desc: 'Requires a Master Nephalem Rift Key — slay Nephalem Rift Guardians to earn one. Gather 1500 points, then claim all six pieces of the Grace of Inarius.'
 };
 
 const INARIUS_SET = {
@@ -639,27 +649,37 @@ const MAX_LEVEL = 70;
 //    Grace of Inarius pieces and legendary powers.
 const RIFT_GUARDIANS = ['Blighter', 'The Choker', 'Bloodmaw', 'Sand Shaper', 'Erethon', 'Man Carver'];
 
+// Rift point goals: gather purple orbs (10 pts each) from rare elites, then
+// the Rift Guardian rises. normal 250 · Nephalem 750 · Master (Season) 1500.
+const RIFT_GOALS = { normal: 250, greater: 750, season: 1500 };
+const RIFT_NAMES = { normal: 'Rift', greater: 'Nephalem Rift', season: 'Master Nephalem Rift' };
+const RIFT_TILES = { normal: 10, greater: 12, season: 14 };
+
 function makeRiftZone(riftKind = 'greater') {
   const theme = pick(ZONES);
-  const greater = riftKind === 'greater';
+  const at70 = riftKind !== 'normal';
+  const tiles = RIFT_TILES[riftKind] || 10;
   return {
-    id: 'rift', name: greater ? 'Nephalem Rift' : 'Rift',
+    id: 'rift', name: RIFT_NAMES[riftKind] || 'Rift',
     kind: Math.random() < 0.5 ? 'dungeon' : 'open',
-    mLvl: greater ? 70 + Math.min(12, (Hero.riftsCleared || 0)) : clamp(Hero.level + 2, 1, 69),
+    mLvl: at70 ? 70 + Math.min(12, (Hero.riftsCleared || 0)) : clamp(Hero.level + 2, 1, 69),
     ground: theme.ground, accent: theme.accent,
     weather: pick(['rain', 'wind', null]),
     monsters: ['zombie', 'skeleton', 'archer', 'ghoul', 'imp', 'cultist'],
-    boss: pick(RIFT_GUARDIANS) + ', Rift Guardian', packs: 18,
-    desc: 'A shard of a broken realm. Fill the rift; face its guardian.',
+    boss: pick(RIFT_GUARDIANS) + ', Rift Guardian',
+    packs: Math.round(tiles * 2.2), tiles,
+    riftGoal: RIFT_GOALS[riftKind] || 250,
+    desc: 'A shard of a broken realm. Slay rare elites for their orbs, then face the Guardian.',
     rift: true, riftKind
   };
 }
 
-// Adventure Mode: a randomized land at your level with a normal bounty.
+// Adventure Mode: a randomized land at your level, 3–9 map tiles big.
 function makeAdventureZone() {
   const theme = pick(ZONES);
   const first = pick(['Forgotten', 'Sunken', 'Howling', 'Withered', 'Ashen', 'Silent']);
   const second = pick(['Reach', 'Barrows', 'Expanse', 'Warrens', 'Fields', 'Depths']);
+  const tiles = randInt(3, 9);
   return {
     id: 'adventure', name: 'The ' + first + ' ' + second,
     kind: Math.random() < 0.4 ? 'dungeon' : 'open',
@@ -668,7 +688,7 @@ function makeAdventureZone() {
     weather: pick(['rain', 'wind', null, null]),
     monsters: ['zombie', 'skeleton', 'archer', 'ghoul', 'imp', 'cultist'],
     boss: pick(ELITE_PREFIX) + pick(ELITE_SUFFIX) + ' the ' + pick(['Endless', 'Vile', 'Forgotten', 'Ravenous']),
-    packs: 13,
-    desc: 'An uncharted stretch of Sanctuary, remade each visit.'
+    packs: tiles * 2 + 3, tiles,
+    desc: 'An uncharted stretch of Sanctuary, ' + tiles + ' tiles wide, remade each visit.'
   };
 }

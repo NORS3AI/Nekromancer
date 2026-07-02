@@ -485,24 +485,43 @@ const UI = {
     const st = s.top;
     ctx.textBaseline = 'middle';
     if (Game.riftMode) {
-      // Rift: a progress bar is the objective.
-      ctx.textAlign = 'center';
-      ctx.font = 'bold 13px Georgia';
-      ctx.fillStyle = '#b06adf';
-      ctx.fillText(Game.zone.name + '  ·  ' + DIFFICULTIES[Hero.difficulty].name, W / 2, 16 + st);
-      const bw = Math.min(240, W * 0.36);
-      if (Game.bossDead) {
-        ctx.font = '12px Georgia';
-        ctx.fillText('Enter the portal', W / 2, 33 + st);
-      } else if (Game.guardianUp) {
-        ctx.font = '12px Georgia';
-        ctx.fillStyle = '#e04a5a';
-        ctx.fillText('Slay ' + Game.zone.boss, W / 2, 33 + st);
-      } else {
-        this.bar(ctx, W / 2 - bw / 2, 27 + st, bw, 10, Game.riftProgress / 100, '#5a2a7a', '#b06adf',
-          Math.floor(Game.riftProgress) + '%');
+      // A pulsing purple orb-progress bar. On phones it tucks under the
+      // portrait/bars (top-left); on desktop/tablet it spans the top-centre.
+      const phone = W < 560;
+      const frac = clamp(Game.riftProgress / Game.riftGoal, 0, 1);
+      const pulse = 0.72 + 0.28 * (0.5 + 0.5 * Math.sin(Game.time * 5));
+      if (Game.bossDead || Game.guardianUp) {
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 13px Georgia';
+        ctx.fillStyle = Game.bossDead ? '#b06adf' : '#e04a5a';
+        ctx.fillText(Game.bossDead ? 'Enter the portal' : 'Slay ' + Game.zone.boss,
+          phone ? 90 + (s.left || 0) : W / 2, phone ? 74 + st : 20 + st);
+        this.drawObjectiveArrow(ctx, W, H);
+        return;
       }
-      if (Game.guardianUp || Game.bossDead) this.drawObjectiveArrow(ctx, W, H);
+      let bx, by, bw;
+      if (phone) { bx = 14 + (s.left || 0); by = 68 + st; bw = Math.min(180, W * 0.42); }
+      else { bw = Math.min(300, W * 0.42); bx = W / 2 - bw / 2; by = 22 + st; }
+      // Bar background + pulsing fill.
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      rr(ctx, bx - 1.5, by - 1.5, bw + 3, 11, 4); ctx.fill();
+      ctx.globalAlpha = pulse;
+      const g = ctx.createLinearGradient(bx, by, bx, by + 8);
+      g.addColorStop(0, '#d8b4f0'); g.addColorStop(1, '#7a3aa0');
+      ctx.fillStyle = g;
+      rr(ctx, bx, by, Math.max(2, bw * frac), 8, 3); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = 'rgba(176,106,223,0.7)'; ctx.lineWidth = 1;
+      rr(ctx, bx - 1.5, by - 1.5, bw + 3, 11, 4); ctx.stroke();
+      ctx.textAlign = phone ? 'left' : 'center';
+      ctx.font = 'bold 10px Georgia';
+      ctx.fillStyle = '#e8d8f4';
+      ctx.fillText('RIFT  ' + Math.floor(Game.riftProgress) + ' / ' + Game.riftGoal,
+        phone ? bx : W / 2, by + 20);
+      if (!phone) {
+        ctx.font = '11px Georgia'; ctx.fillStyle = '#8a7a9a';
+        ctx.fillText(Game.zone.name + '  ·  ' + DIFFICULTIES[Hero.difficulty].name, W / 2, by - 12);
+      }
       return;
     }
     if (W < 560) {

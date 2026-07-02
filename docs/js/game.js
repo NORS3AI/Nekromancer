@@ -31,6 +31,7 @@ const Game = {
   saveTick: 0,
   riftMode: false,
   riftProgress: 0,
+  riftGoal: 250,
   guardianUp: false,
   riftSpawnT: 0,
   fps: 60,
@@ -107,21 +108,30 @@ const Game = {
     this.startLand(makeAdventureZone(), null);
   },
 
-  // kind: 'normal' (levels 1-69, no key) | 'greater' (level 70, costs a key)
+  // kind: 'normal' (1-69, free · 250 pts) | 'greater' (Nephalem, lvl 70, costs a
+  // Nephalem Rift Key · 750 pts) | 'season' (lvl 70, costs a Master key · 1500 pts)
   startRift(kind = 'greater') {
-    if (kind === 'greater') {
+    if (kind === 'greater' || kind === 'season') {
       if (Hero.level < MAX_LEVEL) {
         UI.toast('Nephalem Rifts open at level 70', '#9a9080');
         AudioSys.sfx('denied');
         return;
       }
+    }
+    if (kind === 'greater') {
       if (Hero.riftKeys < 1) {
-        UI.toast('You need a Rift Key — Guardians in normal Rifts drop them', '#9a9080');
+        UI.toast('You need a Nephalem Rift Key — normal Rift Guardians drop them', '#9a9080');
         AudioSys.sfx('denied');
         return;
       }
-      Hero.riftKeys--;
-      Hero.save();
+      Hero.riftKeys--; Hero.save();
+    } else if (kind === 'season') {
+      if (Hero.masterKeys < 1) {
+        UI.toast('You need a Master Nephalem Rift Key — Nephalem Guardians drop them', '#9a9080');
+        AudioSys.sfx('denied');
+        return;
+      }
+      Hero.masterKeys--; Hero.save();
     }
     this.startLand(makeRiftZone(kind), null);
   },
@@ -131,6 +141,7 @@ const Game = {
     this.zone = zone;
     this.riftMode = !!zone.rift;
     this.riftProgress = 0;
+    this.riftGoal = zone.riftGoal || 250;
     this.guardianUp = false;
     this.riftSpawnT = 0;
     World.generate(this.zone);
@@ -156,7 +167,8 @@ const Game = {
     // Populate packs (asleep until approached).
     for (const pk of World.packs) {
       const n = randInt(3, 5);
-      const eliteLeader = Math.random() < 0.16;
+      // Rifts crawl with rare-elite packs — they carry the orbs.
+      const eliteLeader = Math.random() < (this.riftMode ? 0.5 : 0.16);
       for (let i = 0; i < n; i++) {
         const a = rand(TAU), d = rand(0, 70);
         const type = pick(this.zone.monsters);
@@ -178,20 +190,25 @@ const Game = {
 
     this.state = 'playing';
     this.showBanner(this.zone.name,
-      this.riftMode ? 'Slay everything. Fill the rift.' : 'Bounty: slay ' + this.zone.boss, 3);
+      this.riftMode ? 'Slay rare elites for their orbs — fill the rift' : 'Bounty: slay ' + this.zone.boss, 3);
     AudioSys.sfx('wave');
     Hero.save();
   },
 
   // ------------------------------------------------------------- rifts
 
-  riftKill(enemy) {
-    if (!this.riftMode || this.guardianUp || this.riftProgress >= 100) return;
-    this.riftProgress = Math.min(100, this.riftProgress + (enemy.elite ? 4.5 : 1.6));
-    if (this.riftProgress >= 100) {
+  // Purple orbs feed the rift bar; at the goal the Rift Guardian rises.
+  addRiftPoints(n) {
+    if (!this.riftMode || this.guardianUp || this.riftProgress >= this.riftGoal) return;
+    this.riftProgress = Math.min(this.riftGoal, this.riftProgress + n);
+    if (this.riftProgress >= this.riftGoal) {
       this.guardianUp = true;
       const pt = this.spawnNear(this.player, 420);
       const g = new Enemy('brute', pt.x, pt.y, { unique: true, name: this.zone.boss });
+      g.guardian = true;
+      g.r += 8;                       // the Guardian looms larger than a bounty boss
+      g.maxHp = Math.round(g.maxHp * 1.35);
+      g.hp = g.maxHp;
       g.wake();
       this.enemies.push(g);
       World.bossPos = pt;
@@ -212,16 +229,19 @@ const Game = {
   },
 
   updateRiftSpawns(dt) {
-    if (!this.riftMode || this.riftProgress >= 100) return;
-    // Keep the shard crawling with prey.
-    if (this.enemies.length < 26) {
+    if (!this.riftMode || this.guardianUp || this.riftProgress >= this.riftGoal) return;
+    // Endlessly repopulate the shard with rare-elite packs so orbs keep flowing.
+    if (this.enemies.length < 30) {
       this.riftSpawnT -= dt;
       if (this.riftSpawnT <= 0) {
-        this.riftSpawnT = 2.6;
-        const pt = this.spawnNear(this.player, Math.max(this.W, this.H) * 0.62);
-        const elite = Math.random() < 0.12;
-        for (let i = 0; i < randInt(2, 4); i++) {
-          const e = new Enemy(pick(this.zone.monsters), pt.x + rand(-60, 60), pt.y + rand(-60, 60), { elite: elite && i === 0 });
+        this.riftSpawnT = 2.4;
+        const pt = this.spawnNear(this.player, Math.max(this.W, this.H) * 0.6);
+        const elite = Math.random() < 0.55;
+        for (let i = 0; i < randInt(3, 4); i++) {
+          const e = new Enemy(pick(this.zone.monsters), pt.x + rand(-60, 60), pt.y + rand(-60, 60), {
+            elite: elite && i === 0,
+            name: elite && i === 0 ? pick(ELITE_PREFIX) + pick(ELITE_SUFFIX) : undefined
+          });
           World.collide(e);
           this.enemies.push(e);
         }
@@ -232,32 +252,39 @@ const Game = {
   onBossDead(boss) {
     this.bossDead = true;
     World.portal = { x: boss.x, y: boss.y };
-    if (this.riftMode && this.zone.riftKind === 'greater') {
+    if (this.riftMode) {
+      const kind = this.zone.riftKind || 'normal';
+      const mLvl = this.monsterLevel();
+      const diff = DIFFICULTIES[Hero.difficulty];
       Hero.riftsCleared++;
-      // The Guardian's hoard: the set hunt is the endgame.
-      const owned = Hero.setPiecesOwned();
+      // Guaranteed loot.
       const pu = new Pickup(boss.x, boss.y, 'item');
-      pu.item = owned.size < 6 ? Items.generateSetPiece(this.monsterLevel())
-        : (Math.random() < 0.5 ? Items.generatePowerItem(this.monsterLevel()) : Items.generateSetPiece(this.monsterLevel()));
+      pu.item = Items.generate(mLvl, 0.3);
       this.pickups.push(pu);
-      if (Math.random() < 0.45) {
-        const pu2 = new Pickup(boss.x, boss.y, 'item');
-        pu2.item = Items.generatePowerItem(this.monsterLevel());
-        this.pickups.push(pu2);
+      // 50/50 key: normal rifts drop Nephalem Rift Keys; Nephalem & Season
+      // Guardians drop Master Nephalem Rift Keys (needed for Seasons).
+      if (Math.random() < 0.5) {
+        if (kind === 'normal') { Hero.riftKeys++; UI.toast('◈ Nephalem Rift Key! (' + Hero.riftKeys + ' held)', '#b06adf'); }
+        else { Hero.masterKeys++; UI.toast('◈ MASTER Nephalem Rift Key! (' + Hero.masterKeys + ' held)', '#d8b4f0'); }
       }
+      // Legendary chance scales with Torment: 5% at T1 → 30% at T16.
+      const torment = diff.torment || 0;
+      const legChance = torment ? 0.05 + (0.30 - 0.05) * (torment - 1) / 15 : 0.05;
+      if (Math.random() < legChance) {
+        const lp = new Pickup(boss.x, boss.y, 'item');
+        lp.item = Items.generatePowerItem(mLvl);
+        this.pickups.push(lp);
+        UI.toast('★ Legendary drop!', '#ff8c2a');
+      }
+      // Nephalem & Season Guardians also chase the Grace of Inarius set.
+      if (kind !== 'normal') {
+        const owned = Hero.setPiecesOwned();
+        const sp = new Pickup(boss.x, boss.y, 'item');
+        sp.item = owned.size < 6 ? Items.generateSetPiece(mLvl) : Items.generatePowerItem(mLvl);
+        this.pickups.push(sp);
+      }
+      Hero.save();
       AudioSys.sfx('setdrop');
-      this.showBanner('RIFT CLEARED', 'The Guardian yields its hoard', 3.4);
-    } else if (this.riftMode) {
-      // Normal rift Guardian: rich loot and a chance at a Rift Key.
-      const pu = new Pickup(boss.x, boss.y, 'item');
-      pu.item = Items.generate(this.monsterLevel(), 0.3);
-      this.pickups.push(pu);
-      if (Math.random() < 0.45) {
-        Hero.riftKeys++;
-        Hero.save();
-        UI.toast('◈ RIFT KEY! (' + Hero.riftKeys + ' held) — opens Nephalem Rifts at 70', '#b06adf');
-        AudioSys.sfx('setdrop');
-      }
       this.showBanner('RIFT CLEARED', 'The Guardian falls', 3.4);
     } else {
       this.showBanner('BOUNTY COMPLETE', 'A portal tears open — step through', 3.4);

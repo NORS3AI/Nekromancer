@@ -79,7 +79,8 @@ const Hero = {
   bestZone: 0,
   totalKills: 0,
   riftsCleared: 0,
-  riftKeys: 0,
+  riftKeys: 0,          // Nephalem Rift Keys (open Nephalem Rifts)
+  masterKeys: 0,        // Master Nephalem Rift Keys (open Season rifts)
   artisans: { smith: 1, mystic: 1, jeweler: 1 },
   runes: {},                          // skillId -> rune id
   cheats: { god: false, essence: false }, // dev panel, kept per save
@@ -102,6 +103,7 @@ const Hero = {
     this.totalKills = 0;
     this.riftsCleared = 0;
     this.riftKeys = 0;
+    this.masterKeys = 0;
     this.artisans = { smith: 1, mystic: 1, jeweler: 1 };
     this.runes = {};
     this.cheats = { god: false, essence: false };
@@ -115,7 +117,7 @@ const Hero = {
       loadout: this.loadout, passives: this.passives,
       zonesCleared: this.zonesCleared, difficulty: this.difficulty,
       bestZone: this.bestZone, totalKills: this.totalKills,
-      riftsCleared: this.riftsCleared, riftKeys: this.riftKeys,
+      riftsCleared: this.riftsCleared, riftKeys: this.riftKeys, masterKeys: this.masterKeys,
       artisans: this.artisans, runes: this.runes, cheats: this.cheats
     };
   },
@@ -157,7 +159,7 @@ const Hero = {
       passives: d.passives || [null, null, null, null],
       zonesCleared: d.zonesCleared || 0, difficulty: d.difficulty || 0,
       bestZone: d.bestZone || 0, totalKills: d.totalKills || 0,
-      riftsCleared: d.riftsCleared || 0, riftKeys: d.riftKeys || 0,
+      riftsCleared: d.riftsCleared || 0, riftKeys: d.riftKeys || 0, masterKeys: d.masterKeys || 0,
       artisans: (() => {
         const a = Object.assign({ smith: 1, mystic: 1, jeweler: 1 }, d.artisans);
         for (const k of Object.keys(a)) a[k] = clamp(a[k], 1, 10); // artisans now cap at 10
