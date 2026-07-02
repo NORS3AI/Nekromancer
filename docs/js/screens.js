@@ -444,6 +444,9 @@ const Screens = {
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText('!', ex, ey + 0.5);
       }
+      UI.tip(bx - chipR - 3, by - chipR - 3, chipR * 2 + 6, chipR * 2 + 6,
+        it ? it.name : ITEM_SLOTS[slot].label,
+        it ? Items.statLines(it).join(' · ') : 'Empty ' + ITEM_SLOTS[slot].label + ' slot');
       UI.register(bx - chipR - 3, by - chipR - 3, chipR * 2 + 6, chipR * 2 + 6, () => {
         UI.sel.slot = slot;
         UI.sel.item = null;
@@ -545,13 +548,18 @@ const Screens = {
     UI.register(0, 0, W, H, () => { /* blocked by popup */ });
     const pw = Math.min(430, W - 20);
     const px = W / 2 - pw / 2;
-    const shown = Hero.gems.slice(0, 12);
+    // Filter by type, sort by tier (finest first).
+    let gemPairs = Hero.gems.map((g, i) => ({ g, i }));
+    if (UI.sel.gemFilter) gemPairs = gemPairs.filter(x => x.g.type === UI.sel.gemFilter);
+    gemPairs.sort((a, b) => b.g.tier - a.g.tier);
+    const shown = gemPairs.slice(0, 12);
     const rows = Math.max(1, Math.ceil(shown.length / 4));
     const hasInfo = UI.sel.gemIdx !== undefined && Hero.gems[UI.sel.gemIdx];
     const gems = target.gems || [];
     const emptyCount = (target.sockets || 0) - gems.length;
     const ph = Math.min(H - 12,
-      118 + gems.length * 30 + (emptyCount > 0 ? 18 : 0) + rows * 36 + (hasInfo ? 72 : 0) + 46);
+      118 + gems.length * 30 + (emptyCount > 0 ? 18 : 0) + (Hero.gems.length ? 28 : 0)
+        + rows * 36 + (hasInfo ? 72 : 0) + 46);
     const py = Math.max(6, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, 'SOCKET GEM');
     UI.register(px, py, pw, ph, () => { /* dead space inside the popup */ });
@@ -589,23 +597,39 @@ const Screens = {
       y += 18;
     }
 
+    // Filter chips: All + one per gem type (sorted by tier, finest first).
+    if (Hero.gems.length) {
+      const types = Object.keys(GEM_TYPES);
+      const chipW = (pw - 32) / (types.length + 1);
+      UI.btn(ctx, px + 16, y, chipW - 4, 22, 'All', () => { UI.sel.gemFilter = null; UI.sel.gemIdx = undefined; },
+        { size: 9, bg: !UI.sel.gemFilter ? 'rgba(70,44,90,0.95)' : undefined, color: '#c9bfa8' });
+      types.forEach((t, ti) => {
+        const on = UI.sel.gemFilter === t;
+        UI.btn(ctx, px + 16 + (ti + 1) * chipW, y, chipW - 4, 22, GEM_TYPES[t].name.slice(0, 3),
+          () => { UI.sel.gemFilter = on ? null : t; UI.sel.gemIdx = undefined; },
+          { size: 9, color: GEM_TYPES[t].color, bg: on ? 'rgba(70,44,90,0.95)' : undefined, border: on ? GEM_TYPES[t].color : undefined });
+      });
+      y += 28;
+    }
+
     // Gem pouch grid — tap to read what each does.
     if (!shown.length) {
       ctx.font = 'italic 12px Georgia';
       ctx.fillStyle = '#544d44';
-      ctx.fillText('No gems in your pouch — monsters, chests and rifts drop them.', px + 16, y + 14);
+      ctx.fillText(Hero.gems.length ? 'No gems match this filter.' : 'No gems in your pouch — monsters, chests and rifts drop them.', px + 16, y + 14);
       y += 36;
     } else {
       ctx.font = '10px Georgia';
       ctx.fillStyle = '#9a9080';
-      ctx.fillText('TAP A GEM TO SEE WHAT IT DOES' + (Hero.gems.length > 12 ? '  (+' + (Hero.gems.length - 12) + ' more in pouch)' : ''), px + 16, y);
+      ctx.fillText('TAP A GEM TO INSPECT' + (gemPairs.length > 12 ? '  (+' + (gemPairs.length - 12) + ' more)' : ''), px + 16, y);
       y += 10;
-      shown.forEach((g, gi) => {
-        const gx = px + 16 + (gi % 4) * ((pw - 32) / 4);
-        const gy = y + Math.floor(gi / 4) * 36;
-        const selected = UI.sel.gemIdx === gi;
+      shown.forEach((pair, k) => {
+        const g = pair.g, realIdx = pair.i;
+        const gx = px + 16 + (k % 4) * ((pw - 32) / 4);
+        const gy = y + Math.floor(k / 4) * 36;
+        const selected = UI.sel.gemIdx === realIdx;
         UI.btn(ctx, gx, gy, (pw - 32) / 4 - 6, 30, GEM_TIERS[g.tier], () => {
-          UI.sel.gemIdx = selected ? undefined : gi;
+          UI.sel.gemIdx = selected ? undefined : realIdx;
         }, {
           size: 9, color: GEM_TYPES[g.type].color,
           bg: selected ? 'rgba(70,44,90,0.95)' : undefined,
@@ -731,6 +755,8 @@ const Screens = {
         runes.forEach((r, ri) => {
           const locked = r.lvl && Hero.level < r.lvl;
           const active = (Hero.runes[s.id] || 'base') === r.id && !locked;
+          UI.tip(bx0 + ri * (bw + 6), fy + 52, bw, 22,
+            r.name + (locked ? '  (lvl ' + r.lvl + ')' : ''), r.desc);
           UI.btn(ctx, bx0 + ri * (bw + 6), fy + 52, bw, 22,
             locked ? r.name + ' · L' + r.lvl : r.name, locked ? null : () => {
               Hero.runes[s.id] = r.id;
@@ -816,6 +842,8 @@ const Screens = {
         ctx.textAlign = 'center';
         ctx.fillText(s.lvl, gx + iconR * 0.7, gyy + iconR * 0.7);
       }
+      UI.tip(gx - iconR - 2, gyy - iconR - 2, iconR * 2 + 4, iconR * 2 + 4,
+        s.name + (locked ? '  (lvl ' + s.lvl + ')' : ''), SKILL_DESCS[s.id]);
       UI.register(gx - iconR - 2, gyy - iconR - 2, iconR * 2 + 4, iconR * 2 + 4, () => {
         UI.sel.info = s;
         if (locked) return;
@@ -883,6 +911,7 @@ const Screens = {
       if (y > H - 96) return;
       const locked = s.lvl > Hero.level;
       const active = Hero.passives.includes(s.id);
+      UI.tip(cx2, y, colW2, 26, s.name + (locked ? '  (lvl ' + s.lvl + ')' : ''), s.desc);
       UI.btn(ctx, cx2, y, colW2, 26, '', locked ? null : () => {
         UI.sel.info = s;
         const slot = clamp(UI.sel.slotIdx, 0, Math.max(0, nSlots - 1));

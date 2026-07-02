@@ -130,8 +130,12 @@ const Items = {
     for (const g of gems) lines.push('◆ ' + gemName(g) + ': ' + GEM_TYPES[g.type].label(gemStatValue(g)));
     const empty = (item.sockets || 0) - gems.length;
     for (let i = 0; i < empty; i++) lines.push('◇ empty socket');
-    // A ruby in a weapon grants bonus weapon damage.
-    if (item.slot === 'weapon' && gems.some(g => g.type === 'ruby')) lines.push('❢ +25% weapon damage (ruby)');
+    // Weapon-slot gem bonuses.
+    if (item.slot === 'weapon') {
+      if (gems.some(g => g.type === 'ruby')) lines.push('❢ +25% weapon damage (ruby)');
+      if (Hero.level >= MAX_LEVEL && gems.some(g => g.type === 'emerald')) lines.push('❢ Emerald +20% in weapon (lvl 70)');
+      if (Hero.level >= MAX_LEVEL && gems.some(g => g.type === 'ruby')) lines.push('❢ Ruby -5% in weapon (lvl 70)');
+    }
     return lines;
   },
 
@@ -555,8 +559,13 @@ const Items = {
       reg += it.stats.reg || 0;
       gold += it.stats.gold || 0;
       for (const g of it.gems || []) {
-        const v = gemStatValue(g);
+        let v = gemStatValue(g);
         const s = GEM_TYPES[g.type].stat;
+        // At level 70, weapon-slot gems are retuned: green +20%, red -5%.
+        if (slot === 'weapon' && Hero.level >= MAX_LEVEL) {
+          if (g.type === 'emerald') v *= 1.20;
+          else if (g.type === 'ruby') v *= 0.95;
+        }
         if (s === 'dmg') dmg += v;
         else if (s === 'hp') hp += v;
         else if (s === 'crit') crit += v;
