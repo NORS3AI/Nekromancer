@@ -105,6 +105,15 @@ loot at the artisans. The hero is persistent (localStorage).
   minutes apart). Commits/pushes/merges still worked; the site just stayed on the
   previous version. Recovery: it self-heals on the next push, or re-run the failed
   run from the Actions tab. Avoid merging several PRs back-to-back when possible.
+- **Do NOT add a custom `actions/deploy-pages` workflow while the repo's Pages
+  source is "Deploy from a branch"** (learned the hard way, 2026-07-02, v0.0.6/7):
+  workflow-submitted deployments sit in `deployment_queued` FOREVER under the
+  legacy source (three runs, ~30 min total, zero progress), and when the deploy
+  step times out it CANCELS the deployment — which also kills GitHub's managed
+  branch deploy for the same commit. The site stayed pinned on v0.0.4 until the
+  workflow was removed. A custom workflow only works after the owner flips
+  Settings → Pages → Build and deployment → Source to "GitHub Actions" — a
+  setting neither Claude's token nor any API we have can change.
 
 ## Testing
 
