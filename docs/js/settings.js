@@ -22,7 +22,8 @@ const Settings = {
     fixedJoy: false,      // fixed vs floating movement joystick
     lowFx: false,         // particle quality (low = half)
     bigMinimap: false,    // larger minimap
-    showFps: false
+    showFps: false,
+    corpseCap: 100        // corpses linger until this many exist (stress test)
   },
 
   load() {
