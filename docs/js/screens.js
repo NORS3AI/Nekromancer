@@ -516,10 +516,10 @@ const Screens = {
         Items.equip(UI.sel.item, slot);
         UI.sel.item = null;
       }, { border: '#57b894', color: '#6ff7c3', size: 13 });
-      UI.btn(ctx, dx + bw + 8, dy, bw, 34, 'SALVAGE', () => {
-        Items.salvage(UI.sel.item);
-        UI.sel.item = null;
-      }, { border: '#8a6f4a', color: '#ffb43a', size: 13 });
+      const canSalv = Items.canSalvage(UI.sel.item);
+      UI.btn(ctx, dx + bw + 8, dy, bw, 34, canSalv ? 'SALVAGE' : 'SALVAGE L' + Items.salvageReq(UI.sel.item),
+        canSalv ? () => { Items.salvage(UI.sel.item); UI.sel.item = null; } : null,
+        { disabled: !canSalv, border: '#8a6f4a', color: '#ffb43a', size: canSalv ? 13 : 11 });
       const canSocket = !!UI.sel.item.sockets;
       UI.btn(ctx, dx + (bw + 8) * 2, dy, bw, 34, 'SOCKET', canSocket ? () => {
         UI.sel.gemTarget = UI.sel.item;
@@ -1192,7 +1192,7 @@ const Screens = {
     ctx.textAlign = 'left';
     ctx.font = 'bold 11px Georgia';
     ctx.fillStyle = '#ffd76a';
-    ctx.fillText(label + '  ·  LEVEL ' + lvl + (lvl >= 100 ? '  (MAX)' : ''), px + 16, y + 8);
+    ctx.fillText(label + '  ·  LEVEL ' + lvl + ' / 10' + (lvl >= 10 ? '  (MAX)' : ''), px + 16, y + 8);
     if (lvl < 100) {
       const cost = Items.trainCost(which);
       UI.btn(ctx, px + pw - 156, y - 6, 140, 26, `TRAIN  (${cost}g)`,
@@ -1631,12 +1631,7 @@ const Screens = {
     const saves = Saves.list();
     UI.btn(ctx, px + 16, py + 84, pw - 32, 38,
       saves.length >= Saves.MAX ? 'ALL 20 SLOTS FULL' : '＋ SAVE CURRENT HERO  (' + saves.length + ' / ' + Saves.MAX + ')',
-      saves.length >= Saves.MAX ? null : () => {
-        let name = null;
-        try { name = window.prompt('Name this save:', 'Level ' + Hero.level + ' Nekromancer'); } catch (e) { /* blocked */ }
-        if (name === null && saves.length) name = 'Save ' + (saves.length + 1);
-        Saves.add(name || 'Level ' + Hero.level + ' Nekromancer');
-      },
+      saves.length >= Saves.MAX ? null : () => Saves.add(),
       { size: 13, disabled: saves.length >= Saves.MAX, border: '#57b894', color: '#6ff7c3' });
 
     if (!saves.length) {
@@ -1659,7 +1654,7 @@ const Screens = {
       ctx.font = '10px Georgia';
       ctx.fillStyle = '#8a8070';
       ctx.textAlign = 'right';
-      ctx.fillText('lvl ' + (s.level || '?') + ' · ' + (s.date || ''), px + pw - 148, y + rowH / 2 - 2);
+      ctx.fillText(s.date || '', px + pw - 148, y + rowH / 2 - 2);
       UI.btn(ctx, px + pw - 138, y + 1, 74, rowH - 6, 'LOAD', () => Saves.load(i),
         { size: 10, border: '#57b894', color: '#6ff7c3' });
       UI.btn(ctx, px + pw - 58, y + 1, 42, rowH - 6, '✕', () => Saves.remove(i),
@@ -1826,13 +1821,13 @@ const Screens = {
     });
     y += 36;
     row('Max level Blacksmith (100)', () => {
-      Hero.artisans.smith = 100; UI.toast('Blacksmith mastered', '#ffb43a'); Hero.save();
+      Hero.artisans.smith = 10; UI.toast('Blacksmith mastered', '#ffb43a'); Hero.save();
     }, '#ffb43a');
     row('Max level Enchantress (100)', () => {
-      Hero.artisans.mystic = 100; UI.toast('Mystic mastered', '#b06adf'); Hero.save();
+      Hero.artisans.mystic = 10; UI.toast('Mystic mastered', '#b06adf'); Hero.save();
     }, '#b06adf');
     row('Max level Gem Crafter (100)', () => {
-      Hero.artisans.jeweler = 100; UI.toast('Jeweler mastered', '#4ecbe0'); Hero.save();
+      Hero.artisans.jeweler = 10; UI.toast('Jeweler mastered', '#4ecbe0'); Hero.save();
     }, '#4ecbe0');
     ctx.textAlign = 'center';
     ctx.font = 'italic 10px Georgia';

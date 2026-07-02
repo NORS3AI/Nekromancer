@@ -275,7 +275,11 @@ const Items = {
   grantSalvage(item, quiet = false) {
     const R = RARITIES[item.rarity];
     Hero.mats[R.salvage] += R.salvageN;
-    for (const g of item.gems || []) Hero.gems.push(g); // gems survive the forge
+    const gems = item.gems || [];
+    for (const g of gems) Hero.gems.push(g); // socketed gems survive, back to the pouch
+    if (gems.length) {
+      UI.toast('Recovered ' + gems.length + ' gem' + (gems.length > 1 ? 's' : '') + ' to your pouch', '#6ff7c3');
+    }
     if (!quiet) {
       UI.toast(`Salvaged ${item.name} → ${R.salvageN}× ${MATERIALS[R.salvage].name}`, MATERIALS[R.salvage].color);
       AudioSys.sfx('craft');
@@ -284,9 +288,28 @@ const Items = {
     }
   },
 
+  // Salvaging the finest gear takes rank: Epics at level 60, Legendary/Set at 70.
+  canSalvage(item) {
+    if (!item) return false;
+    if (item.rarity === 3) return Hero.level >= 60;
+    if (item.rarity >= 4) return Hero.level >= 70;
+    return true;
+  },
+
+  salvageReq(item) {
+    if (item.rarity === 3) return 60;
+    if (item.rarity >= 4) return 70;
+    return 0;
+  },
+
   salvage(item) {
     const idx = Hero.bag.indexOf(item);
     if (idx < 0) return;
+    if (!this.canSalvage(item)) {
+      UI.toast('Reach level ' + this.salvageReq(item) + ' to salvage ' + RARITIES[item.rarity].name + ' items', '#e04a5a');
+      AudioSys.sfx('denied');
+      return;
+    }
     Hero.bag.splice(idx, 1);
     this.grantSalvage(item);
     Hero.save();
@@ -313,17 +336,18 @@ const Items = {
     }
   },
 
-  // Artisan levels (1–100) sweeten every service.
+  // Artisan levels run 1–10; level 10 = top-tier work. Each level sweetens
+  // costs and (for the smith/jeweler) raises what they can make.
   artisanDiscount(which) {
-    return 1 - 0.4 * (Hero.artisans[which] - 1) / 99;
+    return 1 - 0.4 * (Hero.artisans[which] - 1) / 9;
   },
 
   trainCost(which) {
-    return Math.round(400 * Math.pow(Hero.artisans[which], 1.25));
+    return Math.round(500 * Math.pow(Hero.artisans[which], 1.7));
   },
 
   train(which) {
-    if (Hero.artisans[which] >= 100) return;
+    if (Hero.artisans[which] >= 10) return;
     const cost = this.trainCost(which);
     if (Hero.gold < cost) {
       UI.toast('Not enough gold to train', '#9a9080');
@@ -370,7 +394,8 @@ const Items = {
       return;
     }
     this.pay(cost);
-    const craftLvl = Hero.level + Math.floor(Hero.artisans.smith / 10);
+    // Level 1 forges low-tier gear; level 10 forges at your full level.
+    const craftLvl = Math.max(1, Math.round(Hero.level * (0.5 + 0.05 * Hero.artisans.smith)));
     let item, tries = 0;
     do {
       item = this.generate(craftLvl, master ? 0.2 : 0.12, slot);
@@ -454,7 +479,8 @@ const Items = {
       return;
     }
     this.pay(cost);
-    const gem = this.generateGem(Hero.level + Math.floor(Hero.artisans.jeweler / 4));
+    // Jeweler level 10 cuts gems at your full level (max tiers).
+    const gem = this.generateGem(Math.max(1, Math.round(Hero.level * (0.5 + 0.05 * Hero.artisans.jeweler))));
     Hero.gems.push(gem);
     UI.toast('Cut a fresh gem: ' + gemName(gem), GEM_TYPES[gem.type].color);
     AudioSys.sfx('gem');
@@ -499,7 +525,7 @@ const Items = {
   enchantCost(item) {
     const n = item.enchants || 0;
     const d = this.artisanDiscount('mystic');
-    const escal = 0.5 * (1 - Hero.artisans.mystic / 200);
+    const escal = 0.5 * (1 - Hero.artisans.mystic / 20);
     const rarityMult = [0.4, 0.6, 1.0, 1.3, 1.6, 1.8][item.rarity] || 1;
     return {
       gold: Math.round((80 + item.mLvl * 28) * rarityMult * (1 + n * escal) * d),
