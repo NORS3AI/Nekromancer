@@ -18,11 +18,20 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.2.4-alpha';
+const GAME_VERSION = 'v0.2.5-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.2.5-alpha', date: 'July 2026',
+    notes: [
+      'RIVERS & BRIDGES: open lands can now be cut by flowing rivers you cross on wooden plank bridges. Water blocks you (and monsters) except on a bridge; every river is guaranteed a crossing so the boss is always reachable',
+      'FORESTS: dense groves of dead trees you weave through for cover, scattered across the wilds',
+      'MAP VARIETY & SIZE: maps now vary in size — some lands are far bigger than others (and some are rectangular). The Desolate Sands is a vast open waste; the Blood Marsh is criss-crossed by streams and groves; the Weeping Hollow drowns among trees',
+      'Rifts and Adventure maps roll their own size, rivers and forests each visit for more variety; bigger maps carry proportionally more scenery'
+    ]
+  },
   {
     v: 'v0.2.4-alpha', date: 'July 2026',
     notes: [
@@ -646,6 +655,7 @@ const ZONES = [
     ground: '#16121b', accent: '#2c4230', weather: 'rain',
     monsters: ['zombie', 'zombie', 'skeleton', 'ghoul'],
     boss: 'The Grave Warden', packs: 11,
+    sizeMul: 1.0, rivers: 1, forest: true,
     desc: 'A drowned graveyard where the dead refuse to rest.'
   },
   {
@@ -653,6 +663,7 @@ const ZONES = [
     ground: '#151220', accent: '#3a3448',
     monsters: ['skeleton', 'skeleton', 'archer', 'zombie'],
     boss: 'Morgral the Unburied', packs: 12,
+    sizeMul: 0.95,
     desc: 'Collapsed halls beneath the chapel, thick with old bones.'
   },
   {
@@ -660,21 +671,24 @@ const ZONES = [
     ground: '#1e1812', accent: '#4a3c28', weather: 'wind',
     monsters: ['imp', 'imp', 'ghoul', 'archer', 'cultist'],
     boss: 'Sar\'Khan the Sunscoured', packs: 13,
-    desc: 'A burned waste of dunes, imps and buried idols.'
+    sizeMul: 1.4, rivers: 0, forest: false,
+    desc: 'A vast burned waste of dunes, imps and buried idols.'
   },
   {
     id: 'marsh', name: 'The Blood Marsh', kind: 'open', mLvl: 16,
     ground: '#121a16', accent: '#2c4230', weather: 'rain',
     monsters: ['zombie', 'ghoul', 'ghoul', 'cultist', 'imp'],
     boss: 'Mother of Maggots', packs: 14,
-    desc: 'Rotting fens where the cult drains its offerings.'
+    sizeMul: 1.2, rivers: 2, forest: true,
+    desc: 'Rotting fens, criss-crossed by bloody streams and dead groves.'
   },
   {
     id: 'rathma', name: 'Ruins of Rathma', kind: 'dungeon', mLvl: 23,
     ground: '#141420', accent: '#3a3060',
     monsters: ['skeleton', 'archer', 'cultist', 'ghoul', 'zombie'],
     boss: 'The Bone Colossus', packs: 15,
-    desc: 'The shattered sanctum of the first necromancers.'
+    sizeMul: 1.25,
+    desc: 'The shattered, sprawling sanctum of the first necromancers.'
   }
 ];
 
