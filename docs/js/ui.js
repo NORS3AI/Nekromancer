@@ -166,9 +166,22 @@ const UI = {
     ctx.lineWidth = 1.5;
     rr(ctx, x, y, w, h, 8); ctx.stroke();
     ctx.fillStyle = o.disabled ? '#5c5569' : (o.color || '#e8e0cc');
-    ctx.font = `${o.bold === false ? '' : 'bold '}${o.size || 14}px Georgia`;
+    const bold = o.bold === false ? '' : 'bold ';
+    // Auto-fit the label to the button width so nothing overflows on mobile:
+    // shrink the font first, then ellipsize as a last resort.
+    let size = o.size || 14;
+    const maxW = w - 14;
+    ctx.font = `${bold}${size}px Georgia`;
+    while (size > 8 && ctx.measureText(label).width > maxW) {
+      size--; ctx.font = `${bold}${size}px Georgia`;
+    }
+    let text = label;
+    if (ctx.measureText(text).width > maxW) {
+      while (text.length > 1 && ctx.measureText(text + '…').width > maxW) text = text.slice(0, -1);
+      text += '…';
+    }
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(label, x + w / 2, y + h / 2 + 1);
+    ctx.fillText(text, x + w / 2, y + h / 2 + 1);
     if (!o.disabled && cb) {
       this.register(x, y, w, h, cb);
       this.hits[this.hits.length - 1].label = label; // findable in tests

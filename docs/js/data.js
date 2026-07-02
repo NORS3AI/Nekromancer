@@ -18,11 +18,18 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.2.3-alpha';
+const GAME_VERSION = 'v0.2.4-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.2.4-alpha', date: 'July 2026',
+    notes: [
+      'FIXED: buttons with long labels (like the Season screen\'s "NEED A MASTER NEPHALEM RIFT KEY") spilled off both edges on mobile. All buttons now auto-shrink their text to fit, so nothing overflows the screen',
+      'Season screen labels tightened and the footer note now fits phone widths'
+    ]
+  },
   {
     v: 'v0.2.3-alpha', date: 'July 2026',
     notes: [

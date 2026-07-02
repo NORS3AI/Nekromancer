@@ -2073,15 +2073,15 @@ const Screens = {
     // The season is a Master Nephalem Rift: 1500 points, costs a Master key.
     const hasMaster = Hero.masterKeys > 0;
     UI.btn(ctx, px + 16, y, pw - 32, 44,
-      hasMaster ? `◈ MASTER NEPHALEM RIFT — 1500 pts  (uses 1 of ${Hero.masterKeys} Master keys)`
-        : '◈ NEED A MASTER NEPHALEM RIFT KEY — slay Nephalem Rift Guardians',
+      hasMaster ? `◈ START MASTER RIFT — 1500 pts  (1 Master Key)`
+        : '◈ NEED A MASTER NEPHALEM RIFT KEY',
       hasMaster ? () => { UI.close(); Game.startRift('season'); } : null,
-      { size: 12, disabled: !hasMaster, border: '#3a7a4a', color: '#4ade80' });
+      { size: 13, disabled: !hasMaster, border: '#3a7a4a', color: '#4ade80' });
     y += 52;
     ctx.textAlign = 'center';
     ctx.font = '10px Georgia';
     ctx.fillStyle = '#6f6552';
-    ctx.fillText('◈ Master Keys: ' + Hero.masterKeys + '  ·  Nephalem Guardians drop Master keys & set pieces', W / 2, y);
+    ctx.fillText(this.fitText(ctx, '◈ Master Keys: ' + Hero.masterKeys + '  ·  Nephalem Guardians drop them & set pieces', pw - 24), W / 2, y);
   },
 
   // ------------------------------------------------------ pause / death
