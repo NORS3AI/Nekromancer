@@ -30,7 +30,7 @@ const PATCH_NOTES = [
       'Desktop: LEFT CLICK fires the Primary, RIGHT CLICK casts the Secondary (aimed at the cursor, channels while held), keys 1-5 cast the five skill slots',
       'Touch: the Secondary gets its own bigger button floating above the skill cluster',
       'Old saves keep their loadout — the skill that was in slot 1 becomes the Secondary',
-      'Live-site deploys returned to GitHub\'s built-in Pages pipeline: the custom deploy workflow could never activate while the repo\'s Pages source is set to "deploy from a branch", and its timeouts were cancelling the real deploys'
+      'Live-site deploys now run through our own GitHub Actions workflow — the Pages source was switched to "GitHub Actions", ending the double-deploy race that kept builds stuck in the queue all afternoon'
     ]
   },
   {
