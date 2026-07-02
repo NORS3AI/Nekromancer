@@ -140,23 +140,54 @@ const SKILL_FX = {
   },
 
   siphonBlood(p, a) {
-    const e = nearestEnemy(p.x, p.y, 340);
-    if (!e) return false;
-    e.hurt(6 * p.power());
-    p.heal(p.maxHp * 0.008);
+    // Funerary Pick: drain from 2 additional targets.
+    const pick = p.powers && p.powers.funeraryPick;
+    const maxTargets = pick ? 3 : 1;
+    const inRange = [];
+    for (const e of Game.enemies) {
+      if (e.dead || e.sleep || e.spawnT > 0) continue;
+      const d = dist(p.x, p.y, e.x, e.y);
+      if (d < 340) inRange.push([d, e]);
+    }
+    if (!inRange.length) return false;
+    inRange.sort((u, v) => u[0] - v[0]);
+    const drained = inRange.slice(0, maxTargets).map(t => t[1]);
+    for (const e of drained) {
+      e.hurt(6 * p.power());
+      p.heal(p.maxHp * 0.008);
+      fxSiphon(p, e);
+    }
     p.gainEssence(Skills.gainFor('siphonBlood'));
-    p.facing = angleTo(p.x, p.y, e.x, e.y);
-    fxSiphon(p, e);
+    p.facing = angleTo(p.x, p.y, drained[0].x, drained[0].y);
+    // Funerary Pick: +20% damage per target being drained, 3s.
+    if (pick) { p.funeraryStacks = drained.length; p.funeraryT = 3; }
+    // Power Shift rune: +10% damage per channel stack, max 10.
+    if (Hero.rune('siphonBlood') === 'powerShift') {
+      p.powerShiftStacks = Math.min(10, p.powerShiftStacks + 1);
+      p.powerShiftT = 1;
+    }
+    // Iron Rose: channeling Siphon Blood casts free Death Novas.
+    if (p.powers && p.powers.ironRose && Skills.ironRoseCd <= 0 && Math.random() < 0.5) {
+      Skills.ironRoseCd = 0.45;
+      SKILL_FX.deathNova(p);
+    }
     if (Math.random() < 0.25) AudioSys.sfx('siphon');
     return true;
   },
 
   boneSpear(p, a) {
+    // Blood Spear rune: +40% damage paid for in blood.
+    const blood = Hero.rune('boneSpear') === 'bloodSpear';
+    if (blood) {
+      const lifeCost = p.maxHp * 0.02;
+      if (p.hp <= lifeCost + 1) return false;
+      p.hp -= lifeCost;
+    }
     const o = boneOpts(a, 130);
     Game.projectiles.push(new Projectile(
       p.x + Math.cos(a) * 16, p.y + Math.sin(a) * 16, a,
       {
-        speed: 720, dmg: 40 * p.power(), r: 9, life: 1.15, pierce: true, type: 'spear',
+        speed: 720, dmg: (blood ? 56 : 40) * p.power(), r: 9, life: 1.15, pierce: true, type: 'spear',
         root: o.root ? 2 : 0, slowOnHit: o.slow || 0
       }
     ));
@@ -176,17 +207,24 @@ const SKILL_FX = {
   },
 
   deathNova(p) {
+    // Blood Nova rune: +50% damage, paid for in blood.
+    const blood = Hero.rune('deathNova') === 'bloodNova';
+    if (blood) {
+      const lifeCost = p.maxHp * 0.02;
+      if (p.hp <= lifeCost + 1) return false;
+      p.hp -= lifeCost;
+    }
     const R = 190;
     fxNova(p.x, p.y, R);
     World.smash(p.x, p.y, R);
-    // Bloodtide Blade: Death Nova swells with the crowd around you.
-    let mult = 1;
+    // Bloodtide Blade: +350% Death Nova damage per enemy near you.
+    let mult = blood ? 1.5 : 1;
     if (p.powers && p.powers.bloodtide) {
       let near = 0;
       for (const e of Game.enemies) {
         if (!e.dead && !e.sleep && dist(p.x, p.y, e.x, e.y) < 220) near++;
       }
-      mult = 1 + 0.08 * Math.min(15, near);
+      mult *= 1 + 3.5 * Math.min(15, near);
     }
     for (const e of Game.enemies) {
       if (e.dead || e.sleep || e.spawnT > 0) continue;
@@ -202,21 +240,27 @@ const SKILL_FX = {
 
   boneArmor(p) {
     const set = p.setCount || 0;
+    const kalan = p.powers && p.powers.wisdomOfKalan; // 5 extra stacks, 75% DR cap, bigger shield
+    const stun = Hero.rune('boneArmor') === 'dislocation';
     World.smash(p.x, p.y, 150);
     let hits = 0;
     for (const e of Game.enemies) {
       if (e.dead || e.sleep || e.spawnT > 0) continue;
       if (dist(p.x, p.y, e.x, e.y) < 150 + e.r) {
+        const o = boneOpts(angleTo(p.x, p.y, e.x, e.y), 80);
+        if (stun) o.root = Math.max(o.root || 0, 2); // Dislocation: stunned
         // Inarius 2pc: Bone Armor damage x10.
-        e.hurt(12 * (set >= 2 ? 10 : 1) * p.power(), boneOpts(angleTo(p.x, p.y, e.x, e.y), 80));
+        e.hurt(12 * (set >= 2 ? 10 : 1) * p.power(), o);
         hits++;
       }
     }
-    const shieldGain = (14 + hits * 7) * (set >= 2 ? 2 : 1);
-    p.shield = Math.min((p.shieldMax + Hero.level) * (set >= 2 ? 2 : 1), p.shield + shieldGain);
+    const shieldGain = (14 + hits * 7) * (set >= 2 ? 2 : 1) * (kalan ? 1.5 : 1);
+    p.shield = Math.min((p.shieldMax + Hero.level) * (set >= 2 ? 2 : 1) * (kalan ? 1.5 : 1), p.shield + shieldGain);
     // Inarius 4pc: damage reduction per enemy hit; 6pc: the tornado spins up.
+    // Wisdom of Kalan grants DR even without the set and raises the cap.
     p.boneArmorT = 15;
-    p.boneArmorDR = set >= 4 ? Math.min(0.6, hits * 0.03) : 0;
+    const stacks = hits + (kalan ? 5 : 0);
+    p.boneArmorDR = (set >= 4 || kalan) ? Math.min(kalan ? 0.75 : 0.6, stacks * 0.03) : 0;
     if (set >= 6) {
       Particles.ring(p.x, p.y, 150, '#4ade80', 5, 0.6);
       AudioSys.sfx('tornado');
@@ -265,7 +309,7 @@ const SKILL_FX = {
 
   corpseExplosion(p, a) {
     const pt = aimPoint(a, 200);
-    const BLAST = 130;
+    const BLAST = Hero.rune('corpseExplosion') === 'bloodyMess' ? 156 : 130; // Bloody Mess: +20% radius
     let corpses;
     if (Skills.lotd > 0) {
       corpses = [{ x: pt.x, y: pt.y, consume() {} }, { x: pt.x + rand(-50, 50), y: pt.y + rand(-50, 50), consume() {} }];
@@ -438,9 +482,15 @@ const SKILL_FX = {
     for (const m of Game.minions) {
       if (!m.dead && m.kind === 'sim') m.dead = true;
     }
-    const s = new Minion(p.x + Math.cos(a + Math.PI / 2) * 42, p.y + Math.sin(a + Math.PI / 2) * 42, 'sim');
-    s.facing = p.facing;
-    Game.minions.push(s);
+    const twins = Hero.rune('simulacrum') === 'bloodAndBone' ? 2 : 1; // Blood and Bone: TWO clones
+    const eternal = p.powers && p.powers.hauntedVisions;             // Haunted Visions: forever
+    for (let i = 0; i < twins; i++) {
+      const sa = a + Math.PI / 2 + i * Math.PI;
+      const s = new Minion(p.x + Math.cos(sa) * 42, p.y + Math.sin(sa) * 42, 'sim');
+      s.facing = p.facing;
+      if (eternal) s.life = Infinity;
+      Game.minions.push(s);
+    }
     AudioSys.sfx('curse');
     return true;
   }
@@ -452,6 +502,7 @@ const Skills = {
   cds: {},          // skill id -> seconds remaining
   lotd: 0,          // Land of the Dead time remaining
   lotdSpawn: 0,
+  ironRoseCd: 0,    // Iron Rose free-nova throttle
   byId: {},
 
   init() {
@@ -462,6 +513,7 @@ const Skills = {
   reset() {
     this.cds = {};
     this.lotd = 0;
+    this.ironRoseCd = 0;
   },
 
   slotSkill(slot) {
@@ -489,6 +541,7 @@ const Skills = {
     for (const k of Object.keys(this.cds)) {
       this.cds[k] = Math.max(0, this.cds[k] - dt);
     }
+    this.ironRoseCd = Math.max(0, this.ironRoseCd - dt);
     if (this.lotd > 0) {
       this.lotd -= dt;
       this.lotdSpawn -= dt;
@@ -529,26 +582,26 @@ const Skills = {
     }
   },
 
-  // Simulacrum copies Secondary casts at half power.
+  // Every Simulacrum copies Secondary casts at half power.
   mirror(id, a) {
-    let sim = null;
-    for (const m of Game.minions) if (!m.dead && m.kind === 'sim') sim = m;
-    if (!sim) return;
     const p = Game.player;
-    if (id === 'boneSpear') {
-      const tgt = nearestEnemy(sim.x, sim.y, 700);
-      const sa = tgt ? angleTo(sim.x, sim.y, tgt.x, tgt.y) : a;
-      Game.projectiles.push(new Projectile(sim.x, sim.y, sa, {
-        speed: 720, dmg: 20 * p.power(), r: 9, life: 1.15, pierce: true, type: 'spear'
-      }));
-    } else if (id === 'deathNova') {
-      const R = 190;
-      fxNova(sim.x, sim.y, R);
-      World.smash(sim.x, sim.y, R);
-      for (const e of Game.enemies) {
-        if (e.dead || e.sleep) continue;
-        const d = dist(sim.x, sim.y, e.x, e.y);
-        if (d < R) e.hurt(17 * p.power());
+    for (const sim of Game.minions) {
+      if (sim.dead || sim.kind !== 'sim') continue;
+      if (id === 'boneSpear') {
+        const tgt = nearestEnemy(sim.x, sim.y, 700);
+        const sa = tgt ? angleTo(sim.x, sim.y, tgt.x, tgt.y) : a;
+        Game.projectiles.push(new Projectile(sim.x, sim.y, sa, {
+          speed: 720, dmg: 20 * p.power(), r: 9, life: 1.15, pierce: true, type: 'spear'
+        }));
+      } else if (id === 'deathNova') {
+        const R = 190;
+        fxNova(sim.x, sim.y, R);
+        World.smash(sim.x, sim.y, R);
+        for (const e of Game.enemies) {
+          if (e.dead || e.sleep) continue;
+          const d = dist(sim.x, sim.y, e.x, e.y);
+          if (d < R) e.hurt(17 * p.power());
+        }
       }
     }
   }

@@ -120,7 +120,10 @@ const UI = {
     ctx.font = `${o.bold === false ? '' : 'bold '}${o.size || 14}px Georgia`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(label, x + w / 2, y + h / 2 + 1);
-    if (!o.disabled && cb) this.register(x, y, w, h, cb);
+    if (!o.disabled && cb) {
+      this.register(x, y, w, h, cb);
+      this.hits[this.hits.length - 1].label = label; // findable in tests
+    }
   },
 
   panel(ctx, x, y, w, h, title) {
@@ -216,11 +219,11 @@ const UI = {
       ctx.fillStyle = '#57b894';
       ctx.fillText(Math.round(Game.fps) + ' fps', 8 + (this.safe ? this.safe.left : 0), H - 12);
     }
-    if (Game.cheats.god || Game.cheats.essence) {
+    if (Hero.cheats.god || Hero.cheats.essence) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 11px Georgia';
       ctx.fillStyle = '#e04a5a';
-      ctx.fillText('DEV' + (Game.cheats.god ? ' · GOD' : '') + (Game.cheats.essence ? ' · ∞' : ''), W / 2, H - 12);
+      ctx.fillText('DEV' + (Hero.cheats.god ? ' · GOD' : '') + (Hero.cheats.essence ? ' · ∞' : ''), W / 2, H - 12);
     }
     this.drawToasts(ctx, W);
     this.drawJoystick(ctx);

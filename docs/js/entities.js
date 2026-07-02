@@ -41,6 +41,10 @@ class Player {
     this.essence = 60;
     this.setCount = 0;
     this.powers = {};
+    this.funeraryT = 0;       // Funerary Pick: +20% per drained target
+    this.funeraryStacks = 0;
+    this.powerShiftT = 0;     // Siphon Blood Power Shift rune stacks
+    this.powerShiftStacks = 0;
     this.boneArmorT = 0;     // Inarius: Bone Armor buff window
     this.boneArmorDR = 0;    // 4pc damage reduction
     this.tornadoTick = 0;    // 6pc bone tornado
@@ -57,6 +61,8 @@ class Player {
       }
       m *= 1 + 0.015 * Math.min(20, cursed);
     }
+    if (this.funeraryT > 0) m *= 1 + 0.20 * this.funeraryStacks;   // Funerary Pick
+    if (this.powerShiftT > 0) m *= 1 + 0.10 * this.powerShiftStacks; // Power Shift rune
     return m;
   }
 
@@ -67,6 +73,10 @@ class Player {
     this.invuln = Math.max(0, this.invuln - dt);
     this.potionCd = Math.max(0, this.potionCd - dt);
     this.speedBuffT = Math.max(0, this.speedBuffT - dt);
+    this.funeraryT = Math.max(0, this.funeraryT - dt);
+    if (this.funeraryT <= 0) this.funeraryStacks = 0;
+    this.powerShiftT = Math.max(0, this.powerShiftT - dt);
+    if (this.powerShiftT <= 0) this.powerShiftStacks = 0;
     if (this.shrine) {
       this.shrine.t -= dt;
       if (this.shrine.t <= 0) this.shrine = null;
@@ -109,8 +119,12 @@ class Player {
       regen += 1.5 * Math.min(8, near);
     }
     if (regen > 0) this.heal(regen * dt);
+    // Haunted Visions: the eternal Simulacrum feeds on your life.
+    if (this.powers.hauntedVisions && Game.minions.some(mn => !mn.dead && mn.kind === 'sim')) {
+      this.hp = Math.max(1, this.hp - this.maxHp * 0.05 * dt);
+    }
     this.essence = clamp(this.essence + this.essenceRegen * dt, 0, this.maxEssence);
-    if (Game.cheats.essence) this.essence = this.maxEssence;
+    if (Hero.cheats.essence) this.essence = this.maxEssence;
     this.shield = Math.max(0, this.shield - dt * 1.2);
 
     // Grace of Inarius: Bone Armor buff window + the 6pc bone tornado.
@@ -157,7 +171,7 @@ class Player {
 
   hurt(dmg) {
     if (this.dead || this.invuln > 0 || this.dash) return;
-    if (Game.cheats.god) return;
+    if (Hero.cheats.god) return;
     if (Hero.hasPassive('standAlone') && Game.minions.length === 0) dmg *= 0.75;
     if (this.shrine && this.shrine.buff === 'blessed') dmg *= 0.75;
     if (this.boneArmorT > 0 && this.boneArmorDR > 0) dmg *= 1 - this.boneArmorDR;
@@ -516,10 +530,10 @@ class Enemy {
       if (this.curse.type === 'leech' && p && !p.dead) p.heal(p.maxHp * 0.012);
       if (p && p.powers && p.powers.corrodedFang) dmg *= 1.6; // Trag'Oul's Corroded Fang
     }
-    // Krysbin's Sentence: punished while controlled.
-    if (p && p.powers && p.powers.krysbin &&
-        (this.slow > 0 || this.root > 0 || (this.curse && this.curse.type === 'decrepify'))) {
-      dmg *= 1.75;
+    // Krysbin's Sentence: +75% vs slowed, TRIPLE vs stunned/rooted.
+    if (p && p.powers && p.powers.krysbin) {
+      if (this.root > 0 || this.state === 'stunned') dmg *= 3;
+      else if (this.slow > 0 || (this.curse && this.curse.type === 'decrepify')) dmg *= 1.75;
     }
     if (this.vulnT > 0) dmg *= 1.5; // Inarius 6pc: shredded by the tornado
     this.hp -= dmg;
