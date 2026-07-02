@@ -758,7 +758,7 @@ const Screens = {
           UI.tip(bx0 + ri * (bw + 6), fy + 52, bw, 22,
             r.name + (locked ? '  (lvl ' + r.lvl + ')' : ''), r.desc);
           UI.btn(ctx, bx0 + ri * (bw + 6), fy + 52, bw, 22,
-            locked ? r.name + ' · L' + r.lvl : r.name, locked ? null : () => {
+            this.fitText(ctx, locked ? r.name + ' L' + r.lvl : r.name, bw - 8), locked ? null : () => {
               Hero.runes[s.id] = r.id;
               Hero.save();
               UI.toast(r.name + ': ' + r.desc, '#6ff7c3');
