@@ -241,11 +241,11 @@ const Screens = {
         () => { UI.close(); Game.state = 'map'; }],
       ['ADVENTURE MODE', 'A randomized land at your level, new every visit', '#ffd76a',
         () => { UI.close(); Game.startAdventure(); }],
-      ['RIFT  (levels 1–69)', 'Fill the rift, slay the Guardian — it may drop a Rift Key', '#b06adf',
+      ['RIFT  (levels 1–69)', 'Gather 250 orb points from rare elites, then slay the Guardian', '#b06adf',
         () => { UI.close(); Game.startRift('normal'); }],
       ['NEPHALEM RIFT  (level 70)', at70
-        ? 'Consumes a Rift Key · Guardians drop Grace of Inarius pieces'
-        : 'Opens at level 70 · requires a Rift Key', '#4ade80',
+        ? 'Uses a Nephalem Rift Key · 750 points · Guardians drop Master keys & set pieces'
+        : 'Opens at level 70 · requires a Nephalem Rift Key', '#4ade80',
         at70 && Hero.riftKeys > 0 ? () => { UI.close(); Game.startRift('greater'); } : null],
       ['SEASONS', at70 ? SEASON.name : 'The season begins at level 70', '#4ade80',
         at70 ? () => UI.open('season') : null]
@@ -264,8 +264,9 @@ const Screens = {
     }
     ctx.textAlign = 'center';
     ctx.font = 'bold 12px Georgia';
-    ctx.fillStyle = Hero.riftKeys > 0 ? '#b06adf' : '#544d44';
-    ctx.fillText('◈ Rift Keys: ' + Hero.riftKeys + '   ·   Rifts cleared: ' + Hero.riftsCleared, W / 2, y + 8);
+    ctx.fillStyle = '#b06adf';
+    ctx.fillText('◈ Nephalem Keys: ' + Hero.riftKeys + '   ·   ◈ Master Keys: ' + Hero.masterKeys +
+      '   ·   Cleared: ' + Hero.riftsCleared, W / 2, y + 8);
   },
 
   // ---------------------------------------------------------------- map
@@ -2039,16 +2040,18 @@ const Screens = {
       y = wrapText(ctx, `(${b.pieces}) ${b.desc}` + (active ? '  ✓' : ''), px + 24, y, pw - 48, 14, 2) + 2;
     }
     y += 8;
-    const hasKey = Hero.riftKeys > 0;
+    // The season is a Master Nephalem Rift: 1500 points, costs a Master key.
+    const hasMaster = Hero.masterKeys > 0;
     UI.btn(ctx, px + 16, y, pw - 32, 44,
-      hasKey ? `◈ ENTER THE NEPHALEM RIFT  (uses 1 of ${Hero.riftKeys} keys)` : '◈ NEED A RIFT KEY — slay normal Rift Guardians',
-      hasKey ? () => { UI.close(); Game.startRift('greater'); } : null,
-      { size: 13, disabled: !hasKey, border: '#3a7a4a', color: '#4ade80' });
+      hasMaster ? `◈ MASTER NEPHALEM RIFT — 1500 pts  (uses 1 of ${Hero.masterKeys} Master keys)`
+        : '◈ NEED A MASTER NEPHALEM RIFT KEY — slay Nephalem Rift Guardians',
+      hasMaster ? () => { UI.close(); Game.startRift('season'); } : null,
+      { size: 12, disabled: !hasMaster, border: '#3a7a4a', color: '#4ade80' });
     y += 52;
     ctx.textAlign = 'center';
     ctx.font = '10px Georgia';
     ctx.fillStyle = '#6f6552';
-    ctx.fillText('Rifts cleared: ' + Hero.riftsCleared + '  ·  Nephalem Guardians always drop set pieces', W / 2, y);
+    ctx.fillText('◈ Master Keys: ' + Hero.masterKeys + '  ·  Nephalem Guardians drop Master keys & set pieces', W / 2, y);
   },
 
   // ------------------------------------------------------ pause / death
