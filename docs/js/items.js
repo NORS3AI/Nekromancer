@@ -396,13 +396,15 @@ const Items = {
 
   // Each enchant on an item drives the next one's price up, D3-style.
   // The Mystic trades in gold and Forgotten Souls only; training softens
-  // both the base price and the escalation.
+  // both the base price and the escalation. Cheap for low rarities and
+  // low-level gear so enchanting is useful from the start.
   enchantCost(item) {
     const n = item.enchants || 0;
     const d = this.artisanDiscount('mystic');
     const escal = 0.5 * (1 - Hero.artisans.mystic / 200);
+    const rarityMult = [0.4, 0.6, 1.0, 1.6, 1.8][item.rarity] || 1;
     return {
-      gold: Math.round((400 + item.mLvl * 60) * (1 + n * escal) * d),
+      gold: Math.round((80 + item.mLvl * 28) * rarityMult * (1 + n * escal) * d),
       soul: (item.rarity >= 3 ? 2 : 1) + Math.floor(n / 2)
     };
   },

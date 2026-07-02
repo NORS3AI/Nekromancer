@@ -64,6 +64,10 @@ loot at the artisans. The hero is persistent (localStorage).
 - **Artisan resource lanes (owner rule)**: Blacksmith = gold/parts/dust/crystals;
   Mystic = gold + Forgotten Souls ONLY; Jeweler = gold + gems ONLY. Unsocketing is
   free (Jeweler has an UNSOCKET row); salvage always returns socketed gems.
+- Enchant gold cost is rarity-scaled (0.4/0.6/1.0/1.6/1.8 ×) over a low base
+  (80 + 28·mLvl) so early commons cost tens of gold, not hundreds (owner rule).
+- Popup panels swallow taps on their dead space (`UI.panelRects`, filled by
+  `UI.panel()`); only taps OUTSIDE the panel close a menu. Never regress this.
 - **Endgame (level 70)**: `SEASON` screen in camp → `Game.startRift()` (Nephalem Rift:
   kill-to-fill progress bar → Guardian → guaranteed `INARIUS_SET` piece; scaling via
   `Hero.riftsCleared`). Set bonuses hook: skills.js `boneArmor` (2/4pc) + Player.update

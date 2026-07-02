@@ -20,6 +20,7 @@ const UI = {
   clearHits() {
     this.hits = [];
     this.sliderRegs = [];
+    this.panelRects = [];
     this.overlayBarrier = 0;
   },
 
@@ -85,7 +86,11 @@ const UI = {
       }
     }
     if (this.screen) {
-      // Tap outside any control closes the menu (reward stays until its button).
+      // Dead space INSIDE a popup panel just swallows the tap; only taps
+      // outside the panel close the menu (reward stays until its button).
+      for (const r of this.panelRects || []) {
+        if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) return true;
+      }
       if (this.screen !== 'reward') this.close();
       return true;
     }
@@ -123,6 +128,7 @@ const UI = {
   },
 
   panel(ctx, x, y, w, h, title) {
+    (this.panelRects = this.panelRects || []).push({ x, y, w, h });
     ctx.fillStyle = 'rgba(10,7,14,0.94)';
     rr(ctx, x, y, w, h, 12); ctx.fill();
     ctx.strokeStyle = '#4a4356';
