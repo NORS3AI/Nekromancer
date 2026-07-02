@@ -32,6 +32,7 @@ const Screens = {
       case 'cheats': this.cheats(ctx, W, H); break;
       case 'patchnotes': this.patchnotes(ctx, W, H); break;
       case 'season': this.season(ctx, W, H); break;
+      case 'wilds': this.wilds(ctx, W, H); break;
     }
   },
 
@@ -181,14 +182,12 @@ const Screens = {
 
     // Hub buttons.
     const items = [
-      ['WAYPOINT MAP', () => { Game.state = 'map'; }, '#6ff7c3'],
+      ['⛰ THE WILDS', () => UI.open('wilds'), '#6ff7c3'],
       ['INVENTORY', () => UI.open('radial'), '#e8e0cc'],
       ['SKILLS & PASSIVES', () => UI.open('skills'), '#e8e0cc'],
       ['BLACKSMITH', () => UI.open('smith'), '#ffb43a'],
       ['JEWELER', () => UI.open('jeweler'), '#b06adf'],
       ['MYSTIC', () => UI.open('mystic'), '#4ecbe0'],
-      [Hero.level >= MAX_LEVEL ? '◈ SEASON: THE RIFT' : '◈ SEASON (level 70)',
-        Hero.level >= MAX_LEVEL ? () => UI.open('season') : null, '#4ade80'],
       ['SETTINGS', () => UI.open('settings'), '#9a9080']
     ];
     const cols = W > 560 ? 2 : 1;
@@ -210,16 +209,62 @@ const Screens = {
     ctx.fillText('Progress: ' + Hero.zonesCleared + ' / ' + ZONES.length + ' lands cleared', W / 2, H - 16);
   },
 
+  // -------------------------------------------------------------- wilds
+  // The gateway to everything beyond camp.
+
+  wilds(ctx, W, H) {
+    this.dim(ctx, W, H);
+    this.closeX(ctx, W);
+    const pw = Math.min(540, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 16, 420);
+    const py = Math.max(8, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, '⛰ THE WILDS');
+
+    const at70 = Hero.level >= MAX_LEVEL;
+    const rows = [
+      ['BOUNTIES', 'The lands of Sanctuary — hunt each land\'s unique boss', '#6ff7c3',
+        () => { UI.close(); Game.state = 'map'; }],
+      ['ADVENTURE MODE', 'A randomized land at your level, new every visit', '#ffd76a',
+        () => { UI.close(); Game.startAdventure(); }],
+      ['RIFT  (levels 1–69)', 'Fill the rift, slay the Guardian — it may drop a Rift Key', '#b06adf',
+        () => { UI.close(); Game.startRift('normal'); }],
+      ['NEPHALEM RIFT  (level 70)', at70
+        ? 'Consumes a Rift Key · Guardians drop Grace of Inarius pieces'
+        : 'Opens at level 70 · requires a Rift Key', '#4ade80',
+        at70 && Hero.riftKeys > 0 ? () => { UI.close(); Game.startRift('greater'); } : null],
+      ['SEASONS', at70 ? SEASON.name : 'The season begins at level 70', '#4ade80',
+        at70 ? () => UI.open('season') : null]
+    ];
+    let y = py + 52;
+    for (const [label, desc, col, cb] of rows) {
+      UI.btn(ctx, px + 16, y, pw - 32, 56, '', cb, { disabled: !cb });
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 14px Georgia';
+      ctx.fillStyle = cb ? col : '#5c5569';
+      ctx.fillText(label, px + 30, y + 20);
+      ctx.font = '11px Georgia';
+      ctx.fillStyle = cb ? '#9a9080' : '#453f52';
+      ctx.fillText(this.fitText(ctx, desc, pw - 60), px + 30, y + 38);
+      y += 62;
+    }
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 12px Georgia';
+    ctx.fillStyle = Hero.riftKeys > 0 ? '#b06adf' : '#544d44';
+    ctx.fillText('◈ Rift Keys: ' + Hero.riftKeys + '   ·   Rifts cleared: ' + Hero.riftsCleared, W / 2, y + 8);
+  },
+
   // ---------------------------------------------------------------- map
 
   map(ctx, W, H) {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 24px Georgia';
     ctx.fillStyle = '#c9bfa8';
-    ctx.fillText('WAYPOINTS OF SANCTUARY', W / 2, 30);
+    ctx.fillText('BOUNTIES OF SANCTUARY', W / 2, 30);
 
-    // Difficulty stepper.
-    const maxDiff = Math.min(DIFFICULTIES.length - 1, Hero.zonesCleared >= ZONES.length ? DIFFICULTIES.length - 1 : 3);
+    // Difficulty stepper — Torment I–XVI unlock at level 70.
+    const maxDiff = Hero.level >= MAX_LEVEL ? DIFFICULTIES.length - 1 : 3;
+    Hero.difficulty = Math.min(Hero.difficulty, maxDiff);
     const dw = Math.min(340, W - 24);
     const dx = W / 2 - dw / 2;
     UI.btn(ctx, dx, 50, 44, 36, '◀', () => {
@@ -235,7 +280,13 @@ const Screens = {
     ctx.fillText(DIFFICULTIES[Hero.difficulty].name, W / 2, 68);
     ctx.font = '10px Georgia';
     ctx.fillStyle = '#9a9080';
-    ctx.fillText(`monsters ×${DIFFICULTIES[Hero.difficulty].mult}  ·  rewards ×${DIFFICULTIES[Hero.difficulty].reward}`, W / 2, 84);
+    const D = DIFFICULTIES[Hero.difficulty];
+    ctx.fillText(`monsters ×${D.mult}  ·  rewards ×${D.reward}` +
+      (D.legBonus ? `  ·  +${(D.legBonus * 100).toFixed(1)}% legendary` : ''), W / 2, 84);
+    if (Hero.level < MAX_LEVEL) {
+      ctx.fillStyle = '#544d44';
+      ctx.fillText('Torment I–XVI unlock at level 70', W / 2, 96);
+    }
 
     const pw = Math.min(560, W - 24);
     const px = W / 2 - pw / 2;
@@ -1524,28 +1575,61 @@ const Screens = {
 
   // -------------------------------------------------------- patch notes
 
+  // Full-length notes — nothing truncated, nothing off screen. Content
+  // scrolls inside the panel via the ▲/▼ buttons when it overflows.
   patchnotes(ctx, W, H) {
     this.dim(ctx, W, H);
     this.closeX(ctx, W);
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 16, 480);
+    const ph = Math.min(H - 16, 520);
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, 'PATCH NOTES');
-    let y = py + 54;
+
+    if (UI.sel.scroll === undefined) UI.sel.scroll = 0;
+    const top = py + 48;
+    const viewH = ph - 60;
+
+    // Clip the scrolling content to the panel.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(px + 4, top, pw - 8, viewH);
+    ctx.clip();
+
+    let y = top + 8 - UI.sel.scroll;
     for (const patch of PATCH_NOTES) {
-      ctx.textAlign = 'left';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 14px Georgia';
       ctx.fillStyle = '#57b894';
       ctx.fillText(patch.v + '   —   ' + patch.date, px + 16, y);
-      y += 20;
+      y += 22;
       ctx.font = '11px Georgia';
-      ctx.fillStyle = '#b5ab94';
       for (const n of patch.notes) {
-        if (y > py + ph - 20) break;
-        y = wrapText(ctx, '• ' + n, px + 22, y, pw - 44, 14, 2) + 4;
+        ctx.fillStyle = '#b5ab94';
+        // Generous line budget: never ellipsize a note.
+        y = wrapText(ctx, '• ' + n, px + 22, y, pw - 74, 14, 30) + 4;
       }
-      y += 10;
+      y += 14;
+    }
+    ctx.restore();
+
+    // Scroll controls when the content is taller than the panel.
+    const contentH = (y + UI.sel.scroll) - (top + 8);
+    const maxScroll = Math.max(0, contentH - viewH + 16);
+    UI.sel.scroll = clamp(UI.sel.scroll, 0, maxScroll);
+    if (maxScroll > 0) {
+      UI.btn(ctx, px + pw - 44, top + 4, 34, 40, '▲',
+        UI.sel.scroll > 0 ? () => { UI.sel.scroll = Math.max(0, UI.sel.scroll - 130); } : null,
+        { size: 14, disabled: UI.sel.scroll <= 0 });
+      UI.btn(ctx, px + pw - 44, top + viewH - 44, 34, 40, '▼',
+        UI.sel.scroll < maxScroll ? () => { UI.sel.scroll = Math.min(maxScroll, UI.sel.scroll + 130); } : null,
+        { size: 14, disabled: UI.sel.scroll >= maxScroll });
+      // Scroll position hint.
+      ctx.fillStyle = '#3a3448';
+      ctx.fillRect(px + pw - 29, top + 50, 4, viewH - 100);
+      ctx.fillStyle = '#57b894';
+      const kH = Math.max(20, (viewH / (contentH || 1)) * (viewH - 100));
+      ctx.fillRect(px + pw - 29, top + 50 + (UI.sel.scroll / maxScroll) * (viewH - 100 - kH), 4, kH);
     }
   },
 
@@ -1592,15 +1676,16 @@ const Screens = {
       y = wrapText(ctx, `(${b.pieces}) ${b.desc}` + (active ? '  ✓' : ''), px + 24, y, pw - 48, 14, 2) + 2;
     }
     y += 8;
-    UI.btn(ctx, px + 16, y, pw - 32, 44, '◈ ENTER THE NEPHALEM RIFT', () => {
-      UI.close();
-      Game.startRift();
-    }, { size: 14, border: '#3a7a4a', color: '#4ade80' });
+    const hasKey = Hero.riftKeys > 0;
+    UI.btn(ctx, px + 16, y, pw - 32, 44,
+      hasKey ? `◈ ENTER THE NEPHALEM RIFT  (uses 1 of ${Hero.riftKeys} keys)` : '◈ NEED A RIFT KEY — slay normal Rift Guardians',
+      hasKey ? () => { UI.close(); Game.startRift('greater'); } : null,
+      { size: 13, disabled: !hasKey, border: '#3a7a4a', color: '#4ade80' });
     y += 52;
     ctx.textAlign = 'center';
     ctx.font = '10px Georgia';
     ctx.fillStyle = '#6f6552';
-    ctx.fillText('Rifts cleared: ' + Hero.riftsCleared + '  ·  Guardians always drop set pieces', W / 2, y);
+    ctx.fillText('Rifts cleared: ' + Hero.riftsCleared + '  ·  Nephalem Guardians always drop set pieces', W / 2, y);
   },
 
   // ------------------------------------------------------ pause / death

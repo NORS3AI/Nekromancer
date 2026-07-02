@@ -9,11 +9,35 @@ const Items = {
 
   // ------------------------------------------------------------ generation
 
+  // Owner-specified drop table (before difficulty modifiers):
+  //   Common/trash 55% · Magic 20% · Rare 10% · Epic 5% · Legendary 1%,
+  //   with the leftover 4% "overlap" split between Rare and Epic (+2% each).
+  // Legendary by HERO level: 1% (1–59), 2.29% (60–69), 2.89% (70).
+  // Torment I–XVI add their flat legBonus (+1% … +33.3%) on top.
+  // `boost` (elites, bosses, masterwork) tilts the whole table upward;
+  // negative boost (vendor junk) tilts it down.
   rollRarity(boost = 0) {
-    const r = Math.random() - boost;
-    if (r < 0.035) return 3;
-    if (r < 0.17) return 2;
-    if (r < 0.50) return 1;
+    const lvl = Hero.level;
+    let leg = lvl >= 70 ? 0.0289 : lvl >= 60 ? 0.0229 : 0.01;
+    leg += (DIFFICULTIES[Hero.difficulty].legBonus || 0);
+    let epic = 0.05 + 0.02;
+    let rare = 0.10 + 0.02;
+    let magic = 0.20;
+    if (boost > 0) {
+      leg += boost * 0.25;
+      epic += boost * 0.35;
+      rare += boost * 0.5;
+    } else if (boost < 0) {
+      leg = 0;
+      epic = Math.max(0, epic + boost * 0.2);
+      rare = Math.max(0.04, rare + boost * 0.3);
+      magic = Math.max(0.10, magic + boost * 0.4);
+    }
+    const r = Math.random();
+    if (r < leg) return 4;
+    if (r < leg + epic) return 3;
+    if (r < leg + epic + rare) return 2;
+    if (r < leg + epic + rare + magic) return 1;
     return 0;
   },
 
@@ -34,9 +58,10 @@ const Items = {
     for (let i = 0; i < rarity; i++) addStat(pick(pool), 0.85 * R.mult);
 
     // Sockets: rarer items are likelier to bear one.
-    const sockets = Math.random() < [0.06, 0.14, 0.25, 0.5][rarity] ? 1 : 0;
+    const sockets = Math.random() < [0.06, 0.14, 0.25, 0.38, 0.5, 0.6][rarity] ? 1 : 0;
 
-    const prefix = rarity === 3 ? pick(LEGENDARY_PREFIX)
+    const prefix = rarity >= 4 ? pick(LEGENDARY_PREFIX)
+      : rarity === 3 ? pick(EPIC_PREFIX)
       : rarity === 2 ? pick(RARE_PREFIX)
       : rarity === 1 ? pick(MAGIC_PREFIX) : '';
     const name = (prefix ? prefix + ' ' : '') + pick(def.nouns);
@@ -56,7 +81,7 @@ const Items = {
     const missing = Object.keys(INARIUS_SET.pieces).filter(s => !owned.has(s));
     const slot = missing.length ? pick(missing) : pick(Object.keys(INARIUS_SET.pieces));
     const def = ITEM_SLOTS[slot];
-    const R = RARITIES[4];
+    const R = RARITIES[5];
     const lvlScale = 1 + mLvl * 0.11;
     const stats = {};
     const addStat = (key, mult) => {
@@ -66,7 +91,7 @@ const Items = {
     const pool = Object.keys(AFFIX_ROLLS).filter(k => k !== def.primary);
     for (let i = 0; i < 3; i++) addStat(pick(pool), 0.9 * R.mult);
     return {
-      slot, rarity: 4, set: 'inarius',
+      slot, rarity: 5, set: 'inarius',
       name: INARIUS_SET.pieces[slot],
       stats, mLvl, sockets: 1, gem: null
     };
@@ -77,7 +102,7 @@ const Items = {
     const key = pick(Object.keys(LEGENDARY_POWERS));
     const P = LEGENDARY_POWERS[key];
     const item = this.generate(mLvl, 0, P.slot);
-    item.rarity = 3;
+    item.rarity = 4;
     item.name = P.name;
     item.power = key;
     if (!item.sockets) item.sockets = Math.random() < 0.4 ? 1 : 0;
@@ -402,10 +427,10 @@ const Items = {
     const n = item.enchants || 0;
     const d = this.artisanDiscount('mystic');
     const escal = 0.5 * (1 - Hero.artisans.mystic / 200);
-    const rarityMult = [0.4, 0.6, 1.0, 1.6, 1.8][item.rarity] || 1;
+    const rarityMult = [0.4, 0.6, 1.0, 1.3, 1.6, 1.8][item.rarity] || 1;
     return {
       gold: Math.round((80 + item.mLvl * 28) * rarityMult * (1 + n * escal) * d),
-      soul: (item.rarity >= 3 ? 2 : 1) + Math.floor(n / 2)
+      soul: (item.rarity >= 4 ? 2 : 1) + Math.floor(n / 2)
     };
   },
 

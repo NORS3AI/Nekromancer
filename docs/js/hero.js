@@ -74,8 +74,10 @@ const Hero = {
   bestZone: 0,
   totalKills: 0,
   riftsCleared: 0,
+  riftKeys: 0,
   artisans: { smith: 1, mystic: 1, jeweler: 1 },
   BAG_SIZE: 24,
+  SAVE_VERSION: 2,   // v2: Epic rarity inserted at index 3
 
   fresh() {
     this.level = 1; this.xp = 0; this.gold = 0;
@@ -90,21 +92,39 @@ const Hero = {
     this.bestZone = 0;
     this.totalKills = 0;
     this.riftsCleared = 0;
+    this.riftKeys = 0;
     this.artisans = { smith: 1, mystic: 1, jeweler: 1 };
   },
 
   snapshot() {
     return {
+      v: this.SAVE_VERSION,
       level: this.level, xp: this.xp, gold: this.gold, mats: this.mats,
       gems: this.gems, bag: this.bag, equipped: this.equipped,
       loadout: this.loadout, passives: this.passives,
       zonesCleared: this.zonesCleared, difficulty: this.difficulty,
       bestZone: this.bestZone, totalKills: this.totalKills,
-      riftsCleared: this.riftsCleared, artisans: this.artisans
+      riftsCleared: this.riftsCleared, riftKeys: this.riftKeys,
+      artisans: this.artisans
     };
   },
 
+  // Older saves predate the Epic rarity (index 3): shift Legendary/Set up.
+  migrate(d) {
+    if ((d.v || 1) >= 2) return d;
+    const fix = it => {
+      if (!it) return;
+      if (it.set) it.rarity = 5;
+      else if (it.rarity >= 3) it.rarity = 4;
+    };
+    (d.bag || []).forEach(fix);
+    for (const k of Object.keys(d.equipped || {})) fix(d.equipped[k]);
+    d.v = 2;
+    return d;
+  },
+
   applySnapshot(d) {
+    d = this.migrate(d);
     Object.assign(this, {
       level: d.level || 1, xp: d.xp || 0, gold: d.gold || 0,
       mats: Object.assign({ parts: 0, dust: 0, crystal: 0, soul: 0 }, d.mats),
@@ -113,7 +133,7 @@ const Hero = {
       passives: d.passives || [null, null, null, null],
       zonesCleared: d.zonesCleared || 0, difficulty: d.difficulty || 0,
       bestZone: d.bestZone || 0, totalKills: d.totalKills || 0,
-      riftsCleared: d.riftsCleared || 0,
+      riftsCleared: d.riftsCleared || 0, riftKeys: d.riftKeys || 0,
       artisans: Object.assign({ smith: 1, mystic: 1, jeweler: 1 }, d.artisans)
     });
     this.sanitize();
@@ -131,18 +151,7 @@ const Hero = {
     try {
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return false;
-      const d = JSON.parse(raw);
-      Object.assign(this, {
-        level: d.level || 1, xp: d.xp || 0, gold: d.gold || 0,
-        mats: Object.assign({ parts: 0, dust: 0, crystal: 0, soul: 0 }, d.mats),
-        gems: d.gems || [], bag: d.bag || [], equipped: d.equipped || {},
-        loadout: d.loadout || ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null],
-        passives: d.passives || [null, null, null, null],
-        zonesCleared: d.zonesCleared || 0, difficulty: d.difficulty || 0,
-        bestZone: d.bestZone || 0, totalKills: d.totalKills || 0,
-        riftsCleared: d.riftsCleared || 0,
-        artisans: Object.assign({ smith: 1, mystic: 1, jeweler: 1 }, d.artisans)
-      });
+      this.applySnapshot(JSON.parse(raw));
       return true;
     } catch (e) { return false; }
   },

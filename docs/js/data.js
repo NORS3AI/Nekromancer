@@ -7,19 +7,33 @@
 
 // ------------------------------ rarities -----------------------------------
 
+// Indexes matter: 0 Common · 1 Magic (uncommon) · 2 Rare · 3 Epic ·
+// 4 Legendary · 5 Set. Saves from before Epic existed are migrated on load.
 const RARITIES = [
   { name: 'Common',    color: '#c9bfa8', mult: 1.0, salvage: 'parts',   salvageN: 2 },
   { name: 'Magic',     color: '#6a9aff', mult: 1.4, salvage: 'dust',    salvageN: 2 },
   { name: 'Rare',      color: '#ffd76a', mult: 1.9, salvage: 'crystal', salvageN: 1 },
+  { name: 'Epic',      color: '#b06adf', mult: 2.3, salvage: 'crystal', salvageN: 2 },
   { name: 'Legendary', color: '#ff8c2a', mult: 2.7, salvage: 'soul',    salvageN: 1 },
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.0.2-alpha';
+const GAME_VERSION = 'v0.0.3-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.0.3-alpha', date: 'July 2026',
+    notes: [
+      'THE WILDS: new camp menu holding Seasons, Adventure Mode, Rifts and Bounties (the renamed waypoint map)',
+      'Adventure Mode: a randomized land at your level with a fresh bounty every visit',
+      'Rifts split in two: normal Rifts (levels 1–69) whose Guardians can drop Rift Keys, and Nephalem Rifts (level 70) that consume a key',
+      'New EPIC rarity (purple) between Rare and Legendary',
+      'Drop rates rebuilt: 55% common · 20% magic · 12% rare · 7% epic · legendary 1% (2.29% at 60+, 2.89% at 70)',
+      'Level 70 unlocks Torment I–XVI: +1% legendary at T1 up to +33.3% at T16'
+    ]
+  },
   {
     v: 'v0.0.2-alpha', date: 'July 2026',
     notes: [
@@ -145,6 +159,7 @@ const AFFIX_ROLLS = {
 };
 
 const LEGENDARY_PREFIX = ["Maltorius'", "The Widow's", "Rathma's", "Xul's", "Trag'Oul's", "Mendeln's"];
+const EPIC_PREFIX = ['Fabled', 'Mythic', 'Hallowed', 'Abyssal', 'Deathless', 'Umbral'];
 const RARE_PREFIX = ['Cruel', 'Vicious', 'Dread', 'Baleful', 'Sinister', 'Woeful'];
 const MAGIC_PREFIX = ['Sturdy', 'Sharp', 'Grim', 'Cold', 'Hungry', 'Pale'];
 
@@ -289,32 +304,61 @@ const ZONES = [
 ];
 
 // Difficulty tiers, D3 style. Monsters and rewards scale together.
+// Reaching level 70 unlocks Torment I–XVI; each Torment adds a flat bonus to
+// the legendary drop chance (T1 +1% … T16 +33.3%, owner-specified).
+const ROMANS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI'];
 const DIFFICULTIES = [
-  { name: 'Normal',      mult: 1.0,  reward: 1.0 },
-  { name: 'Hard',        mult: 1.6,  reward: 1.35 },
-  { name: 'Expert',      mult: 2.6,  reward: 1.8 },
-  { name: 'Master',      mult: 4.2,  reward: 2.4 },
-  { name: 'Torment I',   mult: 7.0,  reward: 3.2 },
-  { name: 'Torment II',  mult: 11.5, reward: 4.4 },
-  { name: 'Torment III', mult: 19.0, reward: 6.0 }
-];
+  { name: 'Normal', mult: 1.0, reward: 1.0, legBonus: 0 },
+  { name: 'Hard',   mult: 1.6, reward: 1.35, legBonus: 0 },
+  { name: 'Expert', mult: 2.6, reward: 1.8, legBonus: 0 },
+  { name: 'Master', mult: 4.2, reward: 2.4, legBonus: 0 }
+].concat(ROMANS.map((numeral, i) => ({
+  name: 'Torment ' + numeral,
+  mult: +(7.0 * Math.pow(1.45, i)).toFixed(1),
+  reward: +(3.2 * Math.pow(1.17, i)).toFixed(2),
+  legBonus: +(0.01 + (0.333 - 0.01) * (i / 15)).toFixed(4),
+  torment: i + 1
+})));
 
 const XP_CURVE = lvl => Math.round(60 * Math.pow(lvl, 1.5));
 const MAX_LEVEL = 70;
 
-// Endless endgame dungeon: filled by slaughter, capped by a Guardian.
+// Rifts: filled by slaughter, capped by a Guardian.
+//  - 'normal' rifts (levels 1–69): open to all; Guardians may drop Rift Keys.
+//  - 'greater' Nephalem Rifts (level 70): cost a Rift Key; Guardians drop
+//    Grace of Inarius pieces and legendary powers.
 const RIFT_GUARDIANS = ['Blighter', 'The Choker', 'Bloodmaw', 'Sand Shaper', 'Erethon', 'Man Carver'];
 
-function makeRiftZone() {
+function makeRiftZone(riftKind = 'greater') {
   const theme = pick(ZONES);
+  const greater = riftKind === 'greater';
   return {
-    id: 'rift', name: 'Nephalem Rift', kind: Math.random() < 0.5 ? 'dungeon' : 'open',
-    mLvl: 26 + Math.min(44, (Hero.riftsCleared || 0) * 2),
+    id: 'rift', name: greater ? 'Nephalem Rift' : 'Rift',
+    kind: Math.random() < 0.5 ? 'dungeon' : 'open',
+    mLvl: greater ? 70 + Math.min(12, (Hero.riftsCleared || 0)) : clamp(Hero.level + 2, 1, 69),
     ground: theme.ground, accent: theme.accent,
     weather: pick(['rain', 'wind', null]),
     monsters: ['zombie', 'skeleton', 'archer', 'ghoul', 'imp', 'cultist'],
     boss: pick(RIFT_GUARDIANS) + ', Rift Guardian', packs: 18,
     desc: 'A shard of a broken realm. Fill the rift; face its guardian.',
-    rift: true
+    rift: true, riftKind
+  };
+}
+
+// Adventure Mode: a randomized land at your level with a normal bounty.
+function makeAdventureZone() {
+  const theme = pick(ZONES);
+  const first = pick(['Forgotten', 'Sunken', 'Howling', 'Withered', 'Ashen', 'Silent']);
+  const second = pick(['Reach', 'Barrows', 'Expanse', 'Warrens', 'Fields', 'Depths']);
+  return {
+    id: 'adventure', name: 'The ' + first + ' ' + second,
+    kind: Math.random() < 0.4 ? 'dungeon' : 'open',
+    mLvl: clamp(Hero.level, 1, 70),
+    ground: theme.ground, accent: theme.accent,
+    weather: pick(['rain', 'wind', null, null]),
+    monsters: ['zombie', 'skeleton', 'archer', 'ghoul', 'imp', 'cultist'],
+    boss: pick(ELITE_PREFIX) + pick(ELITE_SUFFIX) + ' the ' + pick(['Endless', 'Vile', 'Forgotten', 'Ravenous']),
+    packs: 13,
+    desc: 'An uncharted stretch of Sanctuary, remade each visit.'
   };
 }
