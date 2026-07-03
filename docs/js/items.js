@@ -54,8 +54,14 @@ const Items = {
       stats[key] = (stats[key] || 0) + roll;
     };
     addStat(def.primary, 1.6 * R.mult);
-    const pool = Object.keys(AFFIX_ROLLS).filter(k => k !== def.primary);
+    // `move` is boots-only, never rolled from the generic pool.
+    const pool = Object.keys(AFFIX_ROLLS).filter(k => k !== def.primary && k !== 'move');
     for (let i = 0; i < rarity; i++) addStat(pick(pool), 0.85 * R.mult);
+
+    // Boots can roll Movement Speed (1%–25%), a flat non-level-scaled roll.
+    if (slot === 'boots' && Math.random() < 0.55) {
+      stats.move = clamp((stats.move || 0) + rand(0.01, 0.25), 0.01, 0.25);
+    }
 
     // Sockets: rarer items are likelier to bear one.
     const sockets = Math.random() < [0.06, 0.14, 0.25, 0.38, 0.5, 0.6][rarity] ? 1 : 0;
@@ -88,8 +94,9 @@ const Items = {
       stats[key] = (stats[key] || 0) + AFFIX_ROLLS[key].base * mult * lvlScale * rand(0.9, 1.2);
     };
     addStat(def.primary, 1.8 * R.mult);
-    const pool = Object.keys(AFFIX_ROLLS).filter(k => k !== def.primary);
+    const pool = Object.keys(AFFIX_ROLLS).filter(k => k !== def.primary && k !== 'move');
     for (let i = 0; i < 3; i++) addStat(pick(pool), 0.9 * R.mult);
+    if (slot === 'boots') stats.move = clamp((stats.move || 0) + rand(0.10, 0.25), 0.01, 0.25);
     return {
       slot, rarity: 5, set: 'inarius',
       name: INARIUS_SET.pieces[slot],
@@ -127,12 +134,21 @@ const Items = {
       lines.push('◈ Grace of Inarius (' + n + '/6 equipped)');
     }
     const gems = item.gems || [];
-    for (const g of gems) lines.push('◆ ' + gemName(g) + ': ' + GEM_TYPES[g.type].label(gemStatValue(g)));
+    const perfectTier = GEM_TIERS.length - 1;
+    for (const g of gems) {
+      // A helm ruby reads as an XP bonus, not damage.
+      if (item.slot === 'helm' && g.type === 'ruby') {
+        const xp = 0.03 + (0.20 - 0.03) * (g.tier / perfectTier);
+        lines.push('◆ ' + gemName(g) + ': +' + Math.round(xp * 100) + '% experience');
+      } else {
+        lines.push('◆ ' + gemName(g) + ': ' + GEM_TYPES[g.type].label(gemStatValue(g)));
+      }
+    }
     const empty = (item.sockets || 0) - gems.length;
     for (let i = 0; i < empty; i++) lines.push('◇ empty socket');
-    // Weapon-slot gem bonuses.
+    // Any Perfect gem, any slot: +20% damage.
+    if (gems.some(g => g.tier >= perfectTier)) lines.push('❢ +20% damage (Perfect gem)');
     if (item.slot === 'weapon') {
-      if (gems.some(g => g.tier >= GEM_TIERS.length - 1)) lines.push('❢ +20% weapon damage (Perfect gem)');
       if (gems.some(g => g.type === 'ruby')) lines.push('❢ +25% weapon damage (ruby)');
       if (Hero.level >= MAX_LEVEL && gems.some(g => g.type === 'emerald')) lines.push('❢ Emerald +20% in weapon (lvl 70)');
       if (Hero.level >= MAX_LEVEL && gems.some(g => g.type === 'ruby')) lines.push('❢ Ruby -5% in weapon (lvl 70)');
@@ -626,13 +642,17 @@ const Items = {
       return 'socket';
     }
     delete item.stats[statKey];
-    // New property: anything the item doesn't already have (incl. a fresh
-    // roll of the one just removed).
-    const pool = Object.keys(AFFIX_ROLLS).filter(k => !(k in item.stats));
+    // New property: anything the item doesn't already have. `move` stays boots-only.
+    const pool = Object.keys(AFFIX_ROLLS).filter(k =>
+      !(k in item.stats) && (k !== 'move' || item.slot === 'boots'));
     const nk = pick(pool);
     const R = RARITIES[item.rarity];
-    item.stats[nk] = AFFIX_ROLLS[nk].base * (nk === ITEM_SLOTS[item.slot].primary ? 1.6 : 0.85)
-      * R.mult * (1 + item.mLvl * 0.11) * rand(0.85, 1.25);
+    if (nk === 'move') {
+      item.stats.move = clamp(rand(0.01, 0.25), 0.01, 0.25);   // flat, not level-scaled
+    } else {
+      item.stats[nk] = AFFIX_ROLLS[nk].base * (nk === ITEM_SLOTS[item.slot].primary ? 1.6 : 0.85)
+        * R.mult * (1 + item.mLvl * 0.11) * rand(0.85, 1.25);
+    }
     this.apply();
     UI.toast(`Enchanted ${item.name}: ${AFFIX_ROLLS[nk].label(item.stats[nk])}`, '#b06adf');
     AudioSys.sfx('gem');
@@ -645,7 +665,8 @@ const Items = {
   // Hero level + gear + gems + passives, as a plain stats object.
   // Works with no live Player (used by the character sheet in camp).
   computeStats() {
-    let dmg = 0, hp = 0, crit = 0, ess = 0, reg = 0, gold = 0;
+    let dmg = 0, hp = 0, crit = 0, ess = 0, reg = 0, gold = 0, armor = 0, move = 0, xpBonus = 0;
+    const perfectTier = GEM_TIERS.length - 1;
     const gather = (it, slot) => {
       if (!it) return;
       dmg += it.stats.dmg || 0;
@@ -654,7 +675,17 @@ const Items = {
       ess += it.stats.ess || 0;
       reg += it.stats.reg || 0;
       gold += it.stats.gold || 0;
+      armor += it.stats.armor || 0;
+      move += it.stats.move || 0;
       for (const g of it.gems || []) {
+        // A Perfect-tier gem grants +20% damage — in ANY slot, per gem.
+        if (g.tier >= perfectTier) dmg += 0.20;
+        // A Ruby in the HELM gives an XP bonus instead of its damage:
+        // 3% (Chipped) → 20% (Perfect).
+        if (slot === 'helm' && g.type === 'ruby') {
+          xpBonus += 0.03 + (0.20 - 0.03) * (g.tier / perfectTier);
+          continue;
+        }
         let v = gemStatValue(g);
         const s = GEM_TYPES[g.type].stat;
         // At level 70, weapon-slot gems are retuned: green +20%, red -5%.
@@ -667,14 +698,15 @@ const Items = {
         else if (s === 'crit') crit += v;
         else if (s === 'ess') ess += v;
         else if (s === 'reg') reg += v;
+        else if (s === 'armor') armor += v;
       }
       // A red gem (ruby) socketed in the weapon: +25% damage.
       if (slot === 'weapon' && (it.gems || []).some(g => g.type === 'ruby')) dmg += 0.25;
-      // A Perfect-tier gem (top quality, any type) in the weapon: +20% damage.
-      if (slot === 'weapon' && (it.gems || []).some(g => g.tier >= GEM_TIERS.length - 1)) dmg += 0.20;
     };
     for (const slot of Object.keys(ITEM_SLOTS)) gather(Hero.equipped[slot], slot);
     const lvl = Hero.level;
+    // Armor → damage reduction (diminishing, level-scaled), capped at 80%.
+    const armorDR = clamp(armor / (armor + 60 + 45 * lvl), 0, 0.80);
     return {
       dmgMult: (1 + (lvl - 1) * 0.09) * (1 + dmg),
       gearDmg: dmg,
@@ -684,6 +716,10 @@ const Items = {
       hpRegen: reg,
       goldFind: 1 + gold,
       maxEssence: 100 + (Hero.hasPassive('overwhelming') ? 40 : 0),
+      armor: Math.round(armor),
+      armorDR,
+      moveSpeed: clamp(move, 0, 0.60),
+      xpBonus,
       setCount: this.setCount(),
       powers: this.equippedPowers()
     };
@@ -705,6 +741,10 @@ const Items = {
     p.hpRegen = s.hpRegen;
     p.goldFind = s.goldFind;
     p.maxEssence = s.maxEssence;
+    p.armor = s.armor;
+    p.armorDR = s.armorDR;
+    p.xpBonus = s.xpBonus;
+    p.speed = 180 * (1 + s.moveSpeed);   // base 180 + movement-speed affix
     p.setCount = s.setCount;
     p.powers = s.powers;
     p.essence = Math.min(p.essence ?? 60, p.maxEssence);

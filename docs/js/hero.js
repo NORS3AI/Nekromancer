@@ -236,7 +236,9 @@ const Hero = {
 
   addXP(n) {
     if (this.level >= MAX_LEVEL) return;
-    this.xp += Math.round(n);
+    // Ruby-in-helm XP bonus (and any future XP find) scales the gain.
+    const xpBonus = (Game.player && Game.player.xpBonus) || 0;
+    this.xp += Math.round(n * (1 + xpBonus));
     let leveled = false;
     while (this.level < MAX_LEVEL && this.xp >= XP_CURVE(this.level)) {
       this.xp -= XP_CURVE(this.level);

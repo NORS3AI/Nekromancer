@@ -18,11 +18,20 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.2.9-alpha';
+const GAME_VERSION = 'v0.3.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.3.0-alpha', date: 'July 2026',
+    notes: [
+      'ARMOR is now a thing: a new Armor stat rolls on gear, and DIAMOND gems now grant Armor (instead of life regen). More armor = more damage reduction (up to 80%). Your Armor and its % reduction show on the character sheet',
+      'PERFECT gems now grant +20% damage in ANY slot (not just weapons) — per gem',
+      'RUBY IN THE HELM now gives an EXPERIENCE bonus instead of damage: +3% at Chipped, scaling up to +20% at Perfect',
+      'BOOTS can now roll a new MOVEMENT SPEED affix, from +1% up to +25% — the character sheet shows your total move speed'
+    ]
+  },
   {
     v: 'v0.2.9-alpha', date: 'July 2026',
     notes: [
@@ -301,7 +310,7 @@ const GEM_TYPES = {
   emerald:  { name: 'Emerald',  color: '#4ade80', stat: 'crit', perTier: 0.025, label: v => `+${Math.round(v * 100)}% crit chance` },
   amethyst: { name: 'Amethyst', color: '#b06adf', stat: 'hp',   perTier: 22,    label: v => `+${Math.round(v)} life` },
   topaz:    { name: 'Topaz',    color: '#ffd76a', stat: 'ess',  perTier: 0.7,   label: v => `+${v.toFixed(1)} essence/s` },
-  diamond:  { name: 'Diamond',  color: '#bfe8f4', stat: 'reg',  perTier: 1.1,   label: v => `+${v.toFixed(1)} life/s` }
+  diamond:  { name: 'Diamond',  color: '#bfe8f4', stat: 'armor', perTier: 30,   label: v => `+${Math.round(v)} armor` }
 };
 
 // Most gem slots an item can hold, by rarity (Mystic enchants can uncover them):
@@ -568,12 +577,15 @@ const SKILL_RUNES = {
 };
 
 const AFFIX_ROLLS = {
-  dmg:  { base: 0.06, label: v => `+${Math.round(v * 100)}% damage` },
-  hp:   { base: 18,   label: v => `+${Math.round(v)} life` },
-  crit: { base: 0.03, label: v => `+${Math.round(v * 100)}% crit chance` },
-  ess:  { base: 0.8,  label: v => `+${v.toFixed(1)} essence/s` },
-  reg:  { base: 1.2,  label: v => `+${v.toFixed(1)} life/s` },
-  gold: { base: 0.12, label: v => `+${Math.round(v * 100)}% gold find` }
+  dmg:   { base: 0.06, label: v => `+${Math.round(v * 100)}% damage` },
+  hp:    { base: 18,   label: v => `+${Math.round(v)} life` },
+  crit:  { base: 0.03, label: v => `+${Math.round(v * 100)}% crit chance` },
+  ess:   { base: 0.8,  label: v => `+${v.toFixed(1)} essence/s` },
+  reg:   { base: 1.2,  label: v => `+${v.toFixed(1)} life/s` },
+  gold:  { base: 0.12, label: v => `+${Math.round(v * 100)}% gold find` },
+  armor: { base: 20,   label: v => `+${Math.round(v)} armor` },
+  // Movement speed rolls ONLY on boots (1%–25%), handled specially in generation.
+  move:  { base: 0.06, label: v => `+${Math.round(v * 100)}% movement speed` }
 };
 
 const LEGENDARY_PREFIX = ["Maltorius'", "The Widow's", "Rathma's", "Xul's", "Trag'Oul's", "Mendeln's"];

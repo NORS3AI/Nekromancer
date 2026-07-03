@@ -58,6 +58,12 @@ loot at the artisans. The hero is persistent (localStorage).
 - Monster scaling: `(1+0.20·(mLvl−1)) × difficulty.mult`; `mLvl = zone.mLvl + 6·difficulty`.
 - Packs sleep until the player is within ~440px (or they're hurt).
 - Items: 9 slots, affix count = rarity, socket chance by rarity, gems 5 types × 5 tiers.
+- **Stats/gems (owner rules):** `armor` affix + Diamond gem (`stat:'armor'`) → damage
+  reduction `armor/(armor+60+45·lvl)` capped 80% (applied in `Player.hurt`). Boots can
+  roll a `move` affix (1–25%, boots-only, flat) → `Player.speed = 180·(1+move)`. A
+  **Perfect-tier gem in ANY slot = +20% damage** (per gem). A **Ruby in the HELM** gives
+  **+3%→+20% XP** (by tier) instead of its damage (feeds `Hero.addXP` via `player.xpBonus`).
+  Ruby-in-weapon +25% dmg and the lvl70 weapon retune (emerald ×1.2 / ruby ×0.95) remain.
 - Salvage yields: Common→Reusable Parts, Magic→Arcane Dust, Rare→Veiled Crystals,
   Legendary→Forgotten Souls (gems survive the forge). **Two salvage paths (owner
   rule): (1) INDIVIDUAL breakdown from the Inventory wheel is always free at any
