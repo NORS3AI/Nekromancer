@@ -18,11 +18,17 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.5.3-alpha';
+const GAME_VERSION = 'v0.5.4-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.5.4-alpha', date: 'July 2026',
+    notes: [
+      'Fixed the ugly tiled/grid look of the ground — the terrain texture is now a large SEAMLESS tile (every blotch wraps across the edges), so every land reads as one continuous, flowing biome instead of stamped squares'
+    ]
+  },
   {
     v: 'v0.5.3-alpha', date: 'July 2026',
     notes: [

@@ -481,38 +481,52 @@ const World = {
   },
 
   makePattern(zone) {
+    // A SEAMLESS ground tile: every feature is also drawn wrapped across the
+    // four edges (and corners), so when it repeats there are no visible seams —
+    // the land reads as one continuous, flowing biome. A large tile keeps the
+    // repetition from being obvious.
+    const SIZE = 512;
     const c = document.createElement('canvas');
-    c.width = c.height = 320;
+    c.width = c.height = SIZE;
     const x = c.getContext('2d');
     // Lift the ground well out of near-black so floors and paths read clearly.
     x.fillStyle = this.lighten(zone ? zone.ground : '#16121b', 0.46);
-    x.fillRect(0, 0, 320, 320);
+    x.fillRect(0, 0, SIZE, SIZE);
     // Biome maps tint their blotches toward the land's accent (sandy dunes,
     // mossy jungle, …) so each ground reads as its own place.
     const acc = zone && zone.biome && zone.accent ? parseInt(zone.accent.slice(1), 16) : null;
     const ar = acc !== null ? (acc >> 16) & 255 : null, ag = acc !== null ? (acc >> 8) & 255 : null, ab = acc !== null ? acc & 255 : null;
-    for (let i = 0; i < 46; i++) {
-      const px = rand(320), py = rand(320), r = rand(14, 52);
-      const g = x.createRadialGradient(px, py, 0, px, py, r);
-      // Mix of soft-light and soft-dark blotches for texture without going muddy.
-      if (Math.random() < 0.55) g.addColorStop(0, 'rgba(180,172,196,0.18)');
-      else if (acc !== null) g.addColorStop(0, `rgba(${ar},${ag},${ab},0.30)`);
-      else g.addColorStop(0, `rgba(${randInt(20, 50)},${randInt(16, 42)},${randInt(24, 56)},0.34)`);
-      g.addColorStop(1, 'rgba(30,24,38,0)');
-      x.fillStyle = g;
-      x.beginPath(); x.arc(px, py, r, 0, TAU); x.fill();
+
+    // Draw a soft radial blotch, wrapped at every edge/corner it overlaps.
+    const blotch = (px, py, r, style) => {
+      for (let ox = -1; ox <= 1; ox++) {
+        for (let oy = -1; oy <= 1; oy++) {
+          const cx = px + ox * SIZE, cy = py + oy * SIZE;
+          if (cx + r < 0 || cx - r > SIZE || cy + r < 0 || cy - r > SIZE) continue;
+          const g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
+          g.addColorStop(0, style);
+          g.addColorStop(1, 'rgba(30,24,38,0)');
+          x.fillStyle = g;
+          x.beginPath(); x.arc(cx, cy, r, 0, TAU); x.fill();
+        }
+      }
+    };
+    // Big, soft, overlapping blotches that flow into one another.
+    for (let i = 0; i < 84; i++) {
+      const px = rand(SIZE), py = rand(SIZE), r = rand(30, 110);
+      let style;
+      if (Math.random() < 0.55) style = 'rgba(180,172,196,0.14)';
+      else if (acc !== null) style = `rgba(${ar},${ag},${ab},0.24)`;
+      else style = `rgba(${randInt(20, 50)},${randInt(16, 42)},${randInt(24, 56)},0.26)`;
+      blotch(px, py, r, style);
     }
-    for (let i = 0; i < 260; i++) {
-      x.fillStyle = Math.random() < 0.5 ? 'rgba(184,176,200,0.30)' : 'rgba(10,7,14,0.24)';
-      x.fillRect(rand(320), rand(320), rand(1, 2.5), rand(1, 2.5));
-    }
-    x.strokeStyle = 'rgba(10,7,14,0.32)';
-    x.lineWidth = 1.2;
-    for (let i = 0; i < 7; i++) {
-      let px = rand(320), py = rand(320);
-      x.beginPath(); x.moveTo(px, py);
-      for (let s = 0; s < 5; s++) { px += rand(-22, 22); py += rand(-22, 22); x.lineTo(px, py); }
-      x.stroke();
+    // Fine speckle grain — kept a couple of px in from the edge so nothing is
+    // clipped at a seam (tiny dots don't need wrapping).
+    for (let i = 0; i < 680; i++) {
+      const s = rand(1, 2.5);
+      const px = rand(3, SIZE - 3 - s), py = rand(3, SIZE - 3 - s);
+      x.fillStyle = Math.random() < 0.5 ? 'rgba(184,176,200,0.26)' : 'rgba(10,7,14,0.20)';
+      x.fillRect(px, py, s, s);
     }
     this.pattern = c;
   },
