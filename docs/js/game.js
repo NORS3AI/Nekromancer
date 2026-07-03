@@ -23,6 +23,12 @@ const Game = {
   telegraphs: [],
   kills: 0,
   bossDead: false,
+  // Multi-area journeys: a bounty/adventure run spans several linked maps.
+  stage: 1,
+  stageCount: 1,
+  journeyIdx: null,   // bounty land index, or null for adventure/rift
+  finalStage: true,
+  descend: false,
   playerDeadT: 0,
   rewardLines: null,
   banner: { text: '', sub: '', t: 0, maxT: 1 },
@@ -102,10 +108,18 @@ const Game = {
   // ------------------------------------------------------------ zone flow
 
   startZone(idx) {
+    // A bounty is a short journey of 2–3 linked areas; the final area holds the
+    // land's named unique boss, the earlier ones a champion that guards the descent.
+    this.stage = 1;
+    this.stageCount = randInt(2, 3);
+    this.journeyIdx = idx;
     this.startLand(ZONES[idx], idx);
   },
 
   startAdventure() {
+    this.stage = 1;
+    this.stageCount = randInt(2, 3);
+    this.journeyIdx = null;
     this.startLand(makeAdventureZone(), null);
   },
 
@@ -134,13 +148,32 @@ const Game = {
       }
       Hero.masterKeys--; Hero.save();
     }
+    // Rifts are one endless map — no multi-area descent.
+    this.stage = 1; this.stageCount = 1; this.journeyIdx = null;
     this.startLand(makeRiftZone(kind), null);
+  },
+
+  // Descend into the next area of the current journey (new procedural map).
+  nextStage() {
+    this.stage++;
+    this.descend = false;
+    // Carry HP/essence into the next area — descending isn't a free heal.
+    const hpFrac = this.player ? this.player.hp / this.player.maxHp : 1;
+    const ess = this.player ? this.player.essence : 60;
+    const zone = this.journeyIdx !== null ? ZONES[this.journeyIdx] : makeAdventureZone();
+    this.startLand(zone, this.journeyIdx);
+    if (this.player) {
+      this.player.hp = Math.max(1, Math.round(this.player.maxHp * hpFrac));
+      this.player.essence = Math.min(ess, this.player.maxEssence);
+    }
   },
 
   startLand(zone, idx) {
     this.zoneIdx = idx === null ? -1 : idx;
     this.zone = zone;
     this.riftMode = !!zone.rift;
+    this.finalStage = this.stage >= this.stageCount;
+    this.descend = false;
     this.riftProgress = 0;
     this.riftGoal = zone.riftGoal || 250;
     this.guardianUp = false;
@@ -190,17 +223,21 @@ const Game = {
       do { ex = rand(120, World.W - 120); ey = rand(120, World.H - 120); } while (!World.isFloorAt(ex, ey) && tries++ < 12);
       spawnPack(ex, ey, this.riftMode ? 0.5 : 0.25);
     }
-    // The bounty boss (rifts summon their Guardian only when the bar fills).
+    // The stage guardian: the land's named unique on the FINAL area, a champion
+    // that guards the descent on earlier areas. (Rifts summon a Guardian instead,
+    // only once the orb bar is full.)
     if (!this.riftMode) {
-      const boss = new Enemy('brute', World.bossPos.x, World.bossPos.y, {
-        unique: true, name: this.zone.boss
-      });
+      const name = this.finalStage ? this.zone.boss
+        : pick(ELITE_PREFIX) + pick(ELITE_SUFFIX) + ' the ' + pick(['Warden', 'Gatekeeper', 'Deepwalker', 'Threshold']);
+      const boss = new Enemy('brute', World.bossPos.x, World.bossPos.y, { unique: true, name });
       this.enemies.push(boss);
     }
 
     this.state = 'playing';
-    this.showBanner(this.zone.name,
-      this.riftMode ? 'Slay rare elites for their orbs — fill the rift' : 'Bounty: slay ' + this.zone.boss, 3);
+    const sub = this.riftMode ? 'Slay rare elites for their orbs — fill the rift'
+      : this.finalStage ? 'Bounty: slay ' + this.zone.boss
+      : 'Area ' + this.stage + ' of ' + this.stageCount + ' — slay the champion to descend';
+    this.showBanner(this.zone.name + (this.riftMode || this.stageCount < 2 ? '' : '  ·  Area ' + this.stage + '/' + this.stageCount), sub, 3);
     AudioSys.sfx('wave');
     Hero.save();
   },
@@ -317,7 +354,12 @@ const Game = {
       Hero.save();
       AudioSys.sfx('setdrop');
       this.showBanner('RIFT CLEARED', 'The Guardian falls', 3.4);
+    } else if (!this.finalStage) {
+      // More land below — the portal descends to the next area.
+      this.descend = true;
+      this.showBanner('AREA CLEARED', 'A dark portal yawns open — descend deeper', 3.2);
     } else {
+      this.descend = false;
       this.showBanner('BOUNTY COMPLETE', 'A portal tears open — step through', 3.4);
     }
     fxNova(boss.x, boss.y, 220);
@@ -477,7 +519,8 @@ const Game = {
     // Shrine 'fortune' doubles gold find while active.
     // (applied via goldFind at pickup time)
     if (World.portal && this.bossDead && dist(p.x, p.y, World.portal.x, World.portal.y) < 40) {
-      this.completeZone();
+      if (this.descend) this.nextStage();
+      else this.completeZone();
     }
   },
 

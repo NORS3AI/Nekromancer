@@ -18,11 +18,20 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.3.1-alpha';
+const GAME_VERSION = 'v0.3.2-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.3.2-alpha', date: 'July 2026',
+    notes: [
+      'MULTI-AREA JOURNEYS, Diablo-style: bounties and Adventure Mode now span 2–3 linked areas instead of one map. No more being stuck in a single land',
+      'Each earlier area is guarded by a CHAMPION — slay it to open a descent portal and travel deeper into a fresh, newly-generated area (new layout, new packs, the new war-host enemies)',
+      'The FINAL area holds the land\'s named boss; slaying it opens the portal home and the Horadric cache reward',
+      'Your health and essence carry with you as you descend — it\'s one continuous run, not a free heal each area. Rifts remain a single endless map'
+    ]
+  },
   {
     v: 'v0.3.1-alpha', date: 'July 2026',
     notes: [
