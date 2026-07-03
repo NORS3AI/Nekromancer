@@ -165,9 +165,13 @@ const Items = {
   },
 
   score(item) {
+    // Every affix the engine can roll needs a weight here — a missing one used
+    // to multiply by undefined and poison the whole score (and any vendor price
+    // built from it) with NaN. The `|| 0` guard makes that impossible.
+    const W = { dmg: 320, hp: 1, crit: 400, ess: 18, reg: 14, gold: 40, armor: 0.8, move: 700, dnova: 200, area: 200 };
     let s = 0;
     for (const [k, v] of Object.entries(item.stats)) {
-      s += v * ({ dmg: 320, hp: 1, crit: 400, ess: 18, reg: 14, gold: 40 })[k];
+      s += (v || 0) * (W[k] || 0);
     }
     if (item.sockets) s += 15 * item.sockets;
     for (const g of item.gems || []) s += gemStatValue(g) * 30;

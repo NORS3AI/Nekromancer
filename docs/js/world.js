@@ -489,12 +489,16 @@ const World = {
     const c = document.createElement('canvas');
     c.width = c.height = SIZE;
     const x = c.getContext('2d');
+    // Indoors (a crypt/dungeon) the floor is cold STONE — never a biome's grass,
+    // sand or the like. Only open lands take their zone's ground colour.
+    const dungeon = zone && zone.kind === 'dungeon';
+    const groundHex = dungeon ? '#1b1a22' : (zone ? zone.ground : '#16121b');
     // Lift the ground well out of near-black so floors and paths read clearly.
-    x.fillStyle = this.lighten(zone ? zone.ground : '#16121b', 0.46);
+    x.fillStyle = this.lighten(groundHex, dungeon ? 0.40 : 0.46);
     x.fillRect(0, 0, SIZE, SIZE);
-    // Biome maps tint their blotches toward the land's accent (sandy dunes,
-    // mossy jungle, …) so each ground reads as its own place.
-    const acc = zone && zone.biome && zone.accent ? parseInt(zone.accent.slice(1), 16) : null;
+    // Open biome maps tint their blotches toward the land's accent (sandy
+    // dunes, mossy jungle, …); crypts stay stone.
+    const acc = !dungeon && zone && zone.biome && zone.accent ? parseInt(zone.accent.slice(1), 16) : null;
     const ar = acc !== null ? (acc >> 16) & 255 : null, ag = acc !== null ? (acc >> 8) & 255 : null, ab = acc !== null ? acc & 255 : null;
 
     // Draw a soft radial blotch, wrapped at every edge/corner it overlaps.
@@ -516,6 +520,7 @@ const World = {
       const px = rand(SIZE), py = rand(SIZE), r = rand(30, 110);
       let style;
       if (Math.random() < 0.55) style = 'rgba(180,172,196,0.14)';
+      else if (dungeon) { const gv = randInt(30, 52); style = `rgba(${gv},${gv},${gv + 8},0.24)`; }  // cold stone
       else if (acc !== null) style = `rgba(${ar},${ag},${ab},0.24)`;
       else style = `rgba(${randInt(20, 50)},${randInt(16, 42)},${randInt(24, 56)},0.26)`;
       blotch(px, py, r, style);

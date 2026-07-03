@@ -18,11 +18,18 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.5.4-alpha';
+const GAME_VERSION = 'v0.5.5-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.5.5-alpha', date: 'July 2026',
+    notes: [
+      'BUGFIX — vendor (and any) item prices could read “NaN g”. Items that rolled Armor, Movement Speed, Death Nova or Area Damage had no value weight, poisoning the price with NaN. Every affix is now weighted and guarded so a price can never be NaN again',
+      'Crypts and other indoor areas now always have a cold STONE floor — never a grass/sand/biome ground stamped underground'
+    ]
+  },
   {
     v: 'v0.5.4-alpha', date: 'July 2026',
     notes: [
