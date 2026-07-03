@@ -685,12 +685,18 @@ class Enemy {
     }
     fxBlood(this.x, this.y, this.unique ? 30 : 12);
     if (this.type === 'skeleton' || this.type === 'archer') fxBone(this.x, this.y, 12);
-    // Nephalem Mongrel: drops a Nephalem Heartstring (Nephalem Torch reagent).
+    // Nephalem Mongrel: a CHANCE to drop the Nephalem Heartstring (Nephalem
+    // Torch reagent). Higher Torment tiers improve the odds a little.
     if (this.def.dropsHeartstring) {
-      const n = randInt(1, 2);
-      Hero.mats.heartstring += n;
-      Particles.text(this.x, this.y - 14, '+' + n + ' Nephalem Heartstring', { color: MATERIALS.heartstring.color, size: 12, life: 1.4 });
-      AudioSys.sfx('setdrop');
+      const chance = 0.6 + 0.02 * (Hero.difficulty || 0);
+      if (Math.random() < chance) {
+        const n = randInt(1, 2);
+        Hero.mats.heartstring += n;
+        Particles.text(this.x, this.y - 14, '+' + n + ' Nephalem Heartstring', { color: MATERIALS.heartstring.color, size: 12, life: 1.4 });
+        AudioSys.sfx('setdrop');
+      } else {
+        Particles.text(this.x, this.y - 14, 'No Heartstring…', { color: '#7a6f80', size: 11, life: 1.2 });
+      }
     }
     // Corpse Bloats burst on death — a toxic AoE that hits you and your minions.
     if (this.def.explodes) {

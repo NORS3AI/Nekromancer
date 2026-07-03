@@ -288,12 +288,14 @@ const Game = {
         const waves = clamp(Math.round(em * 0.5), 1, 6);
         for (let w = 0; w < waves && this.enemies.length < cap; w++) {
           const pt = this.spawnNear(this.player, Math.max(this.W, this.H) * 0.6);
-          // A rare Nephalem Mongrel elite sometimes prowls the rift — it drops
-          // the Nephalem Heartstring for crafting Nephalem Torches.
-          if (Math.random() < 0.10) {
-            const mg = new Enemy('mongrel', pt.x, pt.y, { elite: true, name: 'Nephalem Mongrel' });
+          // A RARE named purple elite — the Nephalem Mongrel — occasionally
+          // prowls the rift. Only ever one at a time, and it has a CHANCE to
+          // drop the Nephalem Heartstring (reagent for the Nephalem Torch).
+          if (!this.enemies.some(e => e.type === 'mongrel') && Math.random() < 0.04) {
+            const mg = new Enemy('mongrel', pt.x, pt.y, { elite: true, name: pick(MONGREL_NAMES) });
             World.collide(mg);
             this.enemies.push(mg);
+            UI.toast('A Nephalem Mongrel prowls the rift…', MATERIALS.heartstring.color);
             continue;
           }
           const elite = Math.random() < 0.55;

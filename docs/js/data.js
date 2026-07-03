@@ -18,11 +18,18 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.4.0-alpha';
+const GAME_VERSION = 'v0.4.1-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.4.1-alpha', date: 'July 2026',
+    notes: [
+      'The Nephalem Mongrel is now a true RARE NAMED purple elite — only one ever prowls a Rift at a time, it spawns far less often, and each one bears its own name (Gorehound Vael, Skarn the Ravener, and more). A toast heralds its arrival',
+      'Nephalem Heartstring is now a CHANCE drop from the Mongrel (~60%, improving with Torment tier) rather than a guaranteed one'
+    ]
+  },
   {
     v: 'v0.4.0-alpha', date: 'July 2026',
     notes: [
@@ -803,6 +810,12 @@ const MONSTERS = {
 
 const ELITE_PREFIX = ['Blood', 'Grave', 'Doom', 'Plague', 'Dread', 'Bone'];
 const ELITE_SUFFIX = ['maw', 'fang', 'howl', 'rot', 'claw', 'shriek'];
+// Rare NAMED purple elite of the Rifts — the sole source of Nephalem
+// Heartstring (chance drop). Each sighting is a distinct named beast.
+const MONGREL_NAMES = [
+  'Gorehound Vael', 'Rifthound Uzzek', 'Skarn the Ravener',
+  'Molgrim, Heartstring Alpha', 'Vhaskr the Prowler', 'Ozgrall the Unbound'
+];
 
 // --------------------------------- lands -----------------------------------
 // The campaign: five lands, each a generated map with packs of monsters,
