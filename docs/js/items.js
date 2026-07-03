@@ -132,6 +132,7 @@ const Items = {
     for (let i = 0; i < empty; i++) lines.push('◇ empty socket');
     // Weapon-slot gem bonuses.
     if (item.slot === 'weapon') {
+      if (gems.some(g => g.tier >= GEM_TIERS.length - 1)) lines.push('❢ +20% weapon damage (Perfect gem)');
       if (gems.some(g => g.type === 'ruby')) lines.push('❢ +25% weapon damage (ruby)');
       if (Hero.level >= MAX_LEVEL && gems.some(g => g.type === 'emerald')) lines.push('❢ Emerald +20% in weapon (lvl 70)');
       if (Hero.level >= MAX_LEVEL && gems.some(g => g.type === 'ruby')) lines.push('❢ Ruby -5% in weapon (lvl 70)');
@@ -669,6 +670,8 @@ const Items = {
       }
       // A red gem (ruby) socketed in the weapon: +25% damage.
       if (slot === 'weapon' && (it.gems || []).some(g => g.type === 'ruby')) dmg += 0.25;
+      // A Perfect-tier gem (top quality, any type) in the weapon: +20% damage.
+      if (slot === 'weapon' && (it.gems || []).some(g => g.tier >= GEM_TIERS.length - 1)) dmg += 0.20;
     };
     for (const slot of Object.keys(ITEM_SLOTS)) gather(Hero.equipped[slot], slot);
     const lvl = Hero.level;

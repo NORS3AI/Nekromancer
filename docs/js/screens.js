@@ -231,9 +231,31 @@ const Screens = {
     // (red ✕ drawn globally by UI.draw, above all content)
     const pw = Math.min(540, W - 20);
     const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 16, 420);
+    const ph = Math.min(H - 16, 476);
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, '⛰ THE WILDS');
+
+    // Global difficulty stepper — set it once here for every mode below.
+    const maxDiff = Hero.level >= MAX_LEVEL ? DIFFICULTIES.length - 1 : 3;
+    Hero.difficulty = Math.min(Hero.difficulty, maxDiff);
+    const sdw = Math.min(320, pw - 40);
+    const sdx = W / 2 - sdw / 2;
+    UI.btn(ctx, sdx, py + 46, 40, 32, '◀', () => {
+      Hero.difficulty = Math.max(0, Hero.difficulty - 1); Hero.save();
+    }, { size: 14 });
+    UI.btn(ctx, sdx + sdw - 40, py + 46, 40, 32, '▶', () => {
+      Hero.difficulty = Math.min(maxDiff, Hero.difficulty + 1); Hero.save();
+    }, { size: 14 });
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'bold 14px Georgia';
+    ctx.fillStyle = Hero.difficulty >= 4 ? '#e04a5a' : '#ffd76a';
+    ctx.fillText('Difficulty: ' + DIFFICULTIES[Hero.difficulty].name, W / 2, py + 56);
+    ctx.font = '9px Georgia';
+    ctx.fillStyle = '#9a9080';
+    const D = DIFFICULTIES[Hero.difficulty];
+    ctx.fillText('monsters ×' + D.mult + '  ·  rewards ×' + D.reward +
+      (Hero.level < MAX_LEVEL ? '  ·  Torment unlocks at level 70' : (D.legBonus ? '  ·  +' + (D.legBonus * 100).toFixed(1) + '% legendary' : '')),
+      W / 2, py + 72);
 
     const at70 = Hero.level >= MAX_LEVEL;
     const rows = [
@@ -250,7 +272,7 @@ const Screens = {
       ['SEASONS', at70 ? SEASON.name : 'The season begins at level 70', '#4ade80',
         at70 ? () => UI.open('season') : null]
     ];
-    let y = py + 52;
+    let y = py + 92;
     for (const [label, desc, col, cb] of rows) {
       UI.btn(ctx, px + 16, y, pw - 32, 56, '', cb, { disabled: !cb });
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
@@ -1339,7 +1361,7 @@ const Screens = {
     if (cost.crystal) parts.push(['crystals', owned.crystal, cost.crystal, MATERIALS.crystal.color]);
     if (cost.soul) parts.push(['soul' + (cost.soul > 1 ? 's' : ''), owned.soul, cost.soul, MATERIALS.soul.color]);
     parts.forEach(([name, have, need], i) => {
-      const txt = have + '/' + need + ' ' + name;
+      const txt = need + '/' + have + ' ' + name;   // cost / what you have
       ctx.fillStyle = have >= need ? '#c9bfa8' : '#e04a5a';
       ctx.fillText(txt, cxp, y + 6); cxp += ctx.measureText(txt).width;
       if (i < parts.length - 1) { ctx.fillStyle = '#6f6552'; ctx.fillText('  ·  ', cxp, y + 6); cxp += ctx.measureText('  ·  ').width; }
@@ -1952,13 +1974,13 @@ const Screens = {
         () => Hero.grantLevels(n), { size: 11 });
     });
     y += 36;
-    row('Max level Blacksmith (100)', () => {
+    row('Max level Blacksmith (10)', () => {
       Hero.artisans.smith = 10; UI.toast('Blacksmith mastered', '#ffb43a'); Hero.save();
     }, '#ffb43a');
-    row('Max level Enchantress (100)', () => {
+    row('Max level Enchantress (10)', () => {
       Hero.artisans.mystic = 10; UI.toast('Mystic mastered', '#b06adf'); Hero.save();
     }, '#b06adf');
-    row('Max level Gem Crafter (100)', () => {
+    row('Max level Gem Crafter (10)', () => {
       Hero.artisans.jeweler = 10; UI.toast('Jeweler mastered', '#4ecbe0'); Hero.save();
     }, '#4ecbe0');
     ctx.textAlign = 'center';

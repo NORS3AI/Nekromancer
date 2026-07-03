@@ -277,11 +277,14 @@ const Game = {
       const pu = new Pickup(boss.x, boss.y, 'item');
       pu.item = Items.generate(mLvl, 0.3);
       this.pickups.push(pu);
-      // 50/50 key: normal rifts drop Nephalem Rift Keys; Nephalem & Season
-      // Guardians drop Master Nephalem Rift Keys (needed for Seasons).
-      if (Math.random() < 0.5) {
-        if (kind === 'normal') { Hero.riftKeys++; UI.toast('◈ Nephalem Rift Key! (' + Hero.riftKeys + ' held)', '#b06adf'); }
-        else { Hero.masterKeys++; UI.toast('◈ MASTER Nephalem Rift Key! (' + Hero.masterKeys + ' held)', '#d8b4f0'); }
+      // Key drops per tier: Normal Rift Guardians drop 0–3 Nephalem Rift Keys;
+      // Nephalem (greater) Guardians drop 0–1 Master Nephalem Rift Keys.
+      if (kind === 'normal') {
+        const n = randInt(0, 3);
+        if (n) { Hero.riftKeys += n; UI.toast('◈ ' + n + ' Nephalem Rift Key' + (n > 1 ? 's' : '') + '! (' + Hero.riftKeys + ' held)', '#b06adf'); }
+      } else if (kind === 'greater') {
+        const n = randInt(0, 1);
+        if (n) { Hero.masterKeys += n; UI.toast('◈ Master Nephalem Rift Key! (' + Hero.masterKeys + ' held)', '#d8b4f0'); }
       }
       // Legendary chance scales with Torment: 5% at T1 → 30% at T16.
       const torment = diff.torment || 0;
@@ -292,12 +295,24 @@ const Game = {
         this.pickups.push(lp);
         UI.toast('★ Legendary drop!', '#ff8c2a');
       }
-      // Nephalem & Season Guardians also chase the Grace of Inarius set.
-      if (kind !== 'normal') {
+      // Seasons GUARANTEE an awesome piece: a random Grace of Inarius set piece
+      // (or a legendary power once the set is complete). Also refunds a Master key
+      // sometimes so the season loop doesn't run dry.
+      if (kind === 'season') {
         const owned = Hero.setPiecesOwned();
         const sp = new Pickup(boss.x, boss.y, 'item');
         sp.item = owned.size < 6 ? Items.generateSetPiece(mLvl) : Items.generatePowerItem(mLvl);
         this.pickups.push(sp);
+        UI.toast('✦ ' + sp.item.name + '!', '#4ade80');
+        if (randInt(0, 1)) { Hero.masterKeys++; UI.toast('◈ Master Nephalem Rift Key! (' + Hero.masterKeys + ' held)', '#d8b4f0'); }
+      } else if (kind === 'greater') {
+        // Nephalem Guardians still occasionally cough up a set piece.
+        if (Math.random() < 0.35) {
+          const owned = Hero.setPiecesOwned();
+          const sp = new Pickup(boss.x, boss.y, 'item');
+          sp.item = owned.size < 6 ? Items.generateSetPiece(mLvl) : Items.generatePowerItem(mLvl);
+          this.pickups.push(sp);
+        }
       }
       Hero.save();
       AudioSys.sfx('setdrop');
