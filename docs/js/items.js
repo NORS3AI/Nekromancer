@@ -110,7 +110,9 @@ const Items = {
 
   // Build-defining legendaries from the Inarius guide.
   generatePowerItem(mLvl, forceKey) {
-    const key = forceKey || pick(Object.keys(LEGENDARY_POWERS));
+    // Exclusive powers (e.g. The Royal Grandeur) only drop from their specific
+    // source, never from the generic legendary pool.
+    const key = forceKey || pick(Object.keys(LEGENDARY_POWERS).filter(k => !LEGENDARY_POWERS[k].exclusive));
     const P = LEGENDARY_POWERS[key];
     const item = this.generate(mLvl, 0, P.slot);
     item.rarity = 4;
@@ -722,6 +724,11 @@ const Items = {
     const lvl = Hero.level;
     // Armor → damage reduction (diminishing, level-scaled), capped at 80%.
     const armorDR = clamp(armor / (armor + 60 + 45 * lvl), 0, 0.80);
+    // The Royal Grandeur: set bonuses need one fewer piece (min 2) — modelled as
+    // +1 effective set pieces once you already have at least 2.
+    const powers = this.equippedPowers();
+    const rawSet = this.setCount();
+    const setCountEff = (powers.royalGrandeur && rawSet >= 2) ? Math.min(6, rawSet + 1) : rawSet;
     return {
       dmgMult: (1 + (lvl - 1) * 0.09) * (1 + dmg),
       gearDmg: dmg,
@@ -737,8 +744,9 @@ const Items = {
       xpBonus,
       deathNovaBonus: dnova,
       areaDamage: clamp(area, 0, 1),
-      setCount: this.setCount(),
-      powers: this.equippedPowers()
+      setCount: setCountEff,
+      setCountRaw: rawSet,
+      powers
     };
   },
 

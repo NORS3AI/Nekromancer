@@ -361,6 +361,13 @@ const Game = {
     } else {
       this.descend = false;
       this.showBanner('BOUNTY COMPLETE', 'A portal tears open — step through', 3.4);
+      // The Act 1 boss (the first land's unique) can drop The Royal Grandeur.
+      if (this.zoneIdx === 0 && Math.random() < 0.4) {
+        const rg = new Pickup(boss.x, boss.y, 'item');
+        rg.item = Items.generatePowerItem(this.monsterLevel(), 'royalGrandeur');
+        this.pickups.push(rg);
+        UI.toast('★ The Royal Grandeur!', '#ff8c2a');
+      }
     }
     fxNova(boss.x, boss.y, 220);
     AudioSys.sfx('portal');

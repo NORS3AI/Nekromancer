@@ -143,6 +143,15 @@ Script lives in the session scratchpad (intentionally not committed).
 
 ## Roadmap ideas (not yet built)
 
+- **⭐ OWNER TODO (requested 2026-07-03): create the MASTER LIST of primary +
+  secondary stats and affixes for items.** The engine currently models only:
+  `dmg` (%), `hp`, `crit` (chance), `ess` (essence/s), `reg` (life/s), `gold`,
+  `armor`, `move` (boots), `dnova` (Death Nova %), `area` (Area Damage). D3 items
+  reference stats we DON'T have yet — **Attack Speed, Life per Hit, Intelligence,
+  Crit Damage, Vitality, resource cost reduction, cooldown reduction** — so items
+  like The Royal Grandeur are placed with in-engine stand-in affixes. Define the
+  full stat/affix taxonomy (which are primary vs secondary, roll ranges by ilvl,
+  which slots) before adding more authentic D3 items.
 - Skill runes (D3 has 5 per skill), set items with set bonuses
 - Kanai's Cube (extract legendary powers), legendary gems
 - More bounty types (Clear / Event), Nephalem/Greater Rifts as endgame

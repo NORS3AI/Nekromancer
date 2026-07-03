@@ -18,11 +18,17 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.3.8-alpha';
+const GAME_VERSION = 'v0.3.9-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.3.9-alpha', date: 'July 2026',
+    notes: [
+      'NEW LEGENDARY RING — The Royal Grandeur: reduces the number of items needed for set bonuses by 1 (minimum 2), so full Grace of Inarius fires at just 5 pieces. Drops from the Act 1 boss (The Grave Warden) and nowhere else'
+    ]
+  },
   {
     v: 'v0.3.8-alpha', date: 'July 2026',
     notes: [
@@ -465,6 +471,10 @@ const LEGENDARY_POWERS = {
   krysbin: {
     slot: 'ring1', name: "Krysbin's Sentence", affixes: { crit: 0.06 },
     desc: 'You deal +100% damage to slowed enemies, TRIPLE damage to stunned or rooted ones'
+  },
+  royalGrandeur: {
+    slot: 'ring1', name: 'The Royal Grandeur', affixes: { crit: 0.05, hp: 200 }, exclusive: true,
+    desc: 'Reduces the number of items needed for set bonuses by 1 (to a minimum of 2). Drops from the Act 1 boss'
   }
 };
 
