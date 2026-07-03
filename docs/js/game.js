@@ -178,6 +178,9 @@ const Game = {
     this.riftGoal = zone.riftGoal || 250;
     this.guardianUp = false;
     this.riftSpawnT = 0;
+    // The rare Nephalem Mongrel prowls a run only 1–2 times, then no more.
+    this.mongrelCap = randInt(1, 2);
+    this.mongrelsSpawned = 0;
     World.generate(this.zone);
     this.enemies = [];
     this.minions = [];
@@ -291,10 +294,12 @@ const Game = {
           // A RARE named purple elite — the Nephalem Mongrel — occasionally
           // prowls the rift. Only ever one at a time, and it has a CHANCE to
           // drop the Nephalem Heartstring (reagent for the Nephalem Torch).
-          if (!this.enemies.some(e => e.type === 'mongrel') && Math.random() < 0.04) {
+          if (this.mongrelsSpawned < this.mongrelCap &&
+              !this.enemies.some(e => e.type === 'mongrel') && Math.random() < 0.05) {
             const mg = new Enemy('mongrel', pt.x, pt.y, { elite: true, name: pick(MONGREL_NAMES) });
             World.collide(mg);
             this.enemies.push(mg);
+            this.mongrelsSpawned++;
             UI.toast('A Nephalem Mongrel prowls the rift…', MATERIALS.heartstring.color);
             continue;
           }

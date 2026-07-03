@@ -685,11 +685,10 @@ class Enemy {
     }
     fxBlood(this.x, this.y, this.unique ? 30 : 12);
     if (this.type === 'skeleton' || this.type === 'archer') fxBone(this.x, this.y, 12);
-    // Nephalem Mongrel: a CHANCE to drop the Nephalem Heartstring (Nephalem
-    // Torch reagent). Higher Torment tiers improve the odds a little.
+    // Nephalem Mongrel: a 35% CHANCE to drop the Nephalem Heartstring
+    // (reagent for the Nephalem Torch).
     if (this.def.dropsHeartstring) {
-      const chance = 0.6 + 0.02 * (Hero.difficulty || 0);
-      if (Math.random() < chance) {
+      if (Math.random() < 0.35) {
         const n = randInt(1, 2);
         Hero.mats.heartstring += n;
         Particles.text(this.x, this.y - 14, '+' + n + ' Nephalem Heartstring', { color: MATERIALS.heartstring.color, size: 12, life: 1.4 });
