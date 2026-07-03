@@ -116,6 +116,8 @@ const Items = {
     item.rarity = 4;
     item.name = P.name;
     item.power = key;
+    // Signature affixes that define the item (Area Damage, crit, Death Nova…).
+    if (P.affixes) for (const [k, v] of Object.entries(P.affixes)) item.stats[k] = v;
     if (!item.sockets) item.sockets = Math.random() < 0.4 ? 1 : 0;
     return item;
   },

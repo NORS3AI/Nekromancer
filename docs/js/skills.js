@@ -180,8 +180,8 @@ const SKILL_FX = {
       p.powerShiftStacks = Math.min(10, p.powerShiftStacks + 1);
       p.powerShiftT = 1;
     }
-    // Iron Rose: channeling Siphon Blood casts free Death Novas.
-    if (p.powers && p.powers.ironRose && Skills.ironRoseCd <= 0 && Math.random() < 0.5) {
+    // Iron Rose: attacking with Siphon Blood has a 100% chance to cast a free Death Nova.
+    if (p.powers && p.powers.ironRose && Skills.ironRoseCd <= 0) {
       Skills.ironRoseCd = 0.45;
       SKILL_FX.deathNova(p);
     }

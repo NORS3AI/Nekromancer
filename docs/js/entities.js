@@ -62,7 +62,10 @@ class Player {
       m *= 1 + 0.015 * Math.min(20, cursed);
     }
     if (this.funeraryT > 0) m *= 1 + 0.20 * this.funeraryStacks;   // Funerary Pick
-    if (this.powerShiftT > 0) m *= 1 + 0.10 * this.powerShiftStacks; // Power Shift rune
+    // Power Shift rune: +10% per stack, or +20% with the Funerary Pick.
+    if (this.powerShiftT > 0) m *= 1 + (this.powers && this.powers.funeraryPick ? 0.20 : 0.10) * this.powerShiftStacks;
+    // Convention of Elements: a rotating +200% damage window (4s of every 24s).
+    if (this.powers && this.powers.coe && ((Game.time || 0) % 24) < 4) m *= 3;
     return m;
   }
 
@@ -216,6 +219,8 @@ class Player {
     if (this.shrine && this.shrine.buff === 'blessed') dmg *= 0.75;
     if (this.boneArmorT > 0 && this.boneArmorDR > 0) dmg *= 1 - this.boneArmorDR;
     if (this.armorDR > 0) dmg *= 1 - this.armorDR;   // armor mitigation from gear/diamonds
+    // Aquila Cuirass: above 90% essence, all damage taken is halved.
+    if (this.powers && this.powers.aquila && this.essence >= this.maxEssence * 0.9) dmg *= 0.5;
     if (this.shield > 0) {
       const absorbed = Math.min(this.shield, dmg);
       this.shield -= absorbed;
@@ -637,10 +642,10 @@ class Enemy {
       if (this.curse.type === 'leech' && p && !p.dead) p.heal(p.maxHp * 0.012);
       if (p && p.powers && p.powers.corrodedFang) dmg *= 1.6; // Trag'Oul's Corroded Fang
     }
-    // Krysbin's Sentence: +75% vs slowed, TRIPLE vs stunned/rooted.
+    // Krysbin's Sentence: +100% vs slowed, TRIPLE vs stunned/rooted.
     if (p && p.powers && p.powers.krysbin) {
       if (this.root > 0 || this.state === 'stunned') dmg *= 3;
-      else if (this.slow > 0 || (this.curse && this.curse.type === 'decrepify')) dmg *= 1.75;
+      else if (this.slow > 0 || (this.curse && this.curse.type === 'decrepify')) dmg *= 2;
     }
     if (this.vulnT > 0) dmg *= 191; // Inarius 6pc: +19000% damage taken from you
     this.hp -= dmg;

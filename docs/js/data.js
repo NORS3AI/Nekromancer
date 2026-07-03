@@ -18,11 +18,21 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.3.5-alpha';
+const GAME_VERSION = 'v0.3.6-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.3.6-alpha', date: 'July 2026',
+    notes: [
+      'NEW LEGENDARIES: Convention of Elements (ring) — cyclically gain +200% damage for 4s on a rotating timer; and Aquila Cuirass (chest) — while above 90% essence, all damage taken is halved',
+      'Iron Rose now casts a free Death Nova on EVERY Siphon Blood (was 50%) and carries +15% Death Nova + Area Damage',
+      'Funerary Pick: with it equipped, the Siphon Blood Power Shift rune grants 20% per stack (up from 10%) and benefits all skills; it also carries 24% Area Damage',
+      'Krysbin\'s Sentence: +100% damage to slowed foes (up from 75%), still TRIPLE vs stunned/rooted',
+      'All these legendaries drop from Rift Guardians and legendary drops; they carry their signature D3 affixes'
+    ]
+  },
   {
     v: 'v0.3.5-alpha', date: 'July 2026',
     notes: [
@@ -413,16 +423,24 @@ const LEGENDARY_POWERS = {
     desc: 'Death Nova deals +350% damage for every enemy near you'
   },
   funeraryPick: {
-    slot: 'weapon', name: 'Funerary Pick',
-    desc: 'Siphon Blood drains from 2 additional targets; each target drained grants +20% damage for 3s'
+    slot: 'weapon', name: 'Funerary Pick', affixes: { area: 0.24 },
+    desc: 'Siphon Blood drains 2 additional targets; the Power Shift rune now grants 20% per stack and benefits ALL skills'
   },
   corrodedFang: {
     slot: 'weapon', name: "Trag'Oul's Corroded Fang",
     desc: 'You deal +60% damage to cursed enemies'
   },
   ironRose: {
-    slot: 'offhand', name: 'Iron Rose',
-    desc: 'Channeling Siphon Blood has a 50% chance to cast a free Death Nova'
+    slot: 'offhand', name: 'Iron Rose', affixes: { area: 0.20, dnova: 0.15 },
+    desc: 'Attacking with Siphon Blood has a 100% chance to cast a free Death Nova'
+  },
+  coe: {
+    slot: 'ring2', name: 'Convention of Elements', affixes: { crit: 0.06, area: 0.20 },
+    desc: 'Cyclically gain +200% damage for 4 seconds, rotating on a timer'
+  },
+  aquila: {
+    slot: 'chest', name: 'Aquila Cuirass', affixes: { armor: 60 },
+    desc: 'While above 90% essence, all damage taken is reduced by 50%'
   },
   hauntedVisions: {
     slot: 'amulet', name: 'Haunted Visions',
@@ -433,8 +451,8 @@ const LEGENDARY_POWERS = {
     desc: 'Bone Armor gains 5 extra stacks: up to 75% damage reduction and a larger shield'
   },
   krysbin: {
-    slot: 'ring1', name: "Krysbin's Sentence",
-    desc: 'You deal +75% damage to slowed enemies, TRIPLE damage to stunned or rooted ones'
+    slot: 'ring1', name: "Krysbin's Sentence", affixes: { crit: 0.06 },
+    desc: 'You deal +100% damage to slowed enemies, TRIPLE damage to stunned or rooted ones'
   }
 };
 
