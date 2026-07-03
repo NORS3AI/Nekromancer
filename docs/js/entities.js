@@ -979,6 +979,80 @@ class Enemy {
         ctx.shadowBlur = 0;
         break;
       }
+      case 'wraith': {
+        // A spectral ghost lord — translucent hooded revenant that drifts.
+        const drift = Math.sin(this.anim * 1.4) * 3;
+        ctx.globalAlpha = 0.78;
+        // Tattered robe fading into a smoky tail.
+        ctx.fillStyle = fl ? '#e8f0ff' : '#5a6f9a';
+        ctx.beginPath();
+        ctx.moveTo(0, -26 + drift);
+        ctx.quadraticCurveTo(20, -8, 15, 16);
+        ctx.quadraticCurveTo(9, 10 + Math.sin(this.anim * 3) * 3, 4, 22);
+        ctx.quadraticCurveTo(0, 14, -4, 22);
+        ctx.quadraticCurveTo(-9, 10 - Math.sin(this.anim * 3) * 3, -15, 16);
+        ctx.quadraticCurveTo(-20, -8, 0, -26 + drift);
+        ctx.fill();
+        // Inner shroud glow.
+        ctx.fillStyle = fl ? '#fff' : 'rgba(180,210,255,0.5)';
+        ctx.beginPath(); ctx.ellipse(0, -14 + drift, 8, 11, 0, 0, TAU); ctx.fill();
+        // Hood void + burning eyes.
+        ctx.globalAlpha = 0.92;
+        ctx.fillStyle = '#0c1226';
+        ctx.beginPath(); ctx.arc(0, -16 + drift, 7, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#bfe3ff';
+        ctx.shadowColor = '#8fd0ff'; ctx.shadowBlur = 8;
+        ctx.beginPath(); ctx.arc(-2.6, -17 + drift, 1.7, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(2.6, -17 + drift, 1.7, 0, TAU); ctx.fill();
+        ctx.shadowBlur = 0;
+        break;
+      }
+      case 'skeletonking': {
+        // A towering crowned skeleton on a throne of bone — the Act finale.
+        const s = 1.25;
+        ctx.save(); ctx.scale(s, s);
+        // Ribcage torso.
+        ctx.fillStyle = fl ? '#fff' : '#d8cfb8';
+        ctx.beginPath();
+        ctx.moveTo(0, -20); ctx.quadraticCurveTo(16, -8, 12, 20); ctx.lineTo(-12, 20);
+        ctx.quadraticCurveTo(-16, -8, 0, -20); ctx.fill();
+        ctx.strokeStyle = fl ? '#d8cfb8' : '#8a8070'; ctx.lineWidth = 2;
+        for (let i = 0; i < 4; i++) {
+          const yy = -10 + i * 7;
+          ctx.beginPath(); ctx.moveTo(-9 + i, yy); ctx.quadraticCurveTo(0, yy + 4, 9 - i, yy); ctx.stroke();
+        }
+        ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(0, 16); ctx.stroke();
+        // Great sword in the right hand.
+        const sw = Math.sin(this.anim * 1.4) * 4;
+        ctx.strokeStyle = fl ? '#fff' : '#c9c0a8'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(12, 2); ctx.lineTo(20, -6 + sw); ctx.stroke();
+        ctx.strokeStyle = '#e6ecf4'; ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.moveTo(20, -6 + sw); ctx.lineTo(30, -30 + sw); ctx.stroke();
+        ctx.strokeStyle = '#c9a04a'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(16, -2 + sw); ctx.lineTo(24, -8 + sw); ctx.stroke();
+        // Skull.
+        ctx.fillStyle = fl ? '#fff' : '#e8e0cc';
+        ctx.beginPath(); ctx.arc(0, -24, 9, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#1a1418';
+        ctx.beginPath(); ctx.arc(-3.4, -25, 2.4, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(3.4, -25, 2.4, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#e0402f'; ctx.shadowColor = '#e0402f'; ctx.shadowBlur = 6;
+        ctx.beginPath(); ctx.arc(-3.4, -25, 1.1, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(3.4, -25, 1.1, 0, TAU); ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#c9c0a8'; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.moveTo(-4, -20); ctx.lineTo(4, -20); ctx.stroke();
+        // Golden crown.
+        ctx.fillStyle = '#e8c34a';
+        ctx.beginPath();
+        ctx.moveTo(-9, -30); ctx.lineTo(-9, -34); ctx.lineTo(-5, -31); ctx.lineTo(-2, -36);
+        ctx.lineTo(0, -31); ctx.lineTo(2, -36); ctx.lineTo(5, -31); ctx.lineTo(9, -34);
+        ctx.lineTo(9, -30); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#e0402f';
+        ctx.beginPath(); ctx.arc(0, -32, 1.3, 0, TAU); ctx.fill();
+        ctx.restore();
+        break;
+      }
       case 'hound':
       case 'mongrel': {
         // Low quadruped beast lunging forward. Mongrels are bigger, purple-hued

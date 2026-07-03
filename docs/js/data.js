@@ -18,11 +18,21 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.4.3-alpha';
+const GAME_VERSION = 'v0.5.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.5.0-alpha', date: 'July 2026',
+    notes: [
+      'NEW — STORY MODE (Act I), in The Wilds above Adventure Mode. Search ten lands, each haunted by a named legendary ghost lord (Sir Aldric the Hollow Knight, Lady Morwenna the Weeping Wraith, and eight more). Banish all ten and the Skeleton King\'s grave opens',
+      'The Skeleton King greets you with “You dare come to my grave? You will die!” — slay him for a 40% chance at The Royal Grandeur ring',
+      'NEW BIOMES — Story maps roll through varied lands: verdant meadows, whispering pine woods, tangled jungle, sunken mire, scorched dunes and broken barrens. Each has its own ground, foliage and species — oaks, pines, palms and cactus — and biomes never clash (no desert bordering snow)',
+      'Every Story map is framed by a NATURAL border — a wall of forest, cliff or mountain — so no map has a bare rectangular edge. No two maps are alike',
+      'Only Act I is open for now; more Acts to come'
+    ]
+  },
   {
     v: 'v0.4.3-alpha', date: 'July 2026',
     notes: [
@@ -818,7 +828,10 @@ const MONSTERS = {
   bloat:    { name: 'Corpse Bloat',   hp: 130, speed: 34,  dmg: 16, r: 22, xp: 36, atkRange: 40, atkCd: 1.6, explodes: 150 },
   catapult: { name: 'Bone Catapult',  hp: 210, speed: 9,   dmg: 30, r: 24, xp: 62, atkRange: 640, atkCd: 3.6, siege: true },
   mongrel:  { name: 'Nephalem Mongrel', hp: 160, speed: 150, dmg: 22, r: 16, xp: 70, atkRange: 32, atkCd: 1.0, lunges: true, dropsHeartstring: true },
-  brute:    { name: 'Grave Brute',    hp: 300, speed: 46,  dmg: 24, r: 26, xp: 110, atkRange: 46, atkCd: 1.7, boss: true }
+  brute:    { name: 'Grave Brute',    hp: 300, speed: 46,  dmg: 24, r: 26, xp: 110, atkRange: 46, atkCd: 1.7, boss: true },
+  // Story Mode bosses: the 10 named legendary ghost lords, then the King.
+  wraith:   { name: 'Vengeful Wraith', hp: 240, speed: 78, dmg: 21, r: 22, xp: 130, atkRange: 44, atkCd: 1.6, boss: true, ghost: true },
+  skeletonking: { name: 'The Skeleton King', hp: 520, speed: 54, dmg: 30, r: 30, xp: 240, atkRange: 54, atkCd: 1.8, boss: true }
 };
 
 const ELITE_PREFIX = ['Blood', 'Grave', 'Doom', 'Plague', 'Dread', 'Bone'];
@@ -948,5 +961,92 @@ function makeAdventureZone() {
     boss: pick(ELITE_PREFIX) + pick(ELITE_SUFFIX) + ' the ' + pick(['Endless', 'Vile', 'Forgotten', 'Ravenous']),
     packs: tiles * 2 + 3, tiles,
     desc: 'An uncharted stretch of Sanctuary, ' + tiles + ' tiles wide, remade each visit.'
+  };
+}
+
+// --------------------------------- STORY MODE ------------------------------
+// A long, hand-authored journey. Each Act is a chain of biome maps, each
+// gated by a named legendary ghost lord; the last is the Skeleton King's
+// grave. Only ACT ONE is ready for testing.
+//
+// BIOMES drive the ground colour, prop/tree species, terrain and the NATURAL
+// border that frames every map (a wall of forest / cliff / mountain — never a
+// hard edge). Biomes are grouped by climate so a desert never borders snow.
+const BIOMES = {
+  grass:    { name: 'Verdant Meadows',   ground: '#18240f', accent: '#3f6a2c', tree: 'oak',
+              props: ['oak', 'oak', 'rock', 'pillar'],       deco: ['grass', 'grass', 'moss', 'rock'],
+              border: 'forest', weather: null,   forest: true,  rivers: 1,
+              monsters: ['zombie', 'skeleton', 'ghoul', 'hound', 'archer'] },
+  forest:   { name: 'Whispering Woods',   ground: '#132012', accent: '#2f5226', tree: 'pine',
+              props: ['pine', 'pine', 'oak', 'rock'],         deco: ['grass', 'moss', 'moss', 'bones'],
+              border: 'forest', weather: null,   forest: true,  rivers: 0,
+              monsters: ['skeleton', 'archer', 'ghoul', 'hound', 'soldier'] },
+  jungle:   { name: 'Tangled Jungle',     ground: '#0f2418', accent: '#2c6a3c', tree: 'palm',
+              props: ['palm', 'palm', 'oak', 'rock'],         deco: ['grass', 'grass', 'moss'],
+              border: 'jungle', weather: 'rain', forest: true,  rivers: 1,
+              monsters: ['ghoul', 'imp', 'cultist', 'hound', 'bloat'] },
+  swamp:    { name: 'Sunken Mire',        ground: '#131a15', accent: '#2c3a2a', tree: 'tree',
+              props: ['tree', 'tree', 'rock', 'tomb'],        deco: ['moss', 'grass', 'bones', 'blood'],
+              border: 'forest', weather: 'rain', forest: true,  rivers: 2,
+              monsters: ['zombie', 'ghoul', 'ghoul', 'cultist', 'bloat'] },
+  desert:   { name: 'Scorched Dunes',     ground: '#241d10', accent: '#6a5326', tree: 'cactus',
+              props: ['cactus', 'cactus', 'rock', 'obelisk'], deco: ['crack', 'rubble', 'bones'],
+              border: 'mountain', weather: 'wind', forest: false, rivers: 0,
+              monsters: ['imp', 'imp', 'archer', 'cultist', 'soldier'] },
+  badlands: { name: 'Broken Barrens',     ground: '#20180d', accent: '#4e3c22', tree: 'cactus',
+              props: ['rock', 'rock', 'cactus', 'obelisk'],   deco: ['crack', 'rubble', 'rock'],
+              border: 'cliff', weather: 'wind', forest: false, rivers: 0,
+              monsters: ['skeleton', 'archer', 'soldier', 'knight', 'catapult'] }
+};
+
+// Ten magical named legendary ghost lords — one haunts each Act I map.
+const STORY_GHOST_NAMES = [
+  'Sir Aldric, the Hollow Knight',
+  'Lady Morwenna, the Weeping Wraith',
+  'Grellthorn the Spectral',
+  'Vaelmoor, the Drowned Duke',
+  'Ysolde of the Ashen Veil',
+  'Baelgor, the Chained Revenant',
+  'Nyxaria, Phantom of Thorns',
+  'Old Grimwald, the Fen Shade',
+  'Karrothys, the Gilded Ghost',
+  'Emberlyn, the Smouldering Spirit'
+];
+
+// Act I biome order — climate-coherent, no two ADJACENT maps the same biome,
+// tapering from green lands into the arid barrens where the King's grave lies.
+const STORY_ACT1_BIOMES = ['grass', 'forest', 'jungle', 'swamp', 'forest', 'grass', 'jungle', 'swamp', 'badlands', 'desert'];
+
+const STORY_KING_FLAVOR = '“You dare come to my grave? You will die!”';
+
+// Build the zone for a Story-Mode stage. Stages 1–10 are biome maps (each with
+// its ghost lord); stage 11 is the Skeleton King's small grave arena.
+function makeStoryZone(stage) {
+  if (stage >= 11) {
+    return {
+      id: 'story-grave', name: 'The Grave of the Skeleton King', kind: 'open', biome: 'badlands',
+      mLvl: clamp(Hero.level, 1, 70),
+      ground: '#1a1014', accent: '#4a2e3a', weather: 'wind',
+      monsters: ['skeleton', 'skeleton', 'archer', 'soldier'],
+      boss: 'Leoric, the Skeleton King', bossType: 'skeletonking',
+      packs: 4, sizeMul: 0.6, forest: false, rivers: 0,
+      story: true, storyFinal: true, kingFlavor: STORY_KING_FLAVOR,
+      desc: 'A cramped, cursed barrow where the Skeleton King waits.'
+    };
+  }
+  const biomeKey = STORY_ACT1_BIOMES[(stage - 1) % STORY_ACT1_BIOMES.length];
+  const B = BIOMES[biomeKey];
+  const ghost = STORY_GHOST_NAMES[(stage - 1) % STORY_GHOST_NAMES.length];
+  return {
+    id: 'story-' + stage, name: 'Act I · ' + B.name, kind: 'open', biome: biomeKey,
+    mLvl: clamp(Hero.level, 1, 70),
+    ground: B.ground, accent: B.accent, weather: B.weather,
+    monsters: B.monsters,
+    boss: ghost, bossType: 'wraith',
+    packs: randInt(9, 13),
+    sizeMul: rand(0.9, 1.35),
+    forest: B.forest, rivers: B.rivers,
+    story: true, chapter: stage,
+    desc: 'Chapter ' + stage + ' of Act I — hunt the ghost of ' + ghost + '.'
   };
 }

@@ -29,6 +29,7 @@ const Game = {
   journeyIdx: null,   // bounty land index, or null for adventure/rift
   finalStage: true,
   descend: false,
+  story: false,       // Story Mode: an 11-stage Act ending at the Skeleton King
   playerDeadT: 0,
   rewardLines: null,
   banner: { text: '', sub: '', t: 0, maxT: 1 },
@@ -110,6 +111,7 @@ const Game = {
   startZone(idx) {
     // A bounty is a short journey of 2–3 linked areas; the final area holds the
     // land's named unique boss, the earlier ones a champion that guards the descent.
+    this.story = false;
     this.stage = 1;
     this.stageCount = randInt(2, 3);
     this.journeyIdx = idx;
@@ -117,10 +119,23 @@ const Game = {
   },
 
   startAdventure() {
+    this.story = false;
     this.stage = 1;
     this.stageCount = randInt(2, 3);
     this.journeyIdx = null;
     this.startLand(makeAdventureZone(), null);
+  },
+
+  // Story Mode: an Act is a chain of 10 biome maps — each guarded by a named
+  // legendary ghost lord — then the Skeleton King's grave (stage 11). Only
+  // Act I is ready for testing.
+  startStory(act = 1) {
+    this.story = true;
+    this.storyAct = act;
+    this.stage = 1;
+    this.stageCount = 11;
+    this.journeyIdx = null;
+    this.startLand(makeStoryZone(1), null);
   },
 
   // kind: 'normal' (1-69, free · 250 pts) | 'greater' (Nephalem, lvl 70, costs a
@@ -149,6 +164,7 @@ const Game = {
       Hero.masterKeys--; Hero.save();
     }
     // Rifts are one endless map — no multi-area descent.
+    this.story = false;
     this.stage = 1; this.stageCount = 1; this.journeyIdx = null;
     this.startLand(makeRiftZone(kind), null);
   },
@@ -160,7 +176,9 @@ const Game = {
     // Carry HP/essence into the next area — descending isn't a free heal.
     const hpFrac = this.player ? this.player.hp / this.player.maxHp : 1;
     const ess = this.player ? this.player.essence : 60;
-    const zone = this.journeyIdx !== null ? ZONES[this.journeyIdx] : makeAdventureZone();
+    const zone = this.story ? makeStoryZone(this.stage)
+      : this.journeyIdx !== null ? ZONES[this.journeyIdx]
+      : makeAdventureZone();
     this.startLand(zone, this.journeyIdx);
     if (this.player) {
       this.player.hp = Math.max(1, Math.round(this.player.maxHp * hpFrac));
@@ -227,17 +245,32 @@ const Game = {
     // that guards the descent on earlier areas. (Rifts summon a Guardian instead,
     // only once the orb bar is full.)
     if (!this.riftMode) {
-      const name = this.finalStage ? this.zone.boss
-        : pick(ELITE_PREFIX) + pick(ELITE_SUFFIX) + ' the ' + pick(['Warden', 'Gatekeeper', 'Deepwalker', 'Threshold']);
-      const boss = new Enemy('brute', World.bossPos.x, World.bossPos.y, { unique: true, name });
+      // Story Mode: every stage holds its own NAMED boss (a ghost lord, or the
+      // King on the last). Bounties/Adventure keep the champion-then-unique flow.
+      let name, bt = 'brute';
+      if (this.story) {
+        name = this.zone.boss;
+        bt = this.zone.bossType || 'wraith';
+      } else {
+        name = this.finalStage ? this.zone.boss
+          : pick(ELITE_PREFIX) + pick(ELITE_SUFFIX) + ' the ' + pick(['Warden', 'Gatekeeper', 'Deepwalker', 'Threshold']);
+      }
+      const boss = new Enemy(bt, World.bossPos.x, World.bossPos.y, { unique: true, name });
       this.enemies.push(boss);
     }
 
     this.state = 'playing';
-    const sub = this.riftMode ? 'Slay rare elites for their orbs — fill the rift'
-      : this.finalStage ? 'Bounty: slay ' + this.zone.boss
-      : 'Area ' + this.stage + ' of ' + this.stageCount + ' — slay the champion to descend';
-    this.showBanner(this.zone.name + (this.riftMode || this.stageCount < 2 ? '' : '  ·  Area ' + this.stage + '/' + this.stageCount), sub, 3);
+    let sub;
+    if (this.riftMode) sub = 'Slay rare elites for their orbs — fill the rift';
+    else if (this.story && this.finalStage) sub = this.zone.kingFlavor || 'Slay the Skeleton King';
+    else if (this.story) sub = 'Chapter ' + this.stage + '/10 — destroy ' + this.zone.boss;
+    else if (this.finalStage) sub = 'Bounty: slay ' + this.zone.boss;
+    else sub = 'Area ' + this.stage + ' of ' + this.stageCount + ' — slay the champion to descend';
+    const title = this.story && this.finalStage ? 'LEORIC, THE SKELETON KING'
+      : this.zone.name + (this.riftMode || this.stageCount < 2 ? ''
+        : this.story ? '  ·  ' + this.stage + '/10'
+        : '  ·  Area ' + this.stage + '/' + this.stageCount);
+    this.showBanner(title, sub, this.story && this.finalStage ? 4 : 3);
     AudioSys.sfx('wave');
     Hero.save();
   },
@@ -367,16 +400,30 @@ const Game = {
     } else if (!this.finalStage) {
       // More land below — the portal descends to the next area.
       this.descend = true;
-      this.showBanner('AREA CLEARED', 'A dark portal yawns open — descend deeper', 3.2);
+      const msg = this.story
+        ? 'The ghost of ' + boss.name + ' is banished — a portal opens onward'
+        : 'A dark portal yawns open — descend deeper';
+      this.showBanner(this.story ? 'CHAPTER ' + this.stage + ' CLEARED' : 'AREA CLEARED', msg, 3.2);
     } else {
       this.descend = false;
-      this.showBanner('BOUNTY COMPLETE', 'A portal tears open — step through', 3.4);
-      // The Act 1 boss (the first land's unique) can drop The Royal Grandeur.
-      if (this.zoneIdx === 0 && Math.random() < 0.4) {
-        const rg = new Pickup(boss.x, boss.y, 'item');
-        rg.item = Items.generatePowerItem(this.monsterLevel(), 'royalGrandeur');
-        this.pickups.push(rg);
-        UI.toast('★ The Royal Grandeur!', '#ff8c2a');
+      if (this.story) {
+        // The Skeleton King falls — a good chance at The Royal Grandeur.
+        this.showBanner('THE SKELETON KING FALLS', 'His grave is yours — step through the portal', 3.6);
+        if (Math.random() < 0.4) {
+          const rg = new Pickup(boss.x, boss.y, 'item');
+          rg.item = Items.generatePowerItem(this.monsterLevel(), 'royalGrandeur');
+          this.pickups.push(rg);
+          UI.toast('★ The Royal Grandeur!', '#ff8c2a');
+        }
+      } else {
+        this.showBanner('BOUNTY COMPLETE', 'A portal tears open — step through', 3.4);
+        // The Act 1 boss (the first land's unique) can drop The Royal Grandeur.
+        if (this.zoneIdx === 0 && Math.random() < 0.4) {
+          const rg = new Pickup(boss.x, boss.y, 'item');
+          rg.item = Items.generatePowerItem(this.monsterLevel(), 'royalGrandeur');
+          this.pickups.push(rg);
+          UI.toast('★ The Royal Grandeur!', '#ff8c2a');
+        }
       }
     }
     fxNova(boss.x, boss.y, 220);
@@ -400,6 +447,29 @@ const Game = {
       lines.push(['Rifts cleared: ' + Hero.riftsCleared, '#b06adf']);
       this.rewardLines = lines;
       Hero.addXP(Math.round(400 * diff.reward));
+      Hero.save();
+      this.state = 'camp';
+      UI.open('reward');
+      AudioSys.sfx('level');
+      return;
+    }
+    // Finishing an Act of Story Mode: a bigger cache, and the run ends.
+    if (this.story) {
+      this.story = false;
+      const gold = Math.round((900 + mLvl * 90) * diff.reward);
+      Hero.gold += gold;
+      const lines = [[gold + ' gold', '#ffd76a']];
+      Hero.mats.soul += 3;
+      lines.push(['3× Forgotten Souls', MATERIALS.soul.color]);
+      const gem = Items.generateGem(mLvl + 4);
+      Hero.gems.push(gem);
+      lines.push([gemName(gem), GEM_TYPES[gem.type].color]);
+      const item = Items.generate(mLvl + 2, 0.4);
+      Items.stash(item);
+      lines.push([item.name, RARITIES[item.rarity].color]);
+      lines.push(['Act I complete — the Skeleton King is slain', '#ff8c2a']);
+      this.rewardLines = lines;
+      Hero.addXP(Math.round(1600 * diff.reward));
       Hero.save();
       this.state = 'camp';
       UI.open('reward');

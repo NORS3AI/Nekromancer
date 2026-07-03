@@ -262,6 +262,8 @@ const Screens = {
     const rows = [
       ['BOUNTIES', 'The lands of Sanctuary — hunt each land\'s unique boss', '#6ff7c3',
         () => { UI.close(); Game.state = 'map'; }],
+      ['STORY MODE — ACT I', 'Hunt 10 ghost lords across the lands, then the Skeleton King', '#ff8c2a',
+        () => { UI.close(); Game.startStory(1); }],
       ['ADVENTURE MODE', 'A randomized land at your level, new every visit', '#ffd76a',
         () => { UI.close(); Game.startAdventure(); }],
       ['RIFT  (levels 1–69)', 'Gather 250 orb points from rare elites, then slay the Guardian', '#b06adf',
@@ -273,17 +275,17 @@ const Screens = {
       ['SEASONS', at70 ? SEASON.name : 'The season begins at level 70', '#4ade80',
         at70 ? () => UI.open('season') : null]
     ];
-    let y = py + 92;
+    let y = py + 90;
     for (const [label, desc, col, cb] of rows) {
-      UI.btn(ctx, px + 16, y, pw - 32, 56, '', cb, { disabled: !cb });
+      UI.btn(ctx, px + 16, y, pw - 32, 50, '', cb, { disabled: !cb });
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 14px Georgia';
       ctx.fillStyle = cb ? col : '#5c5569';
-      ctx.fillText(label, px + 30, y + 20);
+      ctx.fillText(label, px + 30, y + 18);
       ctx.font = '11px Georgia';
       ctx.fillStyle = cb ? '#9a9080' : '#453f52';
-      ctx.fillText(this.fitText(ctx, desc, pw - 60), px + 30, y + 38);
-      y += 62;
+      ctx.fillText(this.fitText(ctx, desc, pw - 60), px + 30, y + 35);
+      y += 55;
     }
     ctx.textAlign = 'center';
     ctx.font = 'bold 12px Georgia';

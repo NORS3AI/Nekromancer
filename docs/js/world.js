@@ -65,7 +65,10 @@ const World = {
     // Rivers first (with bridges) so everything else avoids the water.
     this.makeRivers(zone);
 
-    const propTypes = ['tomb', 'tomb', 'cross', 'pillar', 'tree', 'obelisk', 'rock'];
+    // Story-Mode biomes pick their own species (cacti in deserts, palms in the
+    // jungle, …); other lands keep the classic graveyard scatter.
+    const biome = zone.biome ? BIOMES[zone.biome] : null;
+    const propTypes = biome ? biome.props : ['tomb', 'tomb', 'cross', 'pillar', 'tree', 'obelisk', 'rock'];
     // Bigger maps carry proportionally more scenery.
     const propTarget = clamp(Math.round(this.W * this.H / 110000), 50, 130);
     let attempts = 0;
@@ -79,14 +82,15 @@ const World = {
       for (const p of this.props) if (dist(x, y, p.x, p.y) < 115) { ok = false; break; }
       if (!ok) continue;
       const type = pick(propTypes);
-      const r = { tomb: 16, cross: 13, pillar: 19, tree: 15, obelisk: 17, rock: 20 }[type];
-      this.props.push({ x, y, r, type, seed: Math.random() });
+      this.props.push({ x, y, r: this.PROP_R[type] || 16, type, seed: Math.random() });
     }
 
     // Forests: dense groves of trees you weave through for cover.
     this.makeForests(zone);
+    // A natural border frames the whole map — no bare rectangular edges.
+    this.makeBorder(zone);
 
-    const decoTypes = ['skull', 'bones', 'ribcage', 'rubble', 'crack', 'blood', 'moss', 'grass'];
+    const decoTypes = biome ? biome.deco : ['skull', 'bones', 'ribcage', 'rubble', 'crack', 'blood', 'moss', 'grass'];
     const decoTarget = Math.round(this.W * this.H / 26000);
     for (let i = 0; i < decoTarget; i++) {
       const x = rand(50, this.W - 50), y = rand(50, this.H - 50);
@@ -167,6 +171,47 @@ const World = {
     return false;
   },
 
+  // Collision radius per prop species.
+  PROP_R: {
+    tomb: 16, cross: 13, pillar: 19, tree: 15, obelisk: 17, rock: 20,
+    oak: 16, pine: 16, palm: 16, cactus: 14
+  },
+
+  // The border species for each biome's frame.
+  BORDER_PROPS: {
+    forest: ['pine', 'pine', 'oak', 'tree'],
+    jungle: ['palm', 'palm', 'oak'],
+    mountain: ['rock', 'rock', 'cactus'],
+    cliff: ['rock', 'rock', 'rock', 'obelisk']
+  },
+
+  // Frame the open map with a dense natural wall (forest / cliff / mountain)
+  // so it has no bare rectangular edge. The band hugs the perimeter and steers
+  // clear of the spawn, the boss lair and any water.
+  makeBorder(zone) {
+    const B = zone.biome ? BIOMES[zone.biome] : null;
+    if (!B || !B.border) return;
+    const kinds = this.BORDER_PROPS[B.border] || ['rock'];
+    const band = 128;   // how deep the wall reaches inward
+    const along = 44;   // spacing tangent to the edge
+    const inward = 40;  // spacing perpendicular
+    const place = (x, y) => {
+      x = clamp(x + rand(-14, 14), 38, this.W - 38);
+      y = clamp(y + rand(-14, 14), 38, this.H - 38);
+      if (dist(x, y, this.spawn.x, this.spawn.y) < 210) return;
+      if (dist(x, y, this.bossPos.x, this.bossPos.y) < 210) return;
+      if (this.blockedTerrain(x, y)) return;
+      const type = pick(kinds);
+      this.props.push({ x, y, r: this.PROP_R[type] || 18, type, seed: Math.random(), border: true });
+    };
+    for (let x = 40; x < this.W - 40; x += along) {
+      for (let d = 0; d < band; d += inward) { place(x, 42 + d); place(x, this.H - 42 - d); }
+    }
+    for (let y = 40; y < this.H - 40; y += along) {
+      for (let d = 0; d < band; d += inward) { place(42 + d, y); place(this.W - 42 - d, y); }
+    }
+  },
+
   makeForests(zone) {
     let clusters;
     if (zone.forest === false) clusters = 0;
@@ -198,7 +243,8 @@ const World = {
         let ok = true;
         for (const p of this.props) if (dist(x, y, p.x, p.y) < 50) { ok = false; break; }
         if (!ok) continue;
-        this.props.push({ x, y, r: 13, type: 'tree', seed: Math.random(), forest: true });
+        const treeType = zone.biome && BIOMES[zone.biome] ? BIOMES[zone.biome].tree : 'tree';
+        this.props.push({ x, y, r: 13, type: treeType, seed: Math.random(), forest: true });
         placed++;
       }
       // Underbrush (non-colliding) fills out the grove floor.
@@ -441,11 +487,16 @@ const World = {
     // Lift the ground well out of near-black so floors and paths read clearly.
     x.fillStyle = this.lighten(zone ? zone.ground : '#16121b', 0.46);
     x.fillRect(0, 0, 320, 320);
+    // Biome maps tint their blotches toward the land's accent (sandy dunes,
+    // mossy jungle, …) so each ground reads as its own place.
+    const acc = zone && zone.biome && zone.accent ? parseInt(zone.accent.slice(1), 16) : null;
+    const ar = acc !== null ? (acc >> 16) & 255 : null, ag = acc !== null ? (acc >> 8) & 255 : null, ab = acc !== null ? acc & 255 : null;
     for (let i = 0; i < 46; i++) {
       const px = rand(320), py = rand(320), r = rand(14, 52);
       const g = x.createRadialGradient(px, py, 0, px, py, r);
       // Mix of soft-light and soft-dark blotches for texture without going muddy.
       if (Math.random() < 0.55) g.addColorStop(0, 'rgba(180,172,196,0.18)');
+      else if (acc !== null) g.addColorStop(0, `rgba(${ar},${ag},${ab},0.30)`);
       else g.addColorStop(0, `rgba(${randInt(20, 50)},${randInt(16, 42)},${randInt(24, 56)},0.34)`);
       g.addColorStop(1, 'rgba(30,24,38,0)');
       x.fillStyle = g;
@@ -1149,6 +1200,66 @@ const World = {
         ctx.beginPath(); ctx.moveTo((s - 0.5) * 6, -24); ctx.lineTo((s - 0.5) * 6 - 20, -44); ctx.stroke();
         ctx.lineWidth = 2.5;
         ctx.beginPath(); ctx.moveTo((s - 0.5) * 22, -56); ctx.lineTo((s - 0.5) * 22 + 8, -70); ctx.stroke();
+        break;
+      }
+      case 'oak': {
+        // Broad leafy hardwood — grasslands.
+        const lean = (s - 0.5) * 6;
+        ctx.strokeStyle = '#3a2a1c';
+        ctx.lineCap = 'round'; ctx.lineWidth = 8;
+        ctx.beginPath(); ctx.moveTo(0, 2); ctx.lineTo(lean, -30); ctx.stroke();
+        const cy = -44 - s * 6;
+        ctx.fillStyle = '#2f5226';
+        ctx.beginPath(); ctx.arc(lean, cy, 22, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#3f6a2c';
+        ctx.beginPath(); ctx.arc(lean - 9, cy - 6, 13, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(lean + 11, cy + 2, 12, 0, TAU); ctx.fill();
+        ctx.fillStyle = 'rgba(150,200,110,0.35)';
+        ctx.beginPath(); ctx.arc(lean - 6, cy - 10, 7, 0, TAU); ctx.fill();
+        break;
+      }
+      case 'pine': {
+        // Conifer — layered triangles, forest biome.
+        ctx.strokeStyle = '#3a2a1c'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(0, 4); ctx.lineTo(0, -14); ctx.stroke();
+        ctx.fillStyle = '#244a22';
+        for (let i = 0; i < 3; i++) {
+          const yy = -12 - i * 14, w = 20 - i * 5;
+          ctx.beginPath(); ctx.moveTo(-w, yy); ctx.lineTo(0, yy - 22); ctx.lineTo(w, yy); ctx.closePath(); ctx.fill();
+        }
+        ctx.fillStyle = 'rgba(120,180,100,0.25)';
+        ctx.beginPath(); ctx.moveTo(-6, -50); ctx.lineTo(0, -64); ctx.lineTo(6, -50); ctx.closePath(); ctx.fill();
+        break;
+      }
+      case 'palm': {
+        // Jungle palm — tall curved trunk, drooping fronds.
+        const lean = (s - 0.5) * 14;
+        ctx.strokeStyle = '#5a3f22'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(0, 2); ctx.quadraticCurveTo(lean * 0.5, -30, lean, -56); ctx.stroke();
+        ctx.strokeStyle = '#2c6a3c'; ctx.lineWidth = 5;
+        for (let i = 0; i < 6; i++) {
+          const a = -Math.PI / 2 + (i - 2.5) * 0.5;
+          ctx.beginPath();
+          ctx.moveTo(lean, -56);
+          ctx.quadraticCurveTo(lean + Math.cos(a) * 18, -56 + Math.sin(a) * 18,
+            lean + Math.cos(a) * 34, -50 + Math.sin(a) * 30);
+          ctx.stroke();
+        }
+        ctx.fillStyle = '#6a4a24';
+        ctx.beginPath(); ctx.arc(lean, -54, 3.5, 0, TAU); ctx.fill();
+        break;
+      }
+      case 'cactus': {
+        // Saguaro — columnar trunk with two upreaching arms.
+        ctx.fillStyle = '#2f6a3a';
+        rr(ctx, -6, -52, 12, 56, 6); ctx.fill();
+        const armL = s < 0.7;
+        if (armL) { rr(ctx, -18, -34, 8, 20, 4); ctx.fill(); rr(ctx, -18, -38, 8, 10, 4); ctx.fill(); }
+        rr(ctx, 10, -42, 8, 22, 4); ctx.fill(); rr(ctx, 10, -46, 8, 12, 4); ctx.fill();
+        ctx.fillStyle = 'rgba(160,220,140,0.3)';
+        rr(ctx, -4, -50, 3, 52, 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(20,50,26,0.6)'; ctx.lineWidth = 1;
+        for (let i = 0; i < 5; i++) { const yy = -46 + i * 10; ctx.beginPath(); ctx.moveTo(-6, yy); ctx.lineTo(6, yy); ctx.stroke(); }
         break;
       }
       case 'obelisk': {
