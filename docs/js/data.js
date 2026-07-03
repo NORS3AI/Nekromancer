@@ -18,11 +18,18 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.2.6-alpha';
+const GAME_VERSION = 'v0.2.7-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.2.7-alpha', date: 'July 2026',
+    notes: [
+      'LIGHTER TERRAIN: the ground was too dark to read. Floors and paths are now lifted out of near-black so scenery, packs and objects stand out',
+      'DUNGEON PATHS POP: crypt/ruin floor tiles now get a soft lit wash so corridors and rooms read clearly against the dark walls — much easier to navigate'
+    ]
+  },
   {
     v: 'v0.2.6-alpha', date: 'July 2026',
     notes: [

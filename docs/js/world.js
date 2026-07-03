@@ -399,25 +399,37 @@ const World = {
     }
   },
 
+  // Blend a #rrggbb toward white by t (0..1).
+  lighten(hex, t) {
+    const n = parseInt((hex || '#16121b').slice(1), 16);
+    const r = Math.round(((n >> 16) & 255) + (255 - ((n >> 16) & 255)) * t);
+    const g = Math.round(((n >> 8) & 255) + (255 - ((n >> 8) & 255)) * t);
+    const b = Math.round((n & 255) + (255 - (n & 255)) * t);
+    return `rgb(${r},${g},${b})`;
+  },
+
   makePattern(zone) {
     const c = document.createElement('canvas');
     c.width = c.height = 320;
     const x = c.getContext('2d');
-    x.fillStyle = zone ? zone.ground : '#16121b';
+    // Lift the ground out of near-black so floors and paths read clearly.
+    x.fillStyle = this.lighten(zone ? zone.ground : '#16121b', 0.26);
     x.fillRect(0, 0, 320, 320);
     for (let i = 0; i < 46; i++) {
       const px = rand(320), py = rand(320), r = rand(14, 52);
       const g = x.createRadialGradient(px, py, 0, px, py, r);
-      g.addColorStop(0, `rgba(${randInt(8, 30)},${randInt(6, 24)},${randInt(10, 34)},0.55)`);
+      // Mix of soft-light and soft-dark blotches for texture without going muddy.
+      if (Math.random() < 0.5) g.addColorStop(0, 'rgba(150,140,164,0.14)');
+      else g.addColorStop(0, `rgba(${randInt(14, 40)},${randInt(12, 34)},${randInt(18, 46)},0.4)`);
       g.addColorStop(1, 'rgba(20,16,26,0)');
       x.fillStyle = g;
       x.beginPath(); x.arc(px, py, r, 0, TAU); x.fill();
     }
     for (let i = 0; i < 260; i++) {
-      x.fillStyle = Math.random() < 0.5 ? 'rgba(70,60,82,0.22)' : 'rgba(5,3,8,0.35)';
+      x.fillStyle = Math.random() < 0.5 ? 'rgba(150,140,166,0.26)' : 'rgba(8,5,12,0.3)';
       x.fillRect(rand(320), rand(320), rand(1, 2.5), rand(1, 2.5));
     }
-    x.strokeStyle = 'rgba(8,5,12,0.55)';
+    x.strokeStyle = 'rgba(8,5,12,0.4)';
     x.lineWidth = 1.2;
     for (let i = 0; i < 7; i++) {
       let px = rand(320), py = rand(320);
@@ -549,7 +561,7 @@ const World = {
     if (cam.x + w > this.W) ctx.fillRect(this.W, cam.y, cam.x + w - this.W, h);
     if (cam.y + h > this.H) ctx.fillRect(cam.x, this.H, w, cam.y + h - this.H);
 
-    if (this.walls) this.drawWalls(ctx, cam, w, h);
+    if (this.walls) { this.drawFloorTint(ctx, cam, w, h); this.drawWalls(ctx, cam, w, h); }
     else {
       this.drawWater(ctx, cam, w, h);
       ctx.strokeStyle = 'rgba(111,247,195,0.10)';
@@ -583,6 +595,22 @@ const World = {
     }
     ctx.restore();
     ctx.globalAlpha = 1;
+  },
+
+  // Wash walkable floor cells with a soft glow so corridors/rooms read as
+  // clearly lit paths against the dark walls.
+  drawFloorTint(ctx, cam, w, h) {
+    const x0 = clamp(Math.floor(cam.x / CELL) - 1, 0, this.cols - 1);
+    const y0 = clamp(Math.floor(cam.y / CELL) - 1, 0, this.rows - 1);
+    const x1 = clamp(Math.ceil((cam.x + w) / CELL) + 1, 0, this.cols - 1);
+    const y1 = clamp(Math.ceil((cam.y + h) / CELL) + 1, 0, this.rows - 1);
+    ctx.fillStyle = 'rgba(150,140,168,0.12)';
+    for (let cy = y0; cy <= y1; cy++) {
+      for (let cx = x0; cx <= x1; cx++) {
+        if (this.isWall(cx, cy)) continue;
+        ctx.fillRect(cx * CELL, cy * CELL, CELL, CELL);
+      }
+    }
   },
 
   drawWalls(ctx, cam, w, h) {
