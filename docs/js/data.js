@@ -18,11 +18,17 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.3.6-alpha';
+const GAME_VERSION = 'v0.3.7-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.3.7-alpha', date: 'July 2026',
+    notes: [
+      'Dev panel: new "Haedrig\'s Gift" cheat — instantly sends all 6 Grace of Inarius set pieces (with their per-slot affixes) to your Stash'
+    ]
+  },
   {
     v: 'v0.3.6-alpha', date: 'July 2026',
     notes: [

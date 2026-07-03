@@ -1959,6 +1959,20 @@ const Screens = {
       UI.toast('+6 of every gem', '#b06adf');
       Hero.save();
     });
+    row("✦ Haedrig's Gift — full Grace of Inarius to Stash", () => {
+      const mLvl = Math.max(70, Hero.level);
+      let n = 0;
+      for (const slot of Object.keys(INARIUS_SET.pieces)) {
+        if (Hero.stash.length >= Hero.STASH_SIZE) break;
+        Hero.stash.push(Items.generateSetPiece(mLvl, slot));
+        n++;
+      }
+      Hero.saveStash();
+      Hero.save();
+      UI.toast(n === 6 ? "Haedrig's Gift: all 6 Grace of Inarius pieces sent to Stash"
+        : 'Stashed ' + n + ' pieces (Stash full)', n === 6 ? '#4ade80' : '#9a9080');
+      AudioSys.sfx('setdrop');
+    }, '#4ade80');
     // Gold row: five amounts.
     const golds = [100, 1000, 10000, 100000, 1000000];
     const gw = (pw - 32 - 4 * 6) / 5;

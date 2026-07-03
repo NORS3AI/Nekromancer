@@ -82,10 +82,10 @@ const Items = {
 
   // A Grace of Inarius piece the hero doesn't own yet (or a re-roll if all
   // six are claimed). Rift Guardian loot.
-  generateSetPiece(mLvl) {
+  generateSetPiece(mLvl, forceSlot) {
     const owned = Hero.setPiecesOwned();
     const missing = Object.keys(INARIUS_SET.pieces).filter(s => !owned.has(s));
-    const slot = missing.length ? pick(missing) : pick(Object.keys(INARIUS_SET.pieces));
+    const slot = forceSlot || (missing.length ? pick(missing) : pick(Object.keys(INARIUS_SET.pieces)));
     const def = ITEM_SLOTS[slot];
     const R = RARITIES[5];
     const lvlScale = 1 + mLvl * 0.11;
