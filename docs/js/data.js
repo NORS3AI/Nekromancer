@@ -18,11 +18,17 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.3.7-alpha';
+const GAME_VERSION = 'v0.3.8-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.3.8-alpha', date: 'July 2026',
+    notes: [
+      'Haedrig\'s Gift now also includes the build\'s legendary set items: Convention of Elements & Krysbin\'s Sentence (rings), Funerary Pick (weapon), Iron Rose (phylactery) and Aquila Cuirass (chest) — the full 11-piece kit straight to your Stash'
+    ]
+  },
   {
     v: 'v0.3.7-alpha', date: 'July 2026',
     notes: [

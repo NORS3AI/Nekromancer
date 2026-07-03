@@ -1959,18 +1959,17 @@ const Screens = {
       UI.toast('+6 of every gem', '#b06adf');
       Hero.save();
     });
-    row("✦ Haedrig's Gift — full Grace of Inarius to Stash", () => {
+    row("✦ Haedrig's Gift — full Inarius set + legendaries to Stash", () => {
       const mLvl = Math.max(70, Hero.level);
       let n = 0;
-      for (const slot of Object.keys(INARIUS_SET.pieces)) {
-        if (Hero.stash.length >= Hero.STASH_SIZE) break;
-        Hero.stash.push(Items.generateSetPiece(mLvl, slot));
-        n++;
-      }
+      const give = it => { if (Hero.stash.length < Hero.STASH_SIZE) { Hero.stash.push(it); n++; } };
+      // The 6 Grace of Inarius set pieces...
+      for (const slot of Object.keys(INARIUS_SET.pieces)) give(Items.generateSetPiece(mLvl, slot));
+      // ...plus the build's legendary "set items": rings, weapon, phylactery, chest.
+      for (const key of ['coe', 'krysbin', 'funeraryPick', 'ironRose', 'aquila']) give(Items.generatePowerItem(mLvl, key));
       Hero.saveStash();
       Hero.save();
-      UI.toast(n === 6 ? "Haedrig's Gift: all 6 Grace of Inarius pieces sent to Stash"
-        : 'Stashed ' + n + ' pieces (Stash full)', n === 6 ? '#4ade80' : '#9a9080');
+      UI.toast("Haedrig's Gift: " + n + ' pieces sent to Stash' + (Hero.stash.length >= Hero.STASH_SIZE ? ' (Stash full)' : ''), '#4ade80');
       AudioSys.sfx('setdrop');
     }, '#4ade80');
     // Gold row: five amounts.

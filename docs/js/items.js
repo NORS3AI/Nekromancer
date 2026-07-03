@@ -109,8 +109,8 @@ const Items = {
   },
 
   // Build-defining legendaries from the Inarius guide.
-  generatePowerItem(mLvl) {
-    const key = pick(Object.keys(LEGENDARY_POWERS));
+  generatePowerItem(mLvl, forceKey) {
+    const key = forceKey || pick(Object.keys(LEGENDARY_POWERS));
     const P = LEGENDARY_POWERS[key];
     const item = this.generate(mLvl, 0, P.slot);
     item.rarity = 4;
