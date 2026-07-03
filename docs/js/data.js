@@ -18,11 +18,22 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.2.5-alpha';
+const GAME_VERSION = 'v0.2.6-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.2.6-alpha', date: 'July 2026',
+    notes: [
+      'RIFT KEY DROPS REWORKED: Normal Rift Guardians now drop 0–3 Nephalem Rift Keys; Nephalem Rift Guardians drop 0–1 Master Nephalem Rift Keys',
+      'SEASONS now GUARANTEE an awesome piece every clear — a random Grace of Inarius set piece (or a legendary power once your set is complete), plus a chance to refund a Master key',
+      'Difficulty is now set right in THE WILDS menu with a ◀ ▶ stepper, so one setting applies to every mode instead of per-screen',
+      'PERFECT gems (top quality, any type) now grant +20% weapon damage when socketed in a weapon',
+      'Mystic cost now reads cost/owned (e.g. "1591/500 gold · 72/6 souls")',
+      'Fixed the dev panel: "Max level" artisan cheats now correctly say (10), not (100)'
+    ]
+  },
   {
     v: 'v0.2.5-alpha', date: 'July 2026',
     notes: [
