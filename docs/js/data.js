@@ -18,11 +18,17 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.3.3-alpha';
+const GAME_VERSION = 'v0.3.4-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.3.4-alpha', date: 'July 2026',
+    notes: [
+      'Emeralds retuned: a Perfect Emerald now gives +20% crit chance (was ~13%). Tiers scale 4% / 8% / 12% / 16% / 20%'
+    ]
+  },
   {
     v: 'v0.3.3-alpha', date: 'July 2026',
     notes: [
@@ -329,7 +335,7 @@ const GEM_TIERS = ['Chipped', 'Flawed', 'Regular', 'Flawless', 'Perfect'];
 
 const GEM_TYPES = {
   ruby:     { name: 'Ruby',     color: '#e04a5a', stat: 'dmg',  perTier: 0.05,  label: v => `+${Math.round(v * 100)}% damage` },
-  emerald:  { name: 'Emerald',  color: '#4ade80', stat: 'crit', perTier: 0.025, label: v => `+${Math.round(v * 100)}% crit chance` },
+  emerald:  { name: 'Emerald',  color: '#4ade80', stat: 'crit', perTier: 0.04,  label: v => `+${Math.round(v * 100)}% crit chance` },
   amethyst: { name: 'Amethyst', color: '#b06adf', stat: 'hp',   perTier: 22,    label: v => `+${Math.round(v)} life` },
   topaz:    { name: 'Topaz',    color: '#ffd76a', stat: 'ess',  perTier: 0.7,   label: v => `+${v.toFixed(1)} essence/s` },
   diamond:  { name: 'Diamond',  color: '#bfe8f4', stat: 'armor', perTier: 30,   label: v => `+${Math.round(v)} armor` }
