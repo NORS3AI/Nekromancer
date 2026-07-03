@@ -234,6 +234,7 @@ const SKILL_FX = {
     World.smash(p.x, p.y, R);
     // Bloodtide Blade: +350% Death Nova damage per enemy near you.
     let mult = blood ? 1.5 : rune === 'boneNova' ? 1.35 : 1;
+    mult *= 1 + (p.deathNovaBonus || 0);   // Inarius helm/boots + Iron Rose: +Death Nova damage
     if (p.powers && p.powers.bloodtide) {
       let near = 0;
       for (const e of Game.enemies) {
@@ -266,8 +267,8 @@ const SKILL_FX = {
       if (dist(p.x, p.y, e.x, e.y) < 150 + e.r) {
         const o = boneOpts(angleTo(p.x, p.y, e.x, e.y), 80);
         if (stun) o.root = Math.max(o.root || 0, 2); // Dislocation: stunned
-        // Inarius 2pc: Bone Armor damage x10.
-        e.hurt(12 * (set >= 2 ? 10 : 1) * p.power(), o);
+        // Inarius 2pc: Bone Armor damage +1000% (x11).
+        e.hurt(12 * (set >= 2 ? 11 : 1) * p.power(), o);
         hits++;
       }
     }

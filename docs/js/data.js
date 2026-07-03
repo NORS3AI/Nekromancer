@@ -18,11 +18,19 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.3.4-alpha';
+const GAME_VERSION = 'v0.3.5-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.3.5-alpha', date: 'July 2026',
+    notes: [
+      'GRACE OF INARIUS set tuned to its real Diablo 3 numbers — (2) Bone Armor damage +1000%; (4) +3% damage reduction per enemy hit; (6) Bone Armor raises a bone tornado dealing 1000% weapon damage that marks foes to take +19000% damage from you. Full Inarius is now a true nuke',
+      'Set pieces carry their D3 affixes: Helm & Boots grant +15% Death Nova damage; Gloves & Shoulders grant a 20% chance to deal Area Damage on hit',
+      'NEW: Area Damage — your hits have a chance to splash a share of the damage onto nearby enemies'
+    ]
+  },
   {
     v: 'v0.3.4-alpha', date: 'July 2026',
     notes: [
@@ -391,9 +399,9 @@ const INARIUS_SET = {
     boots:     "Inarius's Martyrdom"
   },
   bonuses: [
-    { pieces: 2, desc: 'Bone Armor damage ×10 and its shield is doubled' },
-    { pieces: 4, desc: 'Bone Armor grants 3% damage reduction per enemy hit (max 60%)' },
-    { pieces: 6, desc: 'Bone Armor raises a swirling bone tornado; enemies it strikes take +50% damage from you' }
+    { pieces: 2, desc: 'Bone Armor damage is increased by 1000%' },
+    { pieces: 4, desc: 'Bone Armor grants an additional 3% damage reduction per enemy hit' },
+    { pieces: 6, desc: 'Bone Armor also activates a swirling tornado of bone, damaging nearby enemies for 1000% weapon damage and increasing the damage they take from the Necromancer by 19000%' }
   ]
 };
 
@@ -613,8 +621,13 @@ const AFFIX_ROLLS = {
   gold:  { base: 0.12, label: v => `+${Math.round(v * 100)}% gold find` },
   armor: { base: 20,   label: v => `+${Math.round(v)} armor` },
   // Movement speed rolls ONLY on boots (1%–25%), handled specially in generation.
-  move:  { base: 0.06, label: v => `+${Math.round(v * 100)}% movement speed` }
+  move:  { base: 0.06, label: v => `+${Math.round(v * 100)}% movement speed` },
+  // Special affixes — never roll on random gear; placed on set/legendary items only.
+  dnova: { base: 0.15, label: v => `+${Math.round(v * 100)}% Death Nova damage` },
+  area:  { base: 0.20, label: v => `${Math.round(v * 100)}% chance to deal Area Damage on hit` }
 };
+// Affixes that must never appear from the generic random pool.
+const RESTRICTED_AFFIXES = new Set(['move', 'dnova', 'area']);
 
 const LEGENDARY_PREFIX = ["Maltorius'", "The Widow's", "Rathma's", "Xul's", "Trag'Oul's", "Mendeln's"];
 const EPIC_PREFIX = ['Fabled', 'Mythic', 'Hallowed', 'Abyssal', 'Deathless', 'Umbral'];

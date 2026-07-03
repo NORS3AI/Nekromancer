@@ -172,8 +172,9 @@ class Player {
           for (const e of Game.enemies) {
             if (e.dead || e.sleep || e.spawnT > 0) continue;
             if (dist(this.x, this.y, e.x, e.y) < R + e.r) {
-              e.vulnT = 3;
-              e.hurt(8 * this.power(), { knock: { a: angleTo(this.x, this.y, e.x, e.y), f: 20 } });
+              e.vulnT = 3;            // 6pc: +19000% damage taken from you (see hurt)
+              // Tornado hits for ~1000% weapon damage per tick.
+              e.hurt(60 * this.power(), { knock: { a: angleTo(this.x, this.y, e.x, e.y), f: 20 }, noSplash: true });
             }
           }
           World.smash(this.x, this.y, R); // the tornado grinds furniture to dust
@@ -641,10 +642,18 @@ class Enemy {
       if (this.root > 0 || this.state === 'stunned') dmg *= 3;
       else if (this.slow > 0 || (this.curse && this.curse.type === 'decrepify')) dmg *= 1.75;
     }
-    if (this.vulnT > 0) dmg *= 1.5; // Inarius 6pc: shredded by the tornado
+    if (this.vulnT > 0) dmg *= 191; // Inarius 6pc: +19000% damage taken from you
     this.hp -= dmg;
     this.flash = 1;
     dmgText(this.x, this.y, dmg, crit);
+    // Area Damage: 20% proc to splash a share of the hit onto nearby foes.
+    if (!opts.noSplash && p && p.areaDamage > 0 && Math.random() < 0.20) {
+      const splash = dmg * p.areaDamage;
+      for (const e of Game.enemies) {
+        if (e === this || e.dead || e.sleep || e.spawnT > 0) continue;
+        if (dist(this.x, this.y, e.x, e.y) < 130) e.hurt(splash, { noSplash: true });
+      }
+    }
     if (opts.knock && !this.unique) {
       const f = opts.knock.f * (this.def.armored ? 0.4 : 1); // armored foes shrug off knockback
       this.kbx += Math.cos(opts.knock.a) * f;

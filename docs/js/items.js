@@ -54,8 +54,8 @@ const Items = {
       stats[key] = (stats[key] || 0) + roll;
     };
     addStat(def.primary, 1.6 * R.mult);
-    // `move` is boots-only, never rolled from the generic pool.
-    const pool = Object.keys(AFFIX_ROLLS).filter(k => k !== def.primary && k !== 'move');
+    // Restricted affixes (move/dnova/area) never roll from the generic pool.
+    const pool = Object.keys(AFFIX_ROLLS).filter(k => k !== def.primary && !RESTRICTED_AFFIXES.has(k));
     for (let i = 0; i < rarity; i++) addStat(pick(pool), 0.85 * R.mult);
 
     // Boots can roll Movement Speed (1%–25%), a flat non-level-scaled roll.
@@ -94,9 +94,13 @@ const Items = {
       stats[key] = (stats[key] || 0) + AFFIX_ROLLS[key].base * mult * lvlScale * rand(0.9, 1.2);
     };
     addStat(def.primary, 1.8 * R.mult);
-    const pool = Object.keys(AFFIX_ROLLS).filter(k => k !== def.primary && k !== 'move');
+    const pool = Object.keys(AFFIX_ROLLS).filter(k => k !== def.primary && !RESTRICTED_AFFIXES.has(k));
     for (let i = 0; i < 3; i++) addStat(pick(pool), 0.9 * R.mult);
     if (slot === 'boots') stats.move = clamp((stats.move || 0) + rand(0.10, 0.25), 0.01, 0.25);
+    // Grace of Inarius per-piece affixes (D3): Death Nova on helm/boots, Area
+    // Damage on gloves/shoulders.
+    if (slot === 'helm' || slot === 'boots') stats.dnova = 0.15;
+    if (slot === 'gloves' || slot === 'shoulders') stats.area = 0.20;
     return {
       slot, rarity: 5, set: 'inarius',
       name: INARIUS_SET.pieces[slot],
@@ -646,7 +650,7 @@ const Items = {
     delete item.stats[statKey];
     // New property: anything the item doesn't already have. `move` stays boots-only.
     const pool = Object.keys(AFFIX_ROLLS).filter(k =>
-      !(k in item.stats) && (k !== 'move' || item.slot === 'boots'));
+      !(k in item.stats) && k !== 'dnova' && k !== 'area' && (k !== 'move' || item.slot === 'boots'));
     const nk = pick(pool);
     const R = RARITIES[item.rarity];
     if (nk === 'move') {
@@ -667,7 +671,7 @@ const Items = {
   // Hero level + gear + gems + passives, as a plain stats object.
   // Works with no live Player (used by the character sheet in camp).
   computeStats() {
-    let dmg = 0, hp = 0, crit = 0, ess = 0, reg = 0, gold = 0, armor = 0, move = 0, xpBonus = 0;
+    let dmg = 0, hp = 0, crit = 0, ess = 0, reg = 0, gold = 0, armor = 0, move = 0, xpBonus = 0, dnova = 0, area = 0;
     const perfectTier = GEM_TIERS.length - 1;
     const gather = (it, slot) => {
       if (!it) return;
@@ -679,6 +683,8 @@ const Items = {
       gold += it.stats.gold || 0;
       armor += it.stats.armor || 0;
       move += it.stats.move || 0;
+      dnova += it.stats.dnova || 0;
+      area += it.stats.area || 0;
       for (const g of it.gems || []) {
         // A Perfect-tier gem grants +20% damage — in ANY slot, per gem.
         if (g.tier >= perfectTier) dmg += 0.20;
@@ -727,6 +733,8 @@ const Items = {
       armorDR,
       moveSpeed: clamp(move, 0, 1.0),   // affix (≤25%) + emerald boots (+20% each)
       xpBonus,
+      deathNovaBonus: dnova,
+      areaDamage: clamp(area, 0, 1),
       setCount: this.setCount(),
       powers: this.equippedPowers()
     };
@@ -751,6 +759,8 @@ const Items = {
     p.armor = s.armor;
     p.armorDR = s.armorDR;
     p.xpBonus = s.xpBonus;
+    p.deathNovaBonus = s.deathNovaBonus;
+    p.areaDamage = s.areaDamage;
     p.speed = 180 * (1 + s.moveSpeed);   // base 180 + movement-speed affix
     p.setCount = s.setCount;
     p.powers = s.powers;
