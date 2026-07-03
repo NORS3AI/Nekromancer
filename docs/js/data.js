@@ -18,11 +18,17 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.4.2-alpha';
+const GAME_VERSION = 'v0.4.3-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.4.3-alpha', date: 'July 2026',
+    notes: [
+      'Reverted the Nephalem Mongrel to a flat 4% per-wave spawn chance (still only one alive at a time) instead of a 1–2 per-run cap — sightings stay a pleasant surprise. Heartstring stays a 35% drop'
+    ]
+  },
   {
     v: 'v0.4.2-alpha', date: 'July 2026',
     notes: [
