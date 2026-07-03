@@ -2101,12 +2101,12 @@ const Screens = {
     }, '#4ade80');
     // Act-boss exclusive legendaries → Stash (their bosses drop these in-game).
     const tw3 = (pw - 32 - 2 * 6) / 3;
-    UI.btn(ctx, px + 16, y, tw3, 30, '⚔ Bloodtide (A2)',
-      () => Screens.grantLegendary('bloodtide'), { size: 10, color: '#e04a5a', border: '#8a2635' });
-    UI.btn(ctx, px + 16 + tw3 + 6, y, tw3, 30, '⚔ Cycle Scythe (A3)',
-      () => Screens.grantLegendary('cycleScythe'), { size: 10, color: '#b06adf', border: '#5a3a7a' });
-    UI.btn(ctx, px + 16 + 2 * (tw3 + 6), y, tw3, 30, '◈ Royal Grandeur (A1)',
+    UI.btn(ctx, px + 16, y, tw3, 30, '◈ Royal Grandeur (A1)',
       () => Screens.grantLegendary('royalGrandeur'), { size: 10, color: '#ffd76a', border: '#8a6f4a' });
+    UI.btn(ctx, px + 16 + tw3 + 6, y, tw3, 30, '⚔ Bloodtide (A2)',
+      () => Screens.grantLegendary('bloodtide'), { size: 10, color: '#e04a5a', border: '#8a2635' });
+    UI.btn(ctx, px + 16 + 2 * (tw3 + 6), y, tw3, 30, '⚔ Cycle Scythe (A3)',
+      () => Screens.grantLegendary('cycleScythe'), { size: 10, color: '#b06adf', border: '#5a3a7a' });
     y += 36;
     // Gold row: five amounts.
     const golds = [100, 1000, 10000, 100000, 1000000];
