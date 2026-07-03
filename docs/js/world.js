@@ -412,24 +412,24 @@ const World = {
     const c = document.createElement('canvas');
     c.width = c.height = 320;
     const x = c.getContext('2d');
-    // Lift the ground out of near-black so floors and paths read clearly.
-    x.fillStyle = this.lighten(zone ? zone.ground : '#16121b', 0.26);
+    // Lift the ground well out of near-black so floors and paths read clearly.
+    x.fillStyle = this.lighten(zone ? zone.ground : '#16121b', 0.46);
     x.fillRect(0, 0, 320, 320);
     for (let i = 0; i < 46; i++) {
       const px = rand(320), py = rand(320), r = rand(14, 52);
       const g = x.createRadialGradient(px, py, 0, px, py, r);
       // Mix of soft-light and soft-dark blotches for texture without going muddy.
-      if (Math.random() < 0.5) g.addColorStop(0, 'rgba(150,140,164,0.14)');
-      else g.addColorStop(0, `rgba(${randInt(14, 40)},${randInt(12, 34)},${randInt(18, 46)},0.4)`);
-      g.addColorStop(1, 'rgba(20,16,26,0)');
+      if (Math.random() < 0.55) g.addColorStop(0, 'rgba(180,172,196,0.18)');
+      else g.addColorStop(0, `rgba(${randInt(20, 50)},${randInt(16, 42)},${randInt(24, 56)},0.34)`);
+      g.addColorStop(1, 'rgba(30,24,38,0)');
       x.fillStyle = g;
       x.beginPath(); x.arc(px, py, r, 0, TAU); x.fill();
     }
     for (let i = 0; i < 260; i++) {
-      x.fillStyle = Math.random() < 0.5 ? 'rgba(150,140,166,0.26)' : 'rgba(8,5,12,0.3)';
+      x.fillStyle = Math.random() < 0.5 ? 'rgba(184,176,200,0.30)' : 'rgba(10,7,14,0.24)';
       x.fillRect(rand(320), rand(320), rand(1, 2.5), rand(1, 2.5));
     }
-    x.strokeStyle = 'rgba(8,5,12,0.4)';
+    x.strokeStyle = 'rgba(10,7,14,0.32)';
     x.lineWidth = 1.2;
     for (let i = 0; i < 7; i++) {
       let px = rand(320), py = rand(320);
@@ -604,7 +604,7 @@ const World = {
     const y0 = clamp(Math.floor(cam.y / CELL) - 1, 0, this.rows - 1);
     const x1 = clamp(Math.ceil((cam.x + w) / CELL) + 1, 0, this.cols - 1);
     const y1 = clamp(Math.ceil((cam.y + h) / CELL) + 1, 0, this.rows - 1);
-    ctx.fillStyle = 'rgba(150,140,168,0.12)';
+    ctx.fillStyle = 'rgba(176,168,196,0.22)';
     for (let cy = y0; cy <= y1; cy++) {
       for (let cx = x0; cx <= x1; cx++) {
         if (this.isWall(cx, cy)) continue;

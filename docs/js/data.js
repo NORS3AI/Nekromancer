@@ -18,11 +18,17 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.2.7-alpha';
+const GAME_VERSION = 'v0.2.8-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.2.8-alpha', date: 'July 2026',
+    notes: [
+      'Terrain brightened further — floors and dungeon paths are now clearly lit and easy to read at a glance'
+    ]
+  },
   {
     v: 'v0.2.7-alpha', date: 'July 2026',
     notes: [
