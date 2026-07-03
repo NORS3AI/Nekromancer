@@ -232,7 +232,7 @@ const SKILL_FX = {
     const R = rune === 'boneNova' ? 130 : 190;   // Bone Nova: tighter, harder
     fxNova(p.x, p.y, R);
     World.smash(p.x, p.y, R);
-    // Bloodtide Blade: +350% Death Nova damage per enemy near you.
+    // Bloodtide Blade: +400% Death Nova damage per enemy within 25 yards (max 10).
     let mult = blood ? 1.5 : rune === 'boneNova' ? 1.35 : 1;
     mult *= 1 + (p.deathNovaBonus || 0);   // Inarius helm/boots + Iron Rose: +Death Nova damage
     if (p.powers && p.powers.bloodtide) {
@@ -240,7 +240,7 @@ const SKILL_FX = {
       for (const e of Game.enemies) {
         if (!e.dead && !e.sleep && dist(p.x, p.y, e.x, e.y) < 220) near++;
       }
-      mult *= 1 + 3.5 * Math.min(15, near);
+      mult *= 1 + 4.0 * Math.min(10, near);
     }
     for (const e of Game.enemies) {
       if (e.dead || e.sleep || e.spawnT > 0) continue;
@@ -618,7 +618,15 @@ const Skills = {
     if ((this.cds[s.id] || 0) > 0) return;
     const cost = this.costFor(s);
     if (p.essence < cost) return;
+    // Scythe of the Cycle: Secondary skills hit for +400% while Bone Armor is
+    // up, but each such cast burns 4s off the Bone Armor timer.
+    const cycle = s.cat === 'secondary' && p.powers && p.powers.cycleScythe && p.boneArmorT > 0;
+    if (cycle) p.secondaryBoost = true;
     const result = SKILL_FX[s.id](p, resolveAim(angle));
+    if (cycle) {
+      p.secondaryBoost = false;
+      if (result) p.boneArmorT = Math.max(0, p.boneArmorT - 4);
+    }
     if (result) {
       p.essence -= cost;
       if (result !== 'cdSet') this.cds[s.id] = this.cdFor(s);

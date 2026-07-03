@@ -2038,6 +2038,16 @@ const Screens = {
     UI.btn(ctx, px + 28 + bw, py + 118, bw, 38, 'CANCEL', () => UI.close(), { size: 13 });
   },
 
+  // Grant a specific legendary (at level 70+) straight to the Stash.
+  grantLegendary(key) {
+    if (Hero.stash.length >= Hero.STASH_SIZE) {
+      UI.toast('Stash is full — make room first', '#9a9080'); AudioSys.sfx('denied'); return;
+    }
+    const it = Items.generatePowerItem(Math.max(70, Hero.level), key);
+    Hero.stash.push(it); Hero.saveStash(); Hero.save();
+    UI.toast('★ ' + it.name + ' → Stash', '#ff8c2a'); AudioSys.sfx('setdrop');
+  },
+
   cheats(ctx, W, H) {
     this.dim(ctx, W, H);
     // (red ✕ drawn globally by UI.draw, above all content)
@@ -2089,6 +2099,13 @@ const Screens = {
       UI.toast("Haedrig's Gift: " + n + ' pieces sent to Stash' + (Hero.stash.length >= Hero.STASH_SIZE ? ' (Stash full)' : ''), '#4ade80');
       AudioSys.sfx('setdrop');
     }, '#4ade80');
+    // Act-boss legendary weapons (their bosses aren't implemented yet) → Stash.
+    const hw2 = (pw - 32 - 6) / 2;
+    UI.btn(ctx, px + 16, y, hw2, 30, '⚔ Bloodtide Blade (Act 2)',
+      () => Screens.grantLegendary('bloodtide'), { size: 11, color: '#e04a5a', border: '#8a2635' });
+    UI.btn(ctx, px + 16 + hw2 + 6, y, hw2, 30, '⚔ Scythe of the Cycle (Act 3)',
+      () => Screens.grantLegendary('cycleScythe'), { size: 11, color: '#b06adf', border: '#5a3a7a' });
+    y += 36;
     // Gold row: five amounts.
     const golds = [100, 1000, 10000, 100000, 1000000];
     const gw = (pw - 32 - 4 * 6) / 5;

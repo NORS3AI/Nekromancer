@@ -47,6 +47,7 @@ class Player {
     this.powerShiftStacks = 0;
     this.boneArmorT = 0;     // Inarius: Bone Armor buff window
     this.boneArmorDR = 0;    // 4pc damage reduction
+    this.secondaryBoost = false;  // Scythe of the Cycle: transient +400% on a secondary cast
     this.tornadoTick = 0;    // 6pc bone tornado
   }
 
@@ -66,6 +67,8 @@ class Player {
     if (this.powerShiftT > 0) m *= 1 + (this.powers && this.powers.funeraryPick ? 0.20 : 0.10) * this.powerShiftStacks;
     // Convention of Elements: a rotating +200% damage window (4s of every 24s).
     if (this.powers && this.powers.coe && ((Game.time || 0) % 24) < 4) m *= 3;
+    // Scythe of the Cycle: +400% on the secondary cast currently in flight.
+    if (this.secondaryBoost) m *= 5;
     return m;
   }
 

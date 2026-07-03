@@ -181,7 +181,11 @@ const Items = {
       return ['🔥 Lights the darkness (radius ' + T.radius + ')', '⏳ ' + mins + ' min of fuel remaining'];
     }
     const lines = Object.entries(item.stats).map(([k, v]) => AFFIX_ROLLS[k].label(v));
-    if (item.power) lines.push('★ ' + LEGENDARY_POWERS[item.power].desc);
+    if (item.power) {
+      const P = LEGENDARY_POWERS[item.power];
+      lines.push('★ ' + P.desc);
+      if (P.flavorLines) for (const fl of P.flavorLines) lines.push('  ' + fl);
+    }
     if (item.set === 'inarius') {
       const n = this.setCount();
       lines.push('◈ Grace of Inarius (' + n + '/6 equipped)');

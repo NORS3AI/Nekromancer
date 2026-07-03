@@ -18,11 +18,20 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.5.0-alpha';
+const GAME_VERSION = 'v0.5.1-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.5.1-alpha', date: 'July 2026',
+    notes: [
+      'NEW LEGENDARY — Bloodtide Blade (2-H Scythe): Death Nova deals +400% damage for every enemy within 25 yards, up to 10. Carries its authentic lvl-70 stat block (Vitality/Intelligence/elemental damage). Will drop from the Act 2 boss (not yet implemented)',
+      'NEW LEGENDARY — Scythe of the Cycle (1-H Scythe): your Secondary skills deal +400% damage while Bone Armor is active, but each such cast burns 4 seconds off Bone Armor. Will drop from the Act 3 boss (not yet implemented)',
+      'Both blades are grantable now from the DEV panel (two ⚔ buttons) — sent to your Stash at level 70 stats',
+      'D3 stats the engine does not model yet (Vitality, Intelligence, elemental damage, attack speed) are shown on the items as their authentic lvl-70 numbers'
+    ]
+  },
   {
     v: 'v0.5.0-alpha', date: 'July 2026',
     notes: [
@@ -492,8 +501,24 @@ const INARIUS_SET = {
 // their REAL Diablo 3 effects (per the Maxroll guide).
 const LEGENDARY_POWERS = {
   bloodtide: {
-    slot: 'weapon', name: 'Bloodtide Blade',
-    desc: 'Death Nova deals +350% damage for every enemy near you'
+    slot: 'weapon', name: 'Bloodtide Blade', exclusive: true,
+    affixes: { dmg: 1.25, hp: 1050, dnova: 0.50, crit: 0.06 },
+    desc: 'Death Nova deals +400% damage for every enemy within 25 yards (up to 10). Drops from the Act 2 boss',
+    flavorLines: [
+      '2-H Scythe · 1687.4 DPS · 1461–1607 dmg · 1.10 aps (lvl 70)',
+      '+946–1125 Vitality · +946–1125 Intelligence',
+      '+(1177–1439)–(1410–1788) elemental Damage (one of 7)'
+    ]
+  },
+  cycleScythe: {
+    slot: 'weapon', name: 'Scythe of the Cycle', exclusive: true,
+    affixes: { dmg: 0.95, crit: 0.06, hp: 320 },
+    desc: 'Secondary skills deal +400% damage while Bone Armor is active, but each such cast cuts 4s from Bone Armor. Drops from the Act 3 boss',
+    flavorLines: [
+      '1-H Scythe · 461.5 DPS · 249–461 dmg · 1.30 aps (lvl 70)',
+      '+626–750 Intelligence',
+      '+(981–1199)–(1175–1490) elemental Damage (one of 7)'
+    ]
   },
   funeraryPick: {
     slot: 'weapon', name: 'Funerary Pick', affixes: { area: 0.24 },
