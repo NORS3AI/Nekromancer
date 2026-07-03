@@ -18,11 +18,21 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.3.9-alpha';
+const GAME_VERSION = 'v0.4.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.4.0-alpha', date: 'July 2026',
+    notes: [
+      'NEW SYSTEM — TORCHES: a new Torch equipment slot. A lit torch casts a pool of light that pushes back the darkness of the crypts, then burns out and vanishes when its fuel runs dry. Every hero starts with a Wood Torch',
+      'Three torches crafted at the Blacksmith (new TORCH BENCH): Wood (12 min), Iron (37 min) and Nephalem (75 min). Forged torches are sent to your Stash for safe keeping — equip them from the Inventory wheel',
+      'NEW REAGENTS — smash chairs, tables and bookcases for Lumber; pots, urns and stone clutter for Iron Rivets. Recipes: Wood = 10 Lumber · Iron = 10 Lumber + 15 Rivets · Nephalem = 25 Lumber + 40 Rivets + 3 Nephalem Heartstring',
+      'NEW ELITE — the Nephalem Mongrel, a rare purple beast that prowls Rifts and drops Nephalem Heartstring, the key reagent for the mightiest torch',
+      'Crypts now read as genuinely dark, lit only by your torch; open daylit lands stay bright'
+    ]
+  },
   {
     v: 'v0.3.9-alpha', date: 'July 2026',
     notes: [
@@ -362,7 +372,19 @@ const MATERIALS = {
   parts:   { name: 'Reusable Parts',  color: '#c9bfa8' },
   dust:    { name: 'Arcane Dust',     color: '#6a9aff' },
   crystal: { name: 'Veiled Crystals', color: '#ffd76a' },
-  soul:    { name: 'Forgotten Souls', color: '#ff8c2a' }
+  soul:    { name: 'Forgotten Souls', color: '#ff8c2a' },
+  // Torch-crafting reagents.
+  lumber:      { name: 'Lumber',                color: '#8a6f4a' },
+  rivets:      { name: 'Iron Rivets',           color: '#9aa0a8' },
+  heartstring: { name: 'Nephalem Heartstring',  color: '#b06adf' }
+};
+
+// Torches — a consumable equipped in the Torch slot that lights the darkness
+// for a real-time duration, then burns out. Crafted at the Blacksmith.
+const TORCH_TYPES = {
+  wood:     { name: 'Wood Torch',     minutes: 12, radius: 300, color: '#ffb24a', rarity: 0, recipe: { lumber: 10 } },
+  iron:     { name: 'Iron Torch',     minutes: 37, radius: 380, color: '#ffcf6a', rarity: 2, recipe: { lumber: 10, rivets: 15 } },
+  nephalem: { name: 'Nephalem Torch', minutes: 75, radius: 470, color: '#d8b4f0', rarity: 4, recipe: { lumber: 25, rivets: 40, heartstring: 3 } }
 };
 
 // --------------------------------- gems ------------------------------------
@@ -402,7 +424,10 @@ const ITEM_SLOTS = {
   boots:    { label: 'Boots',      nouns: ['Treads', 'Gravewalkers', 'Marrow Striders', 'Tomb Boots'], primary: 'hp' },
   amulet:   { label: 'Amulet',     nouns: ['Amulet', 'Death Locket', 'Vial Pendant', 'Rathma Charm'], primary: 'crit' },
   ring1:    { label: 'Ring',       nouns: ['Band', 'Signet', 'Knucklebone Loop', 'Death Seal', 'Wraith Coil'], primary: 'crit' },
-  ring2:    { label: 'Ring',       nouns: ['Band', 'Signet', 'Knucklebone Loop', 'Death Seal', 'Wraith Coil'], primary: 'crit' }
+  ring2:    { label: 'Ring',       nouns: ['Band', 'Signet', 'Knucklebone Loop', 'Death Seal', 'Wraith Coil'], primary: 'crit' },
+  // A crafted, burn-down torch that lights the dark. Not a randomly-generated
+  // gear slot — excluded from Items.generate and affix logic.
+  torch:    { label: 'Torch',      nouns: ['Torch'], primary: 'dmg', torch: true }
 };
 
 // ------------------------- Season: Grace of Inarius -------------------------
@@ -772,6 +797,7 @@ const MONSTERS = {
   knight:   { name: 'Fallen Knight',  hp: 175, speed: 60,  dmg: 27, r: 18, xp: 50, atkRange: 52, atkCd: 1.8, armored: true, sword: true, cleave: true },
   bloat:    { name: 'Corpse Bloat',   hp: 130, speed: 34,  dmg: 16, r: 22, xp: 36, atkRange: 40, atkCd: 1.6, explodes: 150 },
   catapult: { name: 'Bone Catapult',  hp: 210, speed: 9,   dmg: 30, r: 24, xp: 62, atkRange: 640, atkCd: 3.6, siege: true },
+  mongrel:  { name: 'Nephalem Mongrel', hp: 160, speed: 150, dmg: 22, r: 16, xp: 70, atkRange: 32, atkCd: 1.0, lunges: true, dropsHeartstring: true },
   brute:    { name: 'Grave Brute',    hp: 300, speed: 46,  dmg: 24, r: 26, xp: 110, atkRange: 46, atkCd: 1.7, boss: true }
 };
 

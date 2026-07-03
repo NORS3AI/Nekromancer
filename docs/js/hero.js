@@ -68,7 +68,7 @@ const Hero = {
   level: 1,
   xp: 0,
   gold: 0,
-  mats: { parts: 0, dust: 0, crystal: 0, soul: 0 },
+  mats: { parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0 },
   gems: [],                 // [{type, tier}]
   bag: [],                  // unequipped items
   stash: [],                // deep storage (up to STASH_SIZE)
@@ -93,12 +93,14 @@ const Hero = {
 
   fresh() {
     this.level = 1; this.xp = 0; this.gold = 0;
-    this.mats = { parts: 0, dust: 0, crystal: 0, soul: 0 };
+    this.mats = { parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0 };
     this.gems = [];
     this.bag = [];
     // NOTE: stash is account-wide (shared vault) — a fresh character does NOT
     // clear it. It is loaded/kept via loadStash()/saveStash().
     this.equipped = {};
+    // Every Nekromancer starts holding a Wood torch against the dark.
+    if (typeof Items !== 'undefined' && Items.makeTorch) this.equipped.torch = Items.makeTorch('wood');
     this.loadout = ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null];
     this.passives = [null, null, null, null, null];
     this.zonesCleared = 0;
@@ -157,7 +159,7 @@ const Hero = {
     d = this.migrate(d);
     Object.assign(this, {
       level: d.level || 1, xp: d.xp || 0, gold: d.gold || 0,
-      mats: Object.assign({ parts: 0, dust: 0, crystal: 0, soul: 0 }, d.mats),
+      mats: Object.assign({ parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0 }, d.mats),
       gems: d.gems || [], bag: d.bag || [], equipped: d.equipped || {},
       loadout: d.loadout || ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null],
       passives: d.passives || [null, null, null, null, null],

@@ -143,6 +143,16 @@ Script lives in the session scratchpad (intentionally not committed).
 
 ## Roadmap ideas (not yet built)
 
+- **⭐ OWNER TODO (requested 2026-07-03): HORADRIC'S CUBE — a legendary tool
+  (game system) the player FINDS in Act Three.** Flesh out: how it's found (Act 3
+  boss/quest drop), what it does (D3 Kanai's Cube-style: extract legendary powers
+  to a passive bank, reforge/upgrade/convert items and gems, transmute recipes),
+  its own crafting UI, and how extracted powers integrate with `p.powers`.
+- **⭐ OWNER TODO (requested 2026-07-03): big meta features —** Story Mode
+  (campaign narrative/quests), Achievements + Titles (earned, shown on the hero),
+  Character NAME CREATION (name your Nekromancer), SAVE/LOAD OVERHAUL (robust
+  multi-character profiles, cloud-ish export/import, migration), and GRAPHICS &
+  SOUND additions (richer sprites/FX/music/ambience beyond the current procedural set).
 - **⭐ OWNER TODO (requested 2026-07-03): create the MASTER LIST of primary +
   secondary stats and affixes for items.** The engine currently models only:
   `dmg` (%), `hp`, `crit` (chance), `ess` (essence/s), `reg` (life/s), `gold`,

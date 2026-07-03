@@ -685,6 +685,13 @@ class Enemy {
     }
     fxBlood(this.x, this.y, this.unique ? 30 : 12);
     if (this.type === 'skeleton' || this.type === 'archer') fxBone(this.x, this.y, 12);
+    // Nephalem Mongrel: drops a Nephalem Heartstring (Nephalem Torch reagent).
+    if (this.def.dropsHeartstring) {
+      const n = randInt(1, 2);
+      Hero.mats.heartstring += n;
+      Particles.text(this.x, this.y - 14, '+' + n + ' Nephalem Heartstring', { color: MATERIALS.heartstring.color, size: 12, life: 1.4 });
+      AudioSys.sfx('setdrop');
+    }
     // Corpse Bloats burst on death — a toxic AoE that hits you and your minions.
     if (this.def.explodes) {
       const r = this.def.explodes;
@@ -967,13 +974,18 @@ class Enemy {
         ctx.shadowBlur = 0;
         break;
       }
-      case 'hound': {
-        // Low quadruped beast lunging forward.
+      case 'hound':
+      case 'mongrel': {
+        // Low quadruped beast lunging forward. Mongrels are bigger, purple-hued
+        // and eye-glowing with the Nephalem taint.
+        const neph = this.type === 'mongrel';
+        const sc = neph ? 1.4 : 1;
+        ctx.save(); ctx.scale(sc, sc);
         const lunge = this.lungeT > 0 ? 3 : 0;
-        ctx.fillStyle = fl ? '#f4d0c8' : '#5a3e3a';
+        ctx.fillStyle = fl ? '#f4d0c8' : (neph ? '#4a2e5a' : '#5a3e3a');
         ctx.beginPath(); ctx.ellipse(0, 2 - lunge * 0.3, 8, 6.5, 0, 0, TAU); ctx.fill();
         // Legs.
-        ctx.strokeStyle = fl ? '#f4d0c8' : '#4a302c';
+        ctx.strokeStyle = fl ? '#f4d0c8' : (neph ? '#3a2448' : '#4a302c');
         ctx.lineWidth = 2.2; ctx.lineCap = 'round';
         const gl = Math.sin(this.anim * 4) * 3;
         ctx.beginPath(); ctx.moveTo(-5, 4); ctx.lineTo(-8, 10 + gl); ctx.stroke();
@@ -981,13 +993,16 @@ class Enemy {
         ctx.beginPath(); ctx.moveTo(-4, 4); ctx.lineTo(-6, 10 - gl); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(4, 4); ctx.lineTo(6, 10 + gl); ctx.stroke();
         // Head thrust forward (facing = up after rotate).
-        ctx.fillStyle = fl ? '#fff' : '#6a4a44';
+        ctx.fillStyle = fl ? '#fff' : (neph ? '#5c3a70' : '#6a4a44');
         ctx.beginPath(); ctx.ellipse(0, -8 - lunge, 5, 6, 0, 0, TAU); ctx.fill();
-        ctx.fillStyle = '#2a1a18';
+        ctx.fillStyle = neph ? '#1a1024' : '#2a1a18';
         ctx.beginPath(); ctx.moveTo(-3, -12 - lunge); ctx.lineTo(0, -16 - lunge); ctx.lineTo(3, -12 - lunge); ctx.fill(); // snout
-        ctx.fillStyle = '#ffd84a';
-        ctx.beginPath(); ctx.arc(-2, -9 - lunge, 1, 0, TAU); ctx.fill();
-        ctx.beginPath(); ctx.arc(2, -9 - lunge, 1, 0, TAU); ctx.fill();
+        ctx.fillStyle = neph ? '#c8a0ff' : '#ffd84a';
+        if (neph) { ctx.shadowColor = '#b06adf'; ctx.shadowBlur = 5; }
+        ctx.beginPath(); ctx.arc(-2, -9 - lunge, 1.1, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(2, -9 - lunge, 1.1, 0, TAU); ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.restore();
         break;
       }
       case 'soldier':

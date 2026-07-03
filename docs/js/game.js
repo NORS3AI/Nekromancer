@@ -288,6 +288,14 @@ const Game = {
         const waves = clamp(Math.round(em * 0.5), 1, 6);
         for (let w = 0; w < waves && this.enemies.length < cap; w++) {
           const pt = this.spawnNear(this.player, Math.max(this.W, this.H) * 0.6);
+          // A rare Nephalem Mongrel elite sometimes prowls the rift — it drops
+          // the Nephalem Heartstring for crafting Nephalem Torches.
+          if (Math.random() < 0.10) {
+            const mg = new Enemy('mongrel', pt.x, pt.y, { elite: true, name: 'Nephalem Mongrel' });
+            World.collide(mg);
+            this.enemies.push(mg);
+            continue;
+          }
           const elite = Math.random() < 0.55;
           for (let i = 0; i < randInt(3, 4); i++) {
             const e = new Enemy(pick(this.zone.monsters), pt.x + rand(-60, 60), pt.y + rand(-60, 60), {
@@ -446,6 +454,17 @@ const Game = {
 
   // Loot burst from smashed clutter.
   breakLoot(b) {
+    // Torch reagents: wood furniture (chairs/tables/bookcases/carts) yields Lumber;
+    // pots, urns and stone clutter (cauldrons/braziers/pots) yield Iron Rivets.
+    if (b.mat === 'wood' && Math.random() < 0.5) {
+      const n = b.big ? randInt(2, 4) : 1;
+      Hero.mats.lumber += n;
+      Particles.text(b.x, b.y - 10, '+' + n + ' Lumber', { color: MATERIALS.lumber.color, size: 12, life: 1 });
+    } else if ((b.mat === 'clay' || b.mat === 'stone') && Math.random() < 0.45) {
+      const n = b.big ? randInt(2, 3) : 1;
+      Hero.mats.rivets += n;
+      Particles.text(b.x, b.y - 10, '+' + n + ' Iron Rivets', { color: MATERIALS.rivets.color, size: 12, life: 1 });
+    }
     const roll = Math.random();
     const bonus = b.big ? 0.06 : 0;
     if (roll < 0.38 + bonus) {
@@ -578,6 +597,17 @@ const Game = {
 
     p.update(dt);
     Skills.update(dt);
+    // A held torch burns down in real time; when it's out it disappears.
+    const torch = Hero.equipped.torch;
+    if (torch && torch.burnT !== undefined) {
+      torch.burnT -= dt;
+      if (torch.burnT <= 0) {
+        delete Hero.equipped.torch;
+        UI.toast('Your ' + torch.name + ' burns out — darkness closes in', '#9a9080');
+        AudioSys.sfx('denied');
+        Hero.save();
+      }
+    }
     this.updateRiftSpawns(dt);
     this.touchObjects();
 
@@ -769,6 +799,7 @@ const Game = {
 
     this.drawWeather(ctx);
     ctx.drawImage(this.vignette, 0, 0);
+    this.drawTorchLight(ctx);
 
     // Land of the Dead ambience.
     if (Skills.lotd > 0) {
@@ -784,6 +815,42 @@ const Game = {
     }
 
     UI.draw(ctx, this.W, this.H);
+  },
+
+  // The torch's pool of light — a lit circle around the hero that fades to
+  // darkness. With a torch it's a gentle atmospheric edge; once it burns out the
+  // dark closes right in. Nephalem torches light the most.
+  drawTorchLight(ctx) {
+    const p = this.player;
+    if (!p) return;
+    const torch = Hero.equipped.torch;
+    const T = torch ? (TORCH_TYPES[torch.torch] || TORCH_TYPES.wood) : null;
+    const sx = p.x - this.camera.x, sy = p.y - this.camera.y;
+    // Crypts are the true dark; open daylit lands stay bright (the torch just
+    // adds a cozy glow there) so the wilds never read as "too dark".
+    const dark = this.zone && this.zone.kind === 'dungeon';
+    const R = T ? T.radius : 150;                 // lit radius
+    const edge = dark ? (T ? 0.52 : 0.9) : (T ? 0.16 : 0.28); // darkness at the far edge
+    const outer = Math.max(R + 60, Math.hypot(this.W, this.H) * 0.62);
+    const g = ctx.createRadialGradient(sx, sy, R * 0.4, sx, sy, outer);
+    g.addColorStop(0, 'rgba(3,2,6,0)');
+    g.addColorStop(clamp(R / outer, 0.12, 0.85), 'rgba(3,2,6,' + (edge * 0.5).toFixed(3) + ')');
+    g.addColorStop(1, 'rgba(2,1,4,' + edge.toFixed(3) + ')');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, this.W, this.H);
+    // Warm flicker at the flame.
+    if (T) {
+      const n = parseInt(T.color.slice(1), 16);
+      const cr = (n >> 16) & 255, cg = (n >> 8) & 255, cb = n & 255;
+      const flick = 0.12 + 0.05 * Math.sin(this.time * 12) + 0.03 * Math.sin(this.time * 27);
+      const gg = ctx.createRadialGradient(sx, sy, 0, sx, sy, R * 0.7);
+      gg.addColorStop(0, `rgba(${cr},${cg},${cb},${flick.toFixed(3)})`);
+      gg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = gg;
+      ctx.fillRect(0, 0, this.W, this.H);
+      ctx.globalCompositeOperation = 'source-over';
+    }
   }
 };
 

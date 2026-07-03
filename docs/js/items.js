@@ -42,7 +42,7 @@ const Items = {
   },
 
   generate(mLvl, boost = 0, forceSlot = null) {
-    const slot = forceSlot || pick(Object.keys(ITEM_SLOTS));
+    const slot = forceSlot || pick(Object.keys(ITEM_SLOTS).filter(s => !ITEM_SLOTS[s].torch));
     const def = ITEM_SLOTS[slot];
     const rarity = this.rollRarity(boost);
     const R = RARITIES[rarity];
@@ -124,6 +124,46 @@ const Items = {
     return item;
   },
 
+  // ------------------------------------------------------------------ torches
+
+  makeTorch(type) {
+    const T = TORCH_TYPES[type] || TORCH_TYPES.wood;
+    const secs = T.minutes * 60;
+    return {
+      slot: 'torch', torch: type, name: T.name, rarity: T.rarity,
+      stats: {}, gems: [], sockets: 0, burnMax: secs, burnT: secs
+    };
+  },
+
+  // Craft a torch at the Blacksmith — consumes reagents, sends it to the Stash.
+  craftTorch(type) {
+    const T = TORCH_TYPES[type];
+    if (!T) return;
+    for (const [k, n] of Object.entries(T.recipe)) {
+      if ((Hero.mats[k] || 0) < n) {
+        UI.toast('Not enough ' + MATERIALS[k].name, '#9a9080');
+        AudioSys.sfx('denied');
+        return;
+      }
+    }
+    if (Hero.stash.length >= Hero.STASH_SIZE) {
+      UI.toast('Stash is full — make room for the torch', '#9a9080');
+      AudioSys.sfx('denied');
+      return;
+    }
+    for (const [k, n] of Object.entries(T.recipe)) Hero.mats[k] -= n;
+    Hero.stash.push(this.makeTorch(type));
+    Hero.saveStash();
+    Hero.save();
+    UI.toast('Forged a ' + T.name + ' → sent to Stash', T.color);
+    AudioSys.sfx('craft');
+  },
+
+  canCraftTorch(type) {
+    const T = TORCH_TYPES[type];
+    return T && Object.entries(T.recipe).every(([k, n]) => (Hero.mats[k] || 0) >= n);
+  },
+
   score(item) {
     let s = 0;
     for (const [k, v] of Object.entries(item.stats)) {
@@ -135,6 +175,11 @@ const Items = {
   },
 
   statLines(item) {
+    if (item.torch) {
+      const T = TORCH_TYPES[item.torch] || TORCH_TYPES.wood;
+      const mins = Math.max(0, Math.round((item.burnT !== undefined ? item.burnT : T.minutes * 60) / 60));
+      return ['🔥 Lights the darkness (radius ' + T.radius + ')', '⏳ ' + mins + ' min of fuel remaining'];
+    }
     const lines = Object.entries(item.stats).map(([k, v]) => AFFIX_ROLLS[k].label(v));
     if (item.power) lines.push('★ ' + LEGENDARY_POWERS[item.power].desc);
     if (item.set === 'inarius') {

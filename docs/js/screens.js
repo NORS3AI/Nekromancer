@@ -21,6 +21,7 @@ const Screens = {
       case 'radial': this.radial(ctx, W, H); break;
       case 'skills': this.skills(ctx, W, H); break;
       case 'smith': this.smith(ctx, W, H); break;
+      case 'torches': this.torches(ctx, W, H); break;
       case 'jeweler': this.jeweler(ctx, W, H); break;
       case 'mystic': this.mystic(ctx, W, H); break;
       case 'pause': this.pause(ctx, W, H); break;
@@ -398,6 +399,17 @@ const Screens = {
         ctx.moveTo(x, y); ctx.lineTo(x - r * 0.15, y + r * 0.3); ctx.lineTo(x + r * 0.15, y + r * 0.3);
         ctx.closePath(); ctx.fill();
         break;
+      case 'torch': {
+        // Flame atop a short haft.
+        ctx.beginPath(); ctx.moveTo(x, y + r * 0.5); ctx.lineTo(x, y - r * 0.05); ctx.stroke();
+        ctx.fillStyle = '#ffb24a';
+        ctx.beginPath();
+        ctx.moveTo(x, y - r * 0.55);
+        ctx.quadraticCurveTo(x + r * 0.32, y - r * 0.15, x, y - r * 0.02);
+        ctx.quadraticCurveTo(x - r * 0.32, y - r * 0.15, x, y - r * 0.55);
+        ctx.closePath(); ctx.fill();
+        break;
+      }
       default: // rings
         ctx.beginPath(); ctx.arc(x, y + r * 0.05, r * 0.3, 0, TAU); ctx.stroke();
         ctx.beginPath();
@@ -983,7 +995,8 @@ const Screens = {
     ctx.textAlign = 'left';
     ctx.font = 'bold 11px Georgia';
     const parts = [[Hero.gold + 'g', '#ffd76a']];
-    const short = { parts: 'Parts', dust: 'Dust', crystal: 'Cryst', soul: 'Souls' };
+    const short = { parts: 'Parts', dust: 'Dust', crystal: 'Cryst', soul: 'Souls',
+      lumber: 'Lumber', rivets: 'Rivets', heartstring: 'Heart' };
     for (const [key, m] of Object.entries(MATERIALS)) {
       parts.push([Hero.mats[key] + ' ' + short[key], m.color]);
     }
@@ -1050,7 +1063,8 @@ const Screens = {
       ? 'Masterwork: guaranteed Rare or better, 50% chance of a socket.'
       : 'Standard: a quick roll of the dice for the chosen slot.', pw - 32), px + 16, 220);
 
-    const slots = Object.keys(ITEM_SLOTS);
+    // Torches are recipe-crafted, not random-forged — keep them off the roll grid.
+    const slots = Object.keys(ITEM_SLOTS).filter(s => !ITEM_SLOTS[s].torch);
     const cols = pw >= 480 ? 4 : 3;
     const bw = (pw - 32 - (cols - 1) * 8) / cols;
     slots.forEach((slot, i) => {
@@ -1060,11 +1074,112 @@ const Screens = {
         { size: 11, disabled: !afford, border: UI.sel.master ? '#8a6f4a' : undefined });
     });
 
+    const footY = 232 + Math.ceil(slots.length / cols) * 40 + 6;
     ctx.textAlign = 'center';
     ctx.font = '10px Georgia';
     ctx.fillStyle = '#6f6552';
     ctx.fillText(this.fitText(ctx, 'Salvage single items from the Inventory wheel. Gems survive the forge.', pw - 24),
-      px + pw / 2, 232 + Math.ceil(slots.length / cols) * 40 + 10);
+      px + pw / 2, footY);
+    // Gateway to the torch-crafting bench.
+    UI.btn(ctx, px + 16, footY + 8, pw - 32, 30, '🔥  CRAFT TORCHES  »', () => UI.open('torches'),
+      { size: 12, border: '#c8722a', color: '#ffb24a' });
+  },
+
+  // The torch-crafting bench. Torches light the darkness for a limited time,
+  // then burn out. All three are recipe-built from smashed-scenery reagents
+  // and go straight to the Stash for safe keeping.
+  torches(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const pw = Math.min(560, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 56, 468);
+    UI.panel(ctx, px, 46, pw, ph, 'TORCH BENCH');
+
+    // Reagent tally.
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 11px Georgia';
+    const tally = [
+      [(Hero.mats.lumber || 0) + ' Lumber', MATERIALS.lumber.color],
+      [(Hero.mats.rivets || 0) + ' Rivets', MATERIALS.rivets.color],
+      [(Hero.mats.heartstring || 0) + ' Heartstring', MATERIALS.heartstring.color]
+    ];
+    let tx = px + 16;
+    for (const [txt, col] of tally) {
+      ctx.fillStyle = col;
+      ctx.fillText(txt, tx, 96);
+      tx += ctx.measureText(txt).width + 18;
+    }
+    ctx.font = '10px Georgia';
+    ctx.fillStyle = '#8a8070';
+    ctx.fillText(this.fitText(ctx,
+      'Smash chairs/tables/shelves for Lumber; cauldrons/braziers/pots for Rivets; Nephalem Mongrels drop Heartstring.',
+      pw - 32), px + 16, 112);
+
+    // Current torch status.
+    const eq = Hero.equipped.torch;
+    ctx.font = '11px Georgia';
+    if (eq && eq.burnT !== undefined) {
+      const mins = Math.floor(eq.burnT / 60), secs = Math.floor(eq.burnT % 60);
+      const T = TORCH_TYPES[eq.torch] || TORCH_TYPES.wood;
+      ctx.fillStyle = T.color;
+      ctx.fillText('Lit: ' + eq.name + '  —  ' + mins + ':' + String(secs).padStart(2, '0') + ' left', px + 16, 132);
+    } else {
+      ctx.fillStyle = '#6f6552';
+      ctx.fillText('No torch lit — darkness closes in.', px + 16, 132);
+    }
+
+    // Three craft rows.
+    const order = ['wood', 'iron', 'nephalem'];
+    let y = 146;
+    const rowH = 76;
+    for (const type of order) {
+      const T = TORCH_TYPES[type];
+      const can = Items.canCraftTorch(type);
+      ctx.fillStyle = 'rgba(28,24,38,0.92)';
+      rr(ctx, px + 16, y, pw - 32, rowH - 8, 8); ctx.fill();
+      ctx.strokeStyle = can ? T.color : '#3a3448';
+      ctx.lineWidth = 1.5;
+      rr(ctx, px + 16, y, pw - 32, rowH - 8, 8); ctx.stroke();
+
+      // Name + duration.
+      ctx.textAlign = 'left';
+      ctx.font = 'bold 13px Georgia';
+      ctx.fillStyle = T.color;
+      ctx.fillText(T.name, px + 28, y + 20);
+      ctx.font = '10px Georgia';
+      ctx.fillStyle = '#9a9080';
+      ctx.fillText('Burns ' + T.minutes + ' min  ·  light radius ' + T.radius, px + 28, y + 36);
+
+      // Recipe (owned / needed per component). Short reagent names + a hard
+      // left edge at the CRAFT button so nothing slides under it on phones.
+      const shortMat = { lumber: 'Lumber', rivets: 'Rivets', heartstring: 'Heart' };
+      ctx.font = (pw < 420 ? 10 : 11) + 'px Georgia';
+      let rx = px + 28;
+      const recipeRight = px + pw - 128;
+      for (const [k, n] of Object.entries(T.recipe)) {
+        const have = Hero.mats[k] || 0;
+        const label = have + '/' + n + ' ' + (shortMat[k] || MATERIALS[k].name);
+        if (rx + ctx.measureText(label).width > recipeRight) break;
+        ctx.fillStyle = have >= n ? MATERIALS[k].color : '#a05a5a';
+        ctx.fillText(label, rx, y + 54);
+        rx += ctx.measureText(label).width + 14;
+      }
+
+      // Craft button.
+      UI.btn(ctx, px + pw - 118, y + 14, 92, rowH - 36, can ? 'CRAFT' : 'NEED MATS',
+        can ? () => Items.craftTorch(type) : null,
+        { size: 11, disabled: !can, border: T.color, color: can ? T.color : '#5c5569' });
+
+      y += rowH;
+    }
+
+    ctx.textAlign = 'center';
+    ctx.font = 'italic 10px Georgia';
+    ctx.fillStyle = '#6f6552';
+    ctx.fillText(this.fitText(ctx, 'Forged torches are sent to your Stash. Equip one from the Inventory wheel.', pw - 24),
+      px + pw / 2, y + 6);
+    UI.btn(ctx, px + 16, y + 14, pw - 32, 28, '«  BACK TO FORGE', () => UI.open('smith'),
+      { size: 11, border: '#6b5f80' });
   },
 
   jeweler(ctx, W, H) {
