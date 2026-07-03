@@ -140,6 +140,8 @@ const Items = {
       if (item.slot === 'helm' && g.type === 'ruby') {
         const xp = 0.03 + (0.20 - 0.03) * (g.tier / perfectTier);
         lines.push('◆ ' + gemName(g) + ': +' + Math.round(xp * 100) + '% experience');
+      } else if (item.slot === 'boots' && g.type === 'emerald') {
+        lines.push('◆ ' + gemName(g) + ': +20% movement speed');
       } else {
         lines.push('◆ ' + gemName(g) + ': ' + GEM_TYPES[g.type].label(gemStatValue(g)));
       }
@@ -686,6 +688,11 @@ const Items = {
           xpBonus += 0.03 + (0.20 - 0.03) * (g.tier / perfectTier);
           continue;
         }
+        // An Emerald in the BOOTS grants +20% movement speed instead of crit.
+        if (slot === 'boots' && g.type === 'emerald') {
+          move += 0.20;
+          continue;
+        }
         let v = gemStatValue(g);
         const s = GEM_TYPES[g.type].stat;
         // At level 70, weapon-slot gems are retuned: green +20%, red -5%.
@@ -718,7 +725,7 @@ const Items = {
       maxEssence: 100 + (Hero.hasPassive('overwhelming') ? 40 : 0),
       armor: Math.round(armor),
       armorDR,
-      moveSpeed: clamp(move, 0, 0.60),
+      moveSpeed: clamp(move, 0, 1.0),   // affix (≤25%) + emerald boots (+20% each)
       xpBonus,
       setCount: this.setCount(),
       powers: this.equippedPowers()

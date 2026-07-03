@@ -63,6 +63,7 @@ loot at the artisans. The hero is persistent (localStorage).
   roll a `move` affix (1–25%, boots-only, flat) → `Player.speed = 180·(1+move)`. A
   **Perfect-tier gem in ANY slot = +20% damage** (per gem). A **Ruby in the HELM** gives
   **+3%→+20% XP** (by tier) instead of its damage (feeds `Hero.addXP` via `player.xpBonus`).
+  An **Emerald in the BOOTS** grants **+20% movement speed** (flat, per gem) instead of crit.
   Ruby-in-weapon +25% dmg and the lvl70 weapon retune (emerald ×1.2 / ruby ×0.95) remain.
 - Salvage yields: Common→Reusable Parts, Magic→Arcane Dust, Rare→Veiled Crystals,
   Legendary→Forgotten Souls (gems survive the forge). **Two salvage paths (owner

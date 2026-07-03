@@ -18,11 +18,17 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.3.2-alpha';
+const GAME_VERSION = 'v0.3.3-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.3.3-alpha', date: 'July 2026',
+    notes: [
+      'EMERALD IN BOOTS now grants +20% movement speed (per emerald) instead of its crit — stack them with the new boots Movement Speed affix to really fly'
+    ]
+  },
   {
     v: 'v0.3.2-alpha', date: 'July 2026',
     notes: [
