@@ -18,11 +18,22 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.2.8-alpha';
+const GAME_VERSION = 'v0.2.9-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.2.9-alpha', date: 'July 2026',
+    notes: [
+      'NEW ENEMIES — the war-host arrives:',
+      'Gore Hound — a fast, lunging pack beast that closes the distance in a blink',
+      'Damned Soldier & Fallen Knight — armored sword-wielders that shrug off knockback; Knights cleave, catching your minions in the swing',
+      'Corpse Bloat — a big, slow sack of rot that BURSTS in a toxic AoE on death, hurting you and your minions — kill it at range or run',
+      'Bone Catapult — a siege engine that barely moves but lobs telegraphed mortars from all the way across the field. Dodge the landing circles',
+      'These are seeded into the tougher lands, and all of them roam Rifts and Adventure maps'
+    ]
+  },
   {
     v: 'v0.2.8-alpha', date: 'July 2026',
     notes: [
@@ -662,6 +673,12 @@ const MONSTERS = {
   ghoul:    { name: 'Ghoul',          hp: 24,  speed: 132, dmg: 13, r: 12, xp: 18, atkRange: 30, atkCd: 1.1, lunges: true },
   imp:      { name: 'Fallen Imp',     hp: 12,  speed: 118, dmg: 6,  r: 9,  xp: 8,  atkRange: 24, atkCd: 0.8 },
   cultist:  { name: 'Blood Cultist',  hp: 34,  speed: 62,  dmg: 12, r: 13, xp: 22, atkRange: 420, atkCd: 2.4, ranged: 'bolt' },
+  // --- heavier war-host monsters ---
+  hound:    { name: 'Gore Hound',     hp: 30,  speed: 172, dmg: 12, r: 11, xp: 20, atkRange: 30, atkCd: 0.9, lunges: true },
+  soldier:  { name: 'Damned Soldier', hp: 95,  speed: 74,  dmg: 18, r: 15, xp: 30, atkRange: 40, atkCd: 1.4, armored: true, sword: true },
+  knight:   { name: 'Fallen Knight',  hp: 175, speed: 60,  dmg: 27, r: 18, xp: 50, atkRange: 52, atkCd: 1.8, armored: true, sword: true, cleave: true },
+  bloat:    { name: 'Corpse Bloat',   hp: 130, speed: 34,  dmg: 16, r: 22, xp: 36, atkRange: 40, atkCd: 1.6, explodes: 150 },
+  catapult: { name: 'Bone Catapult',  hp: 210, speed: 9,   dmg: 30, r: 24, xp: 62, atkRange: 640, atkCd: 3.6, siege: true },
   brute:    { name: 'Grave Brute',    hp: 300, speed: 46,  dmg: 24, r: 26, xp: 110, atkRange: 46, atkCd: 1.7, boss: true }
 };
 
@@ -677,7 +694,7 @@ const ZONES = [
   {
     id: 'hollow', name: 'The Weeping Hollow', kind: 'open', mLvl: 1,
     ground: '#16121b', accent: '#2c4230', weather: 'rain',
-    monsters: ['zombie', 'zombie', 'skeleton', 'ghoul'],
+    monsters: ['zombie', 'zombie', 'skeleton', 'ghoul', 'hound'],
     boss: 'The Grave Warden', packs: 11,
     sizeMul: 1.0, rivers: 1, forest: true,
     desc: 'A drowned graveyard where the dead refuse to rest.'
@@ -685,7 +702,7 @@ const ZONES = [
   {
     id: 'crypt', name: 'Crypt of the Forsworn', kind: 'dungeon', mLvl: 5,
     ground: '#151220', accent: '#3a3448',
-    monsters: ['skeleton', 'skeleton', 'archer', 'zombie'],
+    monsters: ['skeleton', 'skeleton', 'archer', 'zombie', 'soldier'],
     boss: 'Morgral the Unburied', packs: 12,
     sizeMul: 0.95,
     desc: 'Collapsed halls beneath the chapel, thick with old bones.'
@@ -693,7 +710,7 @@ const ZONES = [
   {
     id: 'sands', name: 'The Desolate Sands', kind: 'open', mLvl: 10,
     ground: '#1e1812', accent: '#4a3c28', weather: 'wind',
-    monsters: ['imp', 'imp', 'ghoul', 'archer', 'cultist'],
+    monsters: ['imp', 'imp', 'ghoul', 'archer', 'cultist', 'soldier', 'bloat'],
     boss: 'Sar\'Khan the Sunscoured', packs: 13,
     sizeMul: 1.4, rivers: 0, forest: false,
     desc: 'A vast burned waste of dunes, imps and buried idols.'
@@ -701,7 +718,7 @@ const ZONES = [
   {
     id: 'marsh', name: 'The Blood Marsh', kind: 'open', mLvl: 16,
     ground: '#121a16', accent: '#2c4230', weather: 'rain',
-    monsters: ['zombie', 'ghoul', 'ghoul', 'cultist', 'imp'],
+    monsters: ['zombie', 'ghoul', 'ghoul', 'cultist', 'bloat', 'soldier', 'knight'],
     boss: 'Mother of Maggots', packs: 14,
     sizeMul: 1.2, rivers: 2, forest: true,
     desc: 'Rotting fens, criss-crossed by bloody streams and dead groves.'
@@ -709,7 +726,7 @@ const ZONES = [
   {
     id: 'rathma', name: 'Ruins of Rathma', kind: 'dungeon', mLvl: 23,
     ground: '#141420', accent: '#3a3060',
-    monsters: ['skeleton', 'archer', 'cultist', 'ghoul', 'zombie'],
+    monsters: ['skeleton', 'archer', 'cultist', 'soldier', 'knight', 'catapult'],
     boss: 'The Bone Colossus', packs: 15,
     sizeMul: 1.25,
     desc: 'The shattered, sprawling sanctum of the first necromancers.'
@@ -761,7 +778,7 @@ function makeRiftZone(riftKind = 'greater') {
     mLvl: at70 ? 70 + Math.min(12, (Hero.riftsCleared || 0)) : clamp(Hero.level + 2, 1, 69),
     ground: theme.ground, accent: theme.accent,
     weather: pick(['rain', 'wind', null]),
-    monsters: ['zombie', 'skeleton', 'archer', 'ghoul', 'imp', 'cultist'],
+    monsters: ['zombie', 'skeleton', 'archer', 'ghoul', 'imp', 'cultist', 'hound', 'soldier', 'knight', 'bloat', 'catapult'],
     boss: pick(RIFT_GUARDIANS) + ', Rift Guardian',
     packs: Math.round(tiles * 2.2), tiles,
     riftGoal: RIFT_GOALS[riftKind] || 250,
@@ -782,7 +799,7 @@ function makeAdventureZone() {
     mLvl: clamp(Hero.level, 1, 70),
     ground: theme.ground, accent: theme.accent,
     weather: pick(['rain', 'wind', null, null]),
-    monsters: ['zombie', 'skeleton', 'archer', 'ghoul', 'imp', 'cultist'],
+    monsters: ['zombie', 'skeleton', 'archer', 'ghoul', 'imp', 'cultist', 'hound', 'soldier', 'knight', 'bloat', 'catapult'],
     boss: pick(ELITE_PREFIX) + pick(ELITE_SUFFIX) + ' the ' + pick(['Endless', 'Vile', 'Forgotten', 'Ravenous']),
     packs: tiles * 2 + 3, tiles,
     desc: 'An uncharted stretch of Sanctuary, ' + tiles + ' tiles wide, remade each visit.'

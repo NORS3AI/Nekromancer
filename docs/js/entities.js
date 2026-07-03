@@ -379,6 +379,7 @@ class Enemy {
     this.chargeD = 0;
     this.chargeHits = null;
     this.telegraph = null;
+    this.strikes = [];      // pending siege mortar impacts {x,y,r,dmg,t}
   }
 
   wake() {
@@ -416,6 +417,23 @@ class Enemy {
     }
     if (this.spawnT > 0) { this.spawnT -= dt; return; }
 
+    // Resolve pending siege mortar impacts (they land even if we've moved).
+    if (this.strikes.length) {
+      for (const s of this.strikes) {
+        s.t -= dt;
+        if (s.t <= 0) {
+          fxExplosion(s.x, s.y, s.r);
+          AudioSys.sfx('explode');
+          Particles.shake(5);
+          const p = Game.player;
+          if (p && !p.dead && dist(s.x, s.y, p.x, p.y) < s.r + p.r) p.hurt(s.dmg);
+          for (const m of Game.minions) if (!m.dead && dist(s.x, s.y, m.x, m.y) < s.r + m.r) m.hurt(s.dmg);
+          s.done = true;
+        }
+      }
+      this.strikes = this.strikes.filter(s => !s.done);
+    }
+
     this.x += this.kbx * dt;
     this.y += this.kby * dt;
     this.kbx *= 1 - Math.min(1, 8 * dt);
@@ -435,7 +453,15 @@ class Enemy {
     if (this.slow > 0) spd *= 0.5;
     if (this.root > 0) spd = 0;
 
-    if (this.def.ranged) {
+    if (this.def.siege) {
+      // A near-stationary catapult: hold the line and lob arcing mortars.
+      if (d > this.def.atkRange) { this.x += Math.cos(a) * spd * dt; this.y += Math.sin(a) * spd * dt; }
+      else if (d < 150) { this.x -= Math.cos(a) * spd * dt; this.y -= Math.sin(a) * spd * dt; }
+      if (this.atkCd <= 0 && d < this.def.atkRange && d > 90) {
+        this.atkCd = this.def.atkCd * rand(0.9, 1.1);
+        this.lobMortar(tgt);
+      }
+    } else if (this.def.ranged) {
       if (d > 340) {
         this.x += Math.cos(a) * spd * dt;
         this.y += Math.sin(a) * spd * dt;
@@ -467,6 +493,13 @@ class Enemy {
       if (d < this.def.atkRange && this.atkCd <= 0) {
         this.atkCd = this.def.atkCd;
         tgt.hurt(this.attackDmg());
+        // Knights cleave — the swing catches nearby minions too.
+        if (this.def.cleave) {
+          for (const m of Game.minions) {
+            if (m.dead || m === tgt) continue;
+            if (dist(this.x, this.y, m.x, m.y) < this.def.atkRange * 1.2) m.hurt(Math.round(this.attackDmg() * 0.6));
+          }
+        }
       }
     }
 
@@ -490,6 +523,18 @@ class Enemy {
     let d = this.dmg;
     if (this.curse && this.curse.type === 'decrepify') d *= 0.8;
     return Math.round(d);
+  }
+
+  // Lob an arcing mortar at the target — telegraphed landing circle, then AoE.
+  lobMortar(tgt) {
+    const scatter = 40;
+    const tx = clamp(tgt.x + rand(-scatter, scatter), 40, World.W - 40);
+    const ty = clamp(tgt.y + rand(-scatter, scatter), 40, World.H - 40);
+    const r = 92;
+    const delay = 1.15;
+    Game.telegraphs.push({ type: 'circle', x: tx, y: ty, r, t: 0, maxT: delay });
+    this.strikes.push({ x: tx, y: ty, r, dmg: Math.round(this.dmg * 1.3), t: delay });
+    AudioSys.sfx('bolt');
   }
 
   bossUpdate(dt) {
@@ -600,8 +645,9 @@ class Enemy {
     this.flash = 1;
     dmgText(this.x, this.y, dmg, crit);
     if (opts.knock && !this.unique) {
-      this.kbx += Math.cos(opts.knock.a) * opts.knock.f;
-      this.kby += Math.sin(opts.knock.a) * opts.knock.f;
+      const f = opts.knock.f * (this.def.armored ? 0.4 : 1); // armored foes shrug off knockback
+      this.kbx += Math.cos(opts.knock.a) * f;
+      this.kby += Math.sin(opts.knock.a) * f;
     }
     if (opts.slow) this.slow = Math.max(this.slow, opts.slow);
     if (opts.root && !this.unique) this.root = Math.max(this.root, opts.root);
@@ -624,6 +670,21 @@ class Enemy {
     }
     fxBlood(this.x, this.y, this.unique ? 30 : 12);
     if (this.type === 'skeleton' || this.type === 'archer') fxBone(this.x, this.y, 12);
+    // Corpse Bloats burst on death — a toxic AoE that hits you and your minions.
+    if (this.def.explodes) {
+      const r = this.def.explodes;
+      fxExplosion(this.x, this.y, r);
+      Particles.spawn(this.x, this.y - 6, {
+        count: 26, color: ['#6faa3a', '#4a5e2a', '#9ac24a'], minSpeed: 40, maxSpeed: 240,
+        minLife: 0.3, maxLife: 0.8, minSize: 2, maxSize: 5, grav: 120
+      });
+      Particles.shake(6);
+      AudioSys.sfx('explode');
+      const bd = Math.round(this.dmg * 1.8);
+      const p = Game.player;
+      if (p && !p.dead && dist(this.x, this.y, p.x, p.y) < r + p.r) p.hurt(bd);
+      for (const m of Game.minions) if (!m.dead && dist(this.x, this.y, m.x, m.y) < r + m.r) m.hurt(bd);
+    }
     Game.corpses.push(new Corpse(this.x, this.y, this.type));
     Hero.addXP(this.xp);
 
@@ -889,6 +950,123 @@ class Enemy {
         ctx.beginPath(); ctx.arc(-3, -15, 1.8, 0, TAU); ctx.fill();
         ctx.beginPath(); ctx.arc(3, -15, 1.8, 0, TAU); ctx.fill();
         ctx.shadowBlur = 0;
+        break;
+      }
+      case 'hound': {
+        // Low quadruped beast lunging forward.
+        const lunge = this.lungeT > 0 ? 3 : 0;
+        ctx.fillStyle = fl ? '#f4d0c8' : '#5a3e3a';
+        ctx.beginPath(); ctx.ellipse(0, 2 - lunge * 0.3, 8, 6.5, 0, 0, TAU); ctx.fill();
+        // Legs.
+        ctx.strokeStyle = fl ? '#f4d0c8' : '#4a302c';
+        ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+        const gl = Math.sin(this.anim * 4) * 3;
+        ctx.beginPath(); ctx.moveTo(-5, 4); ctx.lineTo(-8, 10 + gl); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(5, 4); ctx.lineTo(8, 10 - gl); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-4, 4); ctx.lineTo(-6, 10 - gl); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(4, 4); ctx.lineTo(6, 10 + gl); ctx.stroke();
+        // Head thrust forward (facing = up after rotate).
+        ctx.fillStyle = fl ? '#fff' : '#6a4a44';
+        ctx.beginPath(); ctx.ellipse(0, -8 - lunge, 5, 6, 0, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#2a1a18';
+        ctx.beginPath(); ctx.moveTo(-3, -12 - lunge); ctx.lineTo(0, -16 - lunge); ctx.lineTo(3, -12 - lunge); ctx.fill(); // snout
+        ctx.fillStyle = '#ffd84a';
+        ctx.beginPath(); ctx.arc(-2, -9 - lunge, 1, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(2, -9 - lunge, 1, 0, TAU); ctx.fill();
+        break;
+      }
+      case 'soldier':
+      case 'knight': {
+        const big = this.type === 'knight';
+        const s = big ? 1.25 : 1;
+        ctx.save(); ctx.scale(s, s);
+        // Armored torso.
+        ctx.fillStyle = fl ? '#e8eef4' : (big ? '#3a4150' : '#4a4e58');
+        ctx.beginPath();
+        ctx.moveTo(0, -14); ctx.quadraticCurveTo(11, -6, 9, 13); ctx.lineTo(-9, 13);
+        ctx.quadraticCurveTo(-11, -6, 0, -14); ctx.fill();
+        // Plate seams.
+        ctx.strokeStyle = 'rgba(10,8,14,0.5)'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(8, 0); ctx.moveTo(0, -12); ctx.lineTo(0, 12); ctx.stroke();
+        // Shield arm (left).
+        ctx.fillStyle = fl ? '#fff' : (big ? '#5a4a2a' : '#6b5330');
+        ctx.beginPath(); ctx.ellipse(-11, 0, 4.5, 8, 0, 0, TAU); ctx.fill();
+        ctx.strokeStyle = '#c9a04a'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(-11, 0, 4.5, 8, 0, 0, TAU); ctx.stroke();
+        // Sword arm (right) — a swung blade.
+        const sw = Math.sin(this.anim * 1.6) * 5;
+        ctx.strokeStyle = fl ? '#fff' : '#8a8f99'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(9, -2); ctx.lineTo(15, -10 + sw); ctx.stroke();
+        ctx.strokeStyle = '#dfe6ef'; ctx.lineWidth = big ? 4 : 3;
+        ctx.beginPath(); ctx.moveTo(15, -10 + sw); ctx.lineTo(22 + (big ? 6 : 0), -26 + sw); ctx.stroke();
+        ctx.strokeStyle = '#c9a04a'; ctx.lineWidth = 2; // crossguard
+        ctx.beginPath(); ctx.moveTo(12, -8 + sw); ctx.lineTo(18, -12 + sw); ctx.stroke();
+        // Helmeted head.
+        ctx.fillStyle = fl ? '#fff' : (big ? '#4a5160' : '#5a5e68');
+        ctx.beginPath(); ctx.arc(0, -12, 5.5, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#0a0810'; ctx.fillRect(-4, -13, 8, 2); // visor slit
+        if (big) { // knight plume
+          ctx.strokeStyle = '#8a2635'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(0, -17); ctx.quadraticCurveTo(4, -22, 1, -26); ctx.stroke();
+        }
+        ctx.fillStyle = '#e0483a';
+        ctx.beginPath(); ctx.arc(0, -12, 1.4, 0, TAU); ctx.fill();
+        ctx.restore();
+        break;
+      }
+      case 'bloat': {
+        // Big, bloated, distended sack of rot — pulsing.
+        const pulse = 1 + Math.sin(this.anim * 1.3) * 0.05;
+        ctx.save(); ctx.scale(pulse, pulse);
+        ctx.fillStyle = fl ? '#e8f4c8' : '#5a6e34';
+        ctx.beginPath(); ctx.ellipse(0, -2, 17, 19, 0, 0, TAU); ctx.fill();
+        // Belly highlight.
+        ctx.fillStyle = fl ? '#f4ffe0' : '#7a923f';
+        ctx.beginPath(); ctx.ellipse(-3, 0, 9, 11, 0, 0, TAU); ctx.fill();
+        // Pustules.
+        ctx.fillStyle = '#9ac24a';
+        for (let i = 0; i < 5; i++) {
+          const a = this.anim * 0.2 + i * 1.7;
+          ctx.beginPath(); ctx.arc(Math.cos(a) * 11, Math.sin(a) * 12 - 2, 2.6, 0, TAU); ctx.fill();
+        }
+        // Stubby head.
+        ctx.fillStyle = fl ? '#fff' : '#4a5e2a';
+        ctx.beginPath(); ctx.arc(0, -16, 6, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#c8e04a';
+        ctx.beginPath(); ctx.arc(-2, -17, 1.5, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(2.4, -16.5, 1.5, 0, TAU); ctx.fill();
+        // Gas wisps.
+        ctx.globalAlpha = 0.4 + 0.2 * Math.sin(this.anim * 2);
+        ctx.fillStyle = 'rgba(154,194,74,0.5)';
+        ctx.beginPath(); ctx.arc(6, -22, 3, 0, TAU); ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.restore();
+        break;
+      }
+      case 'catapult': {
+        // A wooden siege engine with a throwing arm.
+        ctx.save();
+        // Base frame.
+        ctx.fillStyle = fl ? '#e8d8b0' : '#4a3a24';
+        ctx.fillRect(-18, 0, 36, 8);
+        ctx.strokeStyle = '#2e2416'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-16, 8); ctx.lineTo(-22, 18); ctx.moveTo(16, 8); ctx.lineTo(22, 18); ctx.stroke();
+        // Wheels.
+        ctx.fillStyle = '#3a2c1a';
+        ctx.beginPath(); ctx.arc(-14, 18, 6, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(14, 18, 6, 0, TAU); ctx.fill();
+        // A-frame.
+        ctx.strokeStyle = fl ? '#e8d8b0' : '#5e4a2a'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-8, 2); ctx.lineTo(0, -14); ctx.lineTo(8, 2); ctx.stroke();
+        // Throwing arm — cocked, recoils on the attack cooldown.
+        const cock = clamp(this.atkCd / (this.def.atkCd || 3.6), 0, 1);
+        const armA = -0.5 - cock * 1.4;
+        ctx.save(); ctx.translate(0, -14); ctx.rotate(armA);
+        ctx.strokeStyle = fl ? '#fff' : '#6b5330'; ctx.lineWidth = 3.5;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -20); ctx.stroke();
+        ctx.fillStyle = '#2b2634';           // the loaded skull-boulder
+        ctx.beginPath(); ctx.arc(0, -22, 5, 0, TAU); ctx.fill();
+        ctx.restore();
+        ctx.restore();
         break;
       }
     }
