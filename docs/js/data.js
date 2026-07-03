@@ -18,11 +18,17 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.5.1-alpha';
+const GAME_VERSION = 'v0.5.2-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.5.2-alpha', date: 'July 2026',
+    notes: [
+      'DEV panel now also grants The Royal Grandeur (Act 1) ring — the legendary-grant row is now three buttons: Bloodtide (A2), Cycle Scythe (A3) and Royal Grandeur (A1), each sent to your Stash at level 70'
+    ]
+  },
   {
     v: 'v0.5.1-alpha', date: 'July 2026',
     notes: [

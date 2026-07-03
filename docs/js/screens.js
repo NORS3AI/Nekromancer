@@ -2099,12 +2099,14 @@ const Screens = {
       UI.toast("Haedrig's Gift: " + n + ' pieces sent to Stash' + (Hero.stash.length >= Hero.STASH_SIZE ? ' (Stash full)' : ''), '#4ade80');
       AudioSys.sfx('setdrop');
     }, '#4ade80');
-    // Act-boss legendary weapons (their bosses aren't implemented yet) → Stash.
-    const hw2 = (pw - 32 - 6) / 2;
-    UI.btn(ctx, px + 16, y, hw2, 30, '⚔ Bloodtide Blade (Act 2)',
-      () => Screens.grantLegendary('bloodtide'), { size: 11, color: '#e04a5a', border: '#8a2635' });
-    UI.btn(ctx, px + 16 + hw2 + 6, y, hw2, 30, '⚔ Scythe of the Cycle (Act 3)',
-      () => Screens.grantLegendary('cycleScythe'), { size: 11, color: '#b06adf', border: '#5a3a7a' });
+    // Act-boss exclusive legendaries → Stash (their bosses drop these in-game).
+    const tw3 = (pw - 32 - 2 * 6) / 3;
+    UI.btn(ctx, px + 16, y, tw3, 30, '⚔ Bloodtide (A2)',
+      () => Screens.grantLegendary('bloodtide'), { size: 10, color: '#e04a5a', border: '#8a2635' });
+    UI.btn(ctx, px + 16 + tw3 + 6, y, tw3, 30, '⚔ Cycle Scythe (A3)',
+      () => Screens.grantLegendary('cycleScythe'), { size: 10, color: '#b06adf', border: '#5a3a7a' });
+    UI.btn(ctx, px + 16 + 2 * (tw3 + 6), y, tw3, 30, '◈ Royal Grandeur (A1)',
+      () => Screens.grantLegendary('royalGrandeur'), { size: 10, color: '#ffd76a', border: '#8a6f4a' });
     y += 36;
     // Gold row: five amounts.
     const golds = [100, 1000, 10000, 100000, 1000000];
