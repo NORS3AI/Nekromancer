@@ -114,22 +114,57 @@ const World = {
     else if (zone.rivers === false) count = 0;
     else count = pick([0, 0, 1, 1, 1, 2]);   // variety: usually none or one
     if (count <= 0) return;
-    // All rivers on a map share one orientation so they stay PARALLEL — two
-    // crossing rivers could otherwise put their bridges in opposite quadrants
-    // and wall the boss off. Parallel rivers are always independently crossable.
-    const horizontal = Math.random() < 0.5;
-    const dim = horizontal ? this.H : this.W;
-    const along = horizontal ? this.W : this.H;
-    let tries = 0;
-    while (this.rivers.length < count && tries++ < 24) {
-      const pos = rand(dim * 0.3, dim * 0.7);
-      if (this.rivers.some(r => Math.abs(r.pos - pos) < 620)) continue;  // spread them out
-      const hw = rand(36, 62);              // half-width of the water
-      const bh = 42;                        // half-width of each bridge crossing
-      const bridges = [along * rand(0.4, 0.6)];   // guaranteed central crossing
-      if (Math.random() < 0.6) bridges.push(along * rand(0.15, 0.85));
-      this.rivers.push({ horizontal, pos, hw, bh, bridges });
+    let made = 0, tries = 0;
+    while (made < count && tries++ < 40) {
+      // A meandering stream — starts somewhere in the interior and wanders,
+      // deliberately NOT spanning the whole map, so you can always walk around
+      // it (and cross it on a bridge for the shortcut).
+      let x = rand(this.W * 0.18, this.W * 0.82);
+      let y = rand(this.H * 0.18, this.H * 0.82);
+      let ang = rand(TAU);
+      const segLen = rand(95, 150);
+      const steps = randInt(5, 10);
+      const maxSpan = Math.min(this.W, this.H) * 0.72;   // cap so it never bisects the land
+      const pts = [{ x, y }];
+      let spanned = 0;
+      for (let i = 0; i < steps; i++) {
+        ang += rand(-0.7, 0.7);                          // curvy, unpredictable wander
+        const nx = clamp(x + Math.cos(ang) * segLen, 110, this.W - 110);
+        const ny = clamp(y + Math.sin(ang) * segLen, 110, this.H - 110);
+        spanned += dist(x, y, nx, ny);
+        x = nx; y = ny;
+        pts.push({ x, y });
+        if (spanned > maxSpan) break;
+      }
+      // Keep the water clear of the spawn and boss so neither drowns.
+      if (pts.some(p => dist(p.x, p.y, this.spawn.x, this.spawn.y) < 280 ||
+                        dist(p.x, p.y, this.bossPos.x, this.bossPos.y) < 300)) continue;
+      made++;
+      const hw = rand(30, 50);
+      const bh = 40;
+      // 1–2 wooden bridges across random inner segments.
+      const bridges = [];
+      const nb = randInt(1, 2);
+      for (let b = 0; b < nb && pts.length > 1; b++) {
+        const i = randInt(1, pts.length - 1);
+        const a = pts[i - 1], c = pts[i];
+        bridges.push({ x: (a.x + c.x) / 2, y: (a.y + c.y) / 2, ang: Math.atan2(c.y - a.y, c.x - a.x) });
+      }
+      this.rivers.push({ pts, hw, bh, bridges });
     }
+  },
+
+  // On a bridge deck? (oriented box: bh along the river, hw+16 across).
+  onBridge(x, y) {
+    for (const rv of this.rivers) {
+      for (const b of rv.bridges) {
+        const dx = x - b.x, dy = y - b.y;
+        const along = dx * Math.cos(b.ang) + dy * Math.sin(b.ang);
+        const across = -dx * Math.sin(b.ang) + dy * Math.cos(b.ang);
+        if (Math.abs(along) <= rv.bh && Math.abs(across) <= rv.hw + 16) return true;
+      }
+    }
+    return false;
   },
 
   makeForests(zone) {
@@ -179,22 +214,13 @@ const World = {
   // Is (x,y) in impassable water? Bridge crossings read as walkable.
   inWater(x, y) {
     for (const rv of this.rivers) {
-      const along = rv.horizontal ? x : y;
-      const across = rv.horizontal ? y : x;
-      if (Math.abs(across - rv.pos) > rv.hw) continue;
-      if (rv.bridges.some(b => Math.abs(along - b) <= rv.bh)) continue;
-      return true;
-    }
-    return false;
-  },
-
-  // On (or near) a bridge deck — nothing should spawn here or it blocks the way.
-  onBridge(x, y) {
-    for (const rv of this.rivers) {
-      const along = rv.horizontal ? x : y;
-      const across = rv.horizontal ? y : x;
-      if (Math.abs(across - rv.pos) > rv.hw + 16) continue;
-      if (rv.bridges.some(b => Math.abs(along - b) <= rv.bh + 8)) return true;
+      let dmin = Infinity;
+      for (let i = 1; i < rv.pts.length; i++) {
+        const d = distToSeg(x, y, rv.pts[i - 1].x, rv.pts[i - 1].y, rv.pts[i].x, rv.pts[i].y);
+        if (d < dmin) dmin = d;
+        if (dmin <= rv.hw) break;
+      }
+      if (dmin <= rv.hw && !this.onBridge(x, y)) return true;
     }
     return false;
   },
@@ -458,16 +484,30 @@ const World = {
   collide(e) {
     e.x = clamp(e.x, 34, this.W - 34);
     e.y = clamp(e.y, 34, this.H - 34);
-    // Rivers block movement except where a bridge crosses.
-    for (const rv of this.rivers) {
-      const along = rv.horizontal ? e.x : e.y;
-      if (rv.bridges.some(b => Math.abs(along - b) <= rv.bh)) continue;
-      const across = rv.horizontal ? e.y : e.x;
-      const d = across - rv.pos;
-      const lim = rv.hw + e.r;
-      if (Math.abs(d) < lim) {
-        const to = rv.pos + (d >= 0 ? lim : -lim);
-        if (rv.horizontal) e.y = to; else e.x = to;
+    // Rivers block movement except on a bridge — push out along the bank normal.
+    if (this.rivers.length && !this.onBridge(e.x, e.y)) {
+      for (let iter = 0; iter < 3; iter++) {
+        let moved = false;
+        for (const rv of this.rivers) {
+          let best = null, bestN = null, dmin = Infinity;
+          for (let i = 1; i < rv.pts.length; i++) {
+            const A = rv.pts[i - 1], B = rv.pts[i];
+            const cp = closestOnSeg(e.x, e.y, A.x, A.y, B.x, B.y);
+            const d = dist(e.x, e.y, cp.x, cp.y);
+            if (d < dmin) {
+              dmin = d; best = cp;
+              const sx = B.x - A.x, sy = B.y - A.y, sl = Math.hypot(sx, sy) || 1;
+              bestN = { x: -sy / sl, y: sx / sl };   // segment normal, for the dead-centre case
+            }
+          }
+          const lim = rv.hw + e.r;
+          if (best && dmin < lim - 0.01) {
+            if (dmin < 0.001) { e.x = best.x + bestN.x * lim; e.y = best.y + bestN.y * lim; }
+            else { e.x = best.x + (e.x - best.x) / dmin * lim; e.y = best.y + (e.y - best.y) / dmin * lim; }
+            moved = true;
+          }
+        }
+        if (!moved) break;
       }
     }
     if (this.walls) {
@@ -655,40 +695,30 @@ const World = {
     if (!this.rivers.length) return;
     const t = (typeof Game !== 'undefined' && Game.time) || 0;
     for (const rv of this.rivers) {
-      const bx = rv.horizontal ? 0 : rv.pos - rv.hw;
-      const by = rv.horizontal ? rv.pos - rv.hw : 0;
-      const bw = rv.horizontal ? this.W : rv.hw * 2;
-      const bh = rv.horizontal ? rv.hw * 2 : this.H;
-      // Deep water body + a lighter central channel.
-      ctx.fillStyle = '#0e2233';
-      ctx.fillRect(bx, by, bw, bh);
-      ctx.fillStyle = 'rgba(38,86,116,0.5)';
-      if (rv.horizontal) ctx.fillRect(bx, rv.pos - rv.hw * 0.5, bw, rv.hw);
-      else ctx.fillRect(rv.pos - rv.hw * 0.5, by, rv.hw, bh);
-      // Shimmer ripples, only along the visible stretch.
-      ctx.strokeStyle = 'rgba(150,200,220,0.16)';
-      ctx.lineWidth = 1.5;
-      const a0 = rv.horizontal ? clamp(cam.x, 0, this.W) : clamp(cam.y, 0, this.H);
-      const a1 = rv.horizontal ? clamp(cam.x + w, 0, this.W) : clamp(cam.y + h, 0, this.H);
-      for (let a = a0; a < a1; a += 44) {
-        const off = Math.sin(a * 0.03 + t * 1.5) * rv.hw * 0.28;
+      const path = () => {
         ctx.beginPath();
-        if (rv.horizontal) { ctx.moveTo(a, rv.pos + off); ctx.lineTo(a + 26, rv.pos + off); }
-        else { ctx.moveTo(rv.pos + off, a); ctx.lineTo(rv.pos + off, a + 26); }
+        ctx.moveTo(rv.pts[0].x, rv.pts[0].y);
+        for (let i = 1; i < rv.pts.length; i++) ctx.lineTo(rv.pts[i].x, rv.pts[i].y);
+      };
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      // Muddy bank halo, deep water body, lighter central channel.
+      path(); ctx.strokeStyle = 'rgba(20,14,10,0.5)'; ctx.lineWidth = rv.hw * 2 + 8; ctx.stroke();
+      path(); ctx.strokeStyle = '#0e2233'; ctx.lineWidth = rv.hw * 2; ctx.stroke();
+      path(); ctx.strokeStyle = 'rgba(38,86,116,0.5)'; ctx.lineWidth = rv.hw; ctx.stroke();
+      // Shimmer ripples: short ticks straddling each segment.
+      ctx.strokeStyle = 'rgba(150,200,220,0.18)'; ctx.lineWidth = 1.5;
+      for (let i = 1; i < rv.pts.length; i++) {
+        const a = rv.pts[i - 1], c = rv.pts[i];
+        const mx = (a.x + c.x) / 2, my = (a.y + c.y) / 2;
+        if (mx < cam.x - 40 || mx > cam.x + w + 40 || my < cam.y - 40 || my > cam.y + h + 40) continue;
+        const ang = Math.atan2(c.y - a.y, c.x - a.x);
+        const off = Math.sin(i + t * 1.6) * rv.hw * 0.3;
+        const px = mx + Math.cos(ang) * off, py = my + Math.sin(ang) * off;
+        ctx.beginPath();
+        ctx.moveTo(px - Math.cos(ang) * 12, py - Math.sin(ang) * 12);
+        ctx.lineTo(px + Math.cos(ang) * 12, py + Math.sin(ang) * 12);
         ctx.stroke();
       }
-      // Muddy banks.
-      ctx.strokeStyle = 'rgba(20,14,10,0.55)';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      if (rv.horizontal) {
-        ctx.moveTo(bx, by); ctx.lineTo(bx + bw, by);
-        ctx.moveTo(bx, by + bh); ctx.lineTo(bx + bw, by + bh);
-      } else {
-        ctx.moveTo(bx, by); ctx.lineTo(bx, by + bh);
-        ctx.moveTo(bx + bw, by); ctx.lineTo(bx + bw, by + bh);
-      }
-      ctx.stroke();
       for (const b of rv.bridges) this.drawBridge(ctx, rv, b);
     }
   },
@@ -696,21 +726,21 @@ const World = {
   drawBridge(ctx, rv, b) {
     const half = rv.bh;            // reach along the river
     const over = rv.hw + 12;       // reach across (onto both banks)
-    let x, y, wdt, hgt;
-    if (rv.horizontal) { x = b - half; y = rv.pos - over; wdt = half * 2; hgt = over * 2; }
-    else { x = rv.pos - over; y = b - half; wdt = over * 2; hgt = half * 2; }
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.rotate(b.ang);             // +x = downstream, +y = across to the far bank
     ctx.fillStyle = '#4a3a24';
-    ctx.fillRect(x, y, wdt, hgt);
-    ctx.strokeStyle = 'rgba(20,14,8,0.7)';
-    ctx.lineWidth = 2;
+    ctx.fillRect(-half, -over, half * 2, over * 2);
+    // Planks run along the river (perpendicular to the walking direction).
+    ctx.strokeStyle = 'rgba(20,14,8,0.7)'; ctx.lineWidth = 2;
     ctx.beginPath();
-    if (rv.horizontal) { for (let py = y + 5; py < y + hgt; py += 8) { ctx.moveTo(x, py); ctx.lineTo(x + wdt, py); } }
-    else { for (let px = x + 5; px < x + wdt; px += 8) { ctx.moveTo(px, y); ctx.lineTo(px, y + hgt); } }
+    for (let yy = -over + 5; yy < over; yy += 8) { ctx.moveTo(-half, yy); ctx.lineTo(half, yy); }
     ctx.stroke();
-    // Side rails.
+    // Side rails along the deck edges.
     ctx.fillStyle = '#6b5330';
-    if (rv.horizontal) { ctx.fillRect(x, y, wdt, 3); ctx.fillRect(x, y + hgt - 3, wdt, 3); }
-    else { ctx.fillRect(x, y, 3, hgt); ctx.fillRect(x + wdt - 3, y, 3, hgt); }
+    ctx.fillRect(-half, -over, 3, over * 2);
+    ctx.fillRect(half - 3, -over, 3, over * 2);
+    ctx.restore();
   },
 
   drawDeco(ctx, d) {

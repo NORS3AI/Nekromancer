@@ -18,11 +18,18 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.3.0-alpha';
+const GAME_VERSION = 'v0.3.1-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.3.1-alpha', date: 'July 2026',
+    notes: [
+      'RIVERS ARE NOW CURVY & UNPREDICTABLE: streams meander and wind across the land instead of running dead-straight',
+      'Rivers no longer cut a map in half — they are length-capped so there is always a way around, and wooden bridges still offer the shortcut across'
+    ]
+  },
   {
     v: 'v0.3.0-alpha', date: 'July 2026',
     notes: [

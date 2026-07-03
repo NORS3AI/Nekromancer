@@ -39,6 +39,15 @@ function distToSeg(px, py, ax, ay, bx, by) {
   return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
 }
 
+// Closest point on segment AB to P (for pushing entities off curvy water).
+function closestOnSeg(px, py, ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  let t = len2 ? ((px - ax) * dx + (py - ay) * dy) / len2 : 0;
+  t = clamp(t, 0, 1);
+  return { x: ax + t * dx, y: ay + t * dy };
+}
+
 function angleTo(x1, y1, x2, y2) {
   return Math.atan2(y2 - y1, x2 - x1);
 }
