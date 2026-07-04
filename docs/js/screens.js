@@ -1564,6 +1564,10 @@ const Screens = {
         ctx.fillText('RUNE', px + 12, fy + 63);
         const bx0 = px + 48;
         const bw = Math.min(160, (pw - 62 - (runes.length - 1) * 6) / runes.length);
+        // A per-skill starting rune, so each option below gets a DISTINCT stone
+        // (base + ri never repeats within one skill's list of ≤ RUNE_IMAGE_COUNT).
+        let runeBase = 0;
+        for (let k = 0; k < s.id.length; k++) runeBase += s.id.charCodeAt(k) * (k + 1);
         runes.forEach((r, ri) => {
           const locked = r.lvl && Hero.level < r.lvl;
           const active = (Hero.runes[s.id] || 'base') === r.id && !locked;
@@ -1584,7 +1588,7 @@ const Screens = {
           // A carved-stone rune shard on the left of each option (dimmed if locked).
           if (typeof drawRuneStone === 'function') {
             if (locked) ctx.globalAlpha = 0.4;
-            drawRuneStone(ctx, rbx + 12, fy + 63, 8, (s.id.length + ri * 7 + 3));
+            drawRuneStone(ctx, rbx + 12, fy + 63, 8, 0, runeBase + ri);
             ctx.globalAlpha = 1;
           }
         });

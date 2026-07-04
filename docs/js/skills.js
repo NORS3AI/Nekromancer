@@ -1006,11 +1006,16 @@ const RUNE_IMAGES = [];
   }
 })();
 
-// Draw a rune shard for the given seed: the hand-drawn art if it has loaded,
-// else the procedural carved stone.
-function drawRuneStone(ctx, x, y, r, seed) {
+// Draw a rune shard. When `idx` is given it selects that exact rune image
+// (callers pass distinct indices so a skill's options never repeat a stone);
+// otherwise the stone is chosen by hashing `seed`. Falls back to the
+// procedural carved glyph when the art is absent.
+function drawRuneStone(ctx, x, y, r, seed, idx) {
   if (RUNE_IMAGES.length) {
-    const pick = Math.abs(Math.round(hash2(seed * 12.9898, seed * 78.233))) % RUNE_IMAGES.length;
+    const n = RUNE_IMAGES.length;
+    const pick = idx != null
+      ? ((idx % n) + n) % n
+      : Math.abs(Math.round(hash2(seed * 12.9898, seed * 78.233))) % n;
     const img = RUNE_IMAGES[pick];
     if (img && img.complete && img.naturalWidth > 0) {
       ctx.drawImage(img, x - r * 1.15, y - r * 1.15, r * 2.3, r * 2.3);
