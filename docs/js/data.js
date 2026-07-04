@@ -18,11 +18,17 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.7.1-alpha';
+const GAME_VERSION = 'v0.7.2-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.7.2-alpha', date: 'July 2026',
+    notes: [
+      'The character sheet now has a "⌂ CAMPFIRE — CHANGE HERO" button — leave to the campfire roster to switch to another Nekromancer or create a new one, without restarting'
+    ]
+  },
   {
     v: 'v0.7.1-alpha', date: 'July 2026',
     notes: [

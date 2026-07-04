@@ -1847,15 +1847,22 @@ const Screens = {
     ry = line(rx, ry, 'Bag', Hero.bag.length + ' / ' + Hero.BAG_SIZE);
     ry += 6;
 
-    // Analysis.
+    // Analysis (leave room for the campfire button at the very bottom).
     ry = header(rx, ry, '— ANALYSIS —', '#e04a5a');
     ctx.textAlign = 'left';
     ctx.font = '11px Georgia';
     ctx.fillStyle = '#b5ab94';
     for (const tip of this.analyze(s)) {
-      if (ry > py + ph - 18) break;
+      if (ry > py + ph - 50) break;
       ry = wrapText(ctx, '• ' + tip, rx, ry, colW, 14, 2) + 3;
     }
+
+    // Leave to the campfire roster — switch to another hero or make a new one.
+    UI.btn(ctx, px + 16, py + ph - 40, pw - 32, 30, '⌂  CAMPFIRE — CHANGE HERO', () => {
+      Hero.save();
+      Game.state = 'menu';
+      UI.open('select');
+    }, { size: 12, border: '#c8722a', color: '#ffb24a' });
   },
 
   analyze(s) {
