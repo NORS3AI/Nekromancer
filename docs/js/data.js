@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.0.1-alpha';
+const GAME_VERSION = 'v1.0.2-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.0.2-alpha', date: 'July 2026',
+    notes: [
+      'New NEKROMANCY title logo is now showing. Its white background was knocked out to transparent so it sits cleanly on the dark title screen',
+      'FIX: the logo is now cache-busted by game version, so a replaced logo.png always loads fresh instead of showing a stale cached image'
+    ]
+  },
   {
     v: 'v1.0.1-alpha', date: 'July 2026',
     notes: [
