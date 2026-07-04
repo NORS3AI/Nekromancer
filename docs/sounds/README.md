@@ -5,27 +5,38 @@ empty, the game uses its built-in procedural audio for that category.
 
 ```
 sounds/
-  music/       ← background music playlist (see below)
+  music/       ← background music (see below)
   ambience/    ← per-zone ambience beds (reserved — procedural for now)
   weather/     ← rain / wind loops (reserved — procedural for now)
   fx/          ← sound effects (reserved — procedural for now)
 ```
 
-## Adding music (easy path)
+## Adding music
 
-1. Put your tracks in **`sounds/music/`**.
-2. Name them **`1.mp3`, `2.mp3`, … `16.mp3`** — that's it. They play **shuffled**,
-   on loop, forever (a random order that never repeats a track until the others
-   have played).
+The playlist lives in one place: `MUSIC_PLAYLIST` (and `MUSIC_BASE_URL`) at the
+top of `docs/js/audio.js`. It expects **16 tracks named `1.mp3` … `16.mp3`**,
+played **shuffled**, on loop. Pick ONE of these two ways to host them:
 
-That's all you need. The playlist is controlled in one place —
-`MUSIC_PLAYLIST` at the top of `docs/js/audio.js` — if you want different
-filenames, more/fewer tracks, or other formats (`.ogg` / `.m4a`), edit that
-one list.
+### Option A — small files, in the repo (simplest)
+If your tracks are small (a few MB each; keep the whole folder well under
+~100 MB), just drop `1.mp3 … 16.mp3` into **`sounds/music/`** and commit. Done.
+Tip to shrink them: re-export at **~96–128 kbps, mono** — plenty for background
+music and a fraction of the size.
 
-- Volume: **Settings ▸ Master Volume × Music Volume**. Muting either one
-  silences the music (it's routed through the same mixer as everything else).
-- If no music files are found, the game falls back to its built-in generative
-  score, so it never breaks.
-- Music starts after the first tap/click (browsers require a user gesture
-  before audio can play).
+### Option B — big files, on a GitHub Release (recommended for full tracks)
+Audio files are usually **too big for the repo / GitHub Pages** (Pages rejects
+large pushes and caps total site size). Host them on a **Release** instead — it
+allows large files and does **not** bloat the repo or the site:
+
+1. On GitHub → **Releases → Draft a new release**, tag it e.g. `music-v1`.
+2. **Attach** your 16 files (named `1.mp3 … 16.mp3`) as release assets, publish.
+3. In `docs/js/audio.js`, set:
+   ```js
+   const MUSIC_BASE_URL = 'https://github.com/nors3ai/Nekromancer/releases/download/music-v1/';
+   ```
+   (that's the release's download base — the filenames get appended to it).
+
+Either way:
+- Volume = **Settings ▸ Master Volume × Music Volume**; muting either silences it.
+- No files found → the built-in generative score plays, so it never breaks.
+- Music starts after the first tap/click (browser autoplay rule).

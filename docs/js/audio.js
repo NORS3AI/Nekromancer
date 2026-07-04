@@ -18,6 +18,13 @@ const MUSIC_PLAYLIST = [
   '1.mp3', '2.mp3', '3.mp3', '4.mp3', '5.mp3', '6.mp3', '7.mp3', '8.mp3',
   '9.mp3', '10.mp3', '11.mp3', '12.mp3', '13.mp3', '14.mp3', '15.mp3', '16.mp3'
 ];
+// Where the tracks are hosted. Leave '' to load from docs/sounds/music/ in the
+// repo. BUT audio files are usually too big for a GitHub Pages repo — the easy
+// fix is to attach them to a GitHub *Release* (unlimited size, doesn't bloat the
+// repo) and paste that release's download base here, e.g.:
+//   const MUSIC_BASE_URL = 'https://github.com/nors3ai/Nekromancer/releases/download/music-v1/';
+// The filenames in MUSIC_PLAYLIST are appended to this base. See docs/sounds/README.md.
+const MUSIC_BASE_URL = '';
 // ==========================================================================
 
 const AudioSys = {
@@ -69,6 +76,13 @@ const AudioSys = {
     this.ch.music.gain.setTargetAtTime(Settings.volume('music'), t, 0.05);
     this.ch.ambience.gain.setTargetAtTime(Settings.volume('ambience'), t, 0.05);
     this.ch.weather.gain.setTargetAtTime(Settings.volume('weather'), t, 0.05);
+    // File music plays on its own <audio> element (so external/CDN URLs work
+    // without CORS issues) — drive it by Master × Music, muting either → 0.
+    if (this.musicEl) this.musicEl.volume = this.fileMusicVolume();
+  },
+
+  fileMusicVolume() {
+    return clamp(Settings.volume('master') * Settings.volume('music'), 0, 1);
   },
 
   now() { return this.ctx.currentTime; },
@@ -153,17 +167,18 @@ const AudioSys = {
   // track fails to load (none present), we quietly fall back to the generative
   // score above.
   initFileMusic() {
-    if (this.musicEl || !this.ctx || !MUSIC_PLAYLIST.length) return;
+    if (this.musicEl || !MUSIC_PLAYLIST.length) return;
     const el = new Audio();
     el.preload = 'auto';
     el.loop = false;                    // we advance manually to chain the list
+    el.crossOrigin = 'anonymous';       // allow externally-hosted (Release/CDN) tracks
+    el.volume = this.fileMusicVolume();
     el.addEventListener('ended', () => this.nextTrack());
     el.addEventListener('error', () => this.onTrackError());
     el.addEventListener('playing', () => { this.usingFileMusic = true; this.musicMisses = 0; });
-    try {
-      this.musicSrcNode = this.ctx.createMediaElementSource(el);
-      this.musicSrcNode.connect(this.ch.music);
-    } catch (e) { return; }             // no media-element support → generative
+    // NOTE: volume/mute are driven directly on the element (see setVolumes), NOT
+    // through the WebAudio graph — a MediaElementSource would taint (and silence)
+    // cross-origin tracks, and the tracks live on a Release for size reasons.
     this.musicEl = el;
     this.advanceMusic();
   },
@@ -193,8 +208,13 @@ const AudioSys = {
     if (!el || !MUSIC_PLAYLIST.length) return;
     const n = MUSIC_PLAYLIST.length;
     this.musicIndex = ((i % n) + n) % n;
-    const bust = typeof GAME_VERSION !== 'undefined' ? '?v=' + GAME_VERSION : '';
-    el.src = 'sounds/music/' + MUSIC_PLAYLIST[this.musicIndex] + bust;
+    const name = MUSIC_PLAYLIST[this.musicIndex];
+    // Local files get a version cache-bust; external Release URLs are versioned
+    // by their release tag, so leave them untouched.
+    const local = !MUSIC_BASE_URL;
+    const bust = (local && typeof GAME_VERSION !== 'undefined') ? '?v=' + GAME_VERSION : '';
+    el.volume = this.fileMusicVolume();
+    el.src = (MUSIC_BASE_URL || 'sounds/music/') + name + bust;
     const pr = el.play();
     if (pr && pr.catch) pr.catch(() => {});   // ignore autoplay rejections
   },

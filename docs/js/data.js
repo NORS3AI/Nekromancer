@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.0.5-alpha';
+const GAME_VERSION = 'v1.0.6-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.0.6-alpha', date: 'July 2026',
+    notes: [
+      'Music can now be hosted OUTSIDE the repo — set MUSIC_BASE_URL in audio.js to a GitHub Release download URL and drop your 16 tracks there (audio files are too big to live in the repo / GitHub Pages). Local sounds/music/ still works for small files',
+      'Music volume now runs on the audio element directly (Master × Music, mute included), so externally-hosted tracks play without cross-origin issues'
+    ]
+  },
   {
     v: 'v1.0.5-alpha', date: 'July 2026',
     notes: [
