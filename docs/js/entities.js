@@ -410,6 +410,7 @@ class Enemy {
       this.abilities = ({
         skeletonking: ['slam', 'summon', 'fissures', 'charge'],
         wraith: ['nova', 'fissures', 'charge', 'summon'],
+        sandwyrm: ['fissures', 'charge', 'slam', 'nova'],
         brute: ['charge', 'slam', 'nova']
       })[type] || ['charge', 'slam', 'nova'];
     }
@@ -800,9 +801,12 @@ class Enemy {
     Game.kills++;
     Hero.totalKills++;
     // Rifts: a slain rare-elite pack scatters 1-3 purple orbs (10 pts each).
+    // The dev spawn boost swells packs, so orbs scale with it too — a boosted
+    // rift/season drops proportionally more orbs (owner rule).
     if (Game.riftMode && this.elite && !this.guardian && !this.unique && Game.riftProgress < Game.riftGoal) {
-      const n = randInt(1, 3);
-      for (let i = 0; i < n; i++) Game.pickups.push(new Pickup(this.x, this.y, 'riftorb'));
+      const boost = 1 + (Hero.cheats.spawn || 0);
+      const n = Math.max(1, Math.round(randInt(1, 3) * boost));
+      for (let i = 0; i < n; i++) Game.pickups.push(new Pickup(this.x + rand(-20, 20), this.y + rand(-20, 20), 'riftorb'));
     }
     fxBlood(this.x, this.y, this.unique ? 30 : 12);
     if (this.type === 'skeleton' || this.type === 'archer') fxBone(this.x, this.y, 12);
@@ -856,6 +860,13 @@ class Enemy {
         const pu = new Pickup(this.x, this.y, 'item');
         pu.item = Items.generate(mLvl + 2, 0.3, 'weapon');
         Game.pickups.push(pu);
+      }
+      // 10% chance to drop the Golden Mirror (transmute it in the Cube for
+      // instant orb pickup). Only drops if not already owned/converted.
+      if (!Hero.goldenMirror && !Hero.orbAutoPickup && Math.random() < 0.10) {
+        const mir = new Pickup(this.x, this.y, 'mirror');
+        mir.vx = rand(-40, 40); mir.vy = rand(-40, 40);
+        Game.pickups.push(mir);
       }
       fxNova(this.x, this.y, 90);
       Particles.spawn(this.x, this.y - 6, {
@@ -1203,6 +1214,55 @@ class Enemy {
         ctx.lineTo(9, -30); ctx.closePath(); ctx.fill();
         ctx.fillStyle = '#e0402f';
         ctx.beginPath(); ctx.arc(0, -32, 1.3, 0, TAU); ctx.fill();
+        ctx.restore();
+        break;
+      }
+      case 'sandwyrm': {
+        // A colossal desert serpent rearing from the sand — segmented coils,
+        // a fanged maw and gnashing mandibles.
+        const s = 1.35;
+        ctx.save(); ctx.scale(s, s);
+        const sway = Math.sin(this.anim * 1.3) * 5;
+        // Sand mound it erupts from.
+        ctx.fillStyle = fl ? '#c9b078' : '#6a5326';
+        ctx.beginPath(); ctx.ellipse(0, 20, 26, 9, 0, 0, TAU); ctx.fill();
+        // Coiling body segments, tapering upward.
+        for (let i = 5; i >= 0; i--) {
+          const yy = 16 - i * 7;
+          const xx = Math.sin(this.anim * 1.3 + i * 0.6) * (i * 1.6) + sway * (i / 6);
+          const rad = 15 - i * 1.6;
+          ctx.fillStyle = fl ? '#fff' : (i % 2 ? '#8a6a3a' : '#a07e46');
+          ctx.beginPath(); ctx.ellipse(xx, yy, rad, rad * 0.82, 0, 0, TAU); ctx.fill();
+          // Chitin ridge highlight.
+          ctx.fillStyle = fl ? '#fff' : 'rgba(220,190,120,0.5)';
+          ctx.beginPath(); ctx.ellipse(xx, yy - rad * 0.4, rad * 0.6, rad * 0.3, 0, 0, TAU); ctx.fill();
+        }
+        // Head at the top.
+        const hx = sway, hy = -26;
+        ctx.fillStyle = fl ? '#fff' : '#b58a4a';
+        ctx.beginPath(); ctx.ellipse(hx, hy, 12, 14, 0, 0, TAU); ctx.fill();
+        // Gaping maw with teeth.
+        ctx.fillStyle = '#2a0e08';
+        ctx.beginPath(); ctx.ellipse(hx, hy + 3, 7, 8, 0, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#f0e6cc';
+        for (let k = 0; k < 6; k++) {
+          const a = k / 6 * TAU;
+          ctx.beginPath();
+          ctx.moveTo(hx + Math.cos(a) * 6, hy + 3 + Math.sin(a) * 7);
+          ctx.lineTo(hx + Math.cos(a) * 3, hy + 3 + Math.sin(a) * 3.5);
+          ctx.lineTo(hx + Math.cos(a + 0.3) * 6, hy + 3 + Math.sin(a + 0.3) * 7);
+          ctx.closePath(); ctx.fill();
+        }
+        // Mandibles.
+        ctx.strokeStyle = fl ? '#fff' : '#7a5a2e'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        const mand = Math.sin(this.anim * 2) * 3;
+        ctx.beginPath(); ctx.moveTo(hx - 9, hy - 2); ctx.quadraticCurveTo(hx - 16 - mand, hy + 4, hx - 12, hy + 12); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(hx + 9, hy - 2); ctx.quadraticCurveTo(hx + 16 + mand, hy + 4, hx + 12, hy + 12); ctx.stroke();
+        // Burning eyes.
+        ctx.fillStyle = '#ffb43a'; ctx.shadowColor = '#ff8c2a'; ctx.shadowBlur = 8;
+        ctx.beginPath(); ctx.arc(hx - 4, hy - 3, 2, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(hx + 4, hy - 3, 2, 0, TAU); ctx.fill();
+        ctx.shadowBlur = 0;
         ctx.restore();
         break;
       }
@@ -1636,7 +1696,7 @@ class Pickup {
   constructor(x, y, kind) {
     this.x = x + rand(-14, 14);
     this.y = y + rand(-14, 14);
-    this.kind = kind; // 'gold' | 'orb' | 'item' | 'gem'
+    this.kind = kind; // 'gold' | 'orb' | 'riftorb' | 'item' | 'gem' | 'mirror' | 'cube'
     this.vx = rand(-70, 70);
     this.vy = rand(-70, 70);
     this.t = 0;
@@ -1646,9 +1706,22 @@ class Pickup {
 
   update(dt) {
     this.t += dt;
-    // Dropped ITEMS linger on the ground until collected; other pickups fade at 60s.
-    if (this.t > 60 && this.kind !== 'item') { this.gone = true; return; }
     const p = Game.player;
+    // Golden Mirror converted: purple orbs are collected instantly, no chase.
+    if (this.kind === 'riftorb' && Hero.orbAutoPickup && p && !p.dead) {
+      this.gone = true;
+      Game.addRiftPoints(10);
+      Particles.spawn(p.x, p.y - 10, {
+        count: 6, color: ['#b06adf', '#d8b4f0'], minSpeed: 40, maxSpeed: 120,
+        minLife: 0.15, maxLife: 0.4, glow: true
+      });
+      AudioSys.sfx('gem');
+      return;
+    }
+    // Dropped ITEMS and quest pickups (Cube/Mirror) linger until collected;
+    // other pickups fade at 60s.
+    const lingers = this.kind === 'item' || this.kind === 'cube' || this.kind === 'mirror';
+    if (this.t > 60 && !lingers) { this.gone = true; return; }
     // A full bag leaves loot on the ground: no magnet, no pickup (owner rule).
     // Gold/orbs/gems (they go to the pouch) are never blocked.
     const blocked = this.kind === 'item' && !Items.canPickup(this.item);
@@ -1686,6 +1759,19 @@ class Pickup {
         Hero.gems.push(this.gem);
         UI.toast('Gem: ' + gemName(this.gem), GEM_TYPES[this.gem.type].color);
         AudioSys.sfx('gem');
+        Hero.save();
+      } else if (this.kind === 'mirror') {
+        Hero.goldenMirror = true;
+        UI.toast('You found the GOLDEN MIRROR — transmute it in the Horadric\'s Cube', '#ffd76a');
+        fxNova(p.x, p.y, 70);
+        AudioSys.sfx('setdrop');
+        Hero.save();
+      } else if (this.kind === 'cube') {
+        Hero.hasCube = true;
+        UI.toast('You found the HORADRIC\'S CUBE — it now waits in town', RARITIES[6].color);
+        fxNova(p.x, p.y, 90);
+        Particles.shake(6);
+        AudioSys.sfx('setdrop');
         Hero.save();
       }
     }
@@ -1773,6 +1859,51 @@ class Pickup {
       ctx.beginPath();
       ctx.moveTo(0, -6); ctx.lineTo(2.5, -1); ctx.lineTo(-2.5, -1);
       ctx.closePath(); ctx.fill();
+    } else if (this.kind === 'mirror') {
+      // The Golden Mirror — a gilded hand-mirror on a beam of light.
+      const beam = ctx.createLinearGradient(0, -48, 0, 0);
+      beam.addColorStop(0, 'rgba(255,215,106,0)');
+      beam.addColorStop(1, 'rgba(255,215,106,0.7)');
+      ctx.globalAlpha = 0.5 + 0.3 * Math.sin(Game.time * 3 + this.x);
+      ctx.fillStyle = beam; ctx.fillRect(-4, -48, 8, 48);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#e8c34a'; ctx.shadowColor = '#ffd76a'; ctx.shadowBlur = 12;
+      ctx.beginPath(); ctx.ellipse(0, -4, 7, 9, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#fff7d8';
+      ctx.beginPath(); ctx.ellipse(0, -4, 4.5, 6, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.beginPath(); ctx.ellipse(-1.5, -6, 1.6, 2.6, -0.4, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#c9a04a'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(0, 5); ctx.lineTo(0, 11); ctx.stroke();
+      ctx.shadowBlur = 0;
+    } else if (this.kind === 'cube') {
+      // The Horadric's Cube — a floating arcane box wreathed in red light.
+      const beamCol = '255,59,59';
+      const beam = ctx.createLinearGradient(0, -60, 0, 0);
+      beam.addColorStop(0, `rgba(${beamCol},0)`);
+      beam.addColorStop(1, `rgba(${beamCol},0.7)`);
+      ctx.globalAlpha = 0.55 + 0.3 * Math.sin(Game.time * 3 + this.x);
+      ctx.fillStyle = beam; ctx.fillRect(-6, -60, 12, 60);
+      ctx.globalAlpha = 1;
+      const spin = Math.sin(Game.time * 1.6) * 0.25;
+      ctx.save(); ctx.rotate(spin);
+      ctx.shadowColor = '#ff3b3b'; ctx.shadowBlur = 14;
+      // Cube faces.
+      ctx.fillStyle = '#3a2622';
+      ctx.beginPath();
+      ctx.moveTo(-8, -2); ctx.lineTo(0, -8); ctx.lineTo(8, -2); ctx.lineTo(8, 8);
+      ctx.lineTo(0, 14); ctx.lineTo(-8, 8); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#5a3a30';
+      ctx.beginPath(); ctx.moveTo(-8, -2); ctx.lineTo(0, -8); ctx.lineTo(0, 4); ctx.lineTo(-8, 8); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#7a4a3a';
+      ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(8, -2); ctx.lineTo(8, 8); ctx.lineTo(0, 4); ctx.closePath(); ctx.fill();
+      // Glowing runes.
+      ctx.strokeStyle = '#ff6a4a'; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(-4, 1); ctx.lineTo(-4, 5); ctx.moveTo(4, 1); ctx.lineTo(4, 5); ctx.stroke();
+      ctx.fillStyle = '#ffcf6a';
+      ctx.beginPath(); ctx.arc(0, 2, 1.6, 0, TAU); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.restore();
     }
     ctx.restore();
   }

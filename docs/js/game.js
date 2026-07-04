@@ -136,7 +136,8 @@ const Game = {
     this.stage = 1;
     this.stageCount = 11;
     this.journeyIdx = null;
-    this.startLand(makeStoryZone(1), null);
+    this.cubeFoundThisAct = false;   // Act III: has the Horadric's Cube dropped this run?
+    this.startLand(makeStoryZone(1, act), null);
   },
 
   // kind: 'normal' (1-69, free · 250 pts) | 'greater' (Nephalem, lvl 70, costs a
@@ -177,7 +178,7 @@ const Game = {
     // Carry HP/essence into the next area — descending isn't a free heal.
     const hpFrac = this.player ? this.player.hp / this.player.maxHp : 1;
     const ess = this.player ? this.player.essence : 60;
-    const zone = this.story ? makeStoryZone(this.stage)
+    const zone = this.story ? makeStoryZone(this.stage, this.storyAct || 1)
       : this.journeyIdx !== null ? ZONES[this.journeyIdx]
       : makeAdventureZone();
     this.startLand(zone, this.journeyIdx);
@@ -254,6 +255,17 @@ const Game = {
       const gob = new Enemy('goblin', gx, gy, { name: 'Treasure Goblin' });
       this.enemies.push(gob);
     }
+    // Act III: the Horadric's Cube has a 10% chance to be half-buried on any
+    // (non-final) map. If the player reaches the Sand Wyrm without finding it,
+    // the Wyrm drops it for certain (see onBossDead). Only spawns if unowned.
+    if (this.story && this.storyAct === 3 && !this.finalStage && !Hero.hasCube && Math.random() < 0.10) {
+      let cx, cy, ct = 0;
+      do { cx = rand(240, World.W - 240); cy = rand(240, World.H - 240); } while (!World.isFloorAt(cx, cy) && ct++ < 20);
+      const cube = new Pickup(cx, cy, 'cube');
+      cube.vx = 0; cube.vy = 0;
+      this.pickups.push(cube);
+      this.cubeFoundThisAct = true;
+    }
     // The stage guardian: the land's named unique on the FINAL area, a champion
     // that guards the descent on earlier areas. (Rifts summon a Guardian instead,
     // only once the orb bar is full.)
@@ -279,7 +291,7 @@ const Game = {
     else if (this.story) sub = 'Chapter ' + this.stage + '/10 — destroy ' + this.zone.boss;
     else if (this.finalStage) sub = 'Bounty: slay ' + this.zone.boss;
     else sub = 'Area ' + this.stage + ' of ' + this.stageCount + ' — slay the champion to descend';
-    const title = this.story && this.finalStage ? 'LEORIC, THE SKELETON KING'
+    const title = this.story && this.finalStage ? (this.zone.boss || 'THE FINAL BOSS').toUpperCase()
       : this.zone.name + (this.riftMode || this.stageCount < 2 ? ''
         : this.story ? '  ·  ' + this.stage + '/10'
         : '  ·  Area ' + this.stage + '/' + this.stageCount);
@@ -504,7 +516,16 @@ const Game = {
       const item = Items.generate(mLvl + 2, 0.4);
       Items.stash(item);
       lines.push([item.name, RARITIES[item.rarity].color]);
-      lines.push(['Act I complete — the Skeleton King is slain', '#ff8c2a']);
+      const act = this.storyAct || 1;
+      // Act III: if the player never found the Cube in the dunes, the Sand Wyrm
+      // yields it here — a guaranteed drop (owner rule).
+      if (act === 3 && !Hero.hasCube) {
+        Hero.hasCube = true;
+        lines.push(['✦ The Horadric\'s Cube', RARITIES[6].color]);
+        AudioSys.sfx('setdrop');
+      }
+      lines.push([act === 3 ? 'Act III complete — the Sand Wyrm is slain'
+        : 'Act I complete — the Skeleton King is slain', '#ff8c2a']);
       this.rewardTitle = 'ACT COMPLETE';
       this.rewardLines = lines;
       Hero.addXP(Math.round(1600 * diff.reward));

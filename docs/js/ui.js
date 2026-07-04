@@ -353,9 +353,11 @@ const UI = {
     // Town-portal navigation: the artisans & stash opened from town return TO
     // town on ✕; town itself (and its ✕) exits back to the wilds.
     let cb;
-    if (this.townMode) {
+    // The recipe book always returns to the Cube (whether in town or camp).
+    if (this.screen === 'recipes') cb = () => this.open('cube');
+    else if (this.townMode) {
       if (this.screen === 'town') cb = () => { this.townMode = false; this.close(); };
-      else if (['smith', 'jeweler', 'mystic', 'stash', 'torches', 'radial'].includes(this.screen)) cb = () => this.open('town');
+      else if (['smith', 'jeweler', 'mystic', 'stash', 'torches', 'radial', 'cube'].includes(this.screen)) cb = () => this.open('town');
     }
     Screens.closeX(ctx, W, { x: W - 26 - s.right, y: 26 + s.top, cb });
   },

@@ -95,6 +95,9 @@ const Hero = {
   riftsCleared: 0,
   riftKeys: 0,          // Nephalem Rift Keys (open Nephalem Rifts)
   masterKeys: 0,        // Master Nephalem Rift Keys (open Season rifts)
+  hasCube: false,       // Horadric's Cube found (Act 3) — unlocks the town button
+  goldenMirror: false,  // Golden Mirror in inventory (Treasure Goblin drop)
+  orbAutoPickup: false, // Golden Mirror converted → rift/season orbs auto-collect
   artisans: { smith: 1, mystic: 1, jeweler: 1 },
   runes: {},                          // skillId -> rune id
   cheats: { god: false, essence: false, spawn: 0 }, // dev panel, kept per save
@@ -126,6 +129,9 @@ const Hero = {
     this.riftsCleared = 0;
     this.riftKeys = 0;
     this.masterKeys = 0;
+    this.hasCube = false;
+    this.goldenMirror = false;
+    this.orbAutoPickup = false;
     this.artisans = { smith: 1, mystic: 1, jeweler: 1 };
     this.runes = {};
     this.cheats = { god: false, essence: false, spawn: 0 };
@@ -165,6 +171,7 @@ const Hero = {
       zonesCleared: this.zonesCleared, actsCleared: this.actsCleared, difficulty: this.difficulty,
       bestZone: this.bestZone, totalKills: this.totalKills,
       riftsCleared: this.riftsCleared, riftKeys: this.riftKeys, masterKeys: this.masterKeys,
+      hasCube: this.hasCube, goldenMirror: this.goldenMirror, orbAutoPickup: this.orbAutoPickup,
       artisans: this.artisans, runes: this.runes, cheats: this.cheats,
       bagTier: this.bagTier
     };
@@ -209,6 +216,7 @@ const Hero = {
       zonesCleared: d.zonesCleared || 0, actsCleared: d.actsCleared || 0, difficulty: d.difficulty || 0,
       bestZone: d.bestZone || 0, totalKills: d.totalKills || 0,
       riftsCleared: d.riftsCleared || 0, riftKeys: d.riftKeys || 0, masterKeys: d.masterKeys || 0,
+      hasCube: !!d.hasCube, goldenMirror: !!d.goldenMirror, orbAutoPickup: !!d.orbAutoPickup,
       artisans: (() => {
         const a = Object.assign({ smith: 1, mystic: 1, jeweler: 1 }, d.artisans);
         for (const k of Object.keys(a)) a[k] = clamp(a[k], 1, 10); // artisans now cap at 10

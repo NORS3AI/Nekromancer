@@ -35,6 +35,8 @@ const Screens = {
       case 'patchnotes': this.patchnotes(ctx, W, H); break;
       case 'season': this.season(ctx, W, H); break;
       case 'town': this.town(ctx, W, H); break;
+      case 'cube': this.cube(ctx, W, H); break;
+      case 'recipes': this.recipes(ctx, W, H); break;
       case 'wilds': this.wilds(ctx, W, H); break;
       case 'create': this.create(ctx, W, H); break;
       case 'select': this.select(ctx, W, H); break;
@@ -567,9 +569,19 @@ const Screens = {
   // drops the player straight back into the fight they left.
   town(ctx, W, H) {
     this.dim(ctx, W, H);
+    const stops = [
+      ['🎒   INVENTORY', () => UI.open('radial'), '#6ff7c3', '#3a7a6a'],
+      ['⚒   BLACKSMITH', () => UI.open('smith'), '#ffb43a', '#8a6f4a'],
+      ['◆   JEWELER', () => UI.open('jeweler'), '#4ecbe0', '#2a6a7a'],
+      ['✦   MYSTIC', () => UI.open('mystic'), '#b06adf', '#7a4a8f'],
+      ['▤   STASH', () => UI.open('stash'), '#8fb0e8', '#5f7ab0']
+    ];
+    // Once found, the Horadric's Cube sits just before the Blacksmith.
+    if (Hero.hasCube) stops.splice(1, 0, ['◈   HORADRIC\'S CUBE', () => UI.open('cube'), '#ff5a4a', '#a03a2a']);
     const pw = Math.min(440, W - 20);
     const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 30, 486);
+    const needed = 82 + stops.length * 54 + 8 + 46 + 20;
+    const ph = Math.min(H - 30, Math.max(486, needed));
     const py = Math.max(15, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, 'TOWN PORTAL');
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -578,13 +590,6 @@ const Screens = {
     ctx.fillText('Visit the artisans and your stash, then head back.', W / 2, py + 56);
 
     let y = py + 82;
-    const stops = [
-      ['🎒   INVENTORY', () => UI.open('radial'), '#6ff7c3', '#3a7a6a'],
-      ['⚒   BLACKSMITH', () => UI.open('smith'), '#ffb43a', '#8a6f4a'],
-      ['◆   JEWELER', () => UI.open('jeweler'), '#4ecbe0', '#2a6a7a'],
-      ['✦   MYSTIC', () => UI.open('mystic'), '#b06adf', '#7a4a8f'],
-      ['▤   STASH', () => UI.open('stash'), '#8fb0e8', '#5f7ab0']
-    ];
     for (const [label, cb, color, border] of stops) {
       UI.btn(ctx, px + 20, y, pw - 40, 46, label, cb, { size: 15, color, border });
       y += 54;
@@ -593,6 +598,125 @@ const Screens = {
     UI.btn(ctx, px + 20, y, pw - 40, 46, '↩   BACK TO THE WILDS',
       () => { UI.townMode = false; UI.close(); },
       { size: 15, color: '#6ff7c3', border: '#3a7a6a' });
+  },
+
+  // ------------------------------------------------------ horadric's cube
+  // A legendary crafting tool found in Act III. For now it holds only the
+  // Golden Mirror transmute; its recipe book is a closed "coming soon" tome.
+
+  cube(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const pw = Math.min(440, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 24, 470);
+    const py = Math.max(12, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, 'HORADRIC\'S CUBE');
+
+    // The floating cube glyph.
+    const cx = W / 2, cyc = py + 108, t = Game.time;
+    ctx.save();
+    ctx.translate(cx, cyc + Math.sin(t * 1.5) * 4);
+    ctx.rotate(Math.sin(t * 1.2) * 0.18);
+    ctx.shadowColor = '#ff3b3b'; ctx.shadowBlur = 22;
+    const R = 34;
+    ctx.fillStyle = '#3a2622';
+    ctx.beginPath();
+    ctx.moveTo(-R, -R * 0.28); ctx.lineTo(0, -R); ctx.lineTo(R, -R * 0.28);
+    ctx.lineTo(R, R * 0.72); ctx.lineTo(0, R * 1.2); ctx.lineTo(-R, R * 0.72); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#5a3a30';
+    ctx.beginPath(); ctx.moveTo(-R, -R * 0.28); ctx.lineTo(0, -R); ctx.lineTo(0, R * 0.16); ctx.lineTo(-R, R * 0.72); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#7a4a3a';
+    ctx.beginPath(); ctx.moveTo(0, -R); ctx.lineTo(R, -R * 0.28); ctx.lineTo(R, R * 0.72); ctx.lineTo(0, R * 0.16); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#ff6a4a'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-14, 4); ctx.lineTo(-14, 20); ctx.moveTo(14, 4); ctx.lineTo(14, 20); ctx.stroke();
+    ctx.fillStyle = '#ffcf6a';
+    ctx.beginPath(); ctx.arc(0, 8, 4, 0, TAU); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.fillText('An ancient artifact of transmutation.', W / 2, py + 168);
+
+    // Golden Mirror row.
+    let y = py + 194;
+    const rowW = pw - 40, rx = px + 20;
+    if (Hero.orbAutoPickup) {
+      UI.panel(ctx, rx, y, rowW, 88);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 14px Georgia'; ctx.fillStyle = '#ffd76a';
+      ctx.fillText('✦ Golden Mirror — transmuted', rx + 16, y + 26);
+      ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.fillText(this.fitText(ctx, 'Purple orbs (Rifts & Seasons) are now', rowW - 32), rx + 16, y + 48);
+      ctx.fillText(this.fitText(ctx, 'collected instantly — no chasing.', rowW - 32), rx + 16, y + 64);
+    } else if (Hero.goldenMirror) {
+      UI.panel(ctx, rx, y, rowW, 88);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 14px Georgia'; ctx.fillStyle = '#ffd76a';
+      ctx.fillText('Golden Mirror', rx + 16, y + 22);
+      ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.fillText(this.fitText(ctx, 'Transmute to auto-collect every purple orb.', rowW - 32), rx + 16, y + 42);
+      UI.btn(ctx, rx + 16, y + 54, rowW - 32, 26, 'TRANSMUTE', () => {
+        Hero.goldenMirror = false;
+        Hero.orbAutoPickup = true;
+        Hero.save();
+        UI.toast('The Golden Mirror dissolves — purple orbs now come to you', '#ffd76a');
+        AudioSys.sfx('level');
+      }, { size: 13, color: '#ffd76a', border: '#8a6f2a' });
+    } else {
+      UI.panel(ctx, rx, y, rowW, 88);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText('Golden Mirror — not found', W / 2, y + 30);
+      ctx.font = '10px Georgia'; ctx.fillStyle = '#57503f';
+      ctx.fillText(this.fitText(ctx, 'The Treasure Goblin sometimes carries it (10%).', rowW - 32), W / 2, y + 54);
+    }
+
+    // Recipe book button.
+    y += 100;
+    UI.btn(ctx, rx, y, rowW, 44, '📖   RECIPE BOOK', () => UI.open('recipes'),
+      { size: 15, color: '#e0a24a', border: '#8a6f4a' });
+  },
+
+  recipes(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const pw = Math.min(400, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 40, 360);
+    const py = Math.max(20, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, 'RECIPE BOOK');
+
+    // A closed leather tome, clasped shut.
+    const cx = W / 2, cyc = py + ph * 0.44, t = Game.time;
+    ctx.save();
+    ctx.translate(cx, cyc + Math.sin(t * 1.3) * 3);
+    // Cover.
+    ctx.fillStyle = '#5a3320';
+    ctx.beginPath(); ctx.roundRect(-56, -70, 112, 140, 8); ctx.fill();
+    ctx.fillStyle = '#3f2416';
+    ctx.beginPath(); ctx.roundRect(-56, -70, 16, 140, 6); ctx.fill();   // spine
+    // Page edges.
+    ctx.fillStyle = '#e8dcc0';
+    ctx.fillRect(48, -62, 6, 124);
+    // Gilt border.
+    ctx.strokeStyle = '#c9a04a'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(-46, -60, 88, 120, 5); ctx.stroke();
+    // Emblem — a small horadric cube.
+    ctx.strokeStyle = '#c9a04a'; ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(-16, -6); ctx.lineTo(0, -16); ctx.lineTo(16, -6);
+    ctx.lineTo(16, 12); ctx.lineTo(0, 22); ctx.lineTo(-16, 12); ctx.closePath(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-16, -6); ctx.lineTo(0, 4); ctx.lineTo(16, -6); ctx.moveTo(0, 4); ctx.lineTo(0, 22); ctx.stroke();
+    // Clasp.
+    ctx.fillStyle = '#c9a04a';
+    ctx.fillRect(40, -8, 14, 16);
+    ctx.restore();
+
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'bold 16px Georgia'; ctx.fillStyle = '#e0a24a';
+    ctx.fillText('Coming soon ™', W / 2, py + ph - 52);
+    ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.fillText('The Cube\'s deeper transmutations await.', W / 2, py + ph - 30);
   },
 
   // -------------------------------------------------------------- title
@@ -718,6 +842,8 @@ const Screens = {
       ['MYSTIC', () => UI.open('mystic'), '#4ecbe0'],
       ['SETTINGS', () => UI.open('settings'), '#9a9080']
     ];
+    // The Horadric's Cube joins the hub (before the Blacksmith) once found.
+    if (Hero.hasCube) items.splice(4, 0, ['HORADRIC\'S CUBE', () => UI.open('cube'), '#ff5a4a']);
     const cols = W > 560 ? 2 : 1;
     const bw = cols === 2 ? (pw - 12) / 2 : pw;
     const rowH = cols === 1 ? Math.min(52, (H - (56 + panelH) - 46) / items.length) : 56;
@@ -752,7 +878,7 @@ const Screens = {
     // (red ✕ drawn globally by UI.draw, above all content)
     const pw = Math.min(540, W - 20);
     const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 16, 476);
+    const ph = Math.min(H - 16, 540);
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, '⛰ THE WILDS');
 
@@ -784,6 +910,8 @@ const Screens = {
         () => { UI.close(); Game.state = 'map'; }],
       ['STORY MODE — ACT I', 'Hunt 10 ghost lords across the lands, then the Skeleton King', '#ff8c2a',
         () => { UI.close(); Game.startStory(1); }],
+      ['STORY MODE — ACT III', 'Cross ten desert lands to the grave of the Sand Wyrm — seek the Horadric\'s Cube', '#e0a24a',
+        () => { UI.close(); Game.startStory(3); }],
       ['ADVENTURE MODE', 'A randomized land at your level, new every visit', '#ffd76a',
         () => { UI.close(); Game.startAdventure(); }],
       ['RIFT  (levels 1–69)', 'Gather 250 orb points from rare elites, then slay the Guardian', '#b06adf',
@@ -795,17 +923,20 @@ const Screens = {
       ['SEASONS', at70 ? SEASON.name : 'The season begins at level 70', '#4ade80',
         at70 ? () => UI.open('season') : null]
     ];
-    let y = py + 90;
+    let y = py + 88;
+    // Fit every mode row + the keys footer inside the panel on short phones.
+    const avail = (py + ph - 26) - y;
+    const rowH = clamp(avail / rows.length, 44, 55);
     for (const [label, desc, col, cb] of rows) {
-      UI.btn(ctx, px + 16, y, pw - 32, 50, '', cb, { disabled: !cb });
+      UI.btn(ctx, px + 16, y, pw - 32, rowH - 5, '', cb, { disabled: !cb });
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 14px Georgia';
       ctx.fillStyle = cb ? col : '#5c5569';
-      ctx.fillText(label, px + 30, y + 18);
+      ctx.fillText(label, px + 30, y + rowH * 0.33);
       ctx.font = '11px Georgia';
       ctx.fillStyle = cb ? '#9a9080' : '#453f52';
-      ctx.fillText(this.fitText(ctx, desc, pw - 60), px + 30, y + 35);
-      y += 55;
+      ctx.fillText(this.fitText(ctx, desc, pw - 60), px + 30, y + rowH * 0.66);
+      y += rowH;
     }
     ctx.textAlign = 'center';
     ctx.font = 'bold 12px Georgia';
@@ -2982,6 +3113,15 @@ const Screens = {
     row('Max level Jeweler (10)', () => {
       Hero.artisans.jeweler = 10; UI.toast('Jeweler mastered', '#4ecbe0'); Hero.save();
     }, '#4ecbe0');
+    // Horadric's Cube grant row: the Cube itself + the Golden Mirror.
+    const cw = (pw - 32 - 6) / 2;
+    UI.btn(ctx, px + 16, y, cw, 30, '◈ Grant Horadric\'s Cube',
+      () => { Hero.hasCube = true; Hero.save(); UI.toast('Horadric\'s Cube granted — see it in town', '#ff5a4a'); AudioSys.sfx('setdrop'); },
+      { size: 10, color: '#ff5a4a', border: '#a03a2a' });
+    UI.btn(ctx, px + 16 + cw + 6, y, cw, 30, '✦ Grant Golden Mirror',
+      () => { if (!Hero.orbAutoPickup) { Hero.goldenMirror = true; Hero.save(); UI.toast('Golden Mirror granted — transmute it in the Cube', '#ffd76a'); AudioSys.sfx('setdrop'); } else UI.toast('Already transmuted', '#9a9080'); },
+      { size: 10, color: '#ffd76a', border: '#8a6f2a' });
+    y += 36;
     ctx.textAlign = 'center';
     ctx.font = 'italic 10px Georgia';
     ctx.fillStyle = '#6f6552';

@@ -19,11 +19,22 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.8.1-alpha';
+const GAME_VERSION = 'v0.8.2-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.8.2-alpha', date: 'July 2026',
+    notes: [
+      'NEW — STORY MODE, ACT III: ten scorched desert lands guarded by named legendary horrors, ending in the grave of the SAND WYRM — a colossal burrowing serpent that erupts from the sand',
+      'NEW ARTIFACT — the HORADRIC\'S CUBE. It has a 10% chance to be found on any Act III map; if you reach the Sand Wyrm without it, the Wyrm drops it for certain',
+      'Once you hold the Cube, a HORADRIC\'S CUBE button appears in town (before the Blacksmith). Its recipe book is a closed tome for now — "coming soon ™"',
+      'NEW — the GOLDEN MIRROR: the Treasure Goblin now has a 10% chance to drop it. Transmute it in the Horadric\'s Cube and every purple orb (Rifts & Seasons) is collected INSTANTLY — no more chasing them down',
+      'Dev panel: grant the Horadric\'s Cube + Golden Mirror for testing',
+      'FIX: the dev "enemy spawn boost" now also multiplies the purple orbs that drop in Rifts & Seasons — a boosted run fills the orb bar as fast as the swollen packs suggest'
+    ]
+  },
   {
     v: 'v0.8.1-alpha', date: 'July 2026',
     notes: [
@@ -1130,7 +1141,9 @@ const MONSTERS = {
   goblin:   { name: 'Treasure Goblin', hp: 50, speed: 178, dmg: 0, r: 16, xp: 40, atkRange: 0, atkCd: 99, goblin: true, hpMul: 10 },
   // Story Mode bosses: the 10 named legendary ghost lords, then the King.
   wraith:   { name: 'Vengeful Wraith', hp: 240, speed: 78, dmg: 21, r: 22, xp: 130, atkRange: 44, atkCd: 1.6, boss: true, ghost: true },
-  skeletonking: { name: 'The Skeleton King', hp: 520, speed: 54, dmg: 30, r: 30, xp: 240, atkRange: 54, atkCd: 1.8, boss: true }
+  skeletonking: { name: 'The Skeleton King', hp: 520, speed: 54, dmg: 30, r: 30, xp: 240, atkRange: 54, atkCd: 1.8, boss: true },
+  // Act III finale — a colossal burrowing desert serpent.
+  sandwyrm: { name: 'The Sand Wyrm', hp: 640, speed: 60, dmg: 34, r: 34, xp: 300, atkRange: 60, atkCd: 1.7, boss: true }
 };
 
 // Purchasable bag expansions. The bag starts at 24; each upgrade adds space
@@ -1348,11 +1361,59 @@ const STORY_GHOST_NAMES = [
 // tapering from green lands into the arid barrens where the King's grave lies.
 const STORY_ACT1_BIOMES = ['grass', 'forest', 'jungle', 'swamp', 'forest', 'grass', 'jungle', 'swamp', 'badlands', 'desert'];
 
-const STORY_KING_FLAVOR = '“You dare come to my grave? You will die!”';
+// Act III biome order — the scorched barrens of the deep desert, where the
+// Sand Wyrm sleeps beneath the dunes.
+const STORY_ACT3_BIOMES = ['desert', 'badlands', 'desert', 'badlands', 'desert', 'badlands', 'desert', 'badlands', 'desert', 'desert'];
 
-// Build the zone for a Story-Mode stage. Stages 1–10 are biome maps (each with
-// its ghost lord); stage 11 is the Skeleton King's small grave arena.
-function makeStoryZone(stage) {
+// Ten named legendary horrors that stalk the Act III desert lands.
+const STORY_ACT3_NAMES = [
+  'Qadeshi, the Dune Reaver',
+  'Ashmaw, the Cinder Jackal',
+  'Sethrahk, the Bone-Sand Priest',
+  'Vetrannis, the Mirage Witch',
+  'Khemet, the Scorched Warlord',
+  'Nabu-Kesh, the Salt Revenant',
+  'Zephrail, the Howling Djinn',
+  'Ammit, the Devourer of Graves',
+  'Ossuric, the Buried Colossus',
+  'Serapha, the Glass Widow'
+];
+
+const STORY_KING_FLAVOR = '“You dare come to my grave? You will die!”';
+const STORY_WYRM_FLAVOR = '“The sands have swallowed kings. They will swallow you.”';
+
+// Build the zone for a Story-Mode stage of the given act. Stages 1–10 are biome
+// maps (each with its named boss); stage 11 is the act finale's grave arena.
+function makeStoryZone(stage, act = 1) {
+  if (act === 3) {
+    if (stage >= 11) {
+      return {
+        id: 'story3-grave', name: 'The Sunken Grave of the Sand Wyrm', kind: 'open', biome: 'desert',
+        mLvl: clamp(Hero.level, 1, 70),
+        ground: '#241b0e', accent: '#6a5326', weather: 'wind',
+        monsters: ['imp', 'archer', 'cultist', 'soldier'],
+        boss: 'The Sand Wyrm', bossType: 'sandwyrm',
+        packs: 4, sizeMul: 0.65, forest: false, rivers: 0,
+        story: true, storyAct: 3, storyFinal: true, kingFlavor: STORY_WYRM_FLAVOR,
+        desc: 'A sunken bowl of shifting sand where the Sand Wyrm lies coiled.'
+      };
+    }
+    const bk3 = STORY_ACT3_BIOMES[(stage - 1) % STORY_ACT3_BIOMES.length];
+    const B3 = BIOMES[bk3];
+    const horror = STORY_ACT3_NAMES[(stage - 1) % STORY_ACT3_NAMES.length];
+    return {
+      id: 'story3-' + stage, name: 'Act III · ' + B3.name, kind: 'open', biome: bk3,
+      mLvl: clamp(Hero.level, 1, 70),
+      ground: B3.ground, accent: B3.accent, weather: B3.weather,
+      monsters: B3.monsters,
+      boss: horror, bossType: 'wraith',
+      packs: randInt(9, 13),
+      sizeMul: rand(0.9, 1.35),
+      forest: B3.forest, rivers: B3.rivers,
+      story: true, storyAct: 3, chapter: stage,
+      desc: 'Chapter ' + stage + ' of Act III — hunt ' + horror + ' across the dunes.'
+    };
+  }
   if (stage >= 11) {
     return {
       id: 'story-grave', name: 'The Grave of the Skeleton King', kind: 'open', biome: 'badlands',
@@ -1361,7 +1422,7 @@ function makeStoryZone(stage) {
       monsters: ['skeleton', 'skeleton', 'archer', 'soldier'],
       boss: 'Leoric, the Skeleton King', bossType: 'skeletonking',
       packs: 4, sizeMul: 0.6, forest: false, rivers: 0,
-      story: true, storyFinal: true, kingFlavor: STORY_KING_FLAVOR,
+      story: true, storyAct: 1, storyFinal: true, kingFlavor: STORY_KING_FLAVOR,
       desc: 'A cramped, cursed barrow where the Skeleton King waits.'
     };
   }
@@ -1377,7 +1438,7 @@ function makeStoryZone(stage) {
     packs: randInt(9, 13),
     sizeMul: rand(0.9, 1.35),
     forest: B.forest, rivers: B.rivers,
-    story: true, chapter: stage,
+    story: true, storyAct: 1, chapter: stage,
     desc: 'Chapter ' + stage + ' of Act I — hunt the ghost of ' + ghost + '.'
   };
 }
