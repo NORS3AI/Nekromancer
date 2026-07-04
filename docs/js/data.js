@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.9.7-alpha';
+const GAME_VERSION = 'v0.9.8-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.9.8-alpha', date: 'July 2026',
+    notes: [
+      'Removed the logo from the title and hero-select screens',
+      'Hero-select: removed the forest, and added a little VILLAGE on the back-right horizon — silhouetted houses with a church spire and warm flickering windows',
+      'Fewer bats, and they now fly straight PAST the moon instead of orbiting it',
+      'Dragons are now assorted colours (green/red/blue/purple/gold/bone), appear every 34–89s, weave up and down much more, and vary in size — some soar far away and small'
+    ]
+  },
   {
     v: 'v0.9.7-alpha', date: 'July 2026',
     notes: [

@@ -79,17 +79,12 @@ const Screens = {
     }
     ctx.globalAlpha = 1;
 
-    // A far dragon glides across the distant sky now and then, breathing fire.
-    this.drawDragon(ctx, W, H, t);
-    // Decrepit buildings on the right background.
-    this.drawRuins(ctx, W, H);
-    // A dark forest treeline — high on the horizon so it stands BEHIND the heroes.
-    this.drawTreeline(ctx, W, H * 0.52);
-    // Bats flap across the sky, several drifting over the moon.
-    this.drawBats(ctx, W, H, t, mx, my);
-    // Game logo emblem in the upper-right, mirroring the moon.
-    const logoSz = Math.min(110, W * 0.2, H * 0.17);
-    drawGameLogo(ctx, W * 0.8, H * 0.19, logoSz, t);
+    // Far dragons of assorted colours glide across the distant sky, breathing fire.
+    this.drawDragons(ctx, W, H, t);
+    // A little village nestles on the back-right horizon, windows warmly lit.
+    this.drawVillage(ctx, W, H);
+    // A few bats flap PAST the sky (some crossing in front of the moon).
+    this.drawBats(ctx, W, H, t);
 
     // Warm ground plane + firelight pool for depth (kept dim so it doesn't blow out).
     const floor = ctx.createLinearGradient(0, fy - 120, 0, H);
@@ -247,35 +242,71 @@ const Screens = {
     ctx.restore();
   },
 
-  // Bats flapping across the night sky, wrapping around. A cluster of them drift
-  // over the moon so its disc keeps flickering with wings.
-  drawBats(ctx, W, H, t, mx, my) {
-    const bat = (bx, by, sz, alpha) => {
-      const flap = Math.sin(t * 9 + bx * 0.05) * sz * 0.55;
-      ctx.strokeStyle = `rgba(10,8,14,${alpha})`;
-      ctx.lineWidth = Math.max(1, sz * 0.28); ctx.lineCap = 'round';
+  // A little village on the back-right horizon: silhouetted houses with pitched
+  // roofs, a church spire, and warm flickering windows.
+  drawVillage(ctx, W, H) {
+    const base = H * 0.565;
+    const t = Game.time || 0;
+    ctx.save();
+    // Low dark rise the village sits on.
+    ctx.fillStyle = '#0e1016';
+    ctx.beginPath();
+    ctx.moveTo(W * 0.6, base + 8);
+    ctx.quadraticCurveTo(W * 0.8, base - 10, W * 1.02, base + 2);
+    ctx.lineTo(W * 1.02, base + 44); ctx.lineTo(W * 0.6, base + 44);
+    ctx.closePath(); ctx.fill();
+    // [x-fraction, width, height, chimney, spire]
+    const houses = [
+      [0.67, 38, 30, 0, 0], [0.74, 50, 44, 1, 0], [0.81, 42, 28, 0, 0],
+      [0.88, 56, 62, 0, 1], [0.95, 44, 38, 1, 0], [1.0, 34, 26, 0, 0]
+    ];
+    for (const [hf, w, h, chim, spire] of houses) {
+      const x = W * hf - w / 2, y = base - h;
+      ctx.fillStyle = '#171420'; ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = 'rgba(150,160,190,0.13)'; ctx.fillRect(x, y, 2.5, h);   // moonlit edge
+      // Pitched roof (steep for the church/spire).
+      ctx.fillStyle = '#241a26';
+      const rh = spire ? h * 0.7 : 14;
+      ctx.beginPath();
+      ctx.moveTo(x - 4, y); ctx.lineTo(x + w / 2, y - rh); ctx.lineTo(x + w + 4, y);
+      ctx.closePath(); ctx.fill();
+      if (spire) {
+        ctx.strokeStyle = '#2a2030'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(x + w / 2, y - rh); ctx.lineTo(x + w / 2, y - rh - 14); ctx.stroke();
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x + w / 2 - 4, y - rh - 9); ctx.lineTo(x + w / 2 + 4, y - rh - 9); ctx.stroke();
+      }
+      if (chim) { ctx.fillStyle = '#171420'; ctx.fillRect(x + w * 0.66, y - 15, 6, 15); }
+      // Warm flickering windows.
+      const fl = 0.65 + 0.35 * Math.sin(t * 3 + hf * 30);
+      ctx.fillStyle = `rgba(255,180,80,${(0.55 * fl).toFixed(2)})`;
+      ctx.shadowColor = '#ffb050'; ctx.shadowBlur = 6;
+      const rows = Math.max(1, Math.floor(h / 22));
+      for (let r = 0; r < rows; r++) for (let c = 0; c < 2; c++) {
+        if (hash2(hf * 10 + r, c + 1) > 0.42) ctx.fillRect(x + 7 + c * (w - 18), y + 8 + r * 20, 5, 6);
+      }
+      ctx.shadowBlur = 0;
+    }
+    ctx.restore();
+  },
+
+  // A few bats flapping straight across the night sky, wrapping around. Their
+  // paths run through the moon's height so some pass IN FRONT of the disc.
+  drawBats(ctx, W, H, t) {
+    ctx.strokeStyle = 'rgba(10,8,14,0.85)';
+    ctx.lineWidth = 2; ctx.lineCap = 'round';
+    for (let i = 0; i < 3; i++) {
+      const sz = 7 + (i % 2) * 2;
+      const speed = 30 + i * 14;
+      const bx = ((t * speed + i * 430) % (W + 140)) - 70;
+      // Heights cluster around the moon (~H*0.2) so bats fly past it, not around.
+      const by = H * (0.17 + 0.05 * i) + Math.sin(t * 1.4 + i) * 12;
+      const flap = Math.sin(t * 9 + i * 2) * sz * 0.55;
       ctx.beginPath();
       ctx.moveTo(bx - sz, by);
       ctx.quadraticCurveTo(bx - sz * 0.4, by - sz * 0.6 - flap, bx, by);
       ctx.quadraticCurveTo(bx + sz * 0.4, by - sz * 0.6 - flap, bx + sz, by);
       ctx.stroke();
-    };
-    // General flight across the sky.
-    for (let i = 0; i < 6; i++) {
-      const speed = 34 + i * 11;
-      const bx = ((t * speed + i * 260) % (W + 140)) - 70;
-      const by = H * (0.1 + 0.055 * i) + Math.sin(t * 1.5 + i) * 16;
-      bat(bx, by, 7 + (i % 3), 0.8);
-    }
-    // Moon colony — a tight swarm circling/crossing the moon disc.
-    if (mx != null) {
-      for (let i = 0; i < 6; i++) {
-        const a = t * (0.5 + i * 0.14) + i * 1.9;
-        const rad = 26 + (i % 3) * 16 + Math.sin(t * 0.6 + i) * 8;
-        const bx = mx + Math.cos(a) * rad * 1.5;
-        const by = my + Math.sin(a) * rad;
-        bat(bx, by, 5 + (i % 2) * 2, 0.9);
-      }
     }
   },
 
@@ -374,38 +405,61 @@ const Screens = {
     }
   },
 
-  // A distant dragon that soars across the far sky every 12–40s, breathing a
-  // gout of fire mid-flight. Small, hazy and high up so it reads as "far away".
-  drawDragon(ctx, W, H, t) {
-    let d = this._dragon;
-    if (!d) { d = this._dragon = { active: false, next: t + 4 + Math.random() * 8 }; }
-    if (!d.active && t >= d.next) {
-      d.active = true; d.start = t;
-      d.dur = 7 + Math.random() * 4;                 // seconds to cross the sky
-      d.y = H * (0.2 + Math.random() * 0.12);         // far-distance altitude (below the title)
-      d.bob = 0.5 + Math.random();
-      d.breath = 0.4 + Math.random() * 0.3;           // where in the flight it breathes
+  // Assorted dragon liveries — body silhouette, moonlit rim, maw ember, and a
+  // two-stop fire-breath gradient (colour string prefixes, alpha appended).
+  DRAGON_PALETTE: [
+    { body: 'rgba(24,34,22,0.95)', rim: 'rgba(130,210,120,0.5)', ember: '#8ef07a', fire: ['rgba(200,255,150,', 'rgba(120,220,80,'] },   // green
+    { body: 'rgba(42,20,20,0.95)', rim: 'rgba(232,110,90,0.55)', ember: '#ff6a4a', fire: ['rgba(255,210,120,', 'rgba(255,110,40,'] },   // red
+    { body: 'rgba(20,26,44,0.95)', rim: 'rgba(120,162,232,0.5)', ember: '#6aa8ff', fire: ['rgba(185,222,255,', 'rgba(80,140,240,'] },   // blue
+    { body: 'rgba(30,20,44,0.95)', rim: 'rgba(184,120,232,0.5)', ember: '#c060ff', fire: ['rgba(226,182,255,', 'rgba(150,70,220,'] },   // purple
+    { body: 'rgba(40,32,16,0.95)', rim: 'rgba(236,202,112,0.55)', ember: '#ffcb4a', fire: ['rgba(255,236,150,', 'rgba(240,170,50,'] }, // gold
+    { body: 'rgba(30,30,36,0.95)', rim: 'rgba(202,202,216,0.5)', ember: '#e6e6f0', fire: ['rgba(232,232,246,', 'rgba(150,160,188,'] }  // bone
+  ],
+
+  // Dragons of assorted colours cross the far sky every 34–89s, weaving up and
+  // down and breathing fire. Some spawn small/faint (further away). Several can
+  // share the sky at once.
+  drawDragons(ctx, W, H, t) {
+    if (!this._dragons) { this._dragons = []; this._dragonNext = t + 3 + Math.random() * 6; }
+    if (t >= this._dragonNext) {
+      const depth = Math.random();                     // 0 far/small/faint .. 1 near/big
+      this._dragons.push({
+        start: t, dur: 8 + Math.random() * 5, depth,
+        base: 0.14 + Math.random() * 0.22,             // altitude fraction of H
+        pal: this.DRAGON_PALETTE[Math.floor(Math.random() * this.DRAGON_PALETTE.length)],
+        breath: 0.32 + Math.random() * 0.36,
+        vamp: 0.06 + Math.random() * 0.07,             // vertical wave amplitude (frac of H)
+        vfreq: 1.2 + Math.random() * 1.6,
+        phase: Math.random() * TAU,
+        loops: 2 + Math.floor(Math.random() * 3)       // up/down cycles across the sky
+      });
+      this._dragonNext = t + 34 + Math.random() * 55;  // next in 34–89s
     }
-    if (!d.active) return;
-    const p = (t - d.start) / d.dur;                  // 0..1 across the sky
-    if (p >= 1) { d.active = false; d.next = t + 12 + Math.random() * 28; return; }
-    // Enters from the right, glides left; stays small and faint (far away).
-    const x = (W + 50) + p * (-(W + 100));
-    const y = d.y + Math.sin(t * 1.6 * d.bob) * 6;
-    const s = Math.min(20, W * 0.024);                // wingspan-ish scale (small)
-    const flap = Math.sin(t * 6) * 0.5;
-    const fade = Math.min(1, Math.sin(p * Math.PI) * 2.2);  // fade in/out at the edges
+    this._dragons = this._dragons.filter(d => (t - d.start) / d.dur < 1);
+    for (const d of this._dragons) this.drawOneDragon(ctx, W, H, t, d);
+  },
+
+  drawOneDragon(ctx, W, H, t, d) {
+    const p = (t - d.start) / d.dur;                   // 0..1 right → left
+    const x = (W + 60) - p * (W + 120);
+    // Weaves up and down: a steady bob plus a few big swoops across the crossing.
+    let y = H * d.base + Math.sin(t * d.vfreq + d.phase) * H * d.vamp
+      + Math.sin(p * Math.PI * d.loops) * H * d.vamp * 0.9;
+    y = clamp(y, H * 0.09, H * 0.46);                  // clear of the title & the heroes
+    const s = Math.min(26, W * 0.03) * (0.45 + d.depth * 0.9);   // further = smaller
+    const flap = Math.sin(t * 6 + d.phase) * 0.5;
+    const fade = Math.min(1, Math.sin(p * Math.PI) * 2.2) * (0.4 + d.depth * 0.55);
     ctx.save();
-    ctx.globalAlpha = 0.55 * fade;
+    ctx.globalAlpha = fade;
     ctx.translate(x, y);
-    // Fire breath (from the head, which leads on the left), during the breath window.
+    // Fire breath (from the leading head), during its breath window — team colour.
     const bt = (p - d.breath) / 0.16;
     if (bt > 0 && bt < 1) {
       const fl = Math.sin(bt * Math.PI);
-      const fg = ctx.createLinearGradient(-s * 1.2, 0, -s * 4.2, 0);
-      fg.addColorStop(0, `rgba(255,220,120,${(0.9 * fl).toFixed(3)})`);
-      fg.addColorStop(0.5, `rgba(255,130,40,${(0.6 * fl).toFixed(3)})`);
-      fg.addColorStop(1, 'rgba(180,40,20,0)');
+      const fg = ctx.createLinearGradient(-s * 1.2, 0, -s * 4.4, 0);
+      fg.addColorStop(0, d.pal.fire[0] + (0.9 * fl).toFixed(3) + ')');
+      fg.addColorStop(0.5, d.pal.fire[1] + (0.6 * fl).toFixed(3) + ')');
+      fg.addColorStop(1, d.pal.fire[1] + '0)');
       ctx.fillStyle = fg;
       ctx.beginPath();
       ctx.moveTo(-s * 1.2, -s * 0.1);
@@ -413,15 +467,14 @@ const Screens = {
       ctx.lineTo(-s * (2.8 + fl * 1.8), s * 0.5);
       ctx.closePath(); ctx.fill();
     }
-    // Silhouette body + serpentine tail — a dark slate so it reads against sky.
-    ctx.strokeStyle = 'rgba(26,20,34,0.95)'; ctx.fillStyle = 'rgba(26,20,34,0.95)';
+    // Silhouette body + serpentine tail.
+    ctx.strokeStyle = d.pal.body; ctx.fillStyle = d.pal.body;
     ctx.lineWidth = s * 0.34; ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(-s * 1.1, 0);                           // head (left/leading)
+    ctx.moveTo(-s * 1.1, 0);
     ctx.quadraticCurveTo(0, s * 0.1, s * 1.0, -s * 0.05);
-    ctx.quadraticCurveTo(s * 2.0, s * 0.2, s * 2.9, s * 0.55 + Math.sin(t * 4) * s * 0.2);
+    ctx.quadraticCurveTo(s * 2.0, s * 0.2, s * 2.9, s * 0.55 + Math.sin(t * 4 + d.phase) * s * 0.2);
     ctx.stroke();
-    // Head + jaw.
     ctx.beginPath(); ctx.ellipse(-s * 1.15, 0, s * 0.42, s * 0.3, 0, 0, TAU); ctx.fill();
     // Wings — bat-like, flapping.
     const wy = -s * (0.9 + flap);
@@ -433,14 +486,14 @@ const Screens = {
     ctx.quadraticCurveTo(s * 0.5, wy, s * 1.7, wy * 0.5);
     ctx.quadraticCurveTo(s * 0.7, -s * 0.1, s * 0.2, -s * 0.1);
     ctx.fill();
-    // Cool moonlit rim along the wing tops so the shape separates from the sky.
-    ctx.strokeStyle = 'rgba(150,150,195,0.4)'; ctx.lineWidth = Math.max(0.8, s * 0.09);
+    // Coloured rim along the wing tops so the shape separates from the sky.
+    ctx.strokeStyle = d.pal.rim; ctx.lineWidth = Math.max(0.8, s * 0.09);
     ctx.beginPath();
     ctx.moveTo(-s * 0.1, -s * 0.1); ctx.quadraticCurveTo(-s * 0.2, wy, -s * 1.5, wy * 0.5);
     ctx.moveTo(s * 0.2, -s * 0.1); ctx.quadraticCurveTo(s * 0.5, wy, s * 1.7, wy * 0.5);
     ctx.stroke();
-    // A constant ember at the maw so the dragon is trackable even between breaths.
-    ctx.fillStyle = 'rgba(255,150,60,0.9)'; ctx.shadowColor = '#ff8c2a'; ctx.shadowBlur = s * 0.6;
+    // A constant ember at the maw so the dragon is trackable between breaths.
+    ctx.fillStyle = d.pal.ember; ctx.shadowColor = d.pal.ember; ctx.shadowBlur = s * 0.6;
     ctx.beginPath(); ctx.arc(-s * 1.4, 0, s * 0.14, 0, TAU); ctx.fill();
     ctx.shadowBlur = 0;
     ctx.restore();
@@ -928,10 +981,6 @@ const Screens = {
   title(ctx, W, H) {
     const cx = W / 2, cy = H * 0.34;
     const t = Game.time;
-
-    // Game logo (purple radiant-skull emblem) floating above the wordmark.
-    const logoSize = Math.min(H * 0.30, W * 0.42, 200);
-    drawGameLogo(ctx, cx, cy - 66 + Math.sin(t * 1.4) * 4 - logoSize * 0.12, logoSize, t);
 
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = `bold ${Math.min(56, W * 0.105)}px Georgia`;
