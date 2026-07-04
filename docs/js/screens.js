@@ -2159,7 +2159,10 @@ const Screens = {
           ctx.textAlign = 'left';
           ctx.font = '10px Georgia';
           ctx.fillStyle = '#8a7f6c';
-          let rtxt = 'rolls ' + this.valTok(o.key, rng.min) + '–' + this.valTok(o.key, rng.max) + ' (max)';
+          // For the current affix, never show a max BELOW the item's own value
+          // (a legacy item may sit above the fresh-roll range).
+          const hi = o.current ? Math.max(rng.max, it.stats[o.key] || 0) : rng.max;
+          let rtxt = 'rolls ' + this.valTok(o.key, rng.min) + '–' + this.valTok(o.key, hi) + ' (max)';
           if (o.current) rtxt += '   ·   yours ' + this.valTok(o.key, it.stats[o.key]);
           ctx.fillText(rtxt, px + 34, yy + 18);
         }

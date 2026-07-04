@@ -69,18 +69,22 @@ const Items = {
     const lvlScale = 1 + mLvl * 0.11;
     // Artifacts and starred legendaries roll a little hotter.
     const power = (trash ? 0.6 : 1) * (1 + stars * 0.18) * (rarity === 6 ? 1.15 : 1);
+    const capItem = { rarity, stars };
 
     const stats = {};
-    const addStat = (key, mult) => {
-      const r2 = AFFIX_ROLLS[key].base * mult * lvlScale * rand(0.8, 1.2) * power;
-      stats[key] = (stats[key] || 0) + r2;
+    const setStat = (key, mult) => {
+      const v = AFFIX_ROLLS[key].base * mult * lvlScale * rand(0.8, 1.2) * power;
+      // Clamp to the per-tier ceiling (owner rule): affixes never exceed the cap.
+      stats[key] = Math.min((stats[key] || 0) + v, this.affixCap(capItem, key));
     };
-    addStat(def.primary, 1.6 * R.mult);
-    // Affix count = rarity index (+1 per legendary star). Restricted affixes
-    // (move/dnova/area) never roll from the generic pool.
+    setStat(def.primary, 1.6 * R.mult);
+    // DISTINCT secondary affixes (no stacking) so a SINGLE Mystic reroll can
+    // always reach any value the item can hold. Count = rarity (+1 per star),
+    // capped at the pool size. Restricted affixes never roll here.
     const pool = Object.keys(AFFIX_ROLLS).filter(k => k !== def.primary && !RESTRICTED_AFFIXES.has(k));
-    const affixN = rarity + stars;
-    for (let i = 0; i < affixN; i++) addStat(pick(pool), 0.85 * R.mult);
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    const affixN = Math.min(rarity + stars, pool.length);
+    for (let i = 0; i < affixN; i++) setStat(pool[i], 0.85 * R.mult);
 
     // Boots can roll Movement Speed (1%–25%), a flat non-level-scaled roll.
     if (slot === 'boots' && Math.random() < 0.55) {
@@ -152,8 +156,10 @@ const Items = {
     const power = 1 + stars * 0.18;
     const lvlScale = 1 + mLvl * 0.11;
     const stats = {};
+    const capItem = { rarity: 5, stars };
     const addStat = (key, mult) => {
-      stats[key] = (stats[key] || 0) + AFFIX_ROLLS[key].base * mult * lvlScale * rand(0.9, 1.2) * power;
+      stats[key] = Math.min((stats[key] || 0) + AFFIX_ROLLS[key].base * mult * lvlScale * rand(0.9, 1.2) * power,
+        this.affixCap(capItem, key));
     };
     addStat(def.primary, 1.8 * R.mult);
     const pool = Object.keys(AFFIX_ROLLS).filter(k => k !== def.primary && !RESTRICTED_AFFIXES.has(k));
@@ -902,15 +908,31 @@ const Items = {
     return cands.map(k => ({ key: k, chance, current: k === statKey }));
   },
 
-  // The [min, max] a reroll of `key` can land on THIS item — mirrors the roll
-  // in enchant() (base × slot × rarity × level × rand(0.85–1.25)) so the Mystic
-  // can show the player how close to perfect their current roll is (owner rule).
+  // The star/rarity/trash multiplier a fresh roll on this item gets — the SAME
+  // one generation uses, so enchant and generation stay in lock-step.
+  starPower(item) {
+    return (item.trash ? 0.6 : 1) * (1 + (item.stars || 0) * 0.18) * (item.rarity === 6 ? 1.15 : 1);
+  },
+
+  // The hard ceiling for `key` on this item = the Artifact-5★ cap scaled by the
+  // item's tier. Uncapped affixes (none listed) return Infinity.
+  affixCap(item, key) {
+    const c = AFFIX_CAP[key];
+    if (c === undefined) return Infinity;
+    return c * affixTierFrac(item.rarity, item.stars || 0);
+  },
+
+  // The [min, max] a reroll of `key` can land on THIS item — mirrors enchant()
+  // EXACTLY (base × slot × rarity × level × starPower × rand(0.85–1.25)), then
+  // clamped to the tier cap, so the shown max is the true max and the item's
+  // value can never exceed it (owner rule).
   affixRange(item, key) {
     if (key === 'move') return { min: 0.01, max: 0.25 };   // flat boots roll
     const R = RARITIES[item.rarity] || RARITIES[0];
     const base = AFFIX_ROLLS[key].base * (key === ITEM_SLOTS[item.slot].primary ? 1.6 : 0.85)
-      * R.mult * (1 + item.mLvl * 0.11);
-    return { min: base * 0.85, max: base * 1.25 };
+      * R.mult * (1 + item.mLvl * 0.11) * this.starPower(item);
+    const cap = this.affixCap(item, key);
+    return { min: Math.min(base * 0.85, cap), max: Math.min(base * 1.25, cap) };
   },
 
   // Reroll the affix the PLAYER chose into another affix in its group.
@@ -948,8 +970,9 @@ const Items = {
     if (nk === 'move') {
       item.stats.move = clamp(rand(0.01, 0.25), 0.01, 0.25);   // flat, not level-scaled
     } else {
-      item.stats[nk] = AFFIX_ROLLS[nk].base * (nk === ITEM_SLOTS[item.slot].primary ? 1.6 : 0.85)
-        * R.mult * (1 + item.mLvl * 0.11) * rand(0.85, 1.25);
+      const raw = AFFIX_ROLLS[nk].base * (nk === ITEM_SLOTS[item.slot].primary ? 1.6 : 0.85)
+        * R.mult * (1 + item.mLvl * 0.11) * this.starPower(item) * rand(0.85, 1.25);
+      item.stats[nk] = Math.min(raw, this.affixCap(item, nk));   // never above the tier cap
     }
     this.apply();
     UI.toast(`Enchanted ${item.name}: ${AFFIX_ROLLS[nk].label(item.stats[nk])}`, '#b06adf');

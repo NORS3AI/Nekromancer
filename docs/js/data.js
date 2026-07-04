@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.7.8-alpha';
+const GAME_VERSION = 'v0.7.9-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.7.9-alpha', date: 'July 2026',
+    notes: [
+      'AFFIX SYSTEM OVERHAUL: every stat now has a hard per-tier ceiling. Artifact-5★ maxes — Damage 2000% · Crit 1000% · Gold Find 6000% · Life 20000 · Life/s 450 · Essence/s 200 · Armor 10000 — and lower tiers scale down proportionally',
+      'Items no longer roll the SAME affix twice (no stacking), and the Mystic reroll uses the exact same math as item generation — so an item can NEVER hold a value above what the Mystic shows as the max (the old "max 1035% but yours 1932%" mismatch is gone). The Mystic can now reroll all the way to the cap'
+    ]
+  },
   {
     v: 'v0.7.8-alpha', date: 'July 2026',
     notes: [
@@ -972,6 +979,28 @@ const AFFIX_GROUP_NAME = { offense: 'Offense', defense: 'Defense', utility: 'Uti
 function affixGroup(key) {
   for (const g in AFFIX_GROUPS) if (AFFIX_GROUPS[g].includes(key)) return g;
   return null;
+}
+
+// Hard per-affix ceilings for the TOP tier — Artifact 5★ (owner-specified).
+// Every affix on any item is clamped to AFFIX_CAP × affixTierFrac(rarity,stars),
+// and the Mystic reroll range reflects the same cap, so an item's value can
+// never exceed the max the Mystic shows.
+const AFFIX_CAP = {
+  dmg: 20.0,      // 2000% damage
+  crit: 10.0,     // 1000% crit chance
+  gold: 60.0,     // 6000% gold find
+  hp: 20000,      // 20000 life
+  reg: 450,       // 450 life/s
+  ess: 200,       // 200 essence/s
+  armor: 10000,   // 10000 armor
+  move: 0.25,     // 25% movement (boots)
+  dnova: 6.0, area: 1.5   // signature affixes — generous
+};
+// Fraction of the Artifact-5★ ceiling a given rarity/star tier can reach (so a
+// legendary can't roll artifact-grade numbers). Artifact 5★ = 1.0.
+function affixTierFrac(rarity, stars) {
+  const base = [0.12, 0.18, 0.26, 0.40, 0.58, 0.70, 0.80][rarity];
+  return clamp((base === undefined ? 0.12 : base) + (stars || 0) * 0.04, 0.05, 1.0);
 }
 
 const LEGENDARY_PREFIX = ["Maltorius'", "The Widow's", "Rathma's", "Xul's", "Trag'Oul's", "Mendeln's"];

@@ -93,6 +93,13 @@ loot at the artisans. The hero is persistent (localStorage).
   back for gold — `Items.gemSellValue`/`sellGem`, value ×3 per tier, SELL 1 / SELL
   ALL in the gem detail card). Unsocketing is free (Jeweler has an UNSOCKET row);
   salvage always returns socketed gems.
+- **Affix value caps (owner rule)**: every affix is clamped to `AFFIX_CAP[key] ×
+  affixTierFrac(rarity,stars)` — Artifact-5★ ceilings are dmg 20.0 (2000%) · crit
+  10.0 (1000%) · gold 60.0 (6000%) · hp 20000 · reg 450 · ess 200 · armor 10000 ·
+  move 0.25; lower tiers scale down. Generation rolls DISTINCT affixes (no
+  stacking) and `enchant`/`affixRange` use the identical formula
+  (`starPower(item)` included) + the same cap, so an item's value can NEVER exceed
+  the Mystic's shown max, and the Mystic can reroll up to the cap.
 - **Mystic reroll = TARGETED, not gambling (owner rule)**: every rerollable affix
   belongs to a GROUP (`AFFIX_GROUPS` — Offense: dmg/crit/ess · Defense: hp/armor/reg
   · Utility: gold/move) and a reroll can only land within that group; the Mystic UI
