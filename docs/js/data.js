@@ -19,11 +19,21 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.9.5-alpha';
+const GAME_VERSION = 'v0.9.6-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.9.6-alpha', date: 'July 2026',
+    notes: [
+      'HERO-SELECT SCENE overhauled: the forest treeline now sits higher on the horizon, clearly BEHIND the heroes; the campfire glow is dimmer so it no longer blows out the scene',
+      'The wind-swept grass no longer looks like "waving spaghetti" — each tuft now has a random number of blades at different heights that lean independently on the gusts',
+      'More scattered stones and litter across the clearing, plus a fallen adventurer\'s skeleton (with sword and shield) resting in the foreground grass',
+      'More bats — a colony now wheels across the moon',
+      'NEW: every 12–40 seconds a far dragon glides across the distant sky and breathes a gout of fire, tracked by a glowing ember at its maw'
+    ]
+  },
   {
     v: 'v0.9.5-alpha', date: 'July 2026',
     notes: [

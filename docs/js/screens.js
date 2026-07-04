@@ -79,29 +79,33 @@ const Screens = {
     }
     ctx.globalAlpha = 1;
 
+    // A far dragon glides across the distant sky now and then, breathing fire.
+    this.drawDragon(ctx, W, H, t);
     // Decrepit buildings on the right background.
     this.drawRuins(ctx, W, H);
-    // A dark forest treeline across the horizon.
-    this.drawTreeline(ctx, W, H * 0.62);
-    // Bats flap across the sky now and then.
-    this.drawBats(ctx, W, H, t);
+    // A dark forest treeline — high on the horizon so it stands BEHIND the heroes.
+    this.drawTreeline(ctx, W, H * 0.52);
+    // Bats flap across the sky, several drifting over the moon.
+    this.drawBats(ctx, W, H, t, mx, my);
     // Game logo emblem in the upper-right, mirroring the moon.
     const logoSz = Math.min(110, W * 0.2, H * 0.17);
     drawGameLogo(ctx, W * 0.8, H * 0.19, logoSz, t);
 
-    // Warm ground plane + firelight pool for depth.
+    // Warm ground plane + firelight pool for depth (kept dim so it doesn't blow out).
     const floor = ctx.createLinearGradient(0, fy - 120, 0, H);
     floor.addColorStop(0, 'rgba(20,14,10,0)');
-    floor.addColorStop(1, 'rgba(52,28,12,0.6)');
+    floor.addColorStop(1, 'rgba(48,26,12,0.5)');
     ctx.fillStyle = floor; ctx.fillRect(0, fy - 120, W, H - (fy - 120));
-    const glow = ctx.createRadialGradient(fx, fy, 10, fx, fy, Math.max(W, H) * 0.6);
-    const gf = 0.18 + 0.04 * Math.sin(t * 8) + 0.02 * Math.sin(t * 17); // softer firelight
+    const glow = ctx.createRadialGradient(fx, fy, 10, fx, fy, Math.max(W, H) * 0.52);
+    const gf = 0.10 + 0.025 * Math.sin(t * 8) + 0.015 * Math.sin(t * 17); // softer firelight
     glow.addColorStop(0, `rgba(255,150,60,${gf.toFixed(3)})`);
-    glow.addColorStop(0.42, 'rgba(200,90,30,0.08)');
+    glow.addColorStop(0.42, 'rgba(200,90,30,0.045)');
     glow.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
     // Ground litter + a wind-swept grass field around the fire.
     this.drawGroundLitter(ctx, fx, fy, W, H, t);
+    // A fallen adventurer's bones rest in the foreground grass.
+    this.drawFallenSkeleton(ctx, W * 0.19, fy + 96, clamp(W / 900, 0.7, 1.1), t);
 
     const delMode = !!UI.sel.delMode;
     // Pre-select the active hero so PLAY is ready (unless we're deleting).
@@ -243,51 +247,86 @@ const Screens = {
     ctx.restore();
   },
 
-  // Bats flapping across the night sky, wrapping around.
-  drawBats(ctx, W, H, t) {
-    ctx.strokeStyle = 'rgba(10,8,14,0.85)';
-    ctx.lineWidth = 2; ctx.lineCap = 'round';
-    for (let i = 0; i < 4; i++) {
-      const speed = 40 + i * 12;
-      const bx = ((t * speed + i * 320) % (W + 120)) - 60;
-      const by = H * (0.14 + 0.06 * i) + Math.sin(t * 1.5 + i) * 14;
-      const flap = Math.sin(t * 9 + i * 2) * 4;
+  // Bats flapping across the night sky, wrapping around. A cluster of them drift
+  // over the moon so its disc keeps flickering with wings.
+  drawBats(ctx, W, H, t, mx, my) {
+    const bat = (bx, by, sz, alpha) => {
+      const flap = Math.sin(t * 9 + bx * 0.05) * sz * 0.55;
+      ctx.strokeStyle = `rgba(10,8,14,${alpha})`;
+      ctx.lineWidth = Math.max(1, sz * 0.28); ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.moveTo(bx - 7, by);
-      ctx.quadraticCurveTo(bx - 3, by - 4 - flap, bx, by);
-      ctx.quadraticCurveTo(bx + 3, by - 4 - flap, bx + 7, by);
+      ctx.moveTo(bx - sz, by);
+      ctx.quadraticCurveTo(bx - sz * 0.4, by - sz * 0.6 - flap, bx, by);
+      ctx.quadraticCurveTo(bx + sz * 0.4, by - sz * 0.6 - flap, bx + sz, by);
       ctx.stroke();
+    };
+    // General flight across the sky.
+    for (let i = 0; i < 6; i++) {
+      const speed = 34 + i * 11;
+      const bx = ((t * speed + i * 260) % (W + 140)) - 70;
+      const by = H * (0.1 + 0.055 * i) + Math.sin(t * 1.5 + i) * 16;
+      bat(bx, by, 7 + (i % 3), 0.8);
+    }
+    // Moon colony — a tight swarm circling/crossing the moon disc.
+    if (mx != null) {
+      for (let i = 0; i < 6; i++) {
+        const a = t * (0.5 + i * 0.14) + i * 1.9;
+        const rad = 26 + (i % 3) * 16 + Math.sin(t * 0.6 + i) * 8;
+        const bx = mx + Math.cos(a) * rad * 1.5;
+        const by = my + Math.sin(a) * rad;
+        bat(bx, by, 5 + (i % 2) * 2, 0.9);
+      }
     }
   },
 
   // Dry grass tufts, rocks, leaves and branches near the fire — their long
   // shadows sway with the firelight.
   drawGroundLitter(ctx, fx, fy, W, H, t) {
-    // A field of wind-swept grass of VARYING heights across the foreground —
+    // A field of wind-swept grass across the foreground. Each tuft has a random
+    // number of blades of DIFFERENT heights (no more uniform "spaghetti") —
     // taller/darker nearer the viewer, all leaning together on the gusts.
     const wind = Math.sin(t * 1.5) * 0.6 + Math.sin(t * 0.8 + 1.3) * 0.4;  // -1..1 gust
-    for (let i = 0; i < 46; i++) {
+    for (let i = 0; i < 58; i++) {
       const gx = (i * 89 + 21) % W;
       const depth = hash2(i * 1.7, 7);                 // 0 (far) .. 1 (near)
-      const gy = fy + 44 + depth * (H - fy - 30);
-      const hgt = 9 + hash2(i, 3) * 30 + depth * 16;   // varied heights
-      const sway = wind * (3 + depth * 9) + Math.sin(t * 3 + i) * 1.8;
+      const gy = fy + 40 + depth * (H - fy - 26);
+      const base = 6 + hash2(i, 3) * 34 + depth * 20;  // this tuft's tallest blade
+      const blades = 2 + Math.floor(hash2(i, 11) * 4); // 2..5 blades
       ctx.strokeStyle = depth > 0.5 ? '#4a3a1e' : '#2f2614';
       ctx.lineWidth = 1 + depth * 1.4; ctx.lineCap = 'round';
-      for (let b = -2; b <= 2; b++) {
-        const bx = gx + b * (2 + depth * 2);
+      for (let b = 0; b < blades; b++) {
+        const off = (b - (blades - 1) / 2);
+        // Per-blade height varies 45%–100% of the tuft's max so blades stagger.
+        const hgt = base * (0.45 + 0.55 * hash2(i * 3.3 + b, b * 2 + 1));
+        const lean = 0.6 + hash2(i + b, 5) * 0.8;      // each blade leans a bit differently
+        const sway = wind * (3 + depth * 9) * lean + Math.sin(t * 3 + i + b) * 1.6;
+        const bx = gx + off * (2 + depth * 2.4);
         ctx.beginPath();
         ctx.moveTo(bx, gy);
         ctx.quadraticCurveTo(bx + sway * 0.5, gy - hgt * 0.6, bx + sway, gy - hgt);
         ctx.stroke();
       }
     }
+    // Scattered small stones strewn across the clearing for texture.
+    for (let i = 0; i < 16; i++) {
+      const sx = (i * 137 + 40) % W;
+      const depth = hash2(i * 2.3, 4);
+      const sy = fy + 30 + depth * (H - fy - 20);
+      const r = 2 + depth * 5 + hash2(i, 8) * 3;
+      ctx.fillStyle = depth > 0.5 ? '#413c48' : '#2c2934';
+      ctx.beginPath(); ctx.ellipse(sx, sy, r, r * 0.62, hash2(i, 2) * 3, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath(); ctx.ellipse(sx + r * 0.4, sy + r * 0.35, r * 0.6, r * 0.34, 0, 0, TAU); ctx.fill();
+    }
     const flick = Math.sin(t * 9) * 0.12 + Math.sin(t * 5.3) * 0.06;
     const items = [
       [fx - 150, fy + 70, 'grass'], [fx + 160, fy + 60, 'grass'], [fx - 240, fy + 110, 'rock'],
       [fx + 250, fy + 100, 'branch'], [fx - 90, fy + 120, 'leaf'], [fx + 110, fy + 130, 'leaf'],
       [fx + 40, fy + 150, 'grass'], [fx - 40, fy + 90, 'branch'], [fx + 300, fy + 150, 'rock'],
-      [fx - 320, fy + 150, 'leaf']
+      [fx - 320, fy + 150, 'leaf'], [fx - 200, fy + 60, 'rock'], [fx + 210, fy + 40, 'rock'],
+      [fx + 90, fy + 80, 'branch'], [fx - 120, fy + 168, 'rock'], [fx + 180, fy + 176, 'branch'],
+      [fx - 280, fy + 74, 'leaf'], [fx + 330, fy + 90, 'rock'], [fx + 20, fy + 200, 'rock'],
+      [fx - 60, fy + 210, 'leaf'], [fx + 130, fy + 220, 'branch']
     ];
     for (const [x, y, kind] of items) {
       const dx = x - fx;
@@ -333,6 +372,125 @@ const Screens = {
       }
       ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
     }
+  },
+
+  // A distant dragon that soars across the far sky every 12–40s, breathing a
+  // gout of fire mid-flight. Small, hazy and high up so it reads as "far away".
+  drawDragon(ctx, W, H, t) {
+    let d = this._dragon;
+    if (!d) { d = this._dragon = { active: false, next: t + 4 + Math.random() * 8 }; }
+    if (!d.active && t >= d.next) {
+      d.active = true; d.start = t;
+      d.dur = 7 + Math.random() * 4;                 // seconds to cross the sky
+      d.y = H * (0.2 + Math.random() * 0.12);         // far-distance altitude (below the title)
+      d.bob = 0.5 + Math.random();
+      d.breath = 0.4 + Math.random() * 0.3;           // where in the flight it breathes
+    }
+    if (!d.active) return;
+    const p = (t - d.start) / d.dur;                  // 0..1 across the sky
+    if (p >= 1) { d.active = false; d.next = t + 12 + Math.random() * 28; return; }
+    // Enters from the right, glides left; stays small and faint (far away).
+    const x = (W + 50) + p * (-(W + 100));
+    const y = d.y + Math.sin(t * 1.6 * d.bob) * 6;
+    const s = Math.min(20, W * 0.024);                // wingspan-ish scale (small)
+    const flap = Math.sin(t * 6) * 0.5;
+    const fade = Math.min(1, Math.sin(p * Math.PI) * 2.2);  // fade in/out at the edges
+    ctx.save();
+    ctx.globalAlpha = 0.55 * fade;
+    ctx.translate(x, y);
+    // Fire breath (from the head, which leads on the left), during the breath window.
+    const bt = (p - d.breath) / 0.16;
+    if (bt > 0 && bt < 1) {
+      const fl = Math.sin(bt * Math.PI);
+      const fg = ctx.createLinearGradient(-s * 1.2, 0, -s * 4.2, 0);
+      fg.addColorStop(0, `rgba(255,220,120,${(0.9 * fl).toFixed(3)})`);
+      fg.addColorStop(0.5, `rgba(255,130,40,${(0.6 * fl).toFixed(3)})`);
+      fg.addColorStop(1, 'rgba(180,40,20,0)');
+      ctx.fillStyle = fg;
+      ctx.beginPath();
+      ctx.moveTo(-s * 1.2, -s * 0.1);
+      ctx.lineTo(-s * (2.6 + fl * 1.8), -s * 0.5);
+      ctx.lineTo(-s * (2.8 + fl * 1.8), s * 0.5);
+      ctx.closePath(); ctx.fill();
+    }
+    // Silhouette body + serpentine tail — a dark slate so it reads against sky.
+    ctx.strokeStyle = 'rgba(26,20,34,0.95)'; ctx.fillStyle = 'rgba(26,20,34,0.95)';
+    ctx.lineWidth = s * 0.34; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-s * 1.1, 0);                           // head (left/leading)
+    ctx.quadraticCurveTo(0, s * 0.1, s * 1.0, -s * 0.05);
+    ctx.quadraticCurveTo(s * 2.0, s * 0.2, s * 2.9, s * 0.55 + Math.sin(t * 4) * s * 0.2);
+    ctx.stroke();
+    // Head + jaw.
+    ctx.beginPath(); ctx.ellipse(-s * 1.15, 0, s * 0.42, s * 0.3, 0, 0, TAU); ctx.fill();
+    // Wings — bat-like, flapping.
+    const wy = -s * (0.9 + flap);
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.1, -s * 0.1);
+    ctx.quadraticCurveTo(-s * 0.2, wy, -s * 1.5, wy * 0.5);
+    ctx.quadraticCurveTo(-s * 0.6, -s * 0.1, -s * 0.1, -s * 0.1);
+    ctx.moveTo(s * 0.2, -s * 0.1);
+    ctx.quadraticCurveTo(s * 0.5, wy, s * 1.7, wy * 0.5);
+    ctx.quadraticCurveTo(s * 0.7, -s * 0.1, s * 0.2, -s * 0.1);
+    ctx.fill();
+    // Cool moonlit rim along the wing tops so the shape separates from the sky.
+    ctx.strokeStyle = 'rgba(150,150,195,0.4)'; ctx.lineWidth = Math.max(0.8, s * 0.09);
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.1, -s * 0.1); ctx.quadraticCurveTo(-s * 0.2, wy, -s * 1.5, wy * 0.5);
+    ctx.moveTo(s * 0.2, -s * 0.1); ctx.quadraticCurveTo(s * 0.5, wy, s * 1.7, wy * 0.5);
+    ctx.stroke();
+    // A constant ember at the maw so the dragon is trackable even between breaths.
+    ctx.fillStyle = 'rgba(255,150,60,0.9)'; ctx.shadowColor = '#ff8c2a'; ctx.shadowBlur = s * 0.6;
+    ctx.beginPath(); ctx.arc(-s * 1.4, 0, s * 0.14, 0, TAU); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  },
+
+  // A fallen adventurer's skeleton resting in the grass, sword and shield beside
+  // it — a bit of lore-flavoured foreground clutter.
+  drawFallenSkeleton(ctx, x, y, sc, t) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(sc, sc);
+    // Soft ground shadow.
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath(); ctx.ellipse(0, 6, 46, 12, 0, 0, TAU); ctx.fill();
+    // Round wooden shield (to the left), rim + boss.
+    ctx.fillStyle = '#3a2c1c';
+    ctx.beginPath(); ctx.ellipse(-34, 2, 15, 12, -0.2, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#5a4630'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(-34, 2, 15, 12, -0.2, 0, TAU); ctx.stroke();
+    ctx.fillStyle = '#6a6470';
+    ctx.beginPath(); ctx.arc(-34, 2, 3.4, 0, TAU); ctx.fill();
+    // Sword (to the right), blade + crossguard + grip.
+    ctx.strokeStyle = '#b9c0cc'; ctx.lineWidth = 3; ctx.lineCap = 'butt';
+    ctx.beginPath(); ctx.moveTo(24, 4); ctx.lineTo(58, -6); ctx.stroke();
+    ctx.strokeStyle = '#7a6a48'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(20, 10); ctx.lineTo(28, 0); ctx.stroke();          // crossguard
+    ctx.strokeStyle = '#4a3a22'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(18, 12); ctx.lineTo(23, 6); ctx.stroke();          // grip
+    // Bones — ribcage, spine, limbs, skull. Bone-white with faint shadow.
+    const bone = '#c7c2b2';
+    ctx.strokeStyle = bone; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+    // Spine.
+    ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(12, -2); ctx.stroke();
+    // Ribs.
+    for (let i = 0; i < 4; i++) {
+      const rx = -6 + i * 4.5;
+      ctx.beginPath(); ctx.moveTo(rx, -1); ctx.quadraticCurveTo(rx + 1, 7, rx + 4, 8); ctx.stroke();
+    }
+    // Arm + leg bones.
+    ctx.beginPath(); ctx.moveTo(-6, 0); ctx.lineTo(-18, 8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, -2); ctx.lineTo(22, 6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(16, 12); ctx.stroke();
+    // Skull (head lolled to the left).
+    ctx.fillStyle = bone;
+    ctx.beginPath(); ctx.arc(-16, -2, 6.5, 0, TAU); ctx.fill();
+    ctx.fillRect(-14, 2, 5, 4);                                                     // jaw
+    ctx.fillStyle = '#2a2620';
+    ctx.beginPath(); ctx.arc(-18, -3, 1.7, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(-14, -3, 1.7, 0, TAU); ctx.fill();
+    ctx.restore();
   },
 
   // Draw one roster position: a hero (if the slot is filled) or an empty
