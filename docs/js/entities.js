@@ -1646,10 +1646,14 @@ class Pickup {
 
   update(dt) {
     this.t += dt;
-    if (this.t > 60) { this.gone = true; return; }
+    // Dropped ITEMS linger on the ground until collected; other pickups fade at 60s.
+    if (this.t > 60 && this.kind !== 'item') { this.gone = true; return; }
     const p = Game.player;
+    // A full bag leaves loot on the ground: no magnet, no pickup (owner rule).
+    // Gold/orbs/gems (they go to the pouch) are never blocked.
+    const blocked = this.kind === 'item' && !Items.canPickup(this.item);
     const d = dist(this.x, this.y, p.x, p.y);
-    if (d < 110 && !p.dead) {
+    if (!blocked && d < 110 && !p.dead) {
       const a = angleTo(this.x, this.y, p.x, p.y);
       const pull = (110 - d) * 6 + 120;
       this.vx += Math.cos(a) * pull * dt * 4;
@@ -1659,7 +1663,7 @@ class Pickup {
     this.vy *= 1 - Math.min(1, 4 * dt);
     this.x += this.vx * dt;
     this.y += this.vy * dt;
-    if (d < 20 && !p.dead) {
+    if (!blocked && d < 20 && !p.dead) {
       this.gone = true;
       if (this.kind === 'gold') {
         Hero.gold += this.amount;

@@ -45,6 +45,8 @@ loot at the artisans. The hero is persistent (localStorage).
 | `skills.js` | `SKILL_FX` — behavior for all 21 actives; `Skills` runtime (per-id cooldowns, essence costs, Land of the Dead makes corpse skills free + spawns corpses, Simulacrum mirrors Bone Spear/Death Nova), `SKILL_ICONS` vector glyphs, passive hooks |
 | `ui.js` | HUD: portrait+bars+gold, objective line + chevron pointing at bounty/portal (single compact line under the bars when `W<560`), fog-of-war minimap, boss bar, 6-slot radial skill cluster with cooldown sweeps, potion button (25s cd), menu button, toasts, banner. Tap-region registry (`UI.register`/`UI.click`) that all menus use; **`UI.overlayBarrier` makes hits registered before an overlay unreachable — the fix for tap-through**. `UI.screen` = active overlay. HUD respects iPhone safe-area insets (`Game.safe`, read from CSS `env()` vars in `Game.resize`) |
 | `screens.js` | Full-screen menus: title, camp hub (hero strip taps into the **character sheet**: full stats via `Items.computeStats()`, reagents, and an `analyze()` tip list), waypoint map (difficulty stepper), **PS5-console-style radial equipment wheel** (11 slots in a circle → per-slot bag list with compare arrows → equip/salvage/socket; socketing opens `gemModal` — a CENTERED POPUP with tap-to-inspect gem chips, info card, SOCKET IT / UNSOCKET (free) / CANCEL; tap outside cancels only the popup), skills & passives assignment (grids adapt rows/columns to short screens), Blacksmith/Jeweler (tap a gem stack to inspect before combining)/Mystic, **vendor shop** (pauses the crawl; buy with upgrade/sidegrade hints), pause, death, bounty-reward cache. `fitText`/`wrapText` keep text on-screen on phones |
+| `town portal` | In the wilds, the radial inventory shows a blue **town portal** (opposite the ✕, `Screens.portalBtn`, only when `Game.state==='playing'`) → `Screens.town` overlay with Blacksmith/Jeweler/Mystic/Stash + "Back to the Wilds". The game stays menu-paused underneath, so returning drops you back into the same fight. `UI.townMode` makes those artisans' ✕ return to town; `UI.close` clears it |
+| `loot on the ground` | No more auto-salvage (`Items.stash` just adds; `grantSalvage` only via explicit salvage). A full bag LEAVES drops on the ground: `Items.canPickup(item)` (false when bag full & no empty slot) gates `Pickup.update` — blocked items don't magnet, don't collect, and never auto-despawn (`t>60` fade skips `kind==='item'`) |
 | `game.js` | Adventure flow: `menu → camp → map → playing → camp`. **Multi-area journeys** (`stage`/`stageCount`/`journeyIdx`): bounties & Adventure span 2–3 linked procedural maps — intermediate areas are gated by a **champion** guardian whose death opens a **descent** portal (`this.descend` → `nextStage()` rebuilds a fresh map, carrying HP/essence), the FINAL area holds the land's named unique boss whose portal → `completeZone()` (Horadric cache, reward screen). Rifts stay one endless map (`stageCount=1`). `onBossDead` opens the portal (descent vs complete by `finalStage`). Death → respawn at entrance or camp. Telegraph + aim-indicator rendering. Menus pause gameplay |
 
 ### Key game rules
@@ -87,8 +89,10 @@ loot at the artisans. The hero is persistent (localStorage).
 - XP: `60·lvl^1.5`, cap 70. Level-up = full heal + toasts for new unlocks.
 - Difficulty unlocks: up to Master until all 5 lands cleared, then Torment I–III.
 - **Artisan resource lanes (owner rule)**: Blacksmith = gold/parts/dust/crystals;
-  Mystic = gold + Forgotten Souls ONLY; Jeweler = gold + gems ONLY. Unsocketing is
-  free (Jeweler has an UNSOCKET row); salvage always returns socketed gems.
+  Mystic = gold + Forgotten Souls ONLY; Jeweler = gold + gems ONLY (and BUYS gems
+  back for gold — `Items.gemSellValue`/`sellGem`, value ×3 per tier, SELL 1 / SELL
+  ALL in the gem detail card). Unsocketing is free (Jeweler has an UNSOCKET row);
+  salvage always returns socketed gems.
 - **Mystic reroll = TARGETED, not gambling (owner rule)**: every rerollable affix
   belongs to a GROUP (`AFFIX_GROUPS` — Offense: dmg/crit/ess · Defense: hp/armor/reg
   · Utility: gold/move) and a reroll can only land within that group; the Mystic UI

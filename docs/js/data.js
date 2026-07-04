@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.7.5-alpha';
+const GAME_VERSION = 'v0.7.6-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.7.6-alpha', date: 'July 2026',
+    notes: [
+      'TOWN PORTAL: a blue portal button (opposite the ✕) in the wilds inventory whisks you to the Blacksmith, Jeweler, Mystic and Stash mid-run — then "Back to the Wilds" drops you right back into the fight you left',
+      'No more auto-salvage: when your bag is full, loot is LEFT ON THE GROUND — it stops being pulled toward you and no longer chases you. Free up space and come back for it',
+      'The Jeweler now BUYS gems for gold — SELL 1 or SELL ALL from the gem detail card (value climbs with tier)',
+      'Upgrade arrows now count the gems in your equipped gear — a Perfect-gemmed or ruby-in-weapon piece is valued for real against a bare, gemless drop'
+    ]
+  },
   {
     v: 'v0.7.5-alpha', date: 'July 2026',
     notes: [

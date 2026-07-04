@@ -151,6 +151,7 @@ const UI = {
   close() {
     this.screen = null;
     this.sel = {};
+    this.townMode = false;   // leaving any menu ends town-portal navigation
   },
 
   toast(text, color) {
@@ -349,7 +350,14 @@ const UI = {
   // (some panels used to paint over their own close button on phones).
   drawGlobalClose(ctx, W) {
     const s = this.safe || { top: 0, right: 0 };
-    Screens.closeX(ctx, W, { x: W - 26 - s.right, y: 26 + s.top });
+    // Town-portal navigation: the artisans & stash opened from town return TO
+    // town on ✕; town itself (and its ✕) exits back to the wilds.
+    let cb;
+    if (this.townMode) {
+      if (this.screen === 'town') cb = () => { this.townMode = false; this.close(); };
+      else if (['smith', 'jeweler', 'mystic', 'stash', 'torches'].includes(this.screen)) cb = () => this.open('town');
+    }
+    Screens.closeX(ctx, W, { x: W - 26 - s.right, y: 26 + s.top, cb });
   },
 
   // ------------------------------------------------------------- HUD parts

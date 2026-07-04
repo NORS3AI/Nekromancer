@@ -348,8 +348,18 @@ const Items = {
       if (ti === undefined) continue;
       t[ti] += (v || 0) * (this.STAT_VAL[k] || 0);
     }
-    t[0] += (item.sockets || 0) * 200;
-    for (const g of item.gems || []) t[0] += gemStatValue(g) * 60;
+    // Empty sockets are potential; SOCKETED gems are realized power. So the
+    // gems the player already has in their gear count for real, while a bare
+    // drop only gets the (smaller) empty-socket credit (owner rule).
+    const perfect = GEM_TIERS.length - 1;
+    const filled = (item.gems || []).length;
+    t[0] += Math.max(0, (item.sockets || 0) - filled) * 120;   // empty sockets: potential
+    for (const g of item.gems || []) {
+      t[0] += gemStatValue(g) * 60;
+      // Special gem rules are big offense multipliers a bare drop can't match.
+      if (g.tier >= perfect) t[0] += 0.20 * this.STAT_VAL.dmg;                             // Perfect gem: +20% damage
+      if (item.slot === 'weapon' && g.type === 'ruby') t[0] += 0.25 * this.STAT_VAL.dmg;   // ruby in weapon: +25%
+    }
     const mul = 1 + (item.power ? 0.6 : 0) + (item.set ? 0.35 : 0);
     return [t[0] * mul, t[1] * mul, t[2] * mul];
   },
@@ -440,16 +450,21 @@ const Items = {
     Hero.save();
   },
 
+  // Add to the bag. No more auto-salvage (owner rule): rewards/crafts are never
+  // silently destroyed. Loot pickup is gated separately by canPickup() so a
+  // full bag simply leaves drops on the ground.
   stash(item) {
     Hero.bag.push(item);
-    if (Hero.bag.length > Hero.BAG_SIZE) {
-      let worst = 0;
-      for (let i = 1; i < Hero.bag.length; i++) {
-        if (this.score(Hero.bag[i]) < this.score(Hero.bag[worst])) worst = i;
-      }
-      const junk = Hero.bag.splice(worst, 1)[0];
-      this.grantSalvage(junk, true);
-    }
+  },
+
+  // Can this dropped item be picked up right now? An item that auto-equips into
+  // an EMPTY slot needs no bag room; otherwise the bag must have space. When it
+  // can't, the drop is left on the ground (no magnet, no collect).
+  canPickup(item) {
+    if (!item || item.torch) return Hero.bag.length < Hero.BAG_SIZE;
+    const target = this.bestTargetSlot(item);
+    if (!Hero.equipped[target]) return true;    // auto-equips, no bag needed
+    return Hero.bag.length < Hero.BAG_SIZE;
   },
 
   equip(item, targetSlot) {
@@ -786,6 +801,28 @@ const Items = {
     Hero.gems.push(gem);
     UI.toast('Cut a fresh gem: ' + gemName(gem), GEM_TYPES[gem.type].color);
     AudioSys.sfx('gem');
+    Hero.save();
+  },
+
+  // Gems sell to the Jeweler for gold — value roughly triples per tier (3 of a
+  // tier combine into 1 of the next), softened up a touch by jeweler training.
+  gemSellValue(tier) {
+    return Math.round(40 * Math.pow(3, tier) * (2 - this.artisanDiscount('jeweler')));
+  },
+
+  sellGem(type, tier, all = false) {
+    const idxs = [];
+    for (let i = Hero.gems.length - 1; i >= 0; i--) {
+      if (Hero.gems[i].type === type && Hero.gems[i].tier === tier) idxs.push(i);
+    }
+    if (!idxs.length) { AudioSys.sfx('denied'); return; }
+    const count = all ? idxs.length : 1;
+    const each = this.gemSellValue(tier);
+    for (let k = 0; k < count; k++) Hero.gems.splice(idxs[k], 1);   // descending idxs: safe splice
+    const gold = each * count;
+    Hero.gold += gold;
+    UI.toast('Sold ' + count + '× ' + GEM_TIERS[tier] + ' ' + GEM_TYPES[type].name + '  →  ' + gold + 'g', '#ffd76a');
+    AudioSys.sfx('gold');
     Hero.save();
   },
 

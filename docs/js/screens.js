@@ -34,6 +34,7 @@ const Screens = {
       case 'cheats': this.cheats(ctx, W, H); break;
       case 'patchnotes': this.patchnotes(ctx, W, H); break;
       case 'season': this.season(ctx, W, H); break;
+      case 'town': this.town(ctx, W, H); break;
       case 'wilds': this.wilds(ctx, W, H); break;
       case 'create': this.create(ctx, W, H); break;
       case 'select': this.select(ctx, W, H); break;
@@ -536,6 +537,63 @@ const Screens = {
     UI.register(x - 24, y - 24, 48, 48, cb);
   },
 
+  // A glowing blue swirl — the town portal button (mirror of the red ✕).
+  portalBtn(ctx, x, y, cb) {
+    ctx.save();
+    ctx.fillStyle = '#0e2a44';
+    ctx.beginPath(); ctx.arc(x, y, 16, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#4aa3e0';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y, 16, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = '#8fd0ff';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.shadowColor = '#4aa3e0';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    for (let i = 0; i <= 22; i++) {
+      const ang = i * 0.55 + (Game.time || 0) * 2.2;
+      const rr2 = 1.5 + i * 0.5;
+      const sx = x + Math.cos(ang) * rr2, sy = y + Math.sin(ang) * rr2;
+      if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+    }
+    ctx.stroke();
+    ctx.restore();
+    UI.register(x - 24, y - 24, 48, 48, cb);
+  },
+
+  // Town portal overlay — reachable from the wilds inventory. The artisans and
+  // stash sit here; the game stays paused underneath, so "Back to the Wilds"
+  // drops the player straight back into the fight they left.
+  town(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const pw = Math.min(440, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 40, 440);
+    const py = Math.max(20, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, 'TOWN PORTAL');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'italic 12px Georgia';
+    ctx.fillStyle = '#9a9080';
+    ctx.fillText('Visit the artisans and your stash, then head back.', W / 2, py + 56);
+
+    let y = py + 82;
+    const stops = [
+      ['⚒   BLACKSMITH', () => UI.open('smith'), '#ffb43a', '#8a6f4a'],
+      ['◆   JEWELER', () => UI.open('jeweler'), '#4ecbe0', '#2a6a7a'],
+      ['✦   MYSTIC', () => UI.open('mystic'), '#b06adf', '#7a4a8f'],
+      ['▤   STASH', () => UI.open('stash'), '#8fb0e8', '#5f7ab0']
+    ];
+    for (const [label, cb, color, border] of stops) {
+      UI.btn(ctx, px + 20, y, pw - 40, 46, label, cb, { size: 15, color, border });
+      y += 54;
+    }
+    y += 8;
+    UI.btn(ctx, px + 20, y, pw - 40, 46, '↩   BACK TO THE WILDS',
+      () => { UI.townMode = false; UI.close(); },
+      { size: 15, color: '#6ff7c3', border: '#3a7a6a' });
+  },
+
   // -------------------------------------------------------------- title
 
   title(ctx, W, H) {
@@ -900,6 +958,13 @@ const Screens = {
     ctx.font = 'bold ' + (narrow ? 14 : 17) + 'px Georgia';
     ctx.fillStyle = '#c9bfa8';
     ctx.fillText('EQUIPMENT', cx, cy - R - chipR - 8);
+
+    // In the wilds, a blue TOWN PORTAL opposite the red ✕ — nip back to the
+    // artisans & stash, then return to the fight (owner request).
+    if (Game.state === 'playing') {
+      const sf = UI.safe || { top: 0, left: 0 };
+      this.portalBtn(ctx, 26 + sf.left, 26 + sf.top, () => { UI.townMode = true; UI.open('town'); });
+    }
 
     // Character summary in the wheel's hub.
     ctx.font = 'bold ' + (narrow ? 9 : 12) + 'px Georgia';
@@ -1782,7 +1847,7 @@ const Screens = {
     }
     // Scrollable stack list — every gem is reachable via the ▲/▼ arrows.
     const panelBot = 46 + Math.min(H - 56, 470);
-    const detailNeed = UI.sel.gemKey && groups[UI.sel.gemKey] ? 120 : 0;
+    const detailNeed = UI.sel.gemKey && groups[UI.sel.gemKey] ? 176 : 0;
     let visRows = Math.max(1, Math.floor((panelBot - 12 - detailNeed - y) / 40));
     let scroll = 0;
     const overflow = keys.length > visRows;
@@ -1873,6 +1938,15 @@ const Screens = {
           UI.sel.gemKey = null;
         } : null,
         { size: 11, disabled: !(canCombine && n >= 6), border: '#3a7a4a', color: '#4ade80' });
+      // Sell for gold.
+      y += 40;
+      const sell1 = Items.gemSellValue(tier);
+      UI.btn(ctx, px + 16, y, halfW, 34, `SELL 1  (${sell1}g)`,
+        () => { Items.sellGem(type, tier, false); if ((groups[UI.sel.gemKey] || 0) <= 1) UI.sel.gemKey = null; },
+        { size: 11, border: '#8a6f4a', color: '#ffd76a' });
+      UI.btn(ctx, px + 24 + halfW, y, halfW, 34, `SELL ALL ×${n}  (${sell1 * n}g)`,
+        () => { Items.sellGem(type, tier, true); UI.sel.gemKey = null; },
+        { size: 11, border: '#8a6f4a', color: '#ffd76a' });
     }
   },
 
