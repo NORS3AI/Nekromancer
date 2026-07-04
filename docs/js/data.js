@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.8.5-alpha';
+const GAME_VERSION = 'v0.8.6-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.8.6-alpha', date: 'July 2026',
+    notes: [
+      'NEW ART — all 21 skills now use hand-drawn circular icon art across the radial HUD, loadout and skill grid (the procedural glyphs remain as an automatic fallback)',
+      'NEW ART — runes now render as hand-drawn glowing lava-carved stones (20 variants) beside each rune option, seeded so a given slot always shows the same stone'
+    ]
+  },
   {
     v: 'v0.8.5-alpha', date: 'July 2026',
     notes: [

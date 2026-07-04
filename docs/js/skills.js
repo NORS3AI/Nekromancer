@@ -992,9 +992,37 @@ const SKILL_ICONS = (() => {
   };
 })();
 
-// A carved-stone rune shard: a chipped tablet with a glowing orange glyph,
-// varied by a seed so each rune reads as a different etched stone.
+// Hand-drawn rune art (docs/art/runes/rune0.png …). Seeded per option so a
+// given rune slot always shows the same stone. Falls back to the procedural
+// glyph below when the art is absent.
+const RUNE_IMAGE_COUNT = 20;
+const RUNE_IMAGES = [];
+(function loadRuneImages() {
+  if (typeof Image === 'undefined') return;
+  for (let i = 0; i < RUNE_IMAGE_COUNT; i++) {
+    const img = new Image();
+    img.src = 'art/runes/rune' + i + '.png';
+    RUNE_IMAGES.push(img);
+  }
+})();
+
+// Draw a rune shard for the given seed: the hand-drawn art if it has loaded,
+// else the procedural carved stone.
 function drawRuneStone(ctx, x, y, r, seed) {
+  if (RUNE_IMAGES.length) {
+    const pick = Math.abs(Math.round(hash2(seed * 12.9898, seed * 78.233))) % RUNE_IMAGES.length;
+    const img = RUNE_IMAGES[pick];
+    if (img && img.complete && img.naturalWidth > 0) {
+      ctx.drawImage(img, x - r * 1.15, y - r * 1.15, r * 2.3, r * 2.3);
+      return;
+    }
+  }
+  drawRuneStoneGlyph(ctx, x, y, r, seed);
+}
+
+// Procedural fallback: a chipped tablet with a glowing orange glyph, varied by
+// a seed so each rune reads as a different etched stone.
+function drawRuneStoneGlyph(ctx, x, y, r, seed) {
   const h = (hash2(seed * 12.9898, seed * 78.233) % 1000) / 1000;
   const rot = (h - 0.5) * 0.5;
   ctx.save();
@@ -1052,7 +1080,11 @@ function drawRuneStone(ctx, x, y, r, seed) {
 // keeps the load free of 404s (the game ships with no icon art by default).
 const SKILL_ICON_IMAGES = {};
 const SKILL_ICON_FILES = [
-  // e.g. 'boneSpikes', 'grimScythe', ...  ← add an id here + its PNG file.
+  // Custom art in docs/art/icons/. Remove an id to fall back to its glyph.
+  'boneSpikes', 'grimScythe', 'siphonBlood', 'boneSpear', 'skeletalMage', 'deathNova',
+  'corpseExplosion', 'corpseLance', 'devour', 'revive', 'commandSkeletons', 'commandGolem',
+  'armyOfTheDead', 'landOfTheDead', 'decrepify', 'leech', 'frailty', 'boneArmor',
+  'boneSpirit', 'bloodRush', 'simulacrum'
 ];
 function loadSkillIcons() {
   if (typeof Image === 'undefined') return;

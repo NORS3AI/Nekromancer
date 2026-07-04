@@ -22,8 +22,13 @@ loot at the artisans. The hero is persistent (localStorage).
 - Develop on the designated `claude/...` session branch, open a PR and **merge it
   ourselves** — the owner asked Claude to perform merges.
 - Keep the README "Play Game" link intact and case-correct.
-- Pure HTML/CSS/JS, no build step, no dependencies, no binary assets. Everything
-  (sprites, map, sounds) is procedural.
+- Pure HTML/CSS/JS, no build step, no dependencies. Sprites, map and sounds are
+  procedural. EXCEPTION (owner-supplied hand-drawn art): skill-icon PNGs in
+  `docs/art/icons/` (opt-in per id via `SKILL_ICON_FILES` in `skills.js`, drawn
+  through `drawSkillIcon()`) and rune PNGs in `docs/art/runes/` (`rune0..N.png`,
+  drawn through `drawRuneStone()`). Both fall back to the procedural glyph
+  (`SKILL_ICONS` / `drawRuneStoneGlyph`) if art is absent, so the game still runs
+  art-free.
 - **Update `PATCH_NOTES` (data.js) with EVERY addition and bug fix** — prepend a new
   entry (newest first) and bump `GAME_VERSION` (vX.Y.Z-alpha). The version label on
   the title screen opens the notes; the owner reads them.
