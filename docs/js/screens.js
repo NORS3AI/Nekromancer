@@ -2257,19 +2257,23 @@ const Screens = {
     for (const [key, v] of Object.entries(it.stats)) {
       const grp = affixGroup(key);
       const selected = UI.sel.affix === key;
+      // A property is "maxed" when its value already sits at (or above) the best
+      // a reroll could produce — a reroll can't improve it. Shown in gold.
+      const rng = grp ? Items.affixRange(it, key) : null;
+      const maxed = rng && v >= rng.max - Math.max(1e-6, rng.max * 0.001);
       const yy = c - scrollY;
       if (vis(c, 30)) {
         UI.btn(ctx, px + 16, yy, pw - 32, 30, '', grp ? () => {
           UI.sel.affix = selected ? null : key;
-        } : null, { bg: selected ? 'rgba(70,44,90,0.95)' : undefined, border: selected ? '#b06adf' : undefined, disabled: !grp });
+        } : null, { bg: selected ? 'rgba(70,44,90,0.95)' : undefined, border: selected ? '#b06adf' : maxed ? '#8a6f2a' : undefined, disabled: !grp });
         ctx.textAlign = 'left';
         ctx.font = 'bold 12px Georgia';
-        ctx.fillStyle = !grp ? '#6f6552' : selected ? '#d8b4f0' : '#b5ab94';
+        ctx.fillStyle = !grp ? '#6f6552' : maxed ? '#ffd76a' : selected ? '#d8b4f0' : '#b5ab94';
         ctx.fillText(AFFIX_ROLLS[key].label(v), px + 28, yy + 15);
         ctx.textAlign = 'right';
         ctx.font = '11px Georgia';
-        ctx.fillStyle = !grp ? '#544d44' : selected ? '#b06adf' : '#6a8a5a';
-        ctx.fillText(!grp ? 'signature' : selected ? 'will be rerolled ✦' : AFFIX_GROUP_NAME[grp], px + pw - 28, yy + 15);
+        ctx.fillStyle = !grp ? '#544d44' : selected ? '#b06adf' : maxed ? '#ffd76a' : '#6a8a5a';
+        ctx.fillText(!grp ? 'signature' : selected ? 'will be rerolled ✦' : maxed ? 'maxed ✓' : AFFIX_GROUP_NAME[grp], px + pw - 28, yy + 15);
       }
       c += 34;
     }
@@ -2358,8 +2362,12 @@ const Screens = {
         : !afford ? 'NOT ENOUGH GOLD OR SOULS'
         : 'REROLL ' + AFFIX_ROLLS[UI.sel.affix].label(it.stats[UI.sel.affix]).toUpperCase(),
       (UI.sel.affix && afford) ? () => {
-        Items.enchant(it, UI.sel.affix);
-        UI.sel.affix = null;
+        const res = Items.enchant(it, UI.sel.affix);
+        // Keep the rerolled property SELECTED so the player watches the value
+        // change. A reroll may land on another affix in the same group — follow
+        // it to whatever it produced; a socket-uncover leaves the stat as-is.
+        if (typeof res === 'string' && res !== 'socket') UI.sel.affix = res;
+        else if (!(UI.sel.affix in it.stats)) UI.sel.affix = null;
       } : null,
       { size: 13, disabled: !UI.sel.affix || !afford, border: '#7a4a8f', color: '#b06adf' });
   },

@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.8.3-alpha';
+const GAME_VERSION = 'v0.8.4-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.8.4-alpha', date: 'July 2026',
+    notes: [
+      'Mystic: rerolling a property now KEEPS it selected afterward, so you can watch the value change roll after roll (it follows the reroll if it lands on another property in the group) instead of deselecting every time',
+      'Mystic: a property already at its maximum rollable value is shown in GOLD with a "maxed ✓" tag — so you know at a glance a reroll can\'t improve it'
+    ]
+  },
   {
     v: 'v0.8.3-alpha', date: 'July 2026',
     notes: [
