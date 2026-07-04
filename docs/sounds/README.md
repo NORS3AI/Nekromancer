@@ -14,13 +14,14 @@ sounds/
 ## Adding music (easy path)
 
 1. Put your tracks in **`sounds/music/`**.
-2. Name them **`1.mp3`, `2.mp3`, … `8.mp3`** — that's it. They play in order, on
-   loop, forever.
+2. Name them **`1.mp3`, `2.mp3`, … `16.mp3`** — that's it. They play **shuffled**,
+   on loop, forever (a random order that never repeats a track until the others
+   have played).
 
 That's all you need. The playlist is controlled in one place —
 `MUSIC_PLAYLIST` at the top of `docs/js/audio.js` — if you want different
-filenames, a different order, more/fewer tracks, or other formats
-(`.ogg` / `.m4a`), edit that one list.
+filenames, more/fewer tracks, or other formats (`.ogg` / `.m4a`), edit that
+one list.
 
 - Volume: **Settings ▸ Master Volume × Music Volume**. Muting either one
   silences the music (it's routed through the same mixer as everything else).

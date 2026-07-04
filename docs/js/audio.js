@@ -8,12 +8,16 @@
 
 // ===== MUSIC — drop your tracks here ======================================
 // Put your audio files in  docs/sounds/music/  and list their filenames below.
-// They play in order, on loop, forever. The EASIEST path: name your 8 files
-// 1.mp3 … 8.mp3 and you don't have to touch anything. To use other names or
-// formats (.ogg/.m4a), just edit this list. If NO files are found the game
-// falls back to the built-in generative score. Volume = Settings ▸ Master ×
-// Music (muting either silences it).
-const MUSIC_PLAYLIST = ['1.mp3', '2.mp3', '3.mp3', '4.mp3', '5.mp3', '6.mp3', '7.mp3', '8.mp3'];
+// They play SHUFFLED, on loop, forever (a random order that never repeats a
+// track until the rest have played). The EASIEST path: name your files
+// 1.mp3 … 16.mp3 and you don't have to touch anything. To use other names,
+// counts, or formats (.ogg/.m4a), just edit this list. If NO files are found
+// the game falls back to the built-in generative score. Volume = Settings ▸
+// Master × Music (muting either silences it).
+const MUSIC_PLAYLIST = [
+  '1.mp3', '2.mp3', '3.mp3', '4.mp3', '5.mp3', '6.mp3', '7.mp3', '8.mp3',
+  '9.mp3', '10.mp3', '11.mp3', '12.mp3', '13.mp3', '14.mp3', '15.mp3', '16.mp3'
+];
 // ==========================================================================
 
 const AudioSys = {
@@ -25,7 +29,9 @@ const AudioSys = {
   musicRoot: 110,
   musicEl: null,        // <audio> element for file music
   musicSrcNode: null,   // its MediaElementSource → music channel
-  musicIndex: 0,
+  musicIndex: 0,        // absolute index into MUSIC_PLAYLIST of the current track
+  musicOrder: null,     // shuffled play order (a "bag" reshuffled each cycle)
+  musicPos: -1,
   usingFileMusic: false,
   musicMisses: 0,       // consecutive load failures (all → fall back to generative)
   ambienceNodes: null,
@@ -159,7 +165,27 @@ const AudioSys = {
       this.musicSrcNode.connect(this.ch.music);
     } catch (e) { return; }             // no media-element support → generative
     this.musicEl = el;
-    this.playTrack(0);
+    this.advanceMusic();
+  },
+
+  // Build a fresh SHUFFLED play order (a "bag"): every track plays once in a
+  // random order, then the bag reshuffles — so it feels random and you never
+  // know which is next, without repeating a track before the others have played.
+  shuffleMusic() {
+    const n = MUSIC_PLAYLIST.length;
+    const order = [];
+    for (let i = 0; i < n; i++) order.push(i);
+    for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    // Don't let a fresh bag open with the track that just finished.
+    if (n > 1 && order[0] === this.musicIndex) { const j = 1 + Math.floor(Math.random() * (n - 1)); [order[0], order[j]] = [order[j], order[0]]; }
+    this.musicOrder = order;
+    this.musicPos = -1;
+  },
+
+  advanceMusic() {
+    if (!this.musicOrder || this.musicPos + 1 >= this.musicOrder.length) this.shuffleMusic();
+    this.musicPos++;
+    this.playTrack(this.musicOrder[this.musicPos]);
   },
 
   playTrack(i) {
@@ -173,7 +199,7 @@ const AudioSys = {
     if (pr && pr.catch) pr.catch(() => {});   // ignore autoplay rejections
   },
 
-  nextTrack() { this.playTrack(this.musicIndex + 1); },
+  nextTrack() { this.advanceMusic(); },
 
   // A track failed to load.
   //  · If nothing has ever played, there are no music files — give up after this
@@ -188,7 +214,7 @@ const AudioSys = {
       if (this.musicEl) this.musicEl.pause();
       return;
     }
-    this.playTrack(this.musicIndex + 1);
+    this.advanceMusic();
   },
 
   // --------------------------------------------------- ambience / weather

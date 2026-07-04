@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.0.4-alpha';
+const GAME_VERSION = 'v1.0.5-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.0.5-alpha', date: 'July 2026',
+    notes: [
+      'Music now plays SHUFFLED — a random order that never repeats a track until the rest have played, so you never know which is next',
+      'The music playlist now holds 16 tracks (drop 1.mp3–16.mp3 into docs/sounds/music/)'
+    ]
+  },
   {
     v: 'v1.0.4-alpha', date: 'July 2026',
     notes: [
