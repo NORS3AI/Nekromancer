@@ -1204,6 +1204,94 @@ function drawGemGlyph(ctx, type, tier, x, y, r) {
   ctx.restore();
 }
 
+// ------------------------------ game logo art ------------------------------
+// Optional title/menu logo. Drop docs/art/logo.png and flip LOGO_ART_READY to
+// true; otherwise a procedural purple radiant-skull emblem is drawn. The art is
+// fit (letterboxed) inside the given box so any aspect ratio stays uncropped.
+const LOGO_ART_READY = false;
+let LOGO_IMAGE = null;
+(function loadLogo() {
+  if (!LOGO_ART_READY || typeof Image === 'undefined') return;
+  LOGO_IMAGE = new Image();
+  LOGO_IMAGE.src = 'art/logo.png';
+})();
+
+function drawGameLogo(ctx, x, y, size, t = 0) {
+  if (LOGO_IMAGE && LOGO_IMAGE.complete && LOGO_IMAGE.naturalWidth > 0) {
+    const ar = LOGO_IMAGE.naturalWidth / LOGO_IMAGE.naturalHeight;
+    let w = size, h = size / ar;
+    if (h > size) { h = size; w = size * ar; }
+    ctx.drawImage(LOGO_IMAGE, x - w / 2, y - h / 2, w, h);
+    return;
+  }
+  drawLogoGlyph(ctx, x, y, size, t);
+}
+
+// Procedural fallback: a purple skull wreathed in a sunburst of bone spikes,
+// with a glowing third eye — matching the owner's emblem until the art drops in.
+function drawLogoGlyph(ctx, x, y, size, t) {
+  const R = size / 2;
+  const pulse = 0.5 + 0.5 * Math.sin(t * 2);
+  ctx.save();
+  ctx.translate(x, y);
+  // Purple aura — kept tight so the sunburst spikes read past its edge.
+  const aura = ctx.createRadialGradient(0, 0, R * 0.05, 0, 0, R * 0.72);
+  aura.addColorStop(0, 'rgba(150,70,220,' + (0.34 + 0.14 * pulse).toFixed(3) + ')');
+  aura.addColorStop(0.55, 'rgba(110,40,180,0.16)');
+  aura.addColorStop(1, 'rgba(40,10,70,0)');
+  ctx.fillStyle = aura;
+  ctx.beginPath(); ctx.arc(0, 0, R * 0.72, 0, TAU); ctx.fill();
+  // Radiating bone spikes (sunburst).
+  const rays = 18;
+  ctx.shadowColor = '#b06adf'; ctx.shadowBlur = R * 0.14;
+  for (let i = 0; i < rays; i++) {
+    const long = i % 2 === 0;
+    const len = R * (long ? 0.98 : 0.6);
+    const w = R * (long ? 0.045 : 0.028);
+    ctx.save(); ctx.rotate(i / rays * TAU);
+    const g = ctx.createLinearGradient(0, -R * 0.24, 0, -len);
+    g.addColorStop(0, 'rgba(180,120,240,0.12)');
+    g.addColorStop(1, 'rgba(238,220,255,0.95)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(-w, -R * 0.28); ctx.lineTo(0, -len); ctx.lineTo(w, -R * 0.28);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  ctx.shadowBlur = 0;
+  // Skull.
+  const sk = R * 0.6;
+  const skg = ctx.createLinearGradient(0, -sk, 0, sk);
+  skg.addColorStop(0, '#ecd6ff'); skg.addColorStop(0.5, '#a86ad8'); skg.addColorStop(1, '#3f1c63');
+  ctx.fillStyle = skg;
+  ctx.shadowColor = '#7a3ab0'; ctx.shadowBlur = R * 0.2;
+  ctx.beginPath();
+  ctx.moveTo(-sk * 0.7, -sk * 0.1);
+  ctx.bezierCurveTo(-sk * 0.78, -sk * 0.95, sk * 0.78, -sk * 0.95, sk * 0.7, -sk * 0.1);
+  ctx.bezierCurveTo(sk * 0.66, sk * 0.34, sk * 0.42, sk * 0.5, sk * 0.3, sk * 0.55);
+  ctx.lineTo(sk * 0.2, sk * 0.92); ctx.lineTo(-sk * 0.2, sk * 0.92);
+  ctx.lineTo(-sk * 0.3, sk * 0.55);
+  ctx.bezierCurveTo(-sk * 0.42, sk * 0.5, -sk * 0.66, sk * 0.34, -sk * 0.7, -sk * 0.1);
+  ctx.closePath(); ctx.fill();
+  ctx.shadowBlur = 0;
+  // Eye sockets.
+  ctx.fillStyle = '#180724';
+  ctx.beginPath(); ctx.ellipse(-sk * 0.32, -sk * 0.04, sk * 0.23, sk * 0.27, 0.25, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(sk * 0.32, -sk * 0.04, sk * 0.23, sk * 0.27, -0.25, 0, TAU); ctx.fill();
+  // Glowing eyes + third eye.
+  ctx.fillStyle = '#e0a8ff'; ctx.shadowColor = '#c060ff'; ctx.shadowBlur = R * 0.16;
+  const er = sk * 0.09 * (0.8 + 0.4 * pulse);
+  ctx.beginPath(); ctx.arc(-sk * 0.32, -sk * 0.01, er, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(sk * 0.32, -sk * 0.01, er, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, -sk * 0.52, sk * 0.08, 0, TAU); ctx.fill();
+  ctx.shadowBlur = 0;
+  // Nasal cavity + teeth.
+  ctx.fillStyle = '#180724';
+  ctx.beginPath(); ctx.moveTo(0, sk * 0.06); ctx.lineTo(-sk * 0.11, sk * 0.32); ctx.lineTo(sk * 0.11, sk * 0.32); ctx.closePath(); ctx.fill();
+  for (let i = -2; i <= 2; i++) ctx.fillRect(i * sk * 0.13 - sk * 0.05, sk * 0.56, sk * 0.09, sk * 0.2);
+  ctx.restore();
+}
+
 // Lighten (t>0) or darken (t<0) a #rrggbb hex by fraction t.
 function shade(hex, t) {
   const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex);

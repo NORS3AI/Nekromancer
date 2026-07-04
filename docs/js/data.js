@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.9.4-alpha';
+const GAME_VERSION = 'v0.9.5-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.9.5-alpha', date: 'July 2026',
+    notes: [
+      'NEW — a GAME LOGO (purple radiant-skull emblem) now crowns the title screen above the NEKROMANCER wordmark, and sits in the upper-right of the hero-select screen. Drop the hand-drawn art into docs/art/logo.png and flip LOGO_ART_READY to swap the procedural emblem for the real thing (drawn via drawGameLogo, procedural fallback otherwise)'
+    ]
+  },
   {
     v: 'v0.9.4-alpha', date: 'July 2026',
     notes: [

@@ -85,6 +85,9 @@ const Screens = {
     this.drawTreeline(ctx, W, H * 0.62);
     // Bats flap across the sky now and then.
     this.drawBats(ctx, W, H, t);
+    // Game logo emblem in the upper-right, mirroring the moon.
+    const logoSz = Math.min(110, W * 0.2, H * 0.17);
+    drawGameLogo(ctx, W * 0.8, H * 0.19, logoSz, t);
 
     // Warm ground plane + firelight pool for depth.
     const floor = ctx.createLinearGradient(0, fy - 120, 0, H);
@@ -768,26 +771,9 @@ const Screens = {
     const cx = W / 2, cy = H * 0.34;
     const t = Game.time;
 
-    ctx.save();
-    ctx.translate(cx, cy - 76 + Math.sin(t * 1.4) * 4);
-    ctx.shadowColor = '#6ff7c3';
-    ctx.shadowBlur = 24;
-    ctx.fillStyle = '#ded5bd';
-    ctx.beginPath(); ctx.arc(0, 0, 26, 0, TAU); ctx.fill();
-    ctx.fillRect(-14, 15, 28, 13);
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#0a070c';
-    ctx.beginPath(); ctx.ellipse(-9, -2, 6, 7.5, 0, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(9, -2, 6, 7.5, 0, 0, TAU); ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(0, 5); ctx.lineTo(-3.5, 12); ctx.lineTo(3.5, 12);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#6ff7c3';
-    ctx.shadowColor = '#6ff7c3'; ctx.shadowBlur = 10;
-    ctx.beginPath(); ctx.arc(-9, -2, 2.4 + Math.sin(t * 3) * 0.8, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(9, -2, 2.4 + Math.sin(t * 3 + 1) * 0.8, 0, TAU); ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.restore();
+    // Game logo (purple radiant-skull emblem) floating above the wordmark.
+    const logoSize = Math.min(H * 0.30, W * 0.42, 200);
+    drawGameLogo(ctx, cx, cy - 66 + Math.sin(t * 1.4) * 4 - logoSize * 0.12, logoSize, t);
 
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = `bold ${Math.min(56, W * 0.105)}px Georgia`;
