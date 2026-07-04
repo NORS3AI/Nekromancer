@@ -586,19 +586,18 @@ const Game = {
     Items.stash(item);
     lines.push([item.name, RARITIES[item.rarity].color]);
 
-    // Clearing all three parts of a bounty yields a HORADRIC STASH — the same
-    // loot as a Rift for this difficulty (gold, souls, a gem, and a chance at a
-    // Nephalem Rift Key).
+    // Clearing all three parts of a bounty yields a HORADRIC STASH — gold,
+    // Forgotten Souls and two gems. (Nephalem Rift Keys come from RIFTS, not
+    // bounties, so the stash never mentions them.)
     if (this.zoneIdx >= 0) {
       const cGold = Math.round((500 + mLvl * 70) * diff.reward);
-      Hero.gold += cGold; Hero.mats.soul += 2;
-      const cGem = Items.dropGem(); Hero.gems.push(cGem);
-      let keyLine = 'No rift key this time';
-      if (Math.random() < 0.45) { Hero.riftKeys += 1; keyLine = '1× Nephalem Rift Key'; }
+      Hero.gold += cGold; Hero.mats.soul += 3;
+      const cGemA = Items.dropGem(); Hero.gems.push(cGemA);
+      const cGemB = Items.dropGem(); Hero.gems.push(cGemB);
       lines.push(['◈ HORADRIC STASH — three bounties slain!', '#8fb0e8']);
-      lines.push([cGold + ' gold  ·  2× Forgotten Souls', '#ffd76a']);
-      lines.push([gemName(cGem), GEM_TYPES[cGem.type].color]);
-      lines.push([keyLine, keyLine[0] === '1' ? '#b06adf' : '#9a9080']);
+      lines.push([cGold + ' gold  ·  3× Forgotten Souls', '#ffd76a']);
+      lines.push([gemName(cGemA), GEM_TYPES[cGemA.type].color]);
+      lines.push([gemName(cGemB), GEM_TYPES[cGemB.type].color]);
       AudioSys.sfx('setdrop');
     }
     this.bountyPart = 0;

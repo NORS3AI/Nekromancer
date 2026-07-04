@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.0.9-alpha';
+const GAME_VERSION = 'v1.1.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.1.0-alpha', date: 'July 2026',
+    notes: [
+      'FIX: the Bounty Horadric Stash no longer mentions Nephalem Rift Keys ("No rift key this time") — keys come from Rifts, not bounties. The bounty stash now grants gold, 3 Forgotten Souls and two gems'
+    ]
+  },
   {
     v: 'v1.0.9-alpha', date: 'July 2026',
     notes: [
