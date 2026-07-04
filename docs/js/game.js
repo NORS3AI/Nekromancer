@@ -23,6 +23,8 @@ const Game = {
   telegraphs: [],
   kills: 0,
   bossDead: false,
+  portalCast: null,       // {t, x, y} — 7s channel to open a town portal
+  townPortalNear: false,  // debounce so standing on the portal doesn't loop the menu
   // Multi-area journeys: a bounty/adventure run spans several linked maps.
   stage: 1,
   stageCount: 1,
@@ -214,6 +216,8 @@ const Game = {
     this.finalStage = this.stage >= this.stageCount;
     this.descend = false;
     this.nextBountyPart = false;
+    this.portalCast = null;
+    this.townPortalNear = false;
     this.riftProgress = 0;
     this.riftGoal = zone.riftGoal || 250;
     this.guardianUp = false;
@@ -729,6 +733,75 @@ const Game = {
       else if (this.nextBountyPart) this.startBountyPart(this.bountyPart + 1);
       else this.completeZone();
     }
+    // Blue town portal: step off then back on to open the town-portal menu.
+    if (World.townPortal) {
+      const d = dist(p.x, p.y, World.townPortal.x, World.townPortal.y);
+      if (d > 46) this.townPortalNear = false;
+      else if (d < 34 && !this.townPortalNear) {
+        this.townPortalNear = true;
+        UI.townMode = true;
+        UI.open('town');
+        AudioSys.sfx('portal');
+      }
+    }
+  },
+
+  // The HUD Portal button starts (or cancels) a 7-second channel that opens a
+  // blue portal home. Moving cancels it (the hero must stand and focus).
+  castTownPortal() {
+    if (this.state !== 'playing' || UI.screen || !this.player || this.player.dead) return;
+    if (this.portalCast) {                // tap again to cancel
+      this.portalCast = null;
+      UI.toast('Portal channel cancelled', '#9a9080');
+      AudioSys.sfx('denied');
+      return;
+    }
+    if (World.townPortal) {
+      UI.toast('A town portal is already open — step through it', '#8fd0ff');
+      return;
+    }
+    this.portalCast = { t: 0, x: this.player.x, y: this.player.y };
+    AudioSys.sfx('portal');
+    UI.toast('Opening a town portal — hold still…', '#8fd0ff');
+  },
+
+  // Advance the town-portal channel; complete it at 7s, cancel it if the hero
+  // walks off the casting spot.
+  updatePortalCast(dt) {
+    const pc = this.portalCast;
+    if (!pc) return;
+    const p = this.player;
+    if (dist(p.x, p.y, pc.x, pc.y) > 34) {
+      this.portalCast = null;
+      UI.toast('Portal interrupted — you moved', '#9a9080');
+      AudioSys.sfx('denied');
+      return;
+    }
+    pc.t += dt;
+    // Rising blue wisps as the rift knits together.
+    if (Math.random() < 0.6) {
+      const a = Math.random() * TAU, r = 10 + Math.random() * 22;
+      Particles.spawn(pc.x + Math.cos(a) * r, pc.y + Math.sin(a) * r * 0.6, {
+        count: 1, color: ['#8fd0ff', '#4aa3e0'], minSpeed: 8, maxSpeed: 26,
+        minLife: 0.4, maxLife: 0.9, minSize: 1.5, maxSize: 3, grav: -60, glow: true
+      });
+    }
+    if (pc.t >= 7) {
+      World.townPortal = { x: pc.x, y: pc.y };
+      this.townPortalNear = true;         // hero is standing on it — step off to arm
+      this.portalCast = null;
+      // A blue flourish as the portal snaps open (matches its colour).
+      Particles.ring(pc.x, pc.y, 120, '#8fd0ff', 8, 0.5);
+      Particles.ring(pc.x, pc.y, 80, '#4aa3e0', 4, 0.45);
+      Particles.spawn(pc.x, pc.y, {
+        count: 30, color: ['#8fd0ff', '#4aa3e0', '#d8ecfa'],
+        minSpeed: 120, maxSpeed: 340, minLife: 0.3, maxLife: 0.6,
+        minSize: 2, maxSize: 5, glow: true, drag: 2.5
+      });
+      Particles.shake(5);
+      AudioSys.sfx('portal');
+      UI.toast('Town portal open — step through to reach town', '#8fd0ff');
+    }
   },
 
   // ------------------------------------------------------------------ loop
@@ -777,6 +850,7 @@ const Game = {
     if (p.shrine && p.shrine.buff === 'fortune') p.goldFind = baseGoldFind * 2;
 
     p.update(dt);
+    this.updatePortalCast(dt);
     Skills.update(dt);
     // A held torch burns down in real time; when it's out it disappears.
     const torch = Hero.equipped.torch;
@@ -867,6 +941,47 @@ const Game = {
       ctx.restore();
     }
     ctx.globalAlpha = 1;
+  },
+
+  // The town-portal channel animation (world space): a spinning blue rune ring
+  // under the hero and a portal that knits together over the 7 seconds.
+  drawPortalCast(ctx) {
+    const pc = this.portalCast;
+    if (!pc) return;
+    const k = clamp(pc.t / 7, 0, 1);
+    const t = this.time;
+    ctx.save();
+    ctx.translate(pc.x, pc.y);
+    // Ground rune ring — two counter-rotating rings of ticks, brightening.
+    ctx.globalAlpha = 0.3 + 0.5 * k;
+    for (let ring = 0; ring < 2; ring++) {
+      const rr2 = (ring ? 20 : 30) + Math.sin(t * 3 + ring) * 2;
+      const dir = ring ? -1 : 1;
+      ctx.strokeStyle = ring ? '#8fd0ff' : '#4aa3e0';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(0, 4, rr2, rr2 * 0.42, 0, 0, TAU); ctx.stroke();
+      const ticks = 12;
+      for (let i = 0; i < ticks; i++) {
+        const a = t * dir + i / ticks * TAU;
+        const cx = Math.cos(a) * rr2, cy = 4 + Math.sin(a) * rr2 * 0.42;
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx * 1.12, 4 + (cy - 4) * 1.12); ctx.stroke();
+      }
+    }
+    // The forming portal — grows and brightens as the channel completes.
+    ctx.globalAlpha = 0.5 * k;
+    const ph = 46 * k;
+    const g = ctx.createLinearGradient(0, -ph, 0, 4);
+    g.addColorStop(0, 'rgba(143,208,255,0.9)');
+    g.addColorStop(1, 'rgba(74,163,224,0.1)');
+    ctx.fillStyle = g;
+    ctx.shadowColor = '#4aa3e0'; ctx.shadowBlur = 16 * k;
+    ctx.beginPath(); ctx.ellipse(0, -ph / 2 + 4, 11 * k, ph / 2, 0, 0, TAU); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+    // A ring that sweeps up as the timer fills (progress read-out).
+    ctx.strokeStyle = '#8fd0ff'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(0, -18, 34, -Math.PI / 2, -Math.PI / 2 + TAU * k); ctx.stroke();
+    ctx.restore();
   },
 
   // Screen-space weather: rain streaks / drifting dust, honoring settings.
@@ -974,6 +1089,7 @@ const Game = {
     for (const d of drawables) d.draw(ctx);
 
     for (const pr of this.projectiles) pr.draw(ctx);
+    this.drawPortalCast(ctx);
     Particles.draw(ctx);
 
     ctx.restore();

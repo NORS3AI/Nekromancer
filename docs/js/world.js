@@ -38,6 +38,7 @@ const World = {
     this.rivers = [];
     this.packs = [];
     this.portal = null;
+    this.townPortal = null;   // blue player-cast portal home to town
     this.patternFill = null;
     this.edgeTheme = null;
     this.makePattern(zone);
@@ -935,6 +936,9 @@ const World = {
     if (this.portal) {
       out.push({ y: this.portal.y, draw: ctx => this.drawPortal(ctx) });
     }
+    if (this.townPortal) {
+      out.push({ y: this.townPortal.y, draw: ctx => this.drawTownPortal(ctx) });
+    }
     return out;
   },
 
@@ -1044,6 +1048,35 @@ const World = {
     ctx.beginPath(); ctx.ellipse(0, -22, 11, 24, 0, 0, TAU); ctx.fill();
     ctx.shadowBlur = 0;
     ctx.fillStyle = '#e8d8f4';
+    ctx.beginPath(); ctx.ellipse(0, -22, 5, 14, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+  },
+
+  // The player-cast portal home — a blue twin of drawPortal.
+  drawTownPortal(ctx) {
+    const p = this.townPortal;
+    const t = Game.time;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.strokeStyle = 'rgba(74,163,224,0.5)';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(0, 4, 26, 12, 0, 0, TAU); ctx.stroke();
+    for (let i = 0; i < 3; i++) {
+      const k = (t * 0.7 + i / 3) % 1;
+      ctx.globalAlpha = 0.75 * (1 - k);
+      ctx.strokeStyle = '#4aa3e0';
+      ctx.lineWidth = 3.5 - i;
+      ctx.beginPath();
+      ctx.ellipse(0, -22, 16 + k * 10, 30 + k * 12, 0, 0, TAU);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = '#4aa3e0';
+    ctx.shadowColor = '#4aa3e0';
+    ctx.shadowBlur = 18;
+    ctx.beginPath(); ctx.ellipse(0, -22, 11, 24, 0, 0, TAU); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#d8ecfa';
     ctx.beginPath(); ctx.ellipse(0, -22, 5, 14, 0, 0, TAU); ctx.fill();
     ctx.restore();
   },

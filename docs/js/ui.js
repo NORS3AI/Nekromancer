@@ -250,6 +250,7 @@ const UI = {
       x += barW + gap;
       this.essGlobe = { x: x + gr, y: cy, r: gr }; x += 2 * gr + gap;
       this.potionBtn = { x: x + potR, y: cy, r: potR };
+      this.portalHudBtn = { x: this.potionBtn.x, y: cy - 2 * potR - 22, r: potR };
       this.xpBar = { x: this.hpGlobe.x - gr, w: (this.potionBtn.x + potR) - (this.hpGlobe.x - gr), y: H - 8 - safe.bottom };
       return;
     }
@@ -279,6 +280,9 @@ const UI = {
     // Potion sits on the cluster arc, outside skill slot 1 (no overlap).
     const pa = Math.PI * 0.98, pr = R + 54 * scale;
     this.potionBtn = { x: px + Math.cos(pa) * pr, y: py + Math.sin(pa) * pr + 20 * scale, r: 22 * scale };
+    // Town-portal button stacks directly above the potion (same proven column).
+    const portR = 20 * scale;
+    this.portalHudBtn = { x: this.potionBtn.x, y: this.potionBtn.y - (this.potionBtn.r + portR + 30 * scale), r: portR };
   },
 
   // Key label shown on a desktop action-bar slot.
@@ -348,6 +352,7 @@ const UI = {
     if (!this.desktop) this.drawJoystick(ctx);
     this.drawSkillButtons(ctx, p);
     this.drawPotion(ctx, p);
+    this.drawPortalButton(ctx, p);
     this.drawMenuButton(ctx);
     this.drawBanner(ctx, W, H);
 
@@ -940,6 +945,55 @@ const UI = {
     ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.stroke();
     this.register(b.x - b.r, b.y - b.r, b.r * 2, b.r * 2, () => p.drinkPotion());
+  },
+
+  // The town-portal button, stacked above the potion. Tap to channel a blue
+  // portal home (7s); tap again to cancel. Shows the countdown while casting
+  // and 'OPEN' once a portal is standing on the map.
+  drawPortalButton(ctx, p) {
+    const b = this.portalHudBtn;
+    if (!b) return;
+    const casting = !!Game.portalCast;
+    const open = !!(typeof World !== 'undefined' && World.townPortal);
+    const k = casting ? clamp(Game.portalCast.t / 7, 0, 1) : 0;
+    const t = Game.time;
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = '#0e1a26';
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 1;
+    // Blue swirl glyph — two spiral arms.
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.strokeStyle = open ? '#6ff7c3' : '#4aa3e0';
+    ctx.lineWidth = 2; ctx.lineCap = 'round';
+    for (let i = 0; i < 2; i++) {
+      ctx.beginPath();
+      for (let a = 0; a <= Math.PI * 2.2; a += 0.3) {
+        const rr = b.r * 0.22 + a * b.r * 0.055;
+        const x = Math.cos(a + t * 1.5 + i * Math.PI) * rr;
+        const y = Math.sin(a + t * 1.5 + i * Math.PI) * rr;
+        a === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+    // Casting countdown ring + seconds remaining.
+    if (casting) {
+      ctx.strokeStyle = '#8fd0ff'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r - 1, -Math.PI / 2, -Math.PI / 2 + TAU * k); ctx.stroke();
+      ctx.fillStyle = '#e8f2ff'; ctx.font = `bold ${Math.round(b.r * 0.62)}px Georgia`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(Math.ceil(7 - Game.portalCast.t), b.x, b.y);
+    }
+    ctx.strokeStyle = open ? '#57b894' : (casting ? '#8fd0ff' : '#2a6a8a');
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.stroke();
+    // Label.
+    ctx.fillStyle = open ? '#8fe8c8' : '#8fd0ff';
+    ctx.font = `bold ${Math.round(b.r * 0.44)}px Georgia`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(open ? 'OPEN' : 'Portal', b.x, b.y + b.r + Math.round(b.r * 0.5));
+    this.register(b.x - b.r - 3, b.y - b.r - 3, b.r * 2 + 6, b.r * 2 + 6, () => Game.castTownPortal());
   },
 
   drawMenuButton(ctx) {

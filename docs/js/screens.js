@@ -1413,12 +1413,7 @@ const Screens = {
     ctx.fillStyle = '#c9bfa8';
     ctx.fillText('EQUIPMENT', cx, cy - R - chipR - 8);
 
-    // In the wilds, a blue TOWN PORTAL opposite the red ✕ — nip back to the
-    // artisans & stash, then return to the fight (owner request).
-    if (Game.state === 'playing') {
-      const sf = UI.safe || { top: 0, left: 0 };
-      this.portalBtn(ctx, 26 + sf.left, 26 + sf.top, () => { UI.townMode = true; UI.open('town'); });
-    }
+    // (The town portal is now cast from the HUD Portal button, not opened here.)
 
     // Upper-left live stat readout (owner request) — at a glance, what your gear
     // gives: damage, crit, gold find, life, life/s, essence/s.

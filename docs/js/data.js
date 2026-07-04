@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.0.0-alpha';
+const GAME_VERSION = 'v1.0.1-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.0.1-alpha', date: 'July 2026',
+    notes: [
+      'NEW — a PORTAL button on the HUD (above the potion). Tap it to channel a TOWN PORTAL: your Nekromancer stands and focuses for 7 seconds (with a rune-ring casting animation) and a blue portal — a twin of the boss portals — tears open. Step through it to reach town (Blacksmith/Jeweler/Mystic/Stash), then step back to the fight',
+      'Moving cancels the channel; tap the button again to cancel it yourself. The button shows the countdown while casting and reads OPEN once the portal is up',
+      'Removed the old blue town-portal button from the Inventory wheel — it now lives on the HUD'
+    ]
+  },
   {
     v: 'v1.0.0-alpha', date: 'July 2026',
     notes: [
