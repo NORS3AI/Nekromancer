@@ -966,6 +966,33 @@ const Screens = {
       this.portalBtn(ctx, 26 + sf.left, 26 + sf.top, () => { UI.townMode = true; UI.open('town'); });
     }
 
+    // Upper-left live stat readout (owner request) — at a glance, what your gear
+    // gives: damage, crit, gold find, life, life/s, essence/s.
+    {
+      const sf2 = UI.safe || { top: 0, left: 0 };
+      const st = Items.computeStats();
+      const rows = [
+        ['DMG', '×' + st.dmgMult.toFixed(2), '#6ff7c3'],
+        ['CRIT', Math.round(st.critChance * 100) + '%', '#ffb43a'],
+        ['GOLD', '+' + Math.round((st.goldFind - 1) * 100) + '%', '#ffd76a'],
+        ['LIFE', '' + st.maxHp, '#e04a5a'],
+        ['LIFE/s', st.hpRegen.toFixed(1), '#e0808a'],
+        ['ESS/s', st.essenceRegen.toFixed(1), '#8fb0e8']
+      ];
+      let sy = 50 + sf2.top;
+      ctx.textBaseline = 'middle';
+      for (const [lbl, val, col] of rows) {
+        ctx.textAlign = 'left';
+        ctx.font = '9px Georgia';
+        ctx.fillStyle = '#8a8070';
+        ctx.fillText(lbl, 10 + sf2.left, sy);
+        ctx.font = 'bold 11px Georgia';
+        ctx.fillStyle = col;
+        ctx.fillText(val, 52 + sf2.left, sy);
+        sy += 15;
+      }
+    }
+
     // Character summary in the wheel's hub.
     ctx.font = 'bold ' + (narrow ? 9 : 12) + 'px Georgia';
     ctx.fillStyle = '#6ff7c3';
@@ -1026,6 +1053,7 @@ const Screens = {
     let dy = narrow ? cy + R + chipR + 22 : 54;
     const slot = UI.sel.slot;
     const equipped = Hero.equipped[slot];
+    const fam = Items.slotFamily(slot);
 
     ctx.textAlign = 'left';
     ctx.font = 'bold 13px Georgia';
@@ -1033,6 +1061,16 @@ const Screens = {
     ctx.fillText(ITEM_SLOTS[slot].label.toUpperCase() + ' — EQUIPPED', dx, dy);
     dy += 10;
     dy = this.itemCard(ctx, dx, dy, dw, equipped, null, false);
+
+    // Quick re-equip: hold onto the piece you just swapped out so you can put it
+    // back with ONE tap, without hunting through the bag (owner request).
+    const ls = Game.lastSwap;
+    if (ls && ls.item && fam.includes(ls.item.slot) && ls.item !== equipped && Hero.bag.includes(ls.item)) {
+      UI.btn(ctx, dx, dy + 2, dw, 26, '↺  RE-WEAR:  ' + ls.item.name,
+        () => { Items.equip(ls.item, slot); UI.sel.item = null; },
+        { size: 11, border: '#5f7ab0', color: '#8fb0e8' });
+      dy += 30;
+    }
 
     // Inventory capacity + purchasable expansion. This is the BAG that fills up
     // from combat loot and crafting — NOT the shared Stash vault.
@@ -1054,8 +1092,11 @@ const Screens = {
     // Drag it up/down (touch, mouse or wheel) so tall items — 3★ legendaries,
     // artifacts — never leak their EQUIP/SALVAGE/SOCKET/STASH buttons off the
     // bottom of the screen (owner rule). Everything above stays pinned.
-    const fam = Items.slotFamily(slot);
-    const bagItems = Hero.bag.filter(it => fam.includes(it.slot));
+    // Sort the bag list by UPGRADE so the good stuff is always at the top:
+    // ▲▲▲ → ▲▲ → ▲ → — → ▼ → ▼▼ → ▼▼▼ (owner request). Arrows precomputed once.
+    const bagItems = Hero.bag.filter(it => fam.includes(it.slot))
+      .map(it => ({ it, arrows: Items.compareArrows(it, equipped) }))
+      .sort((a, b) => b.arrows - a.arrows || RARITIES[b.it.rarity].mult - RARITIES[a.it.rarity].mult);
     const listTop = dy;
     const viewBot = H - 12;
     const viewH = Math.max(60, viewBot - listTop);
@@ -1083,7 +1124,7 @@ const Screens = {
       ctx.fillText('No ' + ITEM_SLOTS[slot].label.toLowerCase() + ' items in your bag.', dx, c - scrollY + 12);
       c += 22;
     }
-    bagItems.forEach(it => {
+    bagItems.forEach(({ it, arrows }) => {
       const yy = c - scrollY;
       if (vis(c, 30)) {
         const selected = UI.sel.item === it;
@@ -1097,11 +1138,20 @@ const Screens = {
         ctx.font = 'bold 12px Georgia';
         ctx.fillStyle = RARITIES[it.rarity].color;
         ctx.fillText(this.fitText(ctx, it.name, dw - 70), dx + 10, yy + 15);
-        const arrows = Items.compareArrows(it, equipped);
         ctx.textAlign = 'right';
         ctx.font = 'bold 13px Georgia';
-        ctx.fillStyle = arrows > 0 ? '#4ade80' : arrows < 0 ? '#e04a5a' : '#9a9080';
-        ctx.fillText(arrows > 0 ? '▲'.repeat(arrows) : arrows < 0 ? '▼'.repeat(-arrows) : '—', dx + dw - 10, yy + 15);
+        if (arrows === 3) {
+          // Best-in-slot upgrades: the ▲▲▲ bob up/down and pulse green, all in
+          // sync (shared Game.time phase) so the eye is drawn straight to them.
+          const ph = (Game.time || 0) * 4.2;
+          const bob = Math.sin(ph) * 2;
+          const pulse = 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(ph));
+          ctx.fillStyle = `rgba(74,222,128,${pulse.toFixed(3)})`;
+          ctx.fillText('▲▲▲', dx + dw - 10, yy + 15 + bob);
+        } else {
+          ctx.fillStyle = arrows > 0 ? '#4ade80' : arrows < 0 ? '#e04a5a' : '#9a9080';
+          ctx.fillText(arrows > 0 ? '▲'.repeat(arrows) : arrows < 0 ? '▼'.repeat(-arrows) : '—', dx + dw - 10, yy + 15);
+        }
       }
       c += 34;
     });

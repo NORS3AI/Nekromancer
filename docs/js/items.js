@@ -487,6 +487,9 @@ const Items = {
     item.slot = slot;              // rebrand a ring to the chosen ring slot
     Hero.equipped[slot] = item;
     if (cur) Hero.bag.push(cur);
+    // Remember the piece we just took off so the inventory can offer a one-tap
+    // "re-wear" (owner request) — no digging through the bag to change your mind.
+    Game.lastSwap = cur ? { slot, item: cur } : null;
     this.apply();
     UI.toast('Equipped: ' + item.name, RARITIES[item.rarity].color);
     AudioSys.sfx('level');

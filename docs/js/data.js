@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.7.7-alpha';
+const GAME_VERSION = 'v0.7.8-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.7.8-alpha', date: 'July 2026',
+    notes: [
+      'Inventory now shows a live STAT READOUT in the upper-left — Damage, Crit, Gold Find, Life, Life/s, Essence/s — so you can see at a glance what your gear gives',
+      'Bag list is SORTED by upgrade: ▲▲▲ best-in-slot at the very top, down through ▲▲ · ▲ · — · ▼ · ▼▼ · ▼▼▼, so the good stuff is always on top. A ▲▲▲ (clear upgrade) gently bobs and pulses green — all in sync — to catch your eye',
+      'Swapping gear now HOLDS ONTO the piece you took off: a one-tap "↺ Re-wear" button appears above the bag list so you can change your mind without hunting through the list'
+    ]
+  },
   {
     v: 'v0.7.7-alpha', date: 'July 2026',
     notes: [
