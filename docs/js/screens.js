@@ -44,19 +44,54 @@ const Screens = {
   // with pseudo-3D depth. Tap a hero to select it, then the green PLAY button
   // to enter. "Delete Hero" toggles a retire flow. Empty spots create.
   select(ctx, W, H) {
-    ctx.fillStyle = '#050308';   // fully opaque — the title must not bleed through
-    ctx.fillRect(0, 0, W, H);
-    // Warm ground plane + firelight pool for depth.
     const fx = W / 2, fy = H * 0.5;
+    const t = Game.time || 0;
+    // Night sky — deep blue-black at the top, warming toward the horizon.
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, '#070610');
+    sky.addColorStop(0.55, '#0c0a16');
+    sky.addColorStop(1, '#140d0a');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+
+    // Full moon (upper-left) with a soft halo and a couple of stars.
+    const mx = W * 0.24, my = H * 0.2;
+    const halo = ctx.createRadialGradient(mx, my, 4, mx, my, 90);
+    halo.addColorStop(0, 'rgba(210,220,240,0.5)');
+    halo.addColorStop(1, 'rgba(150,170,210,0)');
+    ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(mx, my, 90, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#e8ecf6'; ctx.beginPath(); ctx.arc(mx, my, 34, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(180,190,210,0.4)';   // craters
+    ctx.beginPath(); ctx.arc(mx - 10, my - 6, 6, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(mx + 9, my + 8, 4.5, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(mx + 4, my - 12, 3, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(230,235,250,0.7)';
+    for (let i = 0; i < 7; i++) {
+      const sx = (i * 137.5) % W, sy = (i * 61.7) % (H * 0.42);
+      ctx.globalAlpha = 0.3 + 0.5 * Math.abs(Math.sin(t * 0.7 + i));
+      ctx.fillRect(sx, sy, 1.5, 1.5);
+    }
+    ctx.globalAlpha = 1;
+
+    // Decrepit buildings on the right background.
+    this.drawRuins(ctx, W, H);
+    // A dark forest treeline across the horizon.
+    this.drawTreeline(ctx, W, H * 0.62);
+    // Bats flap across the sky now and then.
+    this.drawBats(ctx, W, H, t);
+
+    // Warm ground plane + firelight pool for depth.
     const floor = ctx.createLinearGradient(0, fy - 120, 0, H);
     floor.addColorStop(0, 'rgba(20,14,10,0)');
-    floor.addColorStop(1, 'rgba(46,26,12,0.55)');
+    floor.addColorStop(1, 'rgba(52,28,12,0.6)');
     ctx.fillStyle = floor; ctx.fillRect(0, fy - 120, W, H - (fy - 120));
     const glow = ctx.createRadialGradient(fx, fy, 10, fx, fy, Math.max(W, H) * 0.6);
-    glow.addColorStop(0, 'rgba(255,150,60,0.30)');
+    const gf = 0.30 + 0.05 * Math.sin(t * 8) + 0.03 * Math.sin(t * 17); // firelight flicker
+    glow.addColorStop(0, `rgba(255,150,60,${gf.toFixed(3)})`);
     glow.addColorStop(0.4, 'rgba(200,90,30,0.10)');
     glow.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+    // Ground litter around the fire, its shadows dancing with the flames.
+    this.drawGroundLitter(ctx, fx, fy, W, t);
 
     const delMode = !!UI.sel.delMode;
     // Pre-select the active hero so PLAY is ready (unless we're deleting).
@@ -125,6 +160,131 @@ const Screens = {
       UI.sel.delConfirm = undefined;
       if (!delMode) UI.sel.pick = null;   // entering delete mode clears the play selection
     }, { size: 12, border: delMode ? '#6b5f80' : '#8a4550', color: delMode ? '#c9bfa8' : '#e04a5a' });
+
+    // Still, low-lying fog drifts across the foreground.
+    this.drawForegroundFog(ctx, W, H, t);
+  },
+
+  // A ragged dark forest treeline silhouette across the given horizon y.
+  drawTreeline(ctx, W, yh) {
+    ctx.fillStyle = '#0a0d0a';
+    ctx.beginPath();
+    ctx.moveTo(0, yh + 40);
+    for (let x = -20; x < W + 20; x += 26) {
+      const h = 30 + (hash2(Math.round(x / 26), 3)) * 70;
+      ctx.lineTo(x, yh - h);
+      ctx.lineTo(x + 13, yh - h * 0.5);
+    }
+    ctx.lineTo(W, yh + 40); ctx.closePath(); ctx.fill();
+    // A faint mist behind the trees.
+    ctx.fillStyle = 'rgba(40,44,60,0.12)';
+    ctx.fillRect(0, yh - 20, W, 40);
+  },
+
+  // Decrepit ruined buildings on the right background.
+  drawRuins(ctx, W, H) {
+    const base = H * 0.62;
+    ctx.save();
+    // Tall broken tower — dark stone with a faint moonlit left edge.
+    let bx = W * 0.8;
+    ctx.fillStyle = '#1a1722';
+    ctx.beginPath();
+    ctx.moveTo(bx, base);
+    ctx.lineTo(bx, base - 160);
+    ctx.lineTo(bx + 11, base - 170); ctx.lineTo(bx + 18, base - 148);
+    ctx.lineTo(bx + 24, base - 162); ctx.lineTo(bx + 33, base - 146);
+    ctx.lineTo(bx + 42, base - 160); ctx.lineTo(bx + 48, base);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(150,160,190,0.16)'; ctx.fillRect(bx, base - 160, 3, 160);   // moonlit edge
+    ctx.fillStyle = 'rgba(30,26,38,0.9)';                                              // broken windows
+    ctx.fillRect(bx + 12, base - 128, 8, 13);
+    ctx.fillRect(bx + 30, base - 96, 8, 13);
+    ctx.fillRect(bx + 18, base - 62, 8, 13);
+    // A lower crumbling house.
+    ctx.fillStyle = '#161320';
+    bx = W * 0.9;
+    ctx.beginPath();
+    ctx.moveTo(bx, base);
+    ctx.lineTo(bx, base - 74);
+    ctx.lineTo(bx + 13, base - 94); ctx.lineTo(bx + 22, base - 78);
+    ctx.lineTo(bx + 37, base - 90); ctx.lineTo(bx + 54, base - 70);
+    ctx.lineTo(bx + 62, base); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(150,160,190,0.14)'; ctx.fillRect(bx, base - 74, 2.5, 74);
+    ctx.fillStyle = 'rgba(30,26,38,0.9)'; ctx.fillRect(bx + 22, base - 56, 9, 15);
+    ctx.restore();
+  },
+
+  // Bats flapping across the night sky, wrapping around.
+  drawBats(ctx, W, H, t) {
+    ctx.strokeStyle = 'rgba(10,8,14,0.85)';
+    ctx.lineWidth = 2; ctx.lineCap = 'round';
+    for (let i = 0; i < 4; i++) {
+      const speed = 40 + i * 12;
+      const bx = ((t * speed + i * 320) % (W + 120)) - 60;
+      const by = H * (0.14 + 0.06 * i) + Math.sin(t * 1.5 + i) * 14;
+      const flap = Math.sin(t * 9 + i * 2) * 4;
+      ctx.beginPath();
+      ctx.moveTo(bx - 7, by);
+      ctx.quadraticCurveTo(bx - 3, by - 4 - flap, bx, by);
+      ctx.quadraticCurveTo(bx + 3, by - 4 - flap, bx + 7, by);
+      ctx.stroke();
+    }
+  },
+
+  // Dry grass tufts, rocks, leaves and branches near the fire — their long
+  // shadows sway with the firelight.
+  drawGroundLitter(ctx, fx, fy, W, t) {
+    const flick = Math.sin(t * 9) * 0.12 + Math.sin(t * 5.3) * 0.06;
+    const items = [
+      [fx - 150, fy + 70, 'grass'], [fx + 160, fy + 60, 'grass'], [fx - 240, fy + 110, 'rock'],
+      [fx + 250, fy + 100, 'branch'], [fx - 90, fy + 120, 'leaf'], [fx + 110, fy + 130, 'leaf'],
+      [fx + 40, fy + 150, 'grass'], [fx - 40, fy + 90, 'branch'], [fx + 300, fy + 150, 'rock'],
+      [fx - 320, fy + 150, 'leaf']
+    ];
+    for (const [x, y, kind] of items) {
+      const dx = x - fx;
+      // Shadow stretches away from the fire and wavers with the flame.
+      const sh = (dx / 60 + flick * (dx > 0 ? 1 : -1));
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + sh * 14, y + 4); ctx.stroke();
+      if (kind === 'grass') {
+        ctx.strokeStyle = '#5a4a2a'; ctx.lineWidth = 1.6;
+        for (let b = -2; b <= 2; b++) {
+          ctx.beginPath(); ctx.moveTo(x + b * 2, y); ctx.quadraticCurveTo(x + b * 3 + flick * 6, y - 9, x + b * 4 + flick * 10, y - 13); ctx.stroke();
+        }
+      } else if (kind === 'rock') {
+        ctx.fillStyle = '#3a3640';
+        ctx.beginPath(); ctx.ellipse(x, y - 2, 8, 5, 0, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#2a2732';
+        ctx.beginPath(); ctx.ellipse(x - 2, y, 5, 3, 0, 0, TAU); ctx.fill();
+      } else if (kind === 'branch') {
+        ctx.strokeStyle = '#4a3620'; ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.moveTo(x - 9, y); ctx.lineTo(x + 9, y - 3); ctx.moveTo(x + 2, y - 1); ctx.lineTo(x + 6, y - 6); ctx.stroke();
+      } else { // leaf
+        ctx.fillStyle = '#5a3a1a';
+        ctx.beginPath(); ctx.ellipse(x, y, 3.5, 2, 0.6, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#6a4622';
+        ctx.beginPath(); ctx.ellipse(x + 6, y + 2, 3, 1.8, -0.4, 0, TAU); ctx.fill();
+      }
+    }
+  },
+
+  // A still bank of fog low across the foreground.
+  drawForegroundFog(ctx, W, H, t) {
+    for (let b = 0; b < 3; b++) {
+      const y = H - 30 - b * 20;
+      const drift = Math.sin(t * 0.25 + b) * 30;
+      const fog = ctx.createLinearGradient(0, y - 40, 0, H);
+      fog.addColorStop(0, 'rgba(120,120,140,0)');
+      fog.addColorStop(1, `rgba(150,150,170,${(0.05 + b * 0.03).toFixed(3)})`);
+      ctx.fillStyle = fog;
+      ctx.beginPath();
+      ctx.moveTo(0, H);
+      for (let x = 0; x <= W; x += 40) {
+        ctx.lineTo(x, y + Math.sin(x * 0.01 + t * 0.4 + b) * 8 + drift * 0.2);
+      }
+      ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+    }
   },
 
   // Draw one roster position: a hero (if the slot is filled) or an empty
@@ -226,37 +386,51 @@ const Screens = {
     ctx.save();
     ctx.translate(x, y);
     ctx.scale(scale, scale);
-    // Logs.
-    ctx.strokeStyle = '#4a3320'; ctx.lineWidth = 8; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(-22, 14); ctx.lineTo(20, 22); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-20, 22); ctx.lineTo(22, 12); ctx.stroke();
-    ctx.strokeStyle = '#2e2014'; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(-18, 18); ctx.lineTo(18, 18); ctx.stroke();
-    // Ember bed.
-    ctx.fillStyle = 'rgba(255,120,40,0.5)';
-    ctx.beginPath(); ctx.ellipse(0, 16, 20, 6, 0, 0, TAU); ctx.fill();
-    // Flames — layered flickering teardrops.
-    const t = Game.time * 9;
-    const flame = (w, hgt, col, ph) => {
-      const f = 1 + Math.sin(t + ph) * 0.12;
+    // A little stack of logs.
+    ctx.strokeStyle = '#4a3320'; ctx.lineWidth = 9; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-24, 16); ctx.lineTo(22, 24); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-22, 24); ctx.lineTo(24, 14); ctx.stroke();
+    ctx.strokeStyle = '#5a4028'; ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.moveTo(-16, 12); ctx.lineTo(16, 12); ctx.stroke();
+    // Cut log ends.
+    ctx.fillStyle = '#6a4c2c';
+    ctx.beginPath(); ctx.arc(-24, 16, 4.5, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(24, 14, 4.5, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#2e2014'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-18, 20); ctx.lineTo(18, 20); ctx.stroke();
+    // Glowing ember bed, breathing.
+    const t = Game.time;
+    const eb = 0.4 + 0.2 * Math.sin(t * 6);
+    ctx.fillStyle = `rgba(255,120,40,${eb.toFixed(2)})`;
+    ctx.beginPath(); ctx.ellipse(0, 16, 22, 7, 0, 0, TAU); ctx.fill();
+    // Real dancing flame: each tongue sways sideways and varies its height with
+    // layered, out-of-phase noise, so it flickers organically (not a pulse).
+    const flame = (w, hgt, col, seed) => {
+      const sway = Math.sin(t * 7 + seed) * 5 + Math.sin(t * 13 + seed * 2) * 2.5;
+      const h = hgt * (1 + Math.sin(t * 9 + seed) * 0.14 + Math.sin(t * 21 + seed) * 0.07);
+      const lean = Math.sin(t * 5 + seed) * 4;
       ctx.fillStyle = col;
       ctx.beginPath();
-      ctx.moveTo(0, 14);
-      ctx.quadraticCurveTo(-w, -hgt * 0.4 * f, Math.sin(t + ph) * 3, -hgt * f);
-      ctx.quadraticCurveTo(w, -hgt * 0.4 * f, 0, 14);
+      ctx.moveTo(-w, 14);
+      ctx.quadraticCurveTo(-w * 0.6 + lean, -h * 0.4, sway * 0.5, -h * 0.7);
+      ctx.quadraticCurveTo(sway * 1.2, -h * 0.9, sway, -h);          // whippy tip
+      ctx.quadraticCurveTo(sway * 0.4 + w * 0.5, -h * 0.5, w, 14);
+      ctx.quadraticCurveTo(0, 8, -w, 14);
       ctx.fill();
     };
-    ctx.shadowColor = '#ff8c2a'; ctx.shadowBlur = 24;
-    flame(18, 46, 'rgba(210,60,20,0.9)', 0);
-    flame(13, 36, 'rgba(255,140,40,0.95)', 1.3);
-    flame(8, 24, 'rgba(255,220,120,0.95)', 2.1);
+    ctx.shadowColor = '#ff8c2a'; ctx.shadowBlur = 26;
+    flame(19, 50, 'rgba(200,55,18,0.9)', 0.0);
+    flame(14, 40, 'rgba(255,130,36,0.95)', 1.7);
+    flame(9, 28, 'rgba(255,214,110,0.95)', 3.1);
+    flame(5, 18, 'rgba(255,244,190,0.9)', 4.6);
     ctx.shadowBlur = 0;
-    // Sparks.
-    for (let i = 0; i < 5; i++) {
-      const a = t * 0.5 + i * 1.7;
-      const sy = -20 - ((t * 12 + i * 40) % 60);
-      ctx.fillStyle = 'rgba(255,190,90,' + (0.5 + 0.5 * Math.sin(a)).toFixed(2) + ')';
-      ctx.beginPath(); ctx.arc(Math.sin(a) * 12, sy, 1.4, 0, TAU); ctx.fill();
+    // Embers/sparks rising and drifting.
+    for (let i = 0; i < 7; i++) {
+      const a = t * 2 + i * 1.3;
+      const sy = 6 - ((t * 34 + i * 34) % 80);
+      const sx = Math.sin(a) * (8 + (80 + sy) * 0.14);
+      ctx.fillStyle = `rgba(255,190,90,${(0.7 * (1 - (6 - sy) / 86)).toFixed(2)})`;
+      ctx.beginPath(); ctx.arc(sx, sy, 1.4, 0, TAU); ctx.fill();
     }
     ctx.restore();
   },

@@ -18,11 +18,19 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.6.3-alpha';
+const GAME_VERSION = 'v0.6.4-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.6.4-alpha', date: 'July 2026',
+    notes: [
+      'The campfire hero-select is now a proper night scene: a full moon and stars over a dark forest treeline, decrepit ruined buildings in the right background, and bats that flap across the sky now and then',
+      'The fire actually DANCES — layered flame tongues that sway and flicker (not a pulse), sat on a little stack of logs with rising embers',
+      'The ground is strewn with dry grass, rocks, leaves and branches whose long shadows sway with the firelight, and a still bank of fog drifts across the foreground'
+    ]
+  },
   {
     v: 'v0.6.3-alpha', date: 'July 2026',
     notes: [
