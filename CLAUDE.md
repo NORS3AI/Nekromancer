@@ -60,8 +60,11 @@ loot at the artisans. The hero is persistent (localStorage).
   (Bone Spikes +18, Grim Scythe +12/hit, Siphon Blood channel) generate it, D3-style.
 - **Skills AND runes are level-gated by the owner's progression table** (in
   data.js: `SKILL_DATA[].lvl` + `RUNE_UNLOCKS` applied onto `SKILL_RUNES[*][i].lvl`).
-  The action bar is **CATEGORY-LOCKED**: 6 slots = `LOADOUT_CATS`
-  (primary·secondary·corpse·reanim·curse·blood), one skill per category.
+  The action bar is **CATEGORY-LOCKED by default**: 6 slots = `LOADOUT_CATS`
+  (primary·secondary·corpse·reanim·curse·blood), one skill per category — unless
+  **Elective Mode** (`Settings.g.electiveMode`, a Gameplay toggle) is on, which
+  lets any skill sit in any slot (multiple per category); `Hero.sanitize()`
+  branches on it.
   `CAT_SKILLS` lists each category's skills in table order. `Hero.sanitize()`
   rebuilds the loadout by category (drops locked/duplicate). Choose skills+runes
   in the **`Screens.skillChooser`** popup (category ◀ ▶ arrows → skills → runes →

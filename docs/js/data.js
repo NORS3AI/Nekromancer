@@ -19,11 +19,22 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.8.8-alpha';
+const GAME_VERSION = 'v0.8.9-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.8.9-alpha', date: 'July 2026',
+    notes: [
+      'NEW — ELECTIVE MODE (Settings ▸ Gameplay): turn it on to run more than one skill from the same category on your action bar. Off by default (one skill per category)',
+      'FIX: Forgotten Souls now always show in the Blacksmith\'s reagent row after salvaging Legendaries/Artifacts — the row shrinks to fit every reagent instead of dropping Souls off the end; bulk salvage also reports the souls gained',
+      'TORCHES now go to your INVENTORY when crafted and take NO bag slot — they just persist. They no longer use a Stash bin (existing stash torches move to your bag automatically)',
+      'Inventory expansions are bigger per tier — +50, then +150, +250, +350 … up to 2,474 slots',
+      'Fixed a duplicate Damage/Life/Crit readout inside the equipment wheel (those live in the upper-left panel) and nudged the wheel right so the stats have room',
+      'Dev panel: +100k inventory space · +5 Lumber/Rivets/Heartstring'
+    ]
+  },
   {
     v: 'v0.8.8-alpha', date: 'July 2026',
     notes: [
@@ -1220,14 +1231,16 @@ const MONSTERS = {
 
 // Purchasable bag expansions. The bag starts at 24; each upgrade adds space
 // for escalating gold (owner rule): 24 → 30 → 45 → 60 → 75 → 90 → 105 → 120.
+// Each upgrade adds a bigger jump than the last: +50, +150, +250, +350 … from
+// the base 24 (owner rule).
 const BAG_UPGRADES = [
-  { size: 30,  cost: 1000 },
-  { size: 45,  cost: 10000 },
-  { size: 60,  cost: 50000 },
-  { size: 75,  cost: 150000 },
-  { size: 90,  cost: 500000 },
-  { size: 105, cost: 1000000 },
-  { size: 120, cost: 100000000 }
+  { size: 74,   cost: 1000 },
+  { size: 224,  cost: 10000 },
+  { size: 474,  cost: 50000 },
+  { size: 824,  cost: 150000 },
+  { size: 1274, cost: 500000 },
+  { size: 1824, cost: 1000000 },
+  { size: 2474, cost: 100000000 }
 ];
 
 // Glowing-eye colours offered at character creation.

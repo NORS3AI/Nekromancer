@@ -1082,7 +1082,8 @@ const Screens = {
     // On narrow (portrait phone) screens the wheel shrinks hard so the
     // equipped card, bag list and EQUIP/SALVAGE/SOCKET actions all fit below.
     const narrow = W < 620;
-    const cx = narrow ? W / 2 : W * 0.26;
+    // Nudge the wheel right on phones so the upper-left stat readout has room.
+    const cx = narrow ? W * 0.57 : W * 0.26;
     const cy = narrow ? 116 : H * 0.5;
     const R = narrow ? Math.min(78, W * 0.30) : Math.min(150, H * 0.32);
     const chipR = narrow ? 19 : 25;
@@ -1126,17 +1127,8 @@ const Screens = {
       }
     }
 
-    // Character summary in the wheel's hub.
-    ctx.font = 'bold ' + (narrow ? 9 : 12) + 'px Georgia';
-    ctx.fillStyle = '#6ff7c3';
-    if (p) {
-      const gap = narrow ? 11 : 16;
-      ctx.fillText('DMG ×' + p.dmgMult.toFixed(2), cx, cy - gap);
-      ctx.fillStyle = '#e04a5a';
-      ctx.fillText('LIFE ' + p.maxHp, cx, cy);
-      ctx.fillStyle = '#ffb43a';
-      ctx.fillText('CRIT ' + Math.round(p.critChance * 100) + '%', cx, cy + gap);
-    }
+    // (Damage/Life/Crit live in the upper-left readout now — no duplicate in
+    // the wheel hub.)
 
     // The wheel.
     slots.forEach((slot, i) => {
@@ -1212,12 +1204,12 @@ const Screens = {
       const afford = Hero.gold >= up.cost;
       const gshort = n => n >= 1e6 ? (n / 1e6) + 'm' : n >= 1000 ? (n / 1000) + 'k' : '' + n;
       UI.btn(ctx, dx, dy + 4, dw, 26,
-        'INVENTORY ' + Hero.bag.length + '/' + Hero.BAG_SIZE + '  —  EXPAND → ' + up.size + ' (' + gshort(up.cost) + 'g)',
+        'INVENTORY ' + Hero.bagUsed() + '/' + Hero.BAG_SIZE + '  —  EXPAND → ' + up.size + ' (' + gshort(up.cost) + 'g)',
         afford ? () => Hero.buyBagUpgrade() : null,
         { size: 10, disabled: !afford, border: '#8a6f4a', color: '#ffd76a' });
     } else {
       ctx.textAlign = 'left'; ctx.font = '11px Georgia'; ctx.fillStyle = '#8a8070';
-      ctx.fillText('INVENTORY ' + Hero.bag.length + '/' + Hero.BAG_SIZE + ' (max size)', dx, dy + 16);
+      ctx.fillText('INVENTORY ' + Hero.bagUsed() + '/' + Hero.BAG_SIZE + ' (max size)', dx, dy + 16);
     }
     dy += 34;
 
@@ -1619,9 +1611,13 @@ const Screens = {
         ctx.fillStyle = '#3a3448'; ctx.font = '22px Georgia'; ctx.textAlign = 'center';
         ctx.fillText('+', bx, cyc + 1);
       }
-      ctx.fillStyle = SKILL_CATS[cat].color;
+      // In Elective Mode a slot can hold any category, so label it by the skill
+      // that's actually in it; otherwise show the slot's fixed category.
+      const elective = typeof Settings !== 'undefined' && Settings.g && Settings.g.electiveMode;
+      const lblCat = (elective && id) ? (SKILL_DATA.find(s => s.id === id) || {}).cat || cat : cat;
+      ctx.fillStyle = SKILL_CATS[lblCat].color;
       ctx.font = '8px Georgia'; ctx.textAlign = 'center';
-      ctx.fillText(this.slotCatLabels[i], bx, cyc + cr + 12);
+      ctx.fillText(elective ? SKILL_CATS[lblCat].name.toUpperCase().slice(0, 9) : this.slotCatLabels[i], bx, cyc + cr + 12);
       UI.register(bx - sw / 2 + 2, sy - 4, sw - 4, cr * 2 + 30, () => {
         UI.sel.slotIdx = i;
         UI.sel.info = null;   // the actives footer keys off slotIdx now
@@ -1639,10 +1635,17 @@ const Screens = {
     ctx.fillText('Browse every skill & rune by category — they unlock as you level.', W / 2, by + 62);
   },
 
-  // Open the category skill+rune chooser, seeded to a slot's category/skill.
-  openChooser(catIdx, skillId, runeId) {
-    const ci = clamp(catIdx || 0, 0, LOADOUT_CATS.length - 1);
+  // Open the category skill+rune chooser, seeded to an action-bar slot and its
+  // skill. chSlot is the bar slot ACCEPT writes to in Elective Mode; in the
+  // default category-locked mode ACCEPT targets the browsed category's slot.
+  openChooser(slotIdx, skillId, runeId) {
     UI.open('skillChooser');
+    UI.sel.chSlot = clamp(slotIdx || 0, 0, 5);
+    let ci = clamp(slotIdx || 0, 0, LOADOUT_CATS.length - 1);
+    if (skillId) {
+      const s = SKILL_DATA.find(x => x.id === skillId);
+      if (s) ci = LOADOUT_CATS.indexOf(s.cat);
+    }
     UI.sel.chCat = ci;
     const cs = CAT_SKILLS[LOADOUT_CATS[ci]];
     UI.sel.chSkill = (skillId && cs.includes(skillId)) ? skillId : cs[0];
@@ -1780,7 +1783,14 @@ const Screens = {
     const bw = (pw - 44) / 2;
     UI.btn(ctx, px + 16, y, bw, 40, skillLocked ? 'LOCKED — LVL ' + chSkill.lvl : 'ACCEPT',
       skillLocked ? null : () => {
-        Hero.loadout[catIdx] = UI.sel.chSkill;
+        const elective = typeof Settings !== 'undefined' && Settings.g && Settings.g.electiveMode;
+        // Elective: write to the slot the chooser was opened from (any category).
+        // Category-locked: write to the browsed category's own slot.
+        const targetSlot = elective ? (UI.sel.chSlot != null ? UI.sel.chSlot : catIdx) : catIdx;
+        if (elective) {
+          for (let i = 0; i < 6; i++) if (i !== targetSlot && Hero.loadout[i] === UI.sel.chSkill) Hero.loadout[i] = null;
+        }
+        Hero.loadout[targetSlot] = UI.sel.chSkill;
         Hero.runes[UI.sel.chSkill] = UI.sel.chRune;
         Hero.sanitize();
         Hero.save();
@@ -1896,21 +1906,28 @@ const Screens = {
     // FORGE reagents only — including Souls (legendary/artifact salvage) right
     // next to Crystals; gold is abbreviated so nothing gets clipped. Torch
     // reagents (lumber/rivets/heart) live on the torch bench.
-    ctx.textAlign = 'left';
-    ctx.font = 'bold 11px Georgia';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     const gs = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(0) + 'k' : '' + n;
     const short = { parts: 'Parts', dust: 'Dust', crystal: 'Cryst', soul: 'Souls' };
     const parts = [[gs(Hero.gold) + 'g', '#ffd76a']];
     for (const key of ['parts', 'dust', 'crystal', 'soul']) {
       parts.push([(Hero.mats[key] || 0) + ' ' + short[key], MATERIALS[key].color]);
     }
+    // Shrink the font/spacing until EVERY token fits — Souls (legendary/artifact
+    // salvage) must always be visible, so nothing gets dropped off the end.
+    let size = 11, gap = 12;
+    for (; size >= 8; size--) {
+      ctx.font = 'bold ' + size + 'px Georgia';
+      gap = size >= 10 ? 12 : 7;
+      let total = -gap;
+      for (const [txt] of parts) total += ctx.measureText(txt).width + gap;
+      if (total <= w) break;
+    }
     let cx = x;
     for (const [txt, col] of parts) {
-      const tw = ctx.measureText(txt).width;
-      if (cx + tw > x + w - 12) break;
       ctx.fillStyle = col;
       ctx.fillText(txt, cx, y);
-      cx += tw + Math.min(16, w * 0.035);
+      cx += ctx.measureText(txt).width + gap;
     }
   },
 
@@ -2087,7 +2104,7 @@ const Screens = {
     ctx.textAlign = 'center';
     ctx.font = 'italic 10px Georgia';
     ctx.fillStyle = '#6f6552';
-    ctx.fillText(this.fitText(ctx, 'Forged torches are sent to your Stash. Equip one from the Inventory wheel.', pw - 24),
+    ctx.fillText(this.fitText(ctx, 'Forged torches go to your inventory (they take no bag slot). Equip one from the Inventory wheel.', pw - 24),
       px + pw / 2, y + 6);
     UI.btn(ctx, px + 16, y + 14, pw - 32, 28, '«  BACK TO FORGE', () => UI.open('smith'),
       { size: 11, border: '#6b5f80' });
@@ -2553,7 +2570,7 @@ const Screens = {
       ry = line(rx, ry, m.name, Hero.mats[key], m.color);
     }
     ry = line(rx, ry, 'Gems in pouch', Hero.gems.length, '#b06adf');
-    ry = line(rx, ry, 'Bag', Hero.bag.length + ' / ' + Hero.BAG_SIZE);
+    ry = line(rx, ry, 'Bag', Hero.bagUsed() + ' / ' + Hero.BAG_SIZE);
     ry += 6;
 
     // Analysis (leave room for the campfire button at the very bottom).
@@ -2608,7 +2625,7 @@ const Screens = {
         break;
       }
     }
-    if (Hero.bag.length >= Hero.BAG_SIZE - 4) tips.push('Bag nearly full — salvage at the Blacksmith');
+    if (Hero.bagUsed() >= Hero.BAG_SIZE - 4) tips.push('Bag nearly full — salvage at the Blacksmith');
     if (Hero.zonesCleared >= ZONES.length && Hero.difficulty < DIFFICULTIES.length - 1) {
       tips.push('You can raise the difficulty for richer rewards');
     }
@@ -2621,8 +2638,9 @@ const Screens = {
   // each. Tap a slot chip to browse/withdraw/salvage that bin; upgrade for more.
   stash(ctx, W, H) {
     this.dim(ctx, W, H);
-    const slots = Object.keys(ITEM_SLOTS);
-    if (!UI.sel.stashSlot) UI.sel.stashSlot = 'weapon';
+    // Torches live in the bag now — no stash bin for them.
+    const slots = Object.keys(ITEM_SLOTS).filter(s => !ITEM_SLOTS[s].torch);
+    if (!UI.sel.stashSlot || ITEM_SLOTS[UI.sel.stashSlot].torch) UI.sel.stashSlot = 'weapon';
     const narrow = W < 620;
     const cx = narrow ? W / 2 : W * 0.26;
     const cy = narrow ? 116 : H * 0.5;
@@ -2689,9 +2707,9 @@ const Screens = {
     const gs = n => n >= 1e6 ? (n / 1e6) + 'm' : n >= 1000 ? (n / 1000) + 'k' : '' + n;
     const upCost = Hero.stashUpgradeCost();
     const half = (dw - 8) / 2;
-    UI.btn(ctx, dx, dy, half, 26, 'DEPOSIT BAG (' + Hero.bag.length + ')',
-      Hero.bag.length ? () => Items.depositAll() : null,
-      { size: 10, disabled: !Hero.bag.length, border: '#57b894', color: '#6ff7c3' });
+    UI.btn(ctx, dx, dy, half, 26, 'DEPOSIT BAG (' + Hero.bagUsed() + ')',
+      Hero.bagUsed() ? () => Items.depositAll() : null,
+      { size: 10, disabled: !Hero.bagUsed(), border: '#57b894', color: '#6ff7c3' });
     UI.btn(ctx, dx + half + 8, dy, half, 26,
       upCost === null ? 'STASH MAXED'
         : 'UPGRADE → ' + STASH_PER_SLOT[Hero.stashTier + 1].toLocaleString() + ' (' + gs(upCost) + 'g)',
@@ -2890,6 +2908,16 @@ const Screens = {
     ctx.font = 'bold 12px Georgia';
     ctx.fillStyle = '#57b894';
     ctx.fillText('— GAMEPLAY —', gx, gy - 14);
+    // Elective Mode — allow more than one skill from a category on the action
+    // bar. Toggling it re-sanitizes the loadout under the new rule.
+    UI.check(ctx, gx, gy, Settings.g.electiveMode, () => {
+      Settings.g.electiveMode = !Settings.g.electiveMode;
+      Settings.save();
+      Hero.sanitize();
+      Hero.save();
+      UI.toast(Settings.g.electiveMode ? 'Elective Mode ON — any skill in any slot' : 'Elective Mode OFF — one skill per category', '#6ff7c3');
+    }, 'Elective Mode (multiple skills per category)');
+    gy += rowStep;
     const toggles = [
       ['dmgNumbers', 'Damage numbers (red/yellow/green)'],
       ['dpsMeter', 'DPS meter (drag to move · lock)'],
@@ -3254,6 +3282,14 @@ const Screens = {
     UI.btn(ctx, px + 16 + cw + 6, y, cw, 30, '✦ Grant Golden Mirror',
       () => { if (!Hero.orbAutoPickup) { Hero.goldenMirror = true; Hero.save(); UI.toast('Golden Mirror granted — transmute it in the Cube', '#ffd76a'); AudioSys.sfx('setdrop'); } else UI.toast('Already transmuted', '#9a9080'); },
       { size: 10, color: '#ffd76a', border: '#8a6f2a' });
+    y += 36;
+    // Inventory space + torch reagents (dev grants).
+    UI.btn(ctx, px + 16, y, cw, 30, '+100k inventory space',
+      () => { Hero.bagBonus = (Hero.bagBonus || 0) + 100000; Hero.applyBagSize(); Hero.save(); UI.toast('Inventory expanded to ' + Hero.BAG_SIZE.toLocaleString() + ' slots', '#ffd76a'); },
+      { size: 10, color: '#ffd76a', border: '#8a6f4a' });
+    UI.btn(ctx, px + 16 + cw + 6, y, cw, 30, '+5 Lumber / Rivets / Heart',
+      () => { Hero.mats.lumber = (Hero.mats.lumber || 0) + 5; Hero.mats.rivets = (Hero.mats.rivets || 0) + 5; Hero.mats.heartstring = (Hero.mats.heartstring || 0) + 5; Hero.save(); UI.toast('+5 Lumber, +5 Iron Rivets, +5 Heartstring', MATERIALS.lumber.color); },
+      { size: 10, color: MATERIALS.lumber.color, border: '#6a5a3a' });
     y += 36;
     ctx.textAlign = 'center';
     ctx.font = 'italic 10px Georgia';

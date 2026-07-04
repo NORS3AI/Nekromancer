@@ -222,23 +222,17 @@ const Items = {
     };
   },
 
-  // Put an item in the Stash. Torches of the same type STACK into a single
-  // slot (count) instead of eating a slot each. Returns false if the stash is
-  // full and the item would need a new slot.
+  // Put an item in the Stash. Torches never enter the stash (owner rule) — they
+  // live in the bag. Returns false if the item's per-slot bin is full.
   addToStash(item) {
-    if (item.torch) {
-      const ex = Hero.stash.find(s => s.torch === item.torch);
-      if (ex) { ex.count = (ex.count || 1) + (item.count || 1); return true; }
-      Hero.stash.push(item);   // torches stack — never blocked by a slot cap
-      return true;
-    }
-    // Auto-sorted per equip-slot bin, capped at the current upgrade tier.
+    if (item.torch) return false;
     if (Hero.stashSlotCount(item.slot) >= Hero.stashPerSlot()) return false;
     Hero.stash.push(item);
     return true;
   },
 
-  // Craft a torch at the Blacksmith — consumes reagents, sends it to the Stash.
+  // Craft a torch at the Blacksmith — consumes reagents, sends it to the bag
+  // (torches persist in the bag WITHOUT taking a slot; see Hero.bagUsed()).
   craftTorch(type) {
     const T = TORCH_TYPES[type];
     if (!T) return;
@@ -249,15 +243,10 @@ const Items = {
         return;
       }
     }
-    if (!this.addToStash(this.makeTorch(type))) {
-      UI.toast('Stash is full — make room for the torch', '#9a9080');
-      AudioSys.sfx('denied');
-      return;
-    }
+    Hero.bag.push(this.makeTorch(type));
     for (const [k, n] of Object.entries(T.recipe)) Hero.mats[k] -= n;
-    Hero.saveStash();
     Hero.save();
-    UI.toast('Forged a ' + T.name + ' → sent to Stash', T.color);
+    UI.toast('Forged a ' + T.name + ' → your inventory', T.color);
     AudioSys.sfx('craft');
   },
 
@@ -475,10 +464,10 @@ const Items = {
   // an EMPTY slot needs no bag room; otherwise the bag must have space. When it
   // can't, the drop is left on the ground (no magnet, no collect).
   canPickup(item) {
-    if (!item || item.torch) return Hero.bag.length < Hero.BAG_SIZE;
+    if (!item || item.torch) return true;       // torches never take a bag slot
     const target = this.bestTargetSlot(item);
     if (!Hero.equipped[target]) return true;    // auto-equips, no bag needed
-    return Hero.bag.length < Hero.BAG_SIZE;
+    return Hero.bagUsed() < Hero.BAG_SIZE;
   },
 
   equip(item, targetSlot) {
@@ -526,7 +515,7 @@ const Items = {
   fromStash(item) {
     const i = Hero.stash.indexOf(item);
     if (i < 0) return false;
-    if (Hero.bag.length >= Hero.BAG_SIZE) {
+    if (Hero.bagUsed() >= Hero.BAG_SIZE && !item.torch) {
       UI.toast('Your bag is full', '#9a9080');
       AudioSys.sfx('denied');
       return false;
@@ -547,6 +536,7 @@ const Items = {
   depositAll() {
     let n = 0;
     for (let i = Hero.bag.length - 1; i >= 0; i--) {
+      if (Hero.bag[i].torch) continue;   // torches stay in the bag, never stashed
       if (this.addToStash(Hero.bag[i])) { Hero.bag.splice(i, 1); n++; }
     }
     if (n) { UI.toast('Stashed ' + n + ' item' + (n > 1 ? 's' : ''), '#6ff7c3'); Hero.saveStash(); Hero.save(); }
@@ -744,17 +734,21 @@ const Items = {
   // Salvage every bag item matching `pred` (a rarity predicate) at once.
   bulkSalvage(pred, minLvl, label) {
     let n = 0;
+    const got = {};   // material key -> amount, so the toast can report Souls etc.
     for (let i = Hero.bag.length - 1; i >= 0; i--) {
+      if (Hero.bag[i].torch) continue;
       if (pred(Hero.bag[i].rarity)) {
         const it = Hero.bag.splice(i, 1)[0];
         const { mat, n: yield_ } = this.salvageYield(it);
         Hero.mats[mat] = (Hero.mats[mat] || 0) + yield_;
+        got[mat] = (got[mat] || 0) + yield_;
         for (const g of it.gems || []) Hero.gems.push(g);
         n++;
       }
     }
     if (n) {
-      UI.toast(`Salvaged ${n} ${label} item${n > 1 ? 's' : ''}`, '#ffd76a');
+      const mats = Object.entries(got).map(([k, v]) => v + '× ' + MATERIALS[k].name).join(', ');
+      UI.toast(`Salvaged ${n} ${label} item${n > 1 ? 's' : ''} → ${mats}`, '#ffd76a');
       AudioSys.sfx('craft');
       Hero.save();
     } else {

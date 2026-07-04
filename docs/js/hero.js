@@ -102,6 +102,7 @@ const Hero = {
   runes: {},                          // skillId -> rune id
   cheats: { god: false, essence: false, spawn: 0 }, // dev panel, kept per save
   bagTier: 0,               // purchased bag expansions (0 = base 24)
+  bagBonus: 0,              // dev-granted extra slots (added on top of the tier)
   BAG_SIZE: 24,             // derived from bagTier via applyBagSize()
   STASH_SIZE: 100,
   SAVE_VERSION: 3,   // v2: Epic rarity @ index 3 · v3: item.gem → item.gems[]
@@ -136,13 +137,20 @@ const Hero = {
     this.runes = {};
     this.cheats = { god: false, essence: false, spawn: 0 };
     this.bagTier = 0;
+    this.bagBonus = 0;
     this.applyBagSize();
   },
 
   // Bag capacity grows with purchased upgrades.
   applyBagSize() {
-    this.BAG_SIZE = this.bagTier > 0 && BAG_UPGRADES[this.bagTier - 1]
+    const base = this.bagTier > 0 && BAG_UPGRADES[this.bagTier - 1]
       ? BAG_UPGRADES[this.bagTier - 1].size : 24;
+    this.BAG_SIZE = base + (this.bagBonus || 0);
+  },
+
+  // Bag slots in use — torches persist in the bag but DON'T occupy a slot.
+  bagUsed() {
+    return (this.bag || []).reduce((n, it) => n + (it && !it.torch ? 1 : 0), 0);
   },
 
   nextBagUpgrade() {
@@ -173,7 +181,7 @@ const Hero = {
       riftsCleared: this.riftsCleared, riftKeys: this.riftKeys, masterKeys: this.masterKeys,
       hasCube: this.hasCube, goldenMirror: this.goldenMirror, orbAutoPickup: this.orbAutoPickup,
       artisans: this.artisans, runes: this.runes, cheats: this.cheats,
-      bagTier: this.bagTier
+      bagTier: this.bagTier, bagBonus: this.bagBonus
     };
   },
 
@@ -224,7 +232,8 @@ const Hero = {
       })(),
       runes: d.runes || {},
       cheats: Object.assign({ god: false, essence: false, spawn: 0 }, d.cheats),
-      bagTier: clamp(d.bagTier || 0, 0, BAG_UPGRADES.length)
+      bagTier: clamp(d.bagTier || 0, 0, BAG_UPGRADES.length),
+      bagBonus: Math.max(0, d.bagBonus || 0)
     });
     this.applyBagSize();
     // Legacy migration: pre-shared saves embedded a per-character stash. If the
@@ -303,19 +312,23 @@ const Hero = {
     } catch (e) { this.stash = this.stash || []; }
   },
 
-  // Collapse duplicate torch entries into one stack per type (older saves kept
-  // each crafted torch in its own slot).
+  // Torches no longer live in the Stash (owner rule) — pull any out into the
+  // bag, where they persist WITHOUT taking a slot (see bagUsed()). Runs when
+  // both the bag and the stash are loaded; if the bag isn't ready yet it leaves
+  // the torches in place for the next pass (sanitize calls this too).
   mergeStashTorches() {
-    const byType = {};
-    const merged = [];
-    for (const it of this.stash || []) {
-      if (it && it.torch) {
-        if (byType[it.torch]) { byType[it.torch].count = (byType[it.torch].count || 1) + (it.count || 1); continue; }
-        it.count = it.count || 1; byType[it.torch] = it;
+    if (!Array.isArray(this.stash)) return;
+    const bagReady = Array.isArray(this.bag) && typeof Items !== 'undefined' && Items.makeTorch;
+    const kept = [];
+    for (const it of this.stash) {
+      if (it && it.torch && bagReady) {
+        const cnt = it.count || 1;
+        for (let k = 0; k < cnt; k++) this.bag.push(Items.makeTorch(it.torch));
+        continue;   // removed from the stash
       }
-      merged.push(it);
+      kept.push(it);
     }
-    this.stash = merged;
+    this.stash = kept;
   },
 
   load() {
@@ -417,22 +430,32 @@ const Hero = {
     return SKILL_DATA.filter(s => s.lvl <= this.level);
   },
 
-  // Ensure the loadout is a category-locked 6-slot bar of unlocked skills.
-  // Slot i holds a skill of LOADOUT_CATS[i]; old/elective loadouts migrate by
-  // dropping each skill into its category's slot (first valid wins).
+  // Normalize the 6-slot action bar. Default is CATEGORY-LOCKED: slot i holds a
+  // skill of LOADOUT_CATS[i], and old/elective loadouts collapse into their
+  // category's slot (first valid wins). With ELECTIVE MODE on (a gameplay
+  // setting), any skill may sit in any slot — duplicates within a category are
+  // kept — and only locked/over-level skills are cleared.
   sanitize() {
-    const cats = (typeof LOADOUT_CATS !== 'undefined') ? LOADOUT_CATS
-      : ['primary', 'secondary', 'corpse', 'reanim', 'curse', 'blood'];
-    const next = [null, null, null, null, null, null];
-    for (const id of (this.loadout || [])) {
-      if (!id) continue;
-      const s = SKILL_DATA.find(x => x.id === id);
-      if (!s || s.lvl > this.level) continue;
-      const ci = cats.indexOf(s.cat);
-      if (ci >= 0 && !next[ci]) next[ci] = id;   // keep the first valid per category
+    const elective = typeof Settings !== 'undefined' && Settings.g && Settings.g.electiveMode;
+    const ok = id => id && SKILL_DATA.some(s => s.id === id && s.lvl <= this.level);
+    if (elective) {
+      while (this.loadout.length < 6) this.loadout.push(null);
+      if (this.loadout.length > 6) this.loadout.length = 6;
+      for (let i = 0; i < 6; i++) if (!ok(this.loadout[i])) this.loadout[i] = null;
+      if (!this.loadout[0]) this.loadout[0] = 'boneSpikes';
+    } else {
+      const cats = (typeof LOADOUT_CATS !== 'undefined') ? LOADOUT_CATS
+        : ['primary', 'secondary', 'corpse', 'reanim', 'curse', 'blood'];
+      const next = [null, null, null, null, null, null];
+      for (const id of (this.loadout || [])) {
+        if (!ok(id)) continue;
+        const ci = cats.indexOf(SKILL_DATA.find(x => x.id === id).cat);
+        if (ci >= 0 && !next[ci]) next[ci] = id;   // first valid skill per category
+      }
+      if (!next[0]) next[0] = 'boneSpikes';         // always have a primary
+      this.loadout = next;
     }
-    if (!next[0]) next[0] = 'boneSpikes';         // always have a primary
-    this.loadout = next;
+    this.mergeStashTorches();   // torches live in the bag now, never the stash
     // Pad passives to the number of slots (a new lvl-3 slot was added).
     while (this.passives.length < PASSIVE_SLOT_LEVELS.length) this.passives.push(null);
     if (this.passives.length > PASSIVE_SLOT_LEVELS.length) this.passives.length = PASSIVE_SLOT_LEVELS.length;
