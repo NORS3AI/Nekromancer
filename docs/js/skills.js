@@ -1118,6 +1118,101 @@ function drawSkillIcon(ctx, id, x, y, r) {
   if (fn) fn(ctx, x, y, r);
 }
 
+// -------------------------- gem icon art loader -----------------------------
+// The owner's gem sheet is a 10-column (A–J) × 13-row grid. GEM_ART_GRID maps
+// each gem type + tier (in GEM_TIERS order: Chipped…Marquise) to its [col,row]
+// cell (col 0=A … 9=J, row 1–13) so tools/slice can cut the sheet into
+// art/gems/<type><tier>.png. Kept in-repo as the authoritative source map.
+const GEM_ART_GRID = {
+  diamond:  [[1,1],[0,2],[0,3],[0,4],[0,6],[1,6],[1,5],[1,7],[0,7],[1,8],[1,10],[1,11],[1,12]],
+  emerald:  [[2,1],[2,5],[3,2],[3,4],[2,6],[3,6],[3,5],[2,7],[3,7],[2,8],[3,8],[3,11],[2,11]],
+  ruby:     [[5,1],[4,3],[4,2],[4,4],[5,4],[5,6],[5,5],[4,6],[5,7],[4,8],[4,9],[5,11],[4,12]],
+  topaz:    [[7,1],[6,2],[7,3],[7,4],[7,6],[6,5],[7,5],[7,7],[6,9],[6,8],[7,10],[7,11],[7,12]],
+  amethyst: [[8,1],[9,3],[9,2],[9,4],[9,6],[8,6],[9,5],[8,7],[9,7],[8,8],[8,10],[8,11],[9,11]]
+};
+// Flip to true once the 65 sliced PNGs exist in docs/art/gems/. Until then every
+// gem draws its procedural glyph, so the game ships art-free with no 404s.
+const GEM_ART_READY = false;
+const GEM_IMAGES = {};   // GEM_IMAGES[type][tier] = Image
+(function loadGemIcons() {
+  if (!GEM_ART_READY || typeof Image === 'undefined' || typeof GEM_TYPES === 'undefined') return;
+  for (const type of Object.keys(GEM_TYPES)) {
+    GEM_IMAGES[type] = [];
+    for (let t = 0; t < GEM_TIERS.length; t++) {
+      const img = new Image();
+      img.src = 'art/gems/' + type + t + '.png';
+      GEM_IMAGES[type][t] = img;
+    }
+  }
+})();
+
+// Draw a gem: the sliced art if loaded, else the procedural faceted glyph.
+function drawGemIcon(ctx, type, tier, x, y, r) {
+  const imgs = GEM_IMAGES[type];
+  const img = imgs && imgs[tier];
+  if (img && img.complete && img.naturalWidth > 0) {
+    ctx.drawImage(img, x - r, y - r, r * 2, r * 2);
+    return;
+  }
+  drawGemGlyph(ctx, type, tier, x, y, r);
+}
+
+// Procedural fallback: a faceted gem whose cut evolves up the 13-tier ladder —
+// round → square → star → imperial → marquise — brighter and more ornate higher.
+function drawGemGlyph(ctx, type, tier, x, y, r) {
+  const gt = (typeof GEM_TYPES !== 'undefined' && GEM_TYPES[type]) || { color: '#bfe8f4' };
+  const col = gt.color;
+  const band = tier <= 2 ? 0 : tier <= 5 ? 1 : tier <= 8 ? 2 : tier <= 11 ? 3 : 4;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.shadowColor = col;
+  ctx.shadowBlur = r * (0.35 + tier * 0.06);
+  // Outline points for the cut.
+  let pts;
+  if (band === 0) {                                   // round brilliant
+    pts = []; const n = 8; for (let i = 0; i < n; i++) { const a = i / n * TAU - Math.PI / 2; pts.push([Math.cos(a) * r * 0.92, Math.sin(a) * r * 0.92]); }
+  } else if (band === 1) {                             // square
+    const s = r * 0.82; pts = [[-s, -s], [s, -s], [s, s], [-s, s]];
+  } else if (band === 2) {                             // star / pointed
+    pts = []; const n = 6; for (let i = 0; i < n * 2; i++) { const a = i / (n * 2) * TAU - Math.PI / 2; const rr2 = (i % 2 ? 0.5 : 1) * r; pts.push([Math.cos(a) * rr2, Math.sin(a) * rr2]); }
+  } else if (band === 3) {                             // imperial oval
+    pts = []; const n = 10; for (let i = 0; i < n; i++) { const a = i / n * TAU - Math.PI / 2; pts.push([Math.cos(a) * r * 0.7, Math.sin(a) * r]); }
+  } else {                                             // marquise (pointed oval)
+    pts = [[0, -r], [r * 0.6, -r * 0.2], [r * 0.5, r * 0.55], [0, r], [-r * 0.5, r * 0.55], [-r * 0.6, -r * 0.2]];
+  }
+  // Body with a vertical gradient.
+  const g = ctx.createLinearGradient(0, -r, 0, r);
+  g.addColorStop(0, '#ffffff'); g.addColorStop(0.28, col); g.addColorStop(1, shade(col, -0.5));
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+  ctx.closePath(); ctx.fill();
+  ctx.shadowBlur = 0;
+  // Facets — radiating lines to each vertex.
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = Math.max(0.6, r * 0.05);
+  ctx.beginPath();
+  pts.forEach(p => { ctx.moveTo(0, 0); ctx.lineTo(p[0], p[1]); });
+  ctx.stroke();
+  // Rim.
+  ctx.strokeStyle = shade(col, 0.3); ctx.lineWidth = Math.max(0.8, r * 0.09);
+  ctx.beginPath();
+  pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+  ctx.closePath(); ctx.stroke();
+  // Top sparkle.
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.beginPath(); ctx.ellipse(-r * 0.22, -r * 0.4, r * 0.16, r * 0.28, -0.4, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+
+// Lighten (t>0) or darken (t<0) a #rrggbb hex by fraction t.
+function shade(hex, t) {
+  const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex);
+  if (!m) return hex;
+  const f = c => { let v = parseInt(c, 16); v = t < 0 ? v * (1 + t) : v + (255 - v) * t; return Math.max(0, Math.min(255, Math.round(v))); };
+  const h = n => n.toString(16).padStart(2, '0');
+  return '#' + h(f(m[1])) + h(f(m[2])) + h(f(m[3]));
+}
+
 // ------------------------------ extra FX ------------------------------------
 
 function fxSpikes(x, y) {

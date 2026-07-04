@@ -107,7 +107,7 @@ const Hero = {
   bagBonus: 0,              // dev-granted extra slots (added on top of the tier)
   BAG_SIZE: 24,             // derived from bagTier via applyBagSize()
   STASH_SIZE: 100,
-  SAVE_VERSION: 3,   // v2: Epic rarity @ index 3 · v3: item.gem → item.gems[]
+  SAVE_VERSION: 4,   // v2: Epic rarity @ index 3 · v3: item.gem → item.gems[] · v4: 13-tier gems
 
   fresh() {
     // name/eyeColor are chosen at character creation; keep any already set.
@@ -192,6 +192,7 @@ const Hero = {
 
   // v2: Epic rarity (index 3) inserted — shift Legendary/Set up.
   // v3: single item.gem replaced by an item.gems[] array (multi-socket).
+  // v4: gem ladder went from 5 tiers to 13 — remap old tier indices.
   migrate(d) {
     const v = d.v || 1;
     const each = fn => {
@@ -213,7 +214,15 @@ const Hero = {
         delete it.gem;
       });
     }
-    d.v = 3;
+    if (v < 4) {
+      // Old 5 tiers (Chipped·Flawed·Regular·Flawless·Perfect) → new 13-tier ladder
+      // (Chipped·Flawless·Perfect·…·Marquise), preserving rough value.
+      const REMAP = [0, 0, 1, 1, 2];
+      const fixGem = g => { if (g && g.tier != null) g.tier = REMAP[g.tier] != null ? REMAP[g.tier] : Math.min(g.tier, 2); };
+      (d.gems || []).forEach(fixGem);
+      each(it => { if (it && it.gems) it.gems.forEach(fixGem); });
+    }
+    d.v = 4;
     return d;
   },
 

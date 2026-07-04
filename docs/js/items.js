@@ -112,22 +112,24 @@ const Items = {
   },
 
   generateGem(mLvl) {
-    const tier = clamp(Math.floor(mLvl / 8) + (Math.random() < 0.25 ? 1 : 0), 0, GEM_TIERS.length - 1);
+    const tier = clamp(Math.floor(mLvl / 8) + (Math.random() < 0.25 ? 1 : 0), 0, GEM_MAX_TIER);
     return { type: pick(Object.keys(GEM_TYPES)), tier };
   },
 
-  // The gem tier that DROPS at the current difficulty (owner spec):
-  //   below Torment → Chipped/Flawed/Regular (0-2, scaling with base tier)
-  //   T1–T10       → Flawless (3)
-  //   T11–T16      → Perfect  (4)
+  // The gem tier that DROPS at the current difficulty (owner spec, 13-tier ladder):
+  //   below Torment → Chipped … Perfect (0–2, scaling with difficulty)
+  //   T1 ≈ Perfect  →  T16 ≈ Marquise, climbing the ladder with Torment (±1 jitter)
   // (Crafted gems from the Jeweler still scale with jeweler level — this only
   // governs monster/chest drops.)
   dropGemTier() {
-    const tt = tormentTier();
-    if (tt >= 11) return 4;                 // Perfect
-    if (tt >= 1) return 3;                  // Flawless
+    const tt = tormentTier();               // 0 (no torment) … 16
+    if (tt >= 1) {
+      const base = GEM_PERFECT_TIER + Math.round((tt - 1) / 15 * (GEM_MAX_TIER - GEM_PERFECT_TIER));
+      const jit = Math.random() < 0.25 ? 1 : Math.random() < 0.25 ? -1 : 0;
+      return clamp(base + jit, 0, GEM_MAX_TIER);
+    }
     const di = Hero.difficulty || 0;        // 0 Normal … 3 Master
-    return clamp(di - (Math.random() < 0.5 ? 1 : 0), 0, 2);
+    return clamp(di - (Math.random() < 0.5 ? 1 : 0), 0, GEM_PERFECT_TIER);
   },
 
   dropGem() {
@@ -286,11 +288,10 @@ const Items = {
       lines.push('◈ Grace of Inarius (' + n + '/6 equipped)');
     }
     const gems = item.gems || [];
-    const perfectTier = GEM_TIERS.length - 1;
     for (const g of gems) {
       // A helm ruby reads as an XP bonus, not damage.
       if (item.slot === 'helm' && g.type === 'ruby') {
-        const xp = 0.03 + (0.20 - 0.03) * (g.tier / perfectTier);
+        const xp = 0.03 + (0.20 - 0.03) * (g.tier / GEM_MAX_TIER);
         lines.push('◆ ' + gemName(g) + ': +' + Math.round(xp * 100) + '% experience');
       } else if (item.slot === 'boots' && g.type === 'emerald') {
         lines.push('◆ ' + gemName(g) + ': +20% movement speed');
@@ -300,8 +301,8 @@ const Items = {
     }
     const empty = (item.sockets || 0) - gems.length;
     for (let i = 0; i < empty; i++) lines.push('◇ empty socket');
-    // Any Perfect gem, any slot: +20% damage.
-    if (gems.some(g => g.tier >= perfectTier)) lines.push('❢ +20% damage (Perfect gem)');
+    // Any Perfect-or-better gem, any slot: +20% damage.
+    if (gems.some(g => g.tier >= GEM_PERFECT_TIER)) lines.push('❢ +20% damage (Perfect+ gem)');
     if (item.slot === 'weapon') {
       if (gems.some(g => g.type === 'ruby')) lines.push('❢ +25% weapon damage (ruby)');
       if (Hero.level >= MAX_LEVEL && gems.some(g => g.type === 'emerald')) lines.push('❢ Emerald +20% in weapon (lvl 70)');
@@ -351,13 +352,12 @@ const Items = {
     // Empty sockets are potential; SOCKETED gems are realized power. So the
     // gems the player already has in their gear count for real, while a bare
     // drop only gets the (smaller) empty-socket credit (owner rule).
-    const perfect = GEM_TIERS.length - 1;
     const filled = (item.gems || []).length;
     t[0] += Math.max(0, (item.sockets || 0) - filled) * 120;   // empty sockets: potential
     for (const g of item.gems || []) {
       t[0] += gemStatValue(g) * 60;
       // Special gem rules are big offense multipliers a bare drop can't match.
-      if (g.tier >= perfect) t[0] += 0.20 * this.STAT_VAL.dmg;                             // Perfect gem: +20% damage
+      if (g.tier >= GEM_PERFECT_TIER) t[0] += 0.20 * this.STAT_VAL.dmg;                     // Perfect+ gem: +20% damage
       if (item.slot === 'weapon' && g.type === 'ruby') t[0] += 0.25 * this.STAT_VAL.dmg;   // ruby in weapon: +25%
     }
     // Build-defining pieces get a GENTLE nudge — enough to break a near-tie in
@@ -986,7 +986,6 @@ const Items = {
   // Works with no live Player (used by the character sheet in camp).
   computeStats() {
     let dmg = 0, hp = 0, crit = 0, ess = 0, reg = 0, gold = 0, armor = 0, move = 0, xpBonus = 0, dnova = 0, area = 0;
-    const perfectTier = GEM_TIERS.length - 1;
     const gather = (it, slot) => {
       if (!it) return;
       dmg += it.stats.dmg || 0;
@@ -1000,12 +999,12 @@ const Items = {
       dnova += it.stats.dnova || 0;
       area += it.stats.area || 0;
       for (const g of it.gems || []) {
-        // A Perfect-tier gem grants +20% damage — in ANY slot, per gem.
-        if (g.tier >= perfectTier) dmg += 0.20;
+        // A Perfect-or-better gem grants +20% damage — in ANY slot, per gem.
+        if (g.tier >= GEM_PERFECT_TIER) dmg += 0.20;
         // A Ruby in the HELM gives an XP bonus instead of its damage:
-        // 3% (Chipped) → 20% (Perfect).
+        // 3% (Chipped) → 20% (Marquise).
         if (slot === 'helm' && g.type === 'ruby') {
-          xpBonus += 0.03 + (0.20 - 0.03) * (g.tier / perfectTier);
+          xpBonus += 0.03 + (0.20 - 0.03) * (g.tier / GEM_MAX_TIER);
           continue;
         }
         // An Emerald in the BOOTS grants +20% movement speed instead of crit.

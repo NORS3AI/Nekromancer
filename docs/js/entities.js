@@ -1847,18 +1847,7 @@ class Pickup {
       ctx.fillRect(-6, -6, 5, 5);
       ctx.restore();
     } else if (this.kind === 'gem') {
-      const col = GEM_TYPES[this.gem.type].color;
-      ctx.fillStyle = col;
-      ctx.shadowColor = col;
-      ctx.shadowBlur = 10;
-      ctx.beginPath();
-      ctx.moveTo(0, -6); ctx.lineTo(5, 0); ctx.lineTo(0, 6); ctx.lineTo(-5, 0);
-      ctx.closePath(); ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
-      ctx.beginPath();
-      ctx.moveTo(0, -6); ctx.lineTo(2.5, -1); ctx.lineTo(-2.5, -1);
-      ctx.closePath(); ctx.fill();
+      drawGemIcon(ctx, this.gem.type, this.gem.tier, 0, 0, 8);
     } else if (this.kind === 'mirror') {
       // The Golden Mirror — a gilded hand-mirror on a beam of light.
       const beam = ctx.createLinearGradient(0, -48, 0, 0);

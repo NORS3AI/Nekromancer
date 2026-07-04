@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.9.3-alpha';
+const GAME_VERSION = 'v0.9.4-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.9.4-alpha', date: 'July 2026',
+    notes: [
+      'GEMS EXPANDED to a 13-tier ladder (owner rule): Chipped · Flawless · Perfect · Square · Flawless Square · Brilliant Square · Star · Flawless Star · Radiant Star · Imperial · Flawless Imperial · Royal Imperial · Marquise. Old saves migrate automatically',
+      'Torment drops climb the new ladder — roughly Perfect at T1 up to Marquise at T16; below Torment you still find Chipped→Perfect. Combine 3→1 all the way to Marquise',
+      'Each gem now draws a FACETED ICON that evolves its cut up the ladder (round → square → star → imperial → marquise) — shown on the ground, in the Jeweler and in the socket picker. Ready to swap in the hand-drawn gem art (drop the sliced PNGs into docs/art/gems/ and flip GEM_ART_READY)',
+      'The apex gem perks (+20% damage in any slot, helm-ruby XP, boots-emerald move) now trigger at Perfect-or-better and the helm-XP scales across the full 13-tier range (3%→20%)'
+    ]
+  },
   {
     v: 'v0.9.3-alpha', date: 'July 2026',
     notes: [
@@ -756,7 +765,15 @@ const TORCH_TYPES = {
 
 // --------------------------------- gems ------------------------------------
 
-const GEM_TIERS = ['Chipped', 'Flawed', 'Regular', 'Flawless', 'Perfect'];
+// 13-tier gem ladder (owner art set). Perfect (index 2) is the threshold for the
+// apex gem perks (+20% damage in any slot, etc.); Marquise (index 12) is the top.
+const GEM_TIERS = [
+  'Chipped', 'Flawless', 'Perfect', 'Square', 'Flawless Square', 'Brilliant Square',
+  'Star', 'Flawless Star', 'Radiant Star', 'Imperial', 'Flawless Imperial',
+  'Royal Imperial', 'Marquise'
+];
+const GEM_PERFECT_TIER = 2;               // 'Perfect' — apex-perk threshold
+const GEM_MAX_TIER = GEM_TIERS.length - 1; // 'Marquise' — top of the ladder
 
 const GEM_TYPES = {
   ruby:     { name: 'Ruby',     color: '#e04a5a', stat: 'dmg',  perTier: 0.05,  label: v => `+${Math.round(v * 100)}% damage` },

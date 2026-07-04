@@ -73,14 +73,21 @@ loot at the artisans. The hero is persistent (localStorage).
 - Corpses: every kill leaves one (fuel for Corpse Explosion/Lance/Devour/Revive).
 - Monster scaling: `(1+0.20·(mLvl−1)) × difficulty.mult`; `mLvl = zone.mLvl + 6·difficulty`.
 - Packs sleep until the player is within ~440px (or they're hurt).
-- Items: 9 slots, affix count = rarity, socket chance by rarity, gems 5 types × 5 tiers.
+- Items: 9 slots, affix count = rarity, socket chance by rarity, gems 5 types × **13
+  tiers** (`GEM_TIERS`: Chipped·Flawless·Perfect·Square·Flawless Square·Brilliant
+  Square·Star·Flawless Star·Radiant Star·Imperial·Flawless Imperial·Royal
+  Imperial·Marquise; `GEM_PERFECT_TIER`=2 apex threshold, `GEM_MAX_TIER`=12).
+  Gem icons draw through `drawGemIcon()` (art in `docs/art/gems/<type><tier>.png`,
+  gated by `GEM_ART_READY`; `GEM_ART_GRID` = the owner sheet's A–J/1–13 slice map)
+  with a procedural faceted `drawGemGlyph()` fallback. Saves migrate 5→13 tiers via
+  `Hero.migrate` (SAVE_VERSION 4).
 - **Stats/gems (owner rules):** `armor` affix + Diamond gem (`stat:'armor'`) → damage
   reduction `armor/(armor+67000)` capped 80% (applied in `Player.hurt`) — a big
   fixed denominator so low armor barely helps (201 armor ≈ 0.3%, you're squishy)
   and only hundreds-of-thousands of armor is tanky (owner rule). Boots can
   roll a `move` affix (1–25%, boots-only, flat) → `Player.speed = 180·(1+move)`. A
-  **Perfect-tier gem in ANY slot = +20% damage** (per gem). A **Ruby in the HELM** gives
-  **+3%→+20% XP** (by tier) instead of its damage (feeds `Hero.addXP` via `player.xpBonus`).
+  **Perfect-or-better gem (tier ≥ `GEM_PERFECT_TIER`) in ANY slot = +20% damage** (per gem). A **Ruby in the HELM** gives
+  **+3%→+20% XP** (scaled across all 13 tiers) instead of its damage (feeds `Hero.addXP` via `player.xpBonus`).
   An **Emerald in the BOOTS** grants **+20% movement speed** (flat, per gem) instead of crit.
   Ruby-in-weapon +25% dmg and the lvl70 weapon retune (emerald ×1.2 / ruby ×0.95) remain.
 - Salvage yields (`Items.salvageYield`): Common→Reusable Parts, Magic→Arcane Dust,
@@ -149,8 +156,9 @@ loot at the artisans. The hero is persistent (localStorage).
   - Artifacts drop **ONLY at T16** (below T16 the artifact slice rolls up as a
     legendary). `artifactStars()`: 1★ 10% · 2★ 7% · 3★ 5% · 4★ 3% · 5★ 1% (else 0★).
   - **Gem drops** (`Items.dropGem`/`dropGemTier` — monster/chest/cache, NOT the
-    Jeweler): below Torment → Chipped/Flawed/Regular (0–2) · **T1–T10** Flawless (3)
-    · **T11–T16** Perfect (4). Gems drop ~5% on their own roll.
+    Jeweler): below Torment → Chipped…Perfect (0–2, by difficulty) · **T1–T16**
+    climb the 13-tier ladder (~Perfect at T1 → Marquise at T16, ±1 jitter). Gems
+    drop ~5% on their own roll.
 - **Torment I–XVI unlock at level 70** (`DIFFICULTIES` = 20 tiers, generated;
   `legBonus` +1%…+33.3%). Stepper caps at Master below 70.
 - **Named power items in the wild (owner rule)**: `WILD_POWER_KEYS` (funeraryPick,

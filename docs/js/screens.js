@@ -1571,6 +1571,7 @@ const Screens = {
       ctx.strokeStyle = gm.color;
       ctx.lineWidth = 1.5;
       rr(ctx, px + 16, y, pw - 32, 62, 6); ctx.stroke();
+      drawGemIcon(ctx, g.type, g.tier, px + pw - 46, y + 31, 18);
       ctx.textAlign = 'left';
       ctx.font = 'bold 13px Georgia';
       ctx.fillStyle = gm.color;
@@ -2332,12 +2333,7 @@ const Screens = {
         UI.sel.gemKey = selected ? null : key;
       }, { bg: selected ? 'rgba(70,44,90,0.9)' : undefined, border: selected ? gm.color : undefined });
       // Gem chip.
-      ctx.fillStyle = gm.color;
-      ctx.save();
-      ctx.translate(px + 34, y + 17);
-      ctx.rotate(Math.PI / 4);
-      ctx.fillRect(-5, -5, 10, 10);
-      ctx.restore();
+      drawGemIcon(ctx, type, tier, px + 34, y + 17, 11);
       ctx.textAlign = 'left';
       ctx.font = 'bold 12px Georgia';
       ctx.fillStyle = gm.color;
@@ -2373,6 +2369,7 @@ const Screens = {
       ctx.strokeStyle = gm.color;
       ctx.lineWidth = 1.5;
       rr(ctx, px + 16, y, pw - 32, 62, 6); ctx.stroke();
+      drawGemIcon(ctx, type, tier, px + pw - 46, y + 31, 18);
       ctx.textAlign = 'left';
       ctx.font = 'bold 13px Georgia';
       ctx.fillStyle = gm.color;
@@ -2380,11 +2377,11 @@ const Screens = {
       ctx.font = '12px Georgia';
       ctx.fillStyle = '#b5ab94';
       ctx.fillText('In a socket: ' + gm.label(gm.perTier * (tier + 1)), px + 32, y + 33);
-      ctx.fillStyle = tier < GEM_TIERS.length - 1 ? '#4ade80' : '#8a8070';
+      ctx.fillStyle = tier < GEM_MAX_TIER ? '#4ade80' : '#8a8070';
       ctx.fillText(
-        tier < GEM_TIERS.length - 1
+        tier < GEM_MAX_TIER
           ? 'Next tier: ' + gm.label(gm.perTier * (tier + 2))
-          : 'This gem is already perfect.',
+          : 'This gem is already Marquise — the top tier.',
         px + 32, y + 50);
       y += 68;
       const halfW = (pw - 40) / 2;
