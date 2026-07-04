@@ -18,11 +18,20 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.6.1-alpha';
+const GAME_VERSION = 'v0.6.2-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.6.2-alpha', date: 'July 2026',
+    notes: [
+      'NEW ENEMY — the TREASURE GOBLIN: a gold-pulsing imp with a chest on its back and ~10x a normal monster\'s life. It never attacks and flees once struck, spilling a coin every 2s while you give chase (it stops dripping if it stops or dies). Slay it for a burst of gold (3x a chest), 1-3 random gems, and a rare shot at damage gear',
+      'Combat numbers recoloured: RED normal hits, YELLOW crits, GREEN healing',
+      'Elites now read at a glance — normal elites glow YELLOW, rare elites glow PURPLE (and hit harder with better loot); bosses keep their orange aura',
+      'Legendary drops fire an ORANGE pillar of light (+ orange star on the minimap); Set drops fire a GREEN pillar (+ green star)'
+    ]
+  },
   {
     v: 'v0.6.1-alpha', date: 'July 2026',
     notes: [
@@ -924,6 +933,9 @@ const MONSTERS = {
   catapult: { name: 'Bone Catapult',  hp: 210, speed: 9,   dmg: 30, r: 24, xp: 62, atkRange: 640, atkCd: 3.6, siege: true },
   mongrel:  { name: 'Nephalem Mongrel', hp: 160, speed: 150, dmg: 22, r: 16, xp: 70, atkRange: 32, atkCd: 1.0, lunges: true, dropsHeartstring: true },
   brute:    { name: 'Grave Brute',    hp: 300, speed: 46,  dmg: 24, r: 26, xp: 110, atkRange: 46, atkCd: 1.7, boss: true },
+  // Treasure Goblin: never attacks, flees once hit, ~10x a normal monster's
+  // life, spills gold while chased and bursts loot on death.
+  goblin:   { name: 'Treasure Goblin', hp: 50, speed: 178, dmg: 0, r: 16, xp: 40, atkRange: 0, atkCd: 99, goblin: true, hpMul: 10 },
   // Story Mode bosses: the 10 named legendary ghost lords, then the King.
   wraith:   { name: 'Vengeful Wraith', hp: 240, speed: 78, dmg: 21, r: 22, xp: 130, atkRange: 44, atkCd: 1.6, boss: true, ghost: true },
   skeletonking: { name: 'The Skeleton King', hp: 520, speed: 54, dmg: 30, r: 30, xp: 240, atkRange: 54, atkCd: 1.8, boss: true }

@@ -606,10 +606,33 @@ const UI = {
       const cell = World.explored[Math.floor(o.y / CELL) * World.cols + Math.floor(o.x / CELL)];
       if (cell) dot(o.x, o.y, o.type === 'chest' ? '#ffd76a' : o.type === 'vendor' ? '#ffb43a' : '#6ff7c3', o.type === 'vendor' ? 3 : 2);
     }
+    // Legendary (orange) & Set (green) drops get a pulsing star on the map.
+    for (const pk of Game.pickups) {
+      if (pk.gone || pk.kind !== 'item' || !pk.item) continue;
+      if (pk.item.rarity >= 4) {
+        this.star(ctx, x0 + pk.x / World.W * S, y0 + pk.y / World.H * S,
+          pk.item.rarity >= 5 ? '#4ade80' : '#ff8c2a', 4 + Math.sin(Game.time * 6) * 1.2);
+      }
+    }
     if (Game.bossDead && World.portal) dot(World.portal.x, World.portal.y, '#b06adf', 3.5);
     else if (!Game.riftMode || Game.guardianUp) dot(World.bossPos.x, World.bossPos.y, '#e04a5a', 3);
     dot(Game.player.x, Game.player.y, '#e8e0cc', 3);
     ctx.globalAlpha = 1;
+  },
+
+  // A small 5-point star (loot beacon marker on the minimap).
+  star(ctx, cx, cy, col, r) {
+    ctx.save();
+    ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = 6;
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 5;
+      const rr2 = i % 2 ? r * 0.44 : r;
+      const px = cx + Math.cos(a) * rr2, py = cy + Math.sin(a) * rr2;
+      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
   },
 
   drawBossBar(ctx, W, H) {

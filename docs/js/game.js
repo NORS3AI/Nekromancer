@@ -221,12 +221,14 @@ const Game = {
     const packSize = () => clamp(Math.round(randInt(3, 5) * em), 3, 14);
     const spawnPack = (x, y, eliteChance) => {
       const eliteLeader = Math.random() < eliteChance;
+      const rareLeader = eliteLeader && Math.random() < 0.3;   // ~30% of elites are rare (purple)
       const n = packSize();
       for (let i = 0; i < n; i++) {
         const a = rand(TAU), d = rand(0, 70);
         const e = new Enemy(pick(this.zone.monsters), x + Math.cos(a) * d, y + Math.sin(a) * d, {
           elite: eliteLeader && i === 0,
-          name: eliteLeader && i === 0 ? pick(ELITE_PREFIX) + pick(ELITE_SUFFIX) : undefined
+          rare: rareLeader && i === 0,
+          name: eliteLeader && i === 0 ? (rareLeader ? 'Rare ' : '') + pick(ELITE_PREFIX) + pick(ELITE_SUFFIX) : undefined
         });
         World.collide(e);
         this.enemies.push(e);
@@ -240,6 +242,13 @@ const Game = {
       let ex, ey, tries = 0;
       do { ex = rand(120, World.W - 120); ey = rand(120, World.H - 120); } while (!World.isFloorAt(ex, ey) && tries++ < 12);
       spawnPack(ex, ey, this.riftMode ? 0.5 : 0.25);
+    }
+    // A Treasure Goblin sometimes wanders the wilds (never the King's grave).
+    if (!(this.zone && this.zone.storyFinal) && Math.random() < 0.16) {
+      let gx, gy, gt = 0;
+      do { gx = rand(220, World.W - 220); gy = rand(220, World.H - 220); } while (!World.isFloorAt(gx, gy) && gt++ < 20);
+      const gob = new Enemy('goblin', gx, gy, { name: 'Treasure Goblin' });
+      this.enemies.push(gob);
     }
     // The stage guardian: the land's named unique on the FINAL area, a champion
     // that guards the descent on earlier areas. (Rifts summon a Guardian instead,

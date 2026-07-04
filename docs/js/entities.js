@@ -255,7 +255,14 @@ class Player {
 
   heal(n) {
     if (this.dead) return;
+    const before = this.hp;
     this.hp = Math.min(this.maxHp, this.hp + n);
+    const gained = this.hp - before;
+    // Green healing numbers (batched by frame so trickle-regen doesn't spam).
+    if (gained >= 1 && typeof healText === 'function') {
+      this._healAcc = (this._healAcc || 0) + gained;
+      if (this._healAcc >= 8) { healText(this.x, this.y - 8, this._healAcc); this._healAcc = 0; }
+    }
   }
 
   gainEssence(n) {
@@ -354,19 +361,23 @@ class Enemy {
     this.type = type;
     this.def = t;
     this.elite = !!opts.elite;
+    this.rare = !!opts.rare;     // rare elite (purple, tougher, better loot)
+    if (this.rare) this.elite = true;
     this.unique = !!opts.unique;
+    this.goblin = !!opts.goblin || !!t.goblin;   // Treasure Goblin: flees, no attacks
     this.name = opts.name || t.name;
     const mLvl = Game.monsterLevel();
     const diff = DIFFICULTIES[Hero.difficulty];
+    const eliteMul = this.rare ? 4.5 : this.elite ? 2.4 : 1;
     const scale = (1 + 0.20 * (mLvl - 1)) * diff.mult
-      * (this.elite ? 2.4 : 1) * (this.unique ? 9 : 1);
+      * eliteMul * (this.unique ? 9 : 1) * (t.hpMul || 1);
     this.x = x; this.y = y;
-    this.r = t.r + (this.elite ? 2 : 0) + (this.unique ? 6 : 0);
+    this.r = t.r + (this.elite ? 2 : 0) + (this.rare ? 2 : 0) + (this.unique ? 6 : 0);
     this.maxHp = Math.round(t.hp * scale);
     this.hp = this.maxHp;
-    this.speed = t.speed * (1 + 0.008 * mLvl) * rand(0.9, 1.1);
-    this.dmg = Math.round(t.dmg * (1 + 0.11 * (mLvl - 1)) * Math.sqrt(diff.mult) * (this.elite ? 1.3 : 1) * (this.unique ? 1.6 : 1));
-    this.xp = Math.round(t.xp * (1 + 0.12 * (mLvl - 1)) * diff.reward * (this.elite ? 3 : 1) * (this.unique ? 12 : 1));
+    this.speed = t.speed * (1 + 0.008 * mLvl) * rand(0.9, 1.1) * (opts.speedMul || 1);
+    this.dmg = Math.round(t.dmg * (1 + 0.11 * (mLvl - 1)) * Math.sqrt(diff.mult) * (this.rare ? 1.5 : this.elite ? 1.3 : 1) * (this.unique ? 1.6 : 1));
+    this.xp = Math.round(t.xp * (1 + 0.12 * (mLvl - 1)) * diff.reward * (this.rare ? 5 : this.elite ? 3 : 1) * (this.unique ? 12 : 1));
     this.sleep = true;
     this.atkCd = 0;
     this.lungeCd = 0;
@@ -451,6 +462,44 @@ class Enemy {
     this.kby *= 1 - Math.min(1, 8 * dt);
 
     if ((this.unique || this.def.boss) && this.bossUpdate(dt)) {
+      World.collide(this);
+      return;
+    }
+
+    // Treasure Goblin: never fights. Ambles idly until struck, then sprints
+    // away from the hero, spilling a coin every 2s while actively pursued.
+    if (this.goblin) {
+      const p = Game.player;
+      const gd = p && !p.dead ? dist(this.x, this.y, p.x, p.y) : 1e9;
+      if (this.hp < this.maxHp) this.fleeing = true;
+      let moved = false;
+      if (this.fleeing && gd < 900) {
+        const away = angleTo(p.x, p.y, this.x, this.y);
+        this.facing = lerpAngle(this.facing, away, Math.min(1, 10 * dt));
+        let spd = this.speed;
+        if (this.slow > 0) spd *= 0.6;
+        if (this.root > 0) spd = 0;
+        if (spd > 0) { this.x += Math.cos(away) * spd * dt; this.y += Math.sin(away) * spd * dt; moved = true; }
+      } else if (!this.fleeing) {
+        this.gWander = (this.gWander || 0) - dt;
+        if (this.gWander <= 0) { this.gWander = rand(1.2, 2.6); this.gDir = rand(TAU); }
+        this.x += Math.cos(this.gDir) * this.speed * 0.16 * dt;
+        this.y += Math.sin(this.gDir) * this.speed * 0.16 * dt;
+        this.facing = this.gDir;
+      }
+      // Coins only while fleeing AND moving AND the hero is close (being chased).
+      if (this.fleeing && moved && gd < 620) {
+        this.coinT = (this.coinT || 0) - dt;
+        if (this.coinT <= 0) {
+          this.coinT = 2;
+          const coin = new Pickup(this.x + rand(-10, 10), this.y + rand(-6, 6), 'gold');
+          coin.amount = 1;
+          Game.pickups.push(coin);
+          Particles.ring(this.x, this.y, 16, '#ffd76a', 3, 0.3);
+        }
+      } else {
+        this.coinT = 2;   // stopped chasing → reset the drip
+      }
       World.collide(this);
       return;
     }
@@ -719,6 +768,37 @@ class Enemy {
     Game.corpses.push(new Corpse(this.x, this.y, this.type));
     Hero.addXP(this.xp);
 
+    // Treasure Goblin death: a burst of coins, gems and maybe damage gear.
+    // (No further coin dripping — that stops the moment it dies.)
+    if (this.goblin) {
+      const gp = Game.player;
+      const gf = gp ? gp.goldFind : 1;
+      const gdiff = DIFFICULTIES[Hero.difficulty];
+      const mLvl = Game.monsterLevel();
+      const g = new Pickup(this.x, this.y, 'gold');
+      g.amount = Math.round(rand(30, 80) * 3 * gdiff.reward * gf); // 3x a treasure chest
+      Game.pickups.push(g);
+      const ng = randInt(1, 3);
+      for (let i = 0; i < ng; i++) {
+        const pu = new Pickup(this.x + rand(-18, 18), this.y + rand(-12, 12), 'gem');
+        pu.gem = Items.generateGem(mLvl);
+        Game.pickups.push(pu);
+      }
+      if (Math.random() < 0.22) {   // rare damage-focused gear
+        const pu = new Pickup(this.x, this.y, 'item');
+        pu.item = Items.generate(mLvl + 2, 0.3, 'weapon');
+        Game.pickups.push(pu);
+      }
+      fxNova(this.x, this.y, 90);
+      Particles.spawn(this.x, this.y - 6, {
+        count: 30, color: ['#ffd76a', '#ffb43a', '#fff0b0'], minSpeed: 50, maxSpeed: 260,
+        minLife: 0.4, maxLife: 1.0, grav: 160, glow: true
+      });
+      Particles.shake(5);
+      AudioSys.sfx('chest');
+      return;
+    }
+
     const p = Game.player;
     const diff = DIFFICULTIES[Hero.difficulty];
     if (Math.random() < 0.32) {
@@ -779,9 +859,10 @@ class Enemy {
     }
 
     if (this.elite || this.unique) {
-      const col = this.unique ? '255,140,42' : '111,247,195';
-      ctx.strokeStyle = `rgba(${col},${0.4 + 0.2 * Math.sin(this.anim * 2)})`;
-      ctx.lineWidth = 2;
+      // Owner rule: normal elites glow YELLOW, rare elites PURPLE, bosses orange.
+      const col = this.unique ? '255,140,42' : this.rare ? '176,106,223' : '255,216,74';
+      ctx.strokeStyle = `rgba(${col},${0.45 + 0.25 * Math.sin(this.anim * 2)})`;
+      ctx.lineWidth = this.rare ? 2.6 : 2;
       ctx.beginPath(); ctx.ellipse(0, 4, this.r + 7, (this.r + 7) * 0.42, 0, 0, TAU); ctx.stroke();
     }
     if (this.curse) {
@@ -1055,6 +1136,40 @@ class Enemy {
         ctx.fillStyle = '#e0402f';
         ctx.beginPath(); ctx.arc(0, -32, 1.3, 0, TAU); ctx.fill();
         ctx.restore();
+        break;
+      }
+      case 'goblin': {
+        // A hunched imp lugging a treasure chest on its back, pulsing gold.
+        const glow = 0.5 + 0.5 * Math.sin(this.anim * 2.2);
+        ctx.shadowColor = '#ffd24a'; ctx.shadowBlur = 8 + glow * 10;
+        // Body.
+        ctx.fillStyle = fl ? '#fff' : '#3a6a4a';
+        ctx.beginPath(); ctx.ellipse(0, 2, 11, 13, 0, 0, TAU); ctx.fill();
+        ctx.shadowBlur = 0;
+        // Treasure chest/sack on the back (behind = -y after facing rotate).
+        ctx.fillStyle = '#6a4a24';
+        rr(ctx, -9, -14, 18, 12, 3); ctx.fill();
+        ctx.fillStyle = '#8a6a34';
+        rr(ctx, -9, -14, 18, 4, 2); ctx.fill();
+        ctx.fillStyle = '#e8c34a';
+        ctx.fillRect(-2, -14, 4, 12);   // gold latch
+        ctx.beginPath(); ctx.arc(0, -8, 1.6, 0, TAU); ctx.fill();
+        // Coins spilling glint.
+        ctx.fillStyle = `rgba(255,220,110,${(0.4 + 0.5 * glow).toFixed(2)})`;
+        ctx.beginPath(); ctx.arc(6, -12, 1.6, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(-6, -11, 1.4, 0, TAU); ctx.fill();
+        // Head + eyes.
+        ctx.fillStyle = fl ? '#fff' : '#4a7a58';
+        ctx.beginPath(); ctx.arc(0, 8, 6, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#ffd24a'; ctx.shadowColor = '#ffd24a'; ctx.shadowBlur = 5;
+        ctx.beginPath(); ctx.arc(-2.2, 8, 1.2, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(2.2, 8, 1.2, 0, TAU); ctx.fill();
+        ctx.shadowBlur = 0;
+        // Little legs.
+        ctx.strokeStyle = fl ? '#fff' : '#2e5240'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+        const gl = Math.sin(this.anim * 5) * 3;
+        ctx.beginPath(); ctx.moveTo(-4, 13); ctx.lineTo(-6, 18 + gl); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(4, 13); ctx.lineTo(6, 18 - gl); ctx.stroke();
         break;
       }
       case 'hound':
@@ -1537,6 +1652,25 @@ class Pickup {
       ctx.beginPath(); ctx.moveTo(0, -8 * pulse); ctx.lineTo(3, -1); ctx.lineTo(-3, -1); ctx.closePath(); ctx.fill();
     } else if (this.kind === 'item') {
       const col = RARITIES[this.item.rarity].color;
+      // Legendary (orange) and Set (green) drops fire a tall pillar of light.
+      const rr2 = this.item.rarity;
+      if (rr2 >= 4) {
+        const beamCol = rr2 >= 5 ? '78,222,128' : '255,140,42';
+        const bh2 = 150;
+        const pillar = ctx.createLinearGradient(0, -bh2, 0, 0);
+        pillar.addColorStop(0, `rgba(${beamCol},0)`);
+        pillar.addColorStop(1, `rgba(${beamCol},0.7)`);
+        ctx.globalAlpha = 0.5 + 0.3 * Math.sin(Game.time * 3 + this.x);
+        ctx.fillStyle = pillar;
+        ctx.fillRect(-5, -bh2, 10, bh2);
+        ctx.globalAlpha = 1;
+        // Rising sparks in the beam.
+        for (let i = 0; i < 3; i++) {
+          const sy = -((Game.time * 60 + i * 50 + this.x * 7) % bh2);
+          ctx.fillStyle = `rgba(${beamCol},0.9)`;
+          ctx.beginPath(); ctx.arc(Math.sin(Game.time * 4 + i) * 3, sy, 2, 0, TAU); ctx.fill();
+        }
+      }
       const bg = ctx.createLinearGradient(0, -40, 0, 0);
       bg.addColorStop(0, 'rgba(255,255,255,0)');
       bg.addColorStop(1, col);

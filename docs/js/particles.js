@@ -136,13 +136,22 @@ const Particles = {
 
 // --------------------------- effect shorthands -----------------------------
 
+// Combat numbers: RED for a normal hit, YELLOW for a crit (owner colours).
 function dmgText(x, y, amount, crit = false) {
   if (typeof Settings !== 'undefined' && !Settings.g.dmgNumbers) return;
   Particles.text(x, y - 24, Math.round(amount), {
-    color: crit ? '#ffb43a' : '#f3ede0',
+    color: crit ? '#ffd24a' : '#ff5040',
     size: crit ? 22 : 15,
     life: crit ? 1.0 : 0.8
   });
+}
+
+// GREEN for life gained (healing).
+function healText(x, y, amount) {
+  if (typeof Settings !== 'undefined' && !Settings.g.dmgNumbers) return;
+  const n = Math.round(amount);
+  if (n <= 0) return;
+  Particles.text(x, y - 24, '+' + n, { color: '#4ade80', size: 15, life: 0.9 });
 }
 
 function fxBlood(x, y, n = 10, angle) {
