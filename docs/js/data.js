@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.8.2-alpha';
+const GAME_VERSION = 'v0.8.3-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.8.3-alpha', date: 'July 2026',
+    notes: [
+      'SKILL ICONS reworked — every one of the 21 actives now has a full-colour, glowing emblem themed to its element (green bone magic, cyan army/scythe, red blood, orange corpse, purple curse) instead of the old flat monochrome glyphs',
+      'Curses re-coloured and redrawn: Decrepify (cyan wither), Leech (red barbed drain), Frailty (purple hourglass)',
+      'NEW — runes now render as a carved-stone shard with a glowing etched glyph (five random variants) beside each rune option'
+    ]
+  },
   {
     v: 'v0.8.2-alpha', date: 'July 2026',
     notes: [

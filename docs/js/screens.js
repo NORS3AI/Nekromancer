@@ -1567,10 +1567,11 @@ const Screens = {
         runes.forEach((r, ri) => {
           const locked = r.lvl && Hero.level < r.lvl;
           const active = (Hero.runes[s.id] || 'base') === r.id && !locked;
-          UI.tip(bx0 + ri * (bw + 6), fy + 52, bw, 22,
+          const rbx = bx0 + ri * (bw + 6);
+          UI.tip(rbx, fy + 52, bw, 22,
             r.name + (locked ? '  (lvl ' + r.lvl + ')' : ''), r.desc);
-          UI.btn(ctx, bx0 + ri * (bw + 6), fy + 52, bw, 22,
-            this.fitText(ctx, locked ? r.name + ' L' + r.lvl : r.name, bw - 8), locked ? null : () => {
+          UI.btn(ctx, rbx + 16, fy + 52, bw - 16, 22,
+            this.fitText(ctx, locked ? r.name + ' L' + r.lvl : r.name, bw - 30), locked ? null : () => {
               Hero.runes[s.id] = r.id;
               Hero.save();
               UI.toast(r.name + ': ' + r.desc, '#6ff7c3');
@@ -1580,6 +1581,12 @@ const Screens = {
             border: active ? '#6ff7c3' : undefined,
             color: active ? '#6ff7c3' : undefined
           });
+          // A carved-stone rune shard on the left of each option (dimmed if locked).
+          if (typeof drawRuneStone === 'function') {
+            if (locked) ctx.globalAlpha = 0.4;
+            drawRuneStone(ctx, rbx + 12, fy + 63, 8, (s.id.length + ri * 7 + 3));
+            ctx.globalAlpha = 1;
+          }
         });
       } else {
         ctx.fillStyle = '#6f6552';
