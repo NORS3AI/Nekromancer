@@ -900,10 +900,13 @@ class Enemy {
       pu.item = Items.wildDrop(Game.monsterLevel() + 2, 0.35);
       Game.pickups.push(pu);
     }
-    if (Math.random() < (this.unique ? 0.9 : this.elite ? 0.16 : 0.05)) {   // ~5% gem drop, tier by difficulty
-      const pu = new Pickup(this.x, this.y, 'gem');
-      pu.gem = Items.dropGem();
-      Game.pickups.push(pu);
+    if (Math.random() < (this.unique ? 0.9 : this.elite ? 0.16 : 0.05)) {   // gem roll gate
+      const gem = Items.rollWildGem();       // may be null (the drop table's None column)
+      if (gem) {
+        const pu = new Pickup(this.x, this.y, 'gem');
+        pu.gem = gem;
+        Game.pickups.push(pu);
+      }
     }
     if (this.unique) Game.onBossDead(this);
   }

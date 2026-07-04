@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.0.2-alpha';
+const GAME_VERSION = 'v1.0.3-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.0.3-alpha', date: 'July 2026',
+    notes: [
+      'Gem drops retuned to a full per-difficulty table (GEM_DROP_TABLE in data.js) — every difficulty now has its own spread across the 13 tiers, including a "no gem" chance. Monster kills honour that "None" chance; Horadric/act cache gems always drop',
+      'MUSIC now supports real audio files. Drop tracks into docs/sounds/music/ named 1.mp3–8.mp3 and they play in order on loop, mixed through Settings ▸ Master × Music volume (mute works). No files = the built-in generative score still plays',
+      'Added docs/sounds/ with music/ · ambience/ · weather/ · fx/ folders (see docs/sounds/README.md) for future audio'
+    ]
+  },
   {
     v: 'v1.0.2-alpha', date: 'July 2026',
     notes: [
@@ -833,6 +841,35 @@ const GEM_TIERS = [
 ];
 const GEM_PERFECT_TIER = 2;               // 'Perfect' — apex-perk threshold
 const GEM_MAX_TIER = GEM_TIERS.length - 1; // 'Marquise' — top of the ladder
+
+// Per-difficulty gem drop distribution (owner-tuned). Row = difficulty index
+// (0 Normal … 3 Master, 4 Torment I … 19 Torment XVI). 14 columns, as percents:
+//   [None, Chipped, Flawless, Perfect, Square, Flawless Square, Brilliant Square,
+//    Star, Flawless Star, Radiant Star, Imperial, Flawless Imperial, Royal Imperial,
+//    Marquise]. Column 0 = "no gem"; columns 1–13 map to tiers 0–12. Each row
+//    sums to 100. Edit these rows to retune what gems drop where.
+const GEM_DROP_TABLE = [
+  [50, 50,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],  // Normal
+  [25, 25, 50,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],  // Hard
+  [25, 25, 25, 25,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],  // Expert
+  [15, 20, 25, 25, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0],  // Master
+  [10, 15, 25, 25, 25,  0,  0,  0,  0,  0,  0,  0,  0,  0],  // Torment I
+  [ 8, 12, 25, 25, 30,  0,  0,  0,  0,  0,  0,  0,  0,  0],  // Torment II
+  [ 5,  5, 20, 30, 30, 10,  0,  0,  0,  0,  0,  0,  0,  0],  // Torment III
+  [ 3,  0, 10, 15, 30, 27, 15,  0,  0,  0,  0,  0,  0,  0],  // Torment IV
+  [ 2,  0,  0,  0, 35, 35, 28,  0,  0,  0,  0,  0,  0,  0],  // Torment V
+  [ 2,  0,  0,  0, 33, 37, 28,  0,  0,  0,  0,  0,  0,  0],  // Torment VI
+  [ 2,  0,  0,  0, 31, 39, 28,  0,  0,  0,  0,  0,  0,  0],  // Torment VII
+  [ 2,  0,  0,  0, 29, 37, 32,  0,  0,  0,  0,  0,  0,  0],  // Torment VIII
+  [ 2,  0,  0,  0, 20, 35, 40,  3,  0,  0,  0,  0,  0,  0],  // Torment IX
+  [ 2,  0,  0,  0, 10, 30, 50,  8,  0,  0,  0,  0,  0,  0],  // Torment X
+  [ 1,  0,  0,  0,  0, 20, 30, 40,  5,  4,  0,  0,  0,  0],  // Torment XI
+  [ 1,  0,  0,  0,  0,  0, 35, 45, 10,  5,  3,  1,  0,  0],  // Torment XII
+  [ 1,  0,  0,  0,  0,  0, 10, 50, 20, 10,  6,  3,  0,  0],  // Torment XIII
+  [ 1,  0,  0,  0,  0,  0,  0, 15, 25, 30, 20,  7,  2,  0],  // Torment XIV
+  [ 0,  0,  0,  0,  0,  0,  0,  0, 10, 20, 40, 15, 10,  5],  // Torment XV
+  [ 0,  0,  0,  0,  0,  0,  0,  0,  0, 10, 20, 30, 30, 10]   // Torment XVI
+];
 
 const GEM_TYPES = {
   ruby:     { name: 'Ruby',     color: '#e04a5a', stat: 'dmg',  perTier: 0.05,  label: v => `+${Math.round(v * 100)}% damage` },

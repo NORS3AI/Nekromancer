@@ -116,24 +116,35 @@ const Items = {
     return { type: pick(Object.keys(GEM_TYPES)), tier };
   },
 
-  // The gem tier that DROPS at the current difficulty (owner spec, 13-tier ladder):
-  //   below Torment → Chipped … Perfect (0–2, scaling with difficulty)
-  //   T1 ≈ Perfect  →  T16 ≈ Marquise, climbing the ladder with Torment (±1 jitter)
-  // (Crafted gems from the Jeweler still scale with jeweler level — this only
-  // governs monster/chest drops.)
+  // Sample GEM_DROP_TABLE for the current difficulty. Returns a tier 0–12, or
+  // -1 for the "None" column. `noNone` renormalizes over the tier columns only —
+  // used by GUARANTEED drops (caches / rift & story rewards) that must always
+  // yield a gem. (The Jeweler cuts by jeweler level via generateGem, not this.)
+  gemTableRoll(noNone) {
+    const row = GEM_DROP_TABLE[clamp(Hero.difficulty || 0, 0, GEM_DROP_TABLE.length - 1)];
+    const start = noNone ? 1 : 0;
+    let total = 0;
+    for (let i = start; i < row.length; i++) total += row[i];
+    if (total <= 0) return noNone ? 0 : -1;
+    let x = Math.random() * total, acc = 0;
+    for (let i = start; i < row.length; i++) { acc += row[i]; if (x < acc) return i - 1; }
+    return row.length - 2;                   // safety: top tier
+  },
+
+  // Guaranteed-drop tier (never None) — for Horadric caches and act rewards.
   dropGemTier() {
-    const tt = tormentTier();               // 0 (no torment) … 16
-    if (tt >= 1) {
-      const base = GEM_PERFECT_TIER + Math.round((tt - 1) / 15 * (GEM_MAX_TIER - GEM_PERFECT_TIER));
-      const jit = Math.random() < 0.25 ? 1 : Math.random() < 0.25 ? -1 : 0;
-      return clamp(base + jit, 0, GEM_MAX_TIER);
-    }
-    const di = Hero.difficulty || 0;        // 0 Normal … 3 Master
-    return clamp(di - (Math.random() < 0.5 ? 1 : 0), 0, GEM_PERFECT_TIER);
+    return this.gemTableRoll(true);
   },
 
   dropGem() {
     return { type: pick(Object.keys(GEM_TYPES)), tier: this.dropGemTier() };
+  },
+
+  // A WILD per-kill gem roll that honours the table's None column — returns a
+  // gem or null (no gem this roll).
+  rollWildGem() {
+    const tier = this.gemTableRoll(false);
+    return tier < 0 ? null : { type: pick(Object.keys(GEM_TYPES)), tier };
   },
 
   // A Grace of Inarius piece the hero doesn't own yet (or a re-roll if all

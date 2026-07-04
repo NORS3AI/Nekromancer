@@ -39,7 +39,7 @@ loot at the artisans. The hero is persistent (localStorage).
 |---|---|
 | `utils.js` | math helpers (`rand`, `clamp`, `lerp`, `dist`, `lerpAngle`, `rr`, `hash2`, `wrapText`) |
 | `settings.js` | `Settings` — 5 audio channels (master/sfx/music/ambience/weather, each volume+mute) and DI-style gameplay toggles (damage numbers, shake, health bars, aim indicator, fixed joystick, low FX, big minimap, FPS). Persisted separately from the hero |
-| `audio.js` | `AudioSys` — all SFX synthesized with WebAudio, mixed through per-channel gains. Generative dark-ambient music loop, per-zone ambience beds (wilds/crypt/camp), weather loops (rain/wind). `init()` needs a user gesture |
+| `audio.js` | `AudioSys` — SFX synthesized with WebAudio, mixed through per-channel gains (master/sfx/music/ambience/weather). **MUSIC** prefers real files: drop tracks in `docs/sounds/music/` named `1.mp3…8.mp3` (playlist = `MUSIC_PLAYLIST` at top of audio.js), played in order on loop through the music channel (so Settings Master×Music volume + mute apply); falls back to the generative dark-ambient loop if no files load (single 404 probe). Per-zone ambience beds (wilds/crypt/camp), weather loops (rain/wind). `init()` needs a user gesture. `docs/sounds/{music,ambience,weather,fx}/` reserved for assets |
 | `particles.js` | `Particles` (particles, floating texts, rings, screenshake) + `fx*` helpers |
 | `data.js` | ALL static data: `SKILL_DATA` (the 21 real D3 necro actives w/ real unlock levels), `PASSIVE_DATA` (12), `ZONES` (5 lands, some with `weather`), `MONSTERS`, `RARITIES` (incl. index 4 = Set, green), `ITEM_SLOTS` (**11** equip slots incl. shoulders/legs), `GEM_TYPES`/`GEM_TIERS`, `MATERIALS`, `DIFFICULTIES`, `XP_CURVE`, `GAME_VERSION`/`PATCH_NOTES`, `SEASON`/`INARIUS_SET`/`LEGENDARY_POWERS`, `makeRiftZone()` |
 | `hero.js` | `Hero` — the persistent character: `name`, `eyeColor`, level/xp, gold, materials, gems, bag (`bagTier`→`BAG_SIZE`, base 24, purchasable up to 120 via `BAG_UPGRADES`/`buyBagUpgrade`), equipped, skill `loadout` (6 slots), `passives` (5 slots @ lvl 3/10/20/30/45), zone progress, difficulty, `riftsCleared`, `artisans` levels (smith/mystic/jeweler 1–10). `snapshot()/applySnapshot()`; autosave → `localStorage['nekromancer_hero_v1']`. **`Profiles`** — up to **3 concurrent character slots** (`nekromancer_profiles_v1`), chosen from the campfire select scene; `boot()` loads the roster, `Hero.save()` mirrors the active hero into its slot. Shared Stash (`nekromancer_stash_v1`) common to all profiles, auto-sorted into per-equip-slot bins (`STASH_PER_SLOT` 100→10000 by `stashTier`, `nekromancer_stashtier_v1`; `stashSlotCount`/`buyStashUpgrade`). `Saves` — up to 20 named manual slots (`nekromancer_saves_v1`) |
@@ -155,10 +155,13 @@ loot at the artisans. The hero is persistent (localStorage).
   - `legendaryStars(tt)`: 1★ **T3–T7** · 2★ **T8–T13** · 3★ **T14–T16** (0★ below T3).
   - Artifacts drop **ONLY at T16** (below T16 the artifact slice rolls up as a
     legendary). `artifactStars()`: 1★ 10% · 2★ 7% · 3★ 5% · 4★ 3% · 5★ 1% (else 0★).
-  - **Gem drops** (`Items.dropGem`/`dropGemTier` — monster/chest/cache, NOT the
-    Jeweler): below Torment → Chipped…Perfect (0–2, by difficulty) · **T1–T16**
-    climb the 13-tier ladder (~Perfect at T1 → Marquise at T16, ±1 jitter). Gems
-    drop ~5% on their own roll.
+  - **Gem drops**: per-difficulty distribution lives in `GEM_DROP_TABLE` (data.js,
+    one editable row per difficulty: `[None, Chipped…Marquise]` percents summing
+    to 100). `Items.gemTableRoll(noNone)` samples it — wild monster kills use
+    `rollWildGem()` (honours the `None` column, may yield no gem), while
+    guaranteed drops (Horadric caches / act rewards) use `dropGem()`/`dropGemTier()`
+    (renormalize past `None`). Per-kill gate is still 5% normal / 16% elite / 90%
+    unique; the Jeweler cuts by jeweler level via `generateGem`, not this table.
 - **Torment I–XVI unlock at level 70** (`DIFFICULTIES` = 20 tiers, generated;
   `legBonus` +1%…+33.3%). Stepper caps at Master below 70.
 - **Named power items in the wild (owner rule)**: `WILD_POWER_KEYS` (funeraryPick,

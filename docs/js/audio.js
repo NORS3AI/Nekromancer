@@ -1,9 +1,20 @@
 'use strict';
 // ---------------------------------------------------------------------------
-// Procedural WebAudio — no assets. Five mixed channels (master → sfx / music /
-// ambience / weather), a generative dark-ambient score, per-zone ambience
-// drones and weather loops (rain, wind). All levels driven by Settings.
+// WebAudio mixer. Five channels (master → sfx / music / ambience / weather).
+// SFX + the fallback score are procedural; MUSIC prefers real files when they
+// exist (see MUSIC_PLAYLIST). Per-zone ambience drones + weather loops too.
+// All levels driven by Settings (master/music/etc. volume + mute).
 // ---------------------------------------------------------------------------
+
+// ===== MUSIC — drop your tracks here ======================================
+// Put your audio files in  docs/sounds/music/  and list their filenames below.
+// They play in order, on loop, forever. The EASIEST path: name your 8 files
+// 1.mp3 … 8.mp3 and you don't have to touch anything. To use other names or
+// formats (.ogg/.m4a), just edit this list. If NO files are found the game
+// falls back to the built-in generative score. Volume = Settings ▸ Master ×
+// Music (muting either silences it).
+const MUSIC_PLAYLIST = ['1.mp3', '2.mp3', '3.mp3', '4.mp3', '5.mp3', '6.mp3', '7.mp3', '8.mp3'];
+// ==========================================================================
 
 const AudioSys = {
   ctx: null,
@@ -12,6 +23,11 @@ const AudioSys = {
   enabled: true,
   musicTimer: null,
   musicRoot: 110,
+  musicEl: null,        // <audio> element for file music
+  musicSrcNode: null,   // its MediaElementSource → music channel
+  musicIndex: 0,
+  usingFileMusic: false,
+  musicMisses: 0,       // consecutive load failures (all → fall back to generative)
   ambienceNodes: null,
   weatherNodes: null,
   currentAmbience: null,
@@ -94,12 +110,15 @@ const AudioSys = {
 
   // ------------------------------------------------------------- music
 
-  // A slow generative dirge: sparse minor-scale swells over a low drone.
+  // Start music: prefer real files (MUSIC_PLAYLIST); the generative dirge below
+  // runs only as a fallback when no files load.
   startMusic() {
+    this.initFileMusic();
     if (this.musicTimer) return;
     const MINOR = [1, 1.189, 1.335, 1.498, 1.587, 1.782]; // aeolian-ish ratios
     let step = 0;
     this.musicTimer = setInterval(() => {
+      if (this.usingFileMusic) return;      // real tracks are playing — stay quiet
       if (!this.ctx || !this.enabled || this.ctx.state !== 'running') return;
       if (Settings.volume('master') === 0 || Settings.volume('music') === 0) return;
       step++;
@@ -120,6 +139,56 @@ const AudioSys = {
         this.tone('sine', f, f, 0.04, 0.01, 2.8, rand(0, 1), 'music');
       }
     }, 2200);
+  },
+
+  // ----- file-based playlist (docs/sounds/music/) -----
+  // Routed through the MUSIC channel so Settings ▸ Master × Music volume and
+  // mute all apply automatically. Plays the list in order, on loop. If every
+  // track fails to load (none present), we quietly fall back to the generative
+  // score above.
+  initFileMusic() {
+    if (this.musicEl || !this.ctx || !MUSIC_PLAYLIST.length) return;
+    const el = new Audio();
+    el.preload = 'auto';
+    el.loop = false;                    // we advance manually to chain the list
+    el.addEventListener('ended', () => this.nextTrack());
+    el.addEventListener('error', () => this.onTrackError());
+    el.addEventListener('playing', () => { this.usingFileMusic = true; this.musicMisses = 0; });
+    try {
+      this.musicSrcNode = this.ctx.createMediaElementSource(el);
+      this.musicSrcNode.connect(this.ch.music);
+    } catch (e) { return; }             // no media-element support → generative
+    this.musicEl = el;
+    this.playTrack(0);
+  },
+
+  playTrack(i) {
+    const el = this.musicEl;
+    if (!el || !MUSIC_PLAYLIST.length) return;
+    const n = MUSIC_PLAYLIST.length;
+    this.musicIndex = ((i % n) + n) % n;
+    const bust = typeof GAME_VERSION !== 'undefined' ? '?v=' + GAME_VERSION : '';
+    el.src = 'sounds/music/' + MUSIC_PLAYLIST[this.musicIndex] + bust;
+    const pr = el.play();
+    if (pr && pr.catch) pr.catch(() => {});   // ignore autoplay rejections
+  },
+
+  nextTrack() { this.playTrack(this.musicIndex + 1); },
+
+  // A track failed to load.
+  //  · If nothing has ever played, there are no music files — give up after this
+  //    single probe (one 404) and let the generative score play.
+  //  · If music WAS playing, just this track is missing — skip to the next (but
+  //    stop cycling if the whole rest of the list is gone).
+  onTrackError() {
+    this.musicMisses++;
+    if (!this.usingFileMusic) { if (this.musicEl) this.musicEl.pause(); return; }
+    if (this.musicMisses > MUSIC_PLAYLIST.length) {
+      this.usingFileMusic = false;
+      if (this.musicEl) this.musicEl.pause();
+      return;
+    }
+    this.playTrack(this.musicIndex + 1);
   },
 
   // --------------------------------------------------- ambience / weather
