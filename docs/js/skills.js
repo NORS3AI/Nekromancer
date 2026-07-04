@@ -1208,7 +1208,7 @@ function drawGemGlyph(ctx, type, tier, x, y, r) {
 // Optional title/menu logo. Drop docs/art/logo.png and flip LOGO_ART_READY to
 // true; otherwise a procedural purple radiant-skull emblem is drawn. The art is
 // fit (letterboxed) inside the given box so any aspect ratio stays uncropped.
-const LOGO_ART_READY = false;
+const LOGO_ART_READY = true;
 let LOGO_IMAGE = null;
 (function loadLogo() {
   if (!LOGO_ART_READY || typeof Image === 'undefined') return;
