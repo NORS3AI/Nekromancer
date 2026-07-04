@@ -982,20 +982,29 @@ const Screens = {
     const cx = W / 2, cy = H * 0.34;
     const t = Game.time;
 
+    // Key-art logo (owner art) as the title banner — a steady purple glow, no
+    // hover. The title is baked into the art, so no separate wordmark.
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = `bold ${Math.min(56, W * 0.105)}px Georgia`;
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = 'rgba(0,0,0,0.9)';
-    ctx.strokeText('NEKROMANCER', cx, cy + 10);
-    const grad = ctx.createLinearGradient(0, cy - 14, 0, cy + 36);
-    grad.addColorStop(0, '#f2ecd8');
-    grad.addColorStop(0.55, '#c9bfa8');
-    grad.addColorStop(1, '#6f6552');
-    ctx.fillStyle = grad;
-    ctx.fillText('NEKROMANCER', cx, cy + 10);
+    const ar = (LOGO_IMAGE && LOGO_IMAGE.naturalWidth) ? LOGO_IMAGE.naturalWidth / LOGO_IMAGE.naturalHeight : 1.777;
+    const lw = Math.min(W * 0.9, H * 0.42 * ar);
+    const lhpx = lw / ar;
+    const lyC = H * 0.05 + lhpx / 2;
+    // Purple aura behind the logo.
+    const halo = ctx.createRadialGradient(cx, lyC, 10, cx, lyC, lw * 0.62);
+    halo.addColorStop(0, 'rgba(150,70,225,0.45)');
+    halo.addColorStop(0.6, 'rgba(110,40,185,0.16)');
+    halo.addColorStop(1, 'rgba(40,10,70,0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(cx - lw * 0.75, lyC - lhpx * 0.9, lw * 1.5, lhpx * 1.8);
+    // Logo with a purple drop-glow (no hover — fixed y).
+    ctx.save();
+    ctx.shadowColor = 'rgba(165,85,240,0.85)'; ctx.shadowBlur = Math.min(42, W * 0.055);
+    drawGameLogo(ctx, cx, lyC, lw, 0);
+    ctx.restore();
+    // Tagline below the art.
     ctx.font = 'italic 15px Georgia';
-    ctx.fillStyle = '#8a2635';
-    ctx.fillText('~ A Sanctuary of the Dead ~', cx, cy + 46);
+    ctx.fillStyle = '#a06adf';
+    ctx.fillText('~ A Sanctuary of the Dead ~', cx, lyC + lhpx / 2 + 22);
 
     const bw = Math.min(260, W * 0.7);
     const by = H * 0.56;
