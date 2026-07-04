@@ -22,7 +22,7 @@
 //   const MUSIC_BASE_URL = 'https://github.com/nors3ai/Nekromancer/releases/download/music-v1/';
 // (Google Drive works only via 'uc?export=download&id=…' DIRECT links and is
 //  unreliable for big files — prefer a Release. See docs/sounds/README.md.)
-const MUSIC_BASE_URL = '';
+const MUSIC_BASE_URL = 'https://github.com/nors3ai/Nekromancer/releases/download/music-v1/';
 const MUSIC_PLAYLIST = [
   '1.mp3', '2.mp3', '3.mp3', '4.mp3', '5.mp3', '6.mp3', '7.mp3', '8.mp3',
   '9.mp3', '10.mp3', '11.mp3', '12.mp3', '13.mp3', '14.mp3', '15.mp3', '16.mp3'
@@ -173,7 +173,9 @@ const AudioSys = {
     const el = new Audio();
     el.preload = 'auto';
     el.loop = false;                    // we advance manually to chain the list
-    el.crossOrigin = 'anonymous';       // allow externally-hosted (Release/CDN) tracks
+    // NOTE: do NOT set crossOrigin — we play the element directly (no WebAudio
+    // graph), so cross-origin tracks play as opaque media without needing CORS
+    // headers. Setting crossOrigin='anonymous' would REQUIRE them and could fail.
     el.volume = this.fileMusicVolume();
     el.addEventListener('ended', () => this.nextTrack());
     el.addEventListener('error', () => this.onTrackError());

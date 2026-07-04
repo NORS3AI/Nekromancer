@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.0.8-alpha';
+const GAME_VERSION = 'v1.0.9-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.0.9-alpha', date: 'July 2026',
+    notes: [
+      'MUSIC IS LIVE — 16 tracks now stream from the music-v1 GitHub Release, shuffled on loop, through Settings ▸ Master × Music volume (mute works). Verified the release files are valid MP3s and reachable'
+    ]
+  },
   {
     v: 'v1.0.8-alpha', date: 'July 2026',
     notes: [
