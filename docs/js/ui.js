@@ -866,7 +866,7 @@ const UI = {
       const affordable = p.essence >= cost;
 
       ctx.globalAlpha = affordable ? 0.95 : 0.35;
-      SKILL_ICONS[s.id](ctx, b.x, b.y, b.r * 0.92);
+      drawSkillIcon(ctx, s.id, b.x, b.y, b.r * 0.92);
 
       if (cd > 0.05) {
         const frac = cd / Skills.cdFor(s);

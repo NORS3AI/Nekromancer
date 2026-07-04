@@ -1619,7 +1619,7 @@ const Screens = {
       ctx.lineWidth = selected ? 3 : 2;
       ctx.beginPath(); ctx.arc(bx, sy + 20, cr, 0, TAU); ctx.stroke();
       const id = Hero.loadout[i];
-      if (id) SKILL_ICONS[id](ctx, bx, sy + 20, cr - 3);
+      if (id) drawSkillIcon(ctx, id, bx, sy + 20, cr - 3);
       else {
         ctx.fillStyle = '#3a3448';
         ctx.font = '20px Georgia';
@@ -1659,7 +1659,7 @@ const Screens = {
       ctx.globalAlpha = locked ? 0.32 : (inSlot >= 0 ? 1 : 0.7);
       ctx.beginPath(); ctx.arc(gx, gyy, iconR, 0, TAU); ctx.stroke();
       ctx.globalAlpha = locked ? 0.32 : 1;
-      SKILL_ICONS[s.id](ctx, gx, gyy, iconR * 0.86);
+      drawSkillIcon(ctx, s.id, gx, gyy, iconR * 0.86);
       ctx.globalAlpha = 1;
       if (locked) {
         ctx.fillStyle = '#9a9080';

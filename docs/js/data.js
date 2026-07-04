@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.8.4-alpha';
+const GAME_VERSION = 'v0.8.5-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.8.5-alpha', date: 'July 2026',
+    notes: [
+      'NEW — skill slots can now show CUSTOM ICON ART. Drop a square PNG in docs/art/icons/<skillId>.png and list that id in SKILL_ICON_FILES (skills.js); it renders across the radial HUD, loadout and skill grid, with the built-in procedural glyph as an automatic fallback',
+      'The game still ships with the procedural glyphs by default — no art files, no extra downloads'
+    ]
+  },
   {
     v: 'v0.8.4-alpha', date: 'July 2026',
     notes: [

@@ -1044,6 +1044,43 @@ function drawRuneStone(ctx, x, y, r, seed) {
   ctx.restore();
 }
 
+// -------------------------- custom icon art loader --------------------------
+// Optional image art overrides the procedural glyphs. Drop a square PNG at
+// docs/art/icons/<skillId>.png AND list that <skillId> in SKILL_ICON_FILES
+// below; it renders in every skill slot (radial HUD, loadout, skill grid) with
+// the procedural glyph as an automatic fallback. Listing only files that exist
+// keeps the load free of 404s (the game ships with no icon art by default).
+const SKILL_ICON_IMAGES = {};
+const SKILL_ICON_FILES = [
+  // e.g. 'boneSpikes', 'grimScythe', ...  ← add an id here + its PNG file.
+];
+function loadSkillIcons() {
+  if (typeof Image === 'undefined') return;
+  for (const id of SKILL_ICON_FILES) {
+    if (!SKILL_ICONS[id]) continue;               // ignore unknown ids
+    const img = new Image();
+    img.src = 'art/icons/' + id + '.png';
+    SKILL_ICON_IMAGES[id] = img;
+  }
+}
+loadSkillIcons();
+
+// Draw a skill's icon: the custom art if it has finished loading, else the
+// hand-drawn procedural glyph. Art is fit to the button and clipped to its
+// circle so square tiles stay inside the round slot.
+function drawSkillIcon(ctx, id, x, y, r) {
+  const img = SKILL_ICON_IMAGES[id];
+  if (img && img.complete && img.naturalWidth > 0) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.clip();
+    ctx.drawImage(img, x - r, y - r, r * 2, r * 2);
+    ctx.restore();
+    return;
+  }
+  const fn = SKILL_ICONS[id];
+  if (fn) fn(ctx, x, y, r);
+}
+
 // ------------------------------ extra FX ------------------------------------
 
 function fxSpikes(x, y) {
