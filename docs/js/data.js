@@ -18,11 +18,23 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.5.5-alpha';
+const GAME_VERSION = 'v0.6.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.6.0-alpha', date: 'July 2026',
+    notes: [
+      'NEW — CHARACTER CREATION: starting a new Nekromancer now lets you NAME your hero and choose your glowing-eye colour (green, yellow, red, blue, cyan, white, black, purple or pink). Your name shows in camp and on the character sheet',
+      'Map edges no longer end in a solid wall — they now dissolve into FOG with a distant skyline beyond (forest, mountains, ocean or snow by land), so every place feels far bigger than its walkable bounds',
+      'Wood/Iron/Nephalem torches now STACK — a whole pile of one type takes a single Stash slot (×count), not one slot each. Torches no longer show "lvl undefined" and are never rated as your best/worst gear',
+      'Gems now STACK in the socket picker — "Perfect ×12" on one chip instead of a dozen identical chips',
+      'Fixed the Stash search box overlapping the category filters on phones (two tidy rows now)',
+      'Fixed long land names overflowing the on-screen banner on phones (auto-shrinks to fit)',
+      'Tapping a filled loadout slot now names its skill in the footer, so you don\'t have to hunt for it in the grid'
+    ]
+  },
   {
     v: 'v0.5.5-alpha', date: 'July 2026',
     notes: [
@@ -884,6 +896,19 @@ const MONSTERS = {
   skeletonking: { name: 'The Skeleton King', hp: 520, speed: 54, dmg: 30, r: 30, xp: 240, atkRange: 54, atkCd: 1.8, boss: true }
 };
 
+// Glowing-eye colours offered at character creation.
+const EYE_COLORS = [
+  { name: 'Green',  hex: '#6ff7c3' },
+  { name: 'Yellow', hex: '#ffd84a' },
+  { name: 'Red',    hex: '#ff5a4a' },
+  { name: 'Blue',   hex: '#5aa0ff' },
+  { name: 'Cyan',   hex: '#4ee0e0' },
+  { name: 'White',  hex: '#f4f0e6' },
+  { name: 'Black',  hex: '#2a2a30' },
+  { name: 'Purple', hex: '#b06adf' },
+  { name: 'Pink',   hex: '#ff8fd0' }
+];
+
 const ELITE_PREFIX = ['Blood', 'Grave', 'Doom', 'Plague', 'Dread', 'Bone'];
 const ELITE_SUFFIX = ['maw', 'fang', 'howl', 'rot', 'claw', 'shriek'];
 // Rare NAMED purple elite of the Rifts — the sole source of Nephalem
@@ -904,7 +929,7 @@ const ZONES = [
     ground: '#16121b', accent: '#2c4230', weather: 'rain',
     monsters: ['zombie', 'zombie', 'skeleton', 'ghoul', 'hound'],
     boss: 'The Grave Warden', packs: 11,
-    sizeMul: 1.0, rivers: 1, forest: true,
+    sizeMul: 1.0, rivers: 1, forest: true, edge: 'forest',
     desc: 'A drowned graveyard where the dead refuse to rest.'
   },
   {
@@ -920,7 +945,7 @@ const ZONES = [
     ground: '#1e1812', accent: '#4a3c28', weather: 'wind',
     monsters: ['imp', 'imp', 'ghoul', 'archer', 'cultist', 'soldier', 'bloat'],
     boss: 'Sar\'Khan the Sunscoured', packs: 13,
-    sizeMul: 1.4, rivers: 0, forest: false,
+    sizeMul: 1.4, rivers: 0, forest: false, edge: 'mountain',
     desc: 'A vast burned waste of dunes, imps and buried idols.'
   },
   {
@@ -928,7 +953,7 @@ const ZONES = [
     ground: '#121a16', accent: '#2c4230', weather: 'rain',
     monsters: ['zombie', 'ghoul', 'ghoul', 'cultist', 'bloat', 'soldier', 'knight'],
     boss: 'Mother of Maggots', packs: 14,
-    sizeMul: 1.2, rivers: 2, forest: true,
+    sizeMul: 1.2, rivers: 2, forest: true, edge: 'ocean',
     desc: 'Rotting fens, criss-crossed by bloody streams and dead groves.'
   },
   {
@@ -1025,27 +1050,27 @@ function makeAdventureZone() {
 const BIOMES = {
   grass:    { name: 'Verdant Meadows',   ground: '#18240f', accent: '#3f6a2c', tree: 'oak',
               props: ['oak', 'oak', 'rock', 'pillar'],       deco: ['grass', 'grass', 'moss', 'rock'],
-              border: 'forest', weather: null,   forest: true,  rivers: 1,
+              border: 'forest', edge: 'forest', weather: null, forest: true, rivers: 1,
               monsters: ['zombie', 'skeleton', 'ghoul', 'hound', 'archer'] },
   forest:   { name: 'Whispering Woods',   ground: '#132012', accent: '#2f5226', tree: 'pine',
               props: ['pine', 'pine', 'oak', 'rock'],         deco: ['grass', 'moss', 'moss', 'bones'],
-              border: 'forest', weather: null,   forest: true,  rivers: 0,
+              border: 'forest', edge: 'forest', weather: null, forest: true, rivers: 0,
               monsters: ['skeleton', 'archer', 'ghoul', 'hound', 'soldier'] },
   jungle:   { name: 'Tangled Jungle',     ground: '#0f2418', accent: '#2c6a3c', tree: 'palm',
               props: ['palm', 'palm', 'oak', 'rock'],         deco: ['grass', 'grass', 'moss'],
-              border: 'jungle', weather: 'rain', forest: true,  rivers: 1,
+              border: 'jungle', edge: 'forest', weather: 'rain', forest: true, rivers: 1,
               monsters: ['ghoul', 'imp', 'cultist', 'hound', 'bloat'] },
   swamp:    { name: 'Sunken Mire',        ground: '#131a15', accent: '#2c3a2a', tree: 'tree',
               props: ['tree', 'tree', 'rock', 'tomb'],        deco: ['moss', 'grass', 'bones', 'blood'],
-              border: 'forest', weather: 'rain', forest: true,  rivers: 2,
+              border: 'forest', edge: 'ocean', weather: 'rain', forest: true, rivers: 2,
               monsters: ['zombie', 'ghoul', 'ghoul', 'cultist', 'bloat'] },
   desert:   { name: 'Scorched Dunes',     ground: '#241d10', accent: '#6a5326', tree: 'cactus',
               props: ['cactus', 'cactus', 'rock', 'obelisk'], deco: ['crack', 'rubble', 'bones'],
-              border: 'mountain', weather: 'wind', forest: false, rivers: 0,
+              border: 'mountain', edge: 'mountain', weather: 'wind', forest: false, rivers: 0,
               monsters: ['imp', 'imp', 'archer', 'cultist', 'soldier'] },
   badlands: { name: 'Broken Barrens',     ground: '#20180d', accent: '#4e3c22', tree: 'cactus',
               props: ['rock', 'rock', 'cactus', 'obelisk'],   deco: ['crack', 'rubble', 'rock'],
-              border: 'cliff', weather: 'wind', forest: false, rivers: 0,
+              border: 'cliff', edge: 'mountain', weather: 'wind', forest: false, rivers: 0,
               monsters: ['skeleton', 'archer', 'soldier', 'knight', 'catapult'] }
 };
 

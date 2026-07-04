@@ -131,8 +131,21 @@ const Items = {
     const secs = T.minutes * 60;
     return {
       slot: 'torch', torch: type, name: T.name, rarity: T.rarity,
-      stats: {}, gems: [], sockets: 0, burnMax: secs, burnT: secs
+      stats: {}, gems: [], sockets: 0, burnMax: secs, burnT: secs, count: 1
     };
+  },
+
+  // Put an item in the Stash. Torches of the same type STACK into a single
+  // slot (count) instead of eating a slot each. Returns false if the stash is
+  // full and the item would need a new slot.
+  addToStash(item) {
+    if (item.torch) {
+      const ex = Hero.stash.find(s => s.torch === item.torch);
+      if (ex) { ex.count = (ex.count || 1) + (item.count || 1); return true; }
+    }
+    if (Hero.stash.length >= Hero.STASH_SIZE) return false;
+    Hero.stash.push(item);
+    return true;
   },
 
   // Craft a torch at the Blacksmith — consumes reagents, sends it to the Stash.
@@ -146,13 +159,12 @@ const Items = {
         return;
       }
     }
-    if (Hero.stash.length >= Hero.STASH_SIZE) {
+    if (!this.addToStash(this.makeTorch(type))) {
       UI.toast('Stash is full — make room for the torch', '#9a9080');
       AudioSys.sfx('denied');
       return;
     }
     for (const [k, n] of Object.entries(T.recipe)) Hero.mats[k] -= n;
-    Hero.stash.push(this.makeTorch(type));
     Hero.saveStash();
     Hero.save();
     UI.toast('Forged a ' + T.name + ' → sent to Stash', T.color);
@@ -355,17 +367,18 @@ const Items = {
   toStash(item) {
     const i = Hero.bag.indexOf(item);
     if (i < 0) return false;
-    if (Hero.stash.length >= Hero.STASH_SIZE) {
+    if (!this.addToStash(item)) {
       UI.toast('Stash is full (' + Hero.STASH_SIZE + ')', '#9a9080');
       AudioSys.sfx('denied');
       return false;
     }
     Hero.bag.splice(i, 1);
-    Hero.stash.push(item);
     Hero.save();
     return true;
   },
 
+  // Withdraw ONE from the stash. Torch stacks hand over a single torch and
+  // keep the rest of the pile in place.
   fromStash(item) {
     const i = Hero.stash.indexOf(item);
     if (i < 0) return false;
@@ -374,17 +387,22 @@ const Items = {
       AudioSys.sfx('denied');
       return false;
     }
-    Hero.stash.splice(i, 1);
-    Hero.bag.push(item);
+    if (item.torch && (item.count || 1) > 1) {
+      item.count -= 1;
+      Hero.bag.push(this.makeTorch(item.torch));
+    } else {
+      Hero.stash.splice(i, 1);
+      if (item.torch) item.count = 1;
+      Hero.bag.push(item);
+    }
     Hero.save();
     return true;
   },
 
   depositAll() {
     let n = 0;
-    for (let i = Hero.bag.length - 1; i >= 0 && Hero.stash.length < Hero.STASH_SIZE; i--) {
-      Hero.stash.push(Hero.bag.splice(i, 1)[0]);
-      n++;
+    for (let i = Hero.bag.length - 1; i >= 0; i--) {
+      if (this.addToStash(Hero.bag[i])) { Hero.bag.splice(i, 1); n++; }
     }
     if (n) { UI.toast('Stashed ' + n + ' item' + (n > 1 ? 's' : ''), '#6ff7c3'); Hero.save(); }
     else { AudioSys.sfx('denied'); }
@@ -412,7 +430,8 @@ const Items = {
   // ALL loot is salvageable — any gear, any rarity, any level, no gold cost
   // (owner rule). D3-style Blacksmith salvage.
   canSalvage(item) {
-    return !!item;
+    // Torches are tools, not salvage fodder.
+    return !!item && !item.torch;
   },
 
   salvageReq(item) {

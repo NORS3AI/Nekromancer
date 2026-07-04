@@ -303,8 +303,9 @@ class Player {
 
     ctx.fillStyle = this.flash > 0.4 ? '#b8f4de' : '#1c2e2c';
     ctx.beginPath(); ctx.arc(0, -6, 7.5, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#6ff7c3';
-    ctx.shadowColor = '#6ff7c3';
+    const eye = (typeof Hero !== 'undefined' && Hero.eyeColor) || '#6ff7c3';
+    ctx.fillStyle = eye;
+    ctx.shadowColor = eye;
     ctx.shadowBlur = 7;
     ctx.beginPath(); ctx.arc(-2.6, -8.5, 1.4, 0, TAU); ctx.fill();
     ctx.beginPath(); ctx.arc(2.6, -8.5, 1.4, 0, TAU); ctx.fill();

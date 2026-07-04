@@ -39,6 +39,7 @@ const World = {
     this.packs = [];
     this.portal = null;
     this.patternFill = null;
+    this.edgeTheme = null;
     this.makePattern(zone);
     if (zone.kind === 'dungeon') this.genDungeon(zone);
     else this.genOpen(zone);
@@ -87,8 +88,11 @@ const World = {
 
     // Forests: dense groves of trees you weave through for cover.
     this.makeForests(zone);
-    // A natural border frames the whole map — no bare rectangular edges.
-    this.makeBorder(zone);
+    // The map's edges dissolve into fog with distant forest / mountains / ocean
+    // beyond — never a solid wall — so the land feels far bigger than it is.
+    this.edgeTheme = zone.edge
+      || (zone.biome && BIOMES[zone.biome] && BIOMES[zone.biome].edge)
+      || 'forest';
 
     const decoTypes = biome ? biome.deco : ['skull', 'bones', 'ribcage', 'rubble', 'crack', 'blood', 'moss', 'grass'];
     const decoTarget = Math.round(this.W * this.H / 26000);
@@ -175,41 +179,6 @@ const World = {
   PROP_R: {
     tomb: 16, cross: 13, pillar: 19, tree: 15, obelisk: 17, rock: 20,
     oak: 16, pine: 16, palm: 16, cactus: 14
-  },
-
-  // The border species for each biome's frame.
-  BORDER_PROPS: {
-    forest: ['pine', 'pine', 'oak', 'tree'],
-    jungle: ['palm', 'palm', 'oak'],
-    mountain: ['rock', 'rock', 'cactus'],
-    cliff: ['rock', 'rock', 'rock', 'obelisk']
-  },
-
-  // Frame the open map with a dense natural wall (forest / cliff / mountain)
-  // so it has no bare rectangular edge. The band hugs the perimeter and steers
-  // clear of the spawn, the boss lair and any water.
-  makeBorder(zone) {
-    const B = zone.biome ? BIOMES[zone.biome] : null;
-    if (!B || !B.border) return;
-    const kinds = this.BORDER_PROPS[B.border] || ['rock'];
-    const band = 128;   // how deep the wall reaches inward
-    const along = 44;   // spacing tangent to the edge
-    const inward = 40;  // spacing perpendicular
-    const place = (x, y) => {
-      x = clamp(x + rand(-14, 14), 38, this.W - 38);
-      y = clamp(y + rand(-14, 14), 38, this.H - 38);
-      if (dist(x, y, this.spawn.x, this.spawn.y) < 210) return;
-      if (dist(x, y, this.bossPos.x, this.bossPos.y) < 210) return;
-      if (this.blockedTerrain(x, y)) return;
-      const type = pick(kinds);
-      this.props.push({ x, y, r: this.PROP_R[type] || 18, type, seed: Math.random(), border: true });
-    };
-    for (let x = 40; x < this.W - 40; x += along) {
-      for (let d = 0; d < band; d += inward) { place(x, 42 + d); place(x, this.H - 42 - d); }
-    }
-    for (let y = 40; y < this.H - 40; y += along) {
-      for (let d = 0; d < band; d += inward) { place(42 + d, y); place(this.W - 42 - d, y); }
-    }
   },
 
   makeForests(zone) {
@@ -674,9 +643,7 @@ const World = {
     if (this.walls) { this.drawFloorTint(ctx, cam, w, h); this.drawWalls(ctx, cam, w, h); }
     else {
       this.drawWater(ctx, cam, w, h);
-      ctx.strokeStyle = 'rgba(111,247,195,0.10)';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(0, 0, this.W, this.H);
+      this.drawEdgeFog(ctx, cam, w, h);
     }
 
     for (const d of this.decos) {
@@ -719,6 +686,75 @@ const World = {
       for (let cx = x0; cx <= x1; cx++) {
         if (this.isWall(cx, cy)) continue;
         ctx.fillRect(cx * CELL, cy * CELL, CELL, CELL);
+      }
+    }
+  },
+
+  // The map's edges dissolve into fog with a distant skyline beyond — forest,
+  // mountains, ocean or snow depending on the land — so the world feels far
+  // bigger than the walkable rectangle. Drawn under all entities.
+  drawEdgeFog(ctx, cam, w, h) {
+    const theme = this.edgeTheme;
+    if (!theme) return;
+    const band = 240, W = this.W, H = this.H;
+    const edge = (side) => {
+      ctx.save();
+      let len;
+      if (side === 'top') { len = W; }
+      else if (side === 'bottom') { ctx.translate(W, H); ctx.rotate(Math.PI); len = W; }
+      else if (side === 'left') { ctx.translate(0, H); ctx.rotate(-Math.PI / 2); len = H; }
+      else { ctx.translate(W, 0); ctx.rotate(Math.PI / 2); len = H; }
+      // Distant terrain silhouettes rising just past the boundary...
+      this.drawSkyline(ctx, len, theme);
+      // ...veiled by a bank of fog thickest right at the edge.
+      const g = ctx.createLinearGradient(0, -90, 0, band);
+      g.addColorStop(0, 'rgba(14,13,20,0.35)');
+      g.addColorStop(0.28, 'rgba(14,13,20,0.82)');
+      g.addColorStop(1, 'rgba(14,13,20,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, -90, len, band + 90);
+      ctx.restore();
+    };
+    if (cam.y < band) edge('top');
+    if (cam.y + h > H - band) edge('bottom');
+    if (cam.x < band) edge('left');
+    if (cam.x + w > W - band) edge('right');
+  },
+
+  // A stable (non-flickering) skyline along the local edge (0,0)->(len,0),
+  // rising outward (-y). Shapes vary by biome edge theme.
+  drawSkyline(ctx, len, theme) {
+    if (theme === 'ocean') {
+      for (let b = 3; b >= 0; b--) {
+        const yy = -6 - b * 15;
+        ctx.fillStyle = `rgba(${26 + b * 6},${50 + b * 10},${84 + b * 14},0.85)`;
+        ctx.beginPath();
+        ctx.moveTo(0, yy);
+        for (let x = 0; x <= len; x += 36) ctx.lineTo(x, yy + Math.sin(x * 0.04 + b * 1.3) * 4);
+        ctx.lineTo(len, 8); ctx.lineTo(0, 8); ctx.closePath(); ctx.fill();
+      }
+      return;
+    }
+    const step = theme === 'mountain' ? 120 : 50;
+    for (let i = -1; i * step < len + step; i++) {
+      const s = hash2(i * 7 + 2, 3);
+      const x = i * step + hash2(i * 3 + 1, 5) * step * 0.6;
+      if (theme === 'mountain') {
+        const hgt = 70 + s * 70, wid = 92 + s * 60;
+        ctx.fillStyle = 'rgba(44,42,58,0.92)';
+        ctx.beginPath(); ctx.moveTo(x - wid / 2, 8); ctx.lineTo(x, -hgt); ctx.lineTo(x + wid / 2, 8); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(150,160,185,0.5)';
+        ctx.beginPath(); ctx.moveTo(x - wid * 0.14, -hgt * 0.72); ctx.lineTo(x, -hgt); ctx.lineTo(x + wid * 0.14, -hgt * 0.72); ctx.closePath(); ctx.fill();
+      } else if (theme === 'snow') {
+        const hgt = 30 + s * 40, wid = 80 + s * 50;
+        ctx.fillStyle = 'rgba(178,188,206,0.7)';
+        ctx.beginPath(); ctx.moveTo(x - wid / 2, 8);
+        ctx.quadraticCurveTo(x, -hgt, x + wid / 2, 8); ctx.closePath(); ctx.fill();
+      } else { // forest
+        const hgt = 42 + s * 34;
+        ctx.fillStyle = 'rgba(22,32,24,0.92)';
+        ctx.beginPath(); ctx.moveTo(x - 16, 8); ctx.lineTo(x, -hgt); ctx.lineTo(x + 16, 8); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.arc(x, -hgt * 0.5, 12 + s * 5, 0, TAU); ctx.fill();
       }
     }
   },

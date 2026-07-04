@@ -65,6 +65,8 @@ const Saves = {
 };
 
 const Hero = {
+  name: 'The Nekromancer',
+  eyeColor: '#6ff7c3',      // glowing-eye colour, chosen at character creation
   level: 1,
   xp: 0,
   gold: 0,
@@ -92,6 +94,9 @@ const Hero = {
   SAVE_VERSION: 3,   // v2: Epic rarity @ index 3 · v3: item.gem → item.gems[]
 
   fresh() {
+    // name/eyeColor are chosen at character creation; keep any already set.
+    if (!this.name) this.name = 'The Nekromancer';
+    if (!this.eyeColor) this.eyeColor = '#6ff7c3';
     this.level = 1; this.xp = 0; this.gold = 0;
     this.mats = { parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0 };
     this.gems = [];
@@ -118,6 +123,7 @@ const Hero = {
   snapshot() {
     return {
       v: this.SAVE_VERSION,
+      name: this.name, eyeColor: this.eyeColor,
       level: this.level, xp: this.xp, gold: this.gold, mats: this.mats,
       gems: this.gems, bag: this.bag, equipped: this.equipped,
       loadout: this.loadout, passives: this.passives,
@@ -158,6 +164,7 @@ const Hero = {
   applySnapshot(d) {
     d = this.migrate(d);
     Object.assign(this, {
+      name: d.name || 'The Nekromancer', eyeColor: d.eyeColor || '#6ff7c3',
       level: d.level || 1, xp: d.xp || 0, gold: d.gold || 0,
       mats: Object.assign({ parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0 }, d.mats),
       gems: d.gems || [], bag: d.bag || [], equipped: d.equipped || {},
@@ -204,7 +211,7 @@ const Hero = {
   loadStash() {
     try {
       const raw = localStorage.getItem(STASH_KEY);
-      if (raw !== null) { this.stash = JSON.parse(raw) || []; return; }
+      if (raw !== null) { this.stash = JSON.parse(raw) || []; this.mergeStashTorches(); return; }
       // No shared vault yet — migrate from the current hero save if present.
       let seed = [];
       try {
@@ -212,8 +219,24 @@ const Hero = {
         if (hraw) { const hd = this.migrate(JSON.parse(hraw)); seed = hd.stash || []; }
       } catch (e) { /* ignore */ }
       this.stash = seed.slice(0, this.STASH_SIZE);
+      this.mergeStashTorches();
       this.saveStash();
     } catch (e) { this.stash = this.stash || []; }
+  },
+
+  // Collapse duplicate torch entries into one stack per type (older saves kept
+  // each crafted torch in its own slot).
+  mergeStashTorches() {
+    const byType = {};
+    const merged = [];
+    for (const it of this.stash || []) {
+      if (it && it.torch) {
+        if (byType[it.torch]) { byType[it.torch].count = (byType[it.torch].count || 1) + (it.count || 1); continue; }
+        it.count = it.count || 1; byType[it.torch] = it;
+      }
+      merged.push(it);
+    }
+    this.stash = merged;
   },
 
   load() {

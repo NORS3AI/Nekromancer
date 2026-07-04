@@ -35,7 +35,83 @@ const Screens = {
       case 'patchnotes': this.patchnotes(ctx, W, H); break;
       case 'season': this.season(ctx, W, H); break;
       case 'wilds': this.wilds(ctx, W, H); break;
+      case 'create': this.create(ctx, W, H); break;
     }
+  },
+
+  // Character creation: name your Nekromancer and choose your glowing-eye
+  // colour. Opened from the title screen when starting a new hero.
+  create(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const pw = Math.min(460, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 16, 460);
+    const py = Math.max(8, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, 'CREATE YOUR NEKROMANCER');
+
+    // Live preview — a hooded skull with the chosen glowing eyes.
+    const cx = W / 2, hy = py + 96;
+    const eye = Hero.eyeColor || '#6ff7c3';
+    ctx.save();
+    ctx.translate(cx, hy);
+    ctx.fillStyle = '#ded5bd';
+    ctx.beginPath(); ctx.arc(0, 0, 30, 0, TAU); ctx.fill();
+    ctx.fillRect(-16, 17, 32, 15);
+    ctx.fillStyle = '#0a070c';
+    ctx.beginPath(); ctx.ellipse(-10, -2, 7, 9, 0, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(10, -2, 7, 9, 0, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(0, 6); ctx.lineTo(-4, 14); ctx.lineTo(4, 14); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = eye; ctx.shadowColor = eye; ctx.shadowBlur = 12;
+    ctx.beginPath(); ctx.arc(-10, -2, 3 + Math.sin(Game.time * 3) * 0.7, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(10, -2, 3 + Math.sin(Game.time * 3 + 1) * 0.7, 0, TAU); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    // Name row.
+    let y = py + 150;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.fillText('NAME', px + 16, y);
+    UI.btn(ctx, px + 16, y + 10, pw - 32, 34, this.fitText(ctx, Hero.name || 'The Nekromancer', pw - 60), () => {
+      let q = null;
+      try { q = window.prompt('Name your Nekromancer:', Hero.name || ''); } catch (e) { /* blocked */ }
+      if (q !== null) { const t = q.trim().slice(0, 22); Hero.name = t || 'The Nekromancer'; }
+    }, { size: 14, border: '#6b5f80', color: '#e8e0cc' });
+    y += 58;
+
+    // Eye-colour swatches.
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.fillText('GLOWING EYES', px + 16, y);
+    y += 12;
+    const cols = 5, gap = 8;
+    const sw = (pw - 32 - (cols - 1) * gap) / cols;
+    EYE_COLORS.forEach((c, i) => {
+      const bx = px + 16 + (i % cols) * (sw + gap);
+      const by = y + Math.floor(i / cols) * (sw + 20);
+      const sel = (Hero.eyeColor || '#6ff7c3').toLowerCase() === c.hex.toLowerCase();
+      ctx.fillStyle = '#16121d';
+      rr(ctx, bx, by, sw, sw, 8); ctx.fill();
+      ctx.fillStyle = c.hex;
+      ctx.shadowColor = c.hex; ctx.shadowBlur = sel ? 12 : 4;
+      ctx.beginPath(); ctx.arc(bx + sw / 2, by + sw / 2, sw * 0.28, 0, TAU); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = sel ? '#f2ecd8' : '#3a3448';
+      ctx.lineWidth = sel ? 3 : 1.5;
+      rr(ctx, bx, by, sw, sw, 8); ctx.stroke();
+      ctx.fillStyle = sel ? '#f2ecd8' : '#8a8070';
+      ctx.font = '9px Georgia'; ctx.textAlign = 'center';
+      ctx.fillText(c.name, bx + sw / 2, by + sw + 9);
+      UI.register(bx, by, sw, sw + 14, () => { Hero.eyeColor = c.hex; });
+    });
+    y += Math.ceil(EYE_COLORS.length / cols) * (sw + 20) + 6;
+
+    // Begin.
+    UI.btn(ctx, px + 16, py + ph - 46, pw - 32, 36, 'BEGIN THE JOURNEY', () => {
+      Hero.save();
+      UI.close();
+      Game.toCamp();
+    }, { size: 15, border: '#57b894', color: '#6ff7c3' });
   },
 
   dim(ctx, W, H) {
@@ -114,12 +190,13 @@ const Screens = {
       UI.btn(ctx, cx - bw / 2, by, bw, 40, 'NEW NEKROMANCER', () => { UI.sel.confirmNew = true; }, { size: 13 });
       if (UI.sel.confirmNew) {
         UI.btn(ctx, cx - bw / 2, by + 48, bw, 36, 'Erase old hero and begin anew?', () => {
+          UI.sel.confirmNew = false;
           Hero.wipe();
-          Game.toCamp();
+          UI.open('create');
         }, { size: 12, border: '#c22843', color: '#e04a5a' });
       }
     } else {
-      UI.btn(ctx, cx - bw / 2, by, bw, 46, 'BEGIN', () => Game.toCamp(), { size: 17, border: '#57b894', color: '#6ff7c3' });
+      UI.btn(ctx, cx - bw / 2, by, bw, 46, 'BEGIN', () => { Hero.fresh(); UI.open('create'); }, { size: 17, border: '#57b894', color: '#6ff7c3' });
     }
     ctx.font = '11px Georgia';
     ctx.fillStyle = '#6f6552';
@@ -162,7 +239,7 @@ const Screens = {
     ctx.textAlign = 'left';
     ctx.font = 'bold 15px Georgia';
     ctx.fillStyle = '#ffd76a';
-    ctx.fillText('Level ' + Hero.level + ' Nekromancer', px + 14, 76);
+    ctx.fillText(this.fitText(ctx, Hero.name + '  ·  Level ' + Hero.level, pw - 120), px + 14, 76);
     ctx.font = '12px Georgia';
     ctx.fillStyle = '#c9bfa8';
     ctx.fillText(`${Hero.gold} gold  ·  ${Hero.totalKills} slain  ·  ${Hero.gems.length} gems`, px + 14, 96);
@@ -563,7 +640,7 @@ const Screens = {
       UI.btn(ctx, dx + (bw + 8) * 2, dy, bw, 34, 'SOCKET', canSocket ? () => {
         UI.sel.gemTarget = UI.sel.item;
         UI.sel.gemPick = true;
-        UI.sel.gemIdx = undefined;
+        UI.sel.gemKey = undefined;
       } : null, { disabled: !canSocket, border: '#7a4a8f', color: '#b06adf', size: 13 });
       // Deposit this single item into the shared, account-wide vault.
       const stashFull = Hero.stash.length >= Hero.STASH_SIZE;
@@ -575,7 +652,7 @@ const Screens = {
       UI.btn(ctx, dx, dy + 6, 150, 30, (equipped.gems && equipped.gems.length) ? 'MANAGE SOCKETS' : 'SOCKET GEM', () => {
         UI.sel.gemTarget = equipped;
         UI.sel.gemPick = true;
-        UI.sel.gemIdx = undefined;
+        UI.sel.gemKey = undefined;
       }, { border: '#7a4a8f', color: '#b06adf', size: 12 });
     }
 
@@ -592,13 +669,21 @@ const Screens = {
     UI.register(0, 0, W, H, () => { /* blocked by popup */ });
     const pw = Math.min(430, W - 20);
     const px = W / 2 - pw / 2;
-    // Filter by type, sort by tier (finest first).
-    let gemPairs = Hero.gems.map((g, i) => ({ g, i }));
-    if (UI.sel.gemFilter) gemPairs = gemPairs.filter(x => x.g.type === UI.sel.gemFilter);
-    gemPairs.sort((a, b) => b.g.tier - a.g.tier);
-    const shown = gemPairs.slice(0, 12);
+    // Group identical gems (type+tier) into stacks so the pouch reads as
+    // "Perfect ×12", not a dozen separate chips.
+    const groupsMap = {};
+    for (let i = 0; i < Hero.gems.length; i++) {
+      const g = Hero.gems[i];
+      if (UI.sel.gemFilter && g.type !== UI.sel.gemFilter) continue;
+      const key = g.type + ':' + g.tier;
+      if (!groupsMap[key]) groupsMap[key] = { key, type: g.type, tier: g.tier, count: 0, idx: i };
+      groupsMap[key].count++;
+    }
+    const groups = Object.values(groupsMap).sort((a, b) => b.tier - a.tier);
+    const shown = groups.slice(0, 12);
     const rows = Math.max(1, Math.ceil(shown.length / 4));
-    const hasInfo = UI.sel.gemIdx !== undefined && Hero.gems[UI.sel.gemIdx];
+    const selGroup = UI.sel.gemKey ? groupsMap[UI.sel.gemKey] : null;
+    const hasInfo = !!selGroup;
     const gems = target.gems || [];
     const emptyCount = (target.sockets || 0) - gems.length;
     const ph = Math.min(H - 12,
@@ -610,7 +695,7 @@ const Screens = {
 
     const close = () => {
       UI.sel.gemPick = false;
-      UI.sel.gemIdx = undefined;
+      UI.sel.gemKey = undefined;
       UI.sel.gemTarget = null;
     };
     this.closeX(ctx, W, { x: px + pw - 20, y: py + 20, cb: close });
@@ -630,7 +715,7 @@ const Screens = {
       ctx.fillText(this.fitText(ctx, '◆ ' + GEM_TIERS[g.tier] + ' — ' + gm.label(gemStatValue(g)), pw - 170), px + 16, y + 8);
       UI.btn(ctx, px + pw - 136, y - 6, 120, 24, 'UNSOCKET', () => {
         Items.unsocket(target, gi);
-        UI.sel.gemIdx = undefined;
+        UI.sel.gemKey = undefined;
       }, { size: 10, border: '#7a4a8f', color: '#b06adf' });
       y += 30;
     });
@@ -645,12 +730,12 @@ const Screens = {
     if (Hero.gems.length) {
       const types = Object.keys(GEM_TYPES);
       const chipW = (pw - 32) / (types.length + 1);
-      UI.btn(ctx, px + 16, y, chipW - 4, 22, 'All', () => { UI.sel.gemFilter = null; UI.sel.gemIdx = undefined; },
+      UI.btn(ctx, px + 16, y, chipW - 4, 22, 'All', () => { UI.sel.gemFilter = null; UI.sel.gemKey = undefined; },
         { size: 9, bg: !UI.sel.gemFilter ? 'rgba(70,44,90,0.95)' : undefined, color: '#c9bfa8' });
       types.forEach((t, ti) => {
         const on = UI.sel.gemFilter === t;
         UI.btn(ctx, px + 16 + (ti + 1) * chipW, y, chipW - 4, 22, GEM_TYPES[t].name.slice(0, 3),
-          () => { UI.sel.gemFilter = on ? null : t; UI.sel.gemIdx = undefined; },
+          () => { UI.sel.gemFilter = on ? null : t; UI.sel.gemKey = undefined; },
           { size: 9, color: GEM_TYPES[t].color, bg: on ? 'rgba(70,44,90,0.95)' : undefined, border: on ? GEM_TYPES[t].color : undefined });
       });
       y += 28;
@@ -665,27 +750,26 @@ const Screens = {
     } else {
       ctx.font = '10px Georgia';
       ctx.fillStyle = '#9a9080';
-      ctx.fillText('TAP A GEM TO INSPECT' + (gemPairs.length > 12 ? '  (+' + (gemPairs.length - 12) + ' more)' : ''), px + 16, y);
+      ctx.fillText('TAP A GEM TO INSPECT' + (groups.length > 12 ? '  (+' + (groups.length - 12) + ' more)' : ''), px + 16, y);
       y += 10;
-      shown.forEach((pair, k) => {
-        const g = pair.g, realIdx = pair.i;
+      shown.forEach((grp, k) => {
         const gx = px + 16 + (k % 4) * ((pw - 32) / 4);
         const gy = y + Math.floor(k / 4) * 36;
-        const selected = UI.sel.gemIdx === realIdx;
-        UI.btn(ctx, gx, gy, (pw - 32) / 4 - 6, 30, GEM_TIERS[g.tier], () => {
-          UI.sel.gemIdx = selected ? undefined : realIdx;
+        const selected = UI.sel.gemKey === grp.key;
+        UI.btn(ctx, gx, gy, (pw - 32) / 4 - 6, 30, GEM_TIERS[grp.tier] + (grp.count > 1 ? ' ×' + grp.count : ''), () => {
+          UI.sel.gemKey = selected ? undefined : grp.key;
         }, {
-          size: 9, color: GEM_TYPES[g.type].color,
+          size: 9, color: GEM_TYPES[grp.type].color,
           bg: selected ? 'rgba(70,44,90,0.95)' : undefined,
-          border: selected ? GEM_TYPES[g.type].color : undefined
+          border: selected ? GEM_TYPES[grp.type].color : undefined
         });
       });
       y += rows * 36 + 4;
     }
 
-    // Info card for the inspected gem.
+    // Info card for the inspected gem stack.
     if (hasInfo) {
-      const g = Hero.gems[UI.sel.gemIdx];
+      const g = { type: selGroup.type, tier: selGroup.tier };
       const gm = GEM_TYPES[g.type];
       ctx.fillStyle = 'rgba(20,17,28,0.94)';
       rr(ctx, px + 16, y, pw - 32, 62, 6); ctx.fill();
@@ -695,7 +779,7 @@ const Screens = {
       ctx.textAlign = 'left';
       ctx.font = 'bold 13px Georgia';
       ctx.fillStyle = gm.color;
-      ctx.fillText('◆ ' + gemName(g), px + 28, y + 16);
+      ctx.fillText('◆ ' + gemName(g) + (selGroup.count > 1 ? '  (×' + selGroup.count + ')' : ''), px + 28, y + 16);
       ctx.font = '12px Georgia';
       ctx.fillStyle = '#b5ab94';
       ctx.fillText('When socketed: ' + gm.label(gemStatValue(g)), px + 32, y + 33);
@@ -709,7 +793,7 @@ const Screens = {
     const bw2 = (pw - 40) / 2;
     const canSock = hasInfo && emptyCount > 0;
     UI.btn(ctx, px + 16, y, bw2, 36, 'SOCKET IT', canSock ? () => {
-      Items.socketGem(target, UI.sel.gemIdx);
+      Items.socketGem(target, selGroup.idx);
       close();
     } : null, { disabled: !canSock, border: '#7a4a8f', color: '#b06adf', size: 13 });
     UI.btn(ctx, px + 24 + bw2, y, bw2, 36, 'CANCEL', close, { size: 13 });
@@ -855,7 +939,13 @@ const Screens = {
       ctx.font = i === 1 ? '8px Georgia' : '9px Georgia';
       ctx.textAlign = 'center';
       ctx.fillText(i === 0 ? 'PRIMARY' : i === 1 ? 'SECONDARY' : 'SKILL ' + (i - 1), bx, sy + 50);
-      UI.register(bx - sw / 2 + 2, sy - 5, sw - 4, 62, () => { UI.sel.slotIdx = i; });
+      UI.register(bx - sw / 2 + 2, sy - 5, sw - 4, 62, () => {
+        UI.sel.slotIdx = i;
+        // Name the skill already in this slot in the info footer, so you don't
+        // have to hunt for it in the grid below.
+        const sid = Hero.loadout[i];
+        UI.sel.info = sid ? (SKILL_DATA.find(s => s.id === sid) || null) : null;
+      });
     }
 
     // All skills grid — row height adapts so it never collides with the footer.
@@ -1508,7 +1598,7 @@ const Screens = {
     const twoCol = pw >= 420;
     const ph = Math.min(H - 16, twoCol ? 470 : 620);
     const py = Math.max(8, H / 2 - ph / 2);
-    UI.panel(ctx, px, py, pw, ph, `LEVEL ${Hero.level} NEKROMANCER`);
+    UI.panel(ctx, px, py, pw, ph, this.fitText(ctx, Hero.name.toUpperCase() + '  ·  LVL ' + Hero.level, pw - 60));
     const colW = twoCol ? (pw - 44) / 2 : pw - 32;
     const lx = px + 16;
     const rx = twoCol ? px + 28 + colW : lx;
@@ -1576,10 +1666,13 @@ const Screens = {
 
   analyze(s) {
     const tips = [];
-    const empty = Object.keys(ITEM_SLOTS).filter(sl => !Hero.equipped[sl]);
+    // The torch is a convenience light, not gear — never rate it as best/worst
+    // or nag about an empty torch slot.
+    const gearSlots = Object.keys(ITEM_SLOTS).filter(sl => !ITEM_SLOTS[sl].torch);
+    const empty = gearSlots.filter(sl => !Hero.equipped[sl]);
     if (empty.length) tips.push('Empty gear: ' + empty.slice(0, 3).map(sl => ITEM_SLOTS[sl].label).join(', ') + (empty.length > 3 ? '…' : ''));
     let openSockets = 0, worst = null;
-    for (const sl of Object.keys(ITEM_SLOTS)) {
+    for (const sl of gearSlots) {
       const it = Hero.equipped[sl];
       if (!it) continue;
       openSockets += (it.sockets || 0) - ((it.gems && it.gems.length) || 0);
@@ -1627,24 +1720,28 @@ const Screens = {
     if (!UI.sel.stashFilter) UI.sel.stashFilter = 'all';
     const narrow = pw < 520;
 
-    // Controls: sort · filter chips · search.
+    // Controls, laid out in two clean rows so nothing overlaps on phones:
+    //   row 1 — Sort (left) + Search (right);  row 2 — the four filter chips.
     let cy = py + 46;
     const sorts = { score: 'Score', rarity: 'Rarity', slot: 'Slot', name: 'Name' };
-    UI.btn(ctx, px + 16, cy, 116, 26, 'Sort: ' + sorts[UI.sel.stashSort], () => {
+    const halfC = (pw - 32 - 8) / 2;
+    UI.btn(ctx, px + 16, cy, halfC, 26, 'Sort: ' + sorts[UI.sel.stashSort], () => {
       const o = Object.keys(sorts);
       UI.sel.stashSort = o[(o.indexOf(UI.sel.stashSort) + 1) % o.length];
     }, { size: 11, border: '#6b5f80' });
+    UI.btn(ctx, px + 16 + halfC + 8, cy, halfC, 26,
+      UI.sel.stashSearch ? '\u{1F50D} ' + this.fitText(ctx, UI.sel.stashSearch, halfC - 34) : '\u{1F50D} Search…', () => {
+        let q = null;
+        try { q = window.prompt('Search stash by name:', UI.sel.stashSearch || ''); } catch (e) { /* blocked */ }
+        if (q !== null) { UI.sel.stashSearch = q.trim() || null; UI.sel.stashScroll = 0; }
+      }, { size: 10, border: '#6b5f80' });
+    cy += 32;
     const fams = [['all', 'All'], ['weapon', 'Wpn'], ['armor', 'Armor'], ['jewelry', 'Jewel']];
-    const fw = narrow ? 52 : 66;
+    const cw = (pw - 32 - 3 * 6) / 4;
     fams.forEach((f, i) => {
-      UI.btn(ctx, px + 140 + i * (fw + 4), cy, fw, 26, f[1], () => { UI.sel.stashFilter = f[0]; UI.sel.stashScroll = 0; },
+      UI.btn(ctx, px + 16 + i * (cw + 6), cy, cw, 26, f[1], () => { UI.sel.stashFilter = f[0]; UI.sel.stashScroll = 0; },
         { size: 10, bg: UI.sel.stashFilter === f[0] ? 'rgba(60,52,78,0.95)' : undefined });
     });
-    UI.btn(ctx, px + pw - 150, cy, 134, 26, UI.sel.stashSearch ? '\u{1F50D} ' + this.fitText(ctx, UI.sel.stashSearch, 90) : '\u{1F50D} Search…', () => {
-      let q = null;
-      try { q = window.prompt('Search stash by name:', UI.sel.stashSearch || ''); } catch (e) { /* blocked */ }
-      if (q !== null) { UI.sel.stashSearch = q.trim() || null; UI.sel.stashScroll = 0; }
-    }, { size: 10, border: '#6b5f80' });
     cy += 32;
 
     UI.btn(ctx, px + 16, cy, pw - 32, 28,
@@ -1689,20 +1786,33 @@ const Screens = {
       rr(ctx, px + 16, y, pw - 32, rowH - 4, 5); ctx.fill();
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 12px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
-      ctx.fillText(this.fitText(ctx, it.name, pw * 0.36), px + 26, y + 11);
+      const cnt = it.torch && (it.count || 1) > 1 ? '  ×' + it.count : '';
+      ctx.fillText(this.fitText(ctx, it.name + cnt, pw * 0.36), px + 26, y + 11);
       ctx.font = '10px Georgia'; ctx.fillStyle = '#8a8070';
-      ctx.fillText(ITEM_SLOTS[it.slot].label + ' · lvl ' + it.mLvl, px + 26, y + 23);
-      const arrows = Items.compareArrows(it, Hero.equipped[it.slot]);
-      ctx.textAlign = 'center'; ctx.font = 'bold 12px Georgia';
-      ctx.fillStyle = arrows > 0 ? '#4ade80' : arrows < 0 ? '#e04a5a' : '#9a9080';
-      ctx.fillText(arrows > 0 ? '▲'.repeat(arrows) : arrows < 0 ? '▼'.repeat(-arrows) : '—', px + pw * 0.50, y + (rowH - 4) / 2);
+      // Torches have no item level — show their type/fuel instead of "lvl undefined".
+      const sub = it.torch
+        ? 'Torch · ' + (TORCH_TYPES[it.torch] ? TORCH_TYPES[it.torch].minutes + ' min' : 'light')
+        : ITEM_SLOTS[it.slot].label + ' · lvl ' + it.mLvl;
+      ctx.fillText(sub, px + 26, y + 23);
+      if (!it.torch) {
+        const arrows = Items.compareArrows(it, Hero.equipped[it.slot]);
+        ctx.textAlign = 'center'; ctx.font = 'bold 12px Georgia';
+        ctx.fillStyle = arrows > 0 ? '#4ade80' : arrows < 0 ? '#e04a5a' : '#9a9080';
+        ctx.fillText(arrows > 0 ? '▲'.repeat(arrows) : arrows < 0 ? '▼'.repeat(-arrows) : '—', px + pw * 0.50, y + (rowH - 4) / 2);
+      }
       UI.tip(px + 16, y, pw * 0.45, rowH - 4, it.name, Items.statLines(it).join(' · '));
-      UI.btn(ctx, px + pw - 178, y + 3, 84, rowH - 10, 'WITHDRAW', () => Items.fromStash(it),
-        { size: 10, border: '#57b894', color: '#6ff7c3' });
-      const canSalv = Items.canSalvage(it);
-      UI.btn(ctx, px + pw - 88, y + 3, 72, rowH - 10, canSalv ? 'SALVAGE' : 'L' + Items.salvageReq(it),
-        canSalv ? () => { const i = Hero.stash.indexOf(it); if (i >= 0) { Hero.stash.splice(i, 1); Items.grantSalvage(it); Hero.save(); } } : null,
-        { size: 10, disabled: !canSalv, border: '#8a6f4a', color: '#ffb43a' });
+      // Torches: WITHDRAW only (no salvage). Gear: WITHDRAW + SALVAGE.
+      if (it.torch) {
+        UI.btn(ctx, px + pw - 178, y + 3, 162, rowH - 10, 'WITHDRAW ONE', () => Items.fromStash(it),
+          { size: 10, border: '#57b894', color: '#6ff7c3' });
+      } else {
+        UI.btn(ctx, px + pw - 178, y + 3, 84, rowH - 10, 'WITHDRAW', () => Items.fromStash(it),
+          { size: 10, border: '#57b894', color: '#6ff7c3' });
+        const canSalv = Items.canSalvage(it);
+        UI.btn(ctx, px + pw - 88, y + 3, 72, rowH - 10, canSalv ? 'SALVAGE' : 'L' + Items.salvageReq(it),
+          canSalv ? () => { const i = Hero.stash.indexOf(it); if (i >= 0) { Hero.stash.splice(i, 1); Items.grantSalvage(it); Hero.save(); } } : null,
+          { size: 10, disabled: !canSalv, border: '#8a6f4a', color: '#ffb43a' });
+      }
     });
     if (overflow) {
       const half = (pw - 40) / 2, ay = py + ph - 32;

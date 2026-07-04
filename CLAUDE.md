@@ -150,9 +150,15 @@ Script lives in the session scratchpad (intentionally not committed).
   its own crafting UI, and how extracted powers integrate with `p.powers`.
 - **⭐ OWNER TODO (requested 2026-07-03): big meta features —** Story Mode
   (campaign narrative/quests), Achievements + Titles (earned, shown on the hero),
-  Character NAME CREATION (name your Nekromancer), SAVE/LOAD OVERHAUL (robust
+  ~~Character NAME CREATION~~ (DONE — name + glowing-eye colour chosen on New Game
+  via `Screens.create`; `Hero.name`/`Hero.eyeColor`), SAVE/LOAD OVERHAUL (robust
   multi-character profiles, cloud-ish export/import, migration), and GRAPHICS &
   SOUND additions (richer sprites/FX/music/ambience beyond the current procedural set).
+- **⭐ OWNER TODO (requested 2026-07-04): a walkable MAIN TOWN.** Instead of the
+  menu-hub camp, the hero walks around a real town and steps up to NPC artisans —
+  the Blacksmith, the Mystic and the Jeweler (and likely the Stash/Wilds portal) —
+  to open each one. Flesh out: town map/layout, NPC placement + interaction radius,
+  how it replaces (or wraps) the current `Screens.camp` hub, and camp↔town↔zone flow.
 - **⭐ OWNER TODO (requested 2026-07-03): create the MASTER LIST of primary +
   secondary stats and affixes for items.** The engine currently models only:
   `dmg` (%), `hp`, `crit` (chance), `ess` (essence/s), `reg` (life/s), `gold`,

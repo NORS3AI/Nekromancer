@@ -813,14 +813,21 @@ const UI = {
     const a = k > 0.85 ? (1 - k) / 0.15 : (k < 0.25 ? k / 0.25 : 1);
     ctx.globalAlpha = a;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 32px Georgia';
+    const maxW = W - 32;
+    // Auto-shrink both lines so long land names never run off a phone screen.
+    let ts = 32;
+    ctx.font = 'bold ' + ts + 'px Georgia';
+    while (ts > 15 && ctx.measureText(Game.banner.text).width > maxW) { ts -= 1; ctx.font = 'bold ' + ts + 'px Georgia'; }
     ctx.lineWidth = 5;
     ctx.strokeStyle = 'rgba(0,0,0,0.8)';
     ctx.strokeText(Game.banner.text, W / 2, H * 0.30);
     ctx.fillStyle = '#c22843';
     ctx.fillText(Game.banner.text, W / 2, H * 0.30);
     if (Game.banner.sub) {
-      ctx.font = '15px Georgia';
+      let ss = 15;
+      ctx.font = ss + 'px Georgia';
+      while (ss > 10 && ctx.measureText(Game.banner.sub).width > maxW) { ss -= 1; ctx.font = ss + 'px Georgia'; }
+      ctx.lineWidth = 4;
       ctx.strokeText(Game.banner.sub, W / 2, H * 0.30 + 30);
       ctx.fillStyle = '#c9bfa8';
       ctx.fillText(Game.banner.sub, W / 2, H * 0.30 + 30);
