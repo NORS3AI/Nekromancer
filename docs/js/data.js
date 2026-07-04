@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.6.9-alpha';
+const GAME_VERSION = 'v0.7.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.7.0-alpha', date: 'July 2026',
+    notes: [
+      'GEM DROP TIERS now gate by difficulty (owner spec): Chipped/Flawed/Regular drop below Torment, Flawless drops T1–T10, Perfect drops T11–T16. (The Jeweler still cuts gems by his own level.)',
+      'LEGENDARY STAR tiers gate by Torment band: 1★ drops T3–T7, 2★ T8–T13, 3★ T14–T16 — below T3 legendaries are plain',
+      'ARTIFACTS now drop ONLY at Torment XVI. When one drops its star tier rolls: 1★ 10% · 2★ 7% · 3★ 5% · 4★ 3% · 5★ 1% (else a base artifact). A 5★ artifact is the pinnacle drop',
+      'Loot table refactored so star tiers are assigned by difficulty band instead of being baked into the rarity roll'
+    ]
+  },
   {
     v: 'v0.6.9-alpha', date: 'July 2026',
     notes: [
@@ -1112,6 +1121,13 @@ const DIFFICULTIES = [
   enemyMult: +(1.3 * Math.pow(1.35, i + 1)).toFixed(2),
   torment: i + 1
 })));
+
+// Torment tier (1–16) for a difficulty index, or 0 when below Torment
+// (Normal/Hard/Expert/Master). Loot-tier gating keys off this.
+function tormentTier(di) {
+  const d = DIFFICULTIES[di != null ? di : (typeof Hero !== 'undefined' ? (Hero.difficulty || 0) : 0)];
+  return d && d.torment ? d.torment : 0;
+}
 
 const XP_CURVE = lvl => Math.round(60 * Math.pow(lvl, 1.5));
 const MAX_LEVEL = 70;

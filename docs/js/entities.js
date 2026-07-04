@@ -849,7 +849,7 @@ class Enemy {
       const ng = randInt(1, 3);
       for (let i = 0; i < ng; i++) {
         const pu = new Pickup(this.x + rand(-18, 18), this.y + rand(-12, 12), 'gem');
-        pu.gem = Items.generateGem(mLvl);
+        pu.gem = Items.dropGem();
         Game.pickups.push(pu);
       }
       if (Math.random() < 0.22) {   // rare damage-focused gear
@@ -889,9 +889,9 @@ class Enemy {
       pu.item = Items.generate(Game.monsterLevel() + 2, 0.35);
       Game.pickups.push(pu);
     }
-    if (Math.random() < (this.unique ? 0.9 : this.elite ? 0.16 : 0.05)) {   // ~5% chipped-gem drop
+    if (Math.random() < (this.unique ? 0.9 : this.elite ? 0.16 : 0.05)) {   // ~5% gem drop, tier by difficulty
       const pu = new Pickup(this.x, this.y, 'gem');
-      pu.gem = Items.generateGem(Game.monsterLevel());
+      pu.gem = Items.dropGem();
       Game.pickups.push(pu);
     }
     if (this.unique) Game.onBossDead(this);

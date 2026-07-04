@@ -9,27 +9,49 @@ const Items = {
 
   // ------------------------------------------------------------ generation
 
-  // Owner drop table, interpolated by difficulty from Normal → Torment XVI.
-  // Each outcome maps to a rarity index (+ legendary star tier / trash flag).
-  // NORMAL: trash 3 · common 50 · uncommon(Magic) 25 · rare 15 · epic 5 ·
-  //   legendary 1 · leg★ .4 · leg★★ .3 · leg★★★ .2 · artifact .1  (the 5%
-  //   chipped-gem slice is folded into common; gems drop on their own roll).
-  // T16: legendary total 30% · artifact 5% (trash gone, commons scarce).
+  // Owner drop table — BASE rarity only, interpolated by difficulty Normal→T16.
+  //   NORMAL: trash 3 · common 50 · magic 25 · rare 15 · epic 5 · legendary 2
+  //   T16:    trash 0 · common 15 · magic 15 · rare 15 · epic 20 · legendary 30 · artifact 5
+  // Star tiers are NOT rolled here — they're gated by Torment band afterwards
+  // (legendaryStars / artifactStars). Artifacts drop ONLY at T16 (owner rule).
   // `boost` (elites/bosses/masterwork) nudges toward the top; negative tilts down.
-  DROP_N: [0.03, 0.50, 0.25, 0.15, 0.05, 0.01, 0.004, 0.003, 0.002, 0.001],
-  DROP_T: [0.00, 0.15, 0.15, 0.15, 0.20, 0.12, 0.08, 0.06, 0.04, 0.05],
+  DROP_N: [0.03, 0.50, 0.25, 0.15, 0.05, 0.020, 0.000],
+  DROP_T: [0.00, 0.15, 0.15, 0.15, 0.20, 0.300, 0.050],
   DROP_MAP: [
-    { r: 0, trash: true }, { r: 0 }, { r: 1 }, { r: 2 }, { r: 3 },
-    { r: 4, stars: 0 }, { r: 4, stars: 1 }, { r: 4, stars: 2 }, { r: 4, stars: 3 }, { r: 6 }
+    { r: 0, trash: true }, { r: 0 }, { r: 1 }, { r: 2 }, { r: 3 }, { r: 4 }, { r: 6 }
   ],
   rollRarity(boost = 0) {
     const di = Hero.difficulty || 0;                    // 0 (Normal) … 19 (T16)
     let t = clamp(di / 19 + boost * 0.35, 0, 1);
     if (Hero.level >= 70) t = Math.max(t, 0.12);        // endgame floor
     const p = this.DROP_N.map((n, i) => n + (this.DROP_T[i] - n) * t);
+    // Artifacts drop ONLY at Torment XVI; below that, that slice rolls up as a
+    // legendary instead.
+    if (tormentTier(di) < 16) { p[5] += p[6]; p[6] = 0; }
     let x = Math.random(), acc = 0;
     for (let i = 0; i < p.length; i++) { acc += p[i]; if (x < acc) return this.DROP_MAP[i]; }
     return { r: 0 };
+  },
+
+  // Legendary star tier by Torment band (owner spec): 1★ at T3–T7, 2★ at
+  // T8–T13, 3★ at T14–T16; below T3 legendaries are plain (0★).
+  legendaryStars(tt) {
+    if (tt >= 14) return 3;
+    if (tt >= 8) return 2;
+    if (tt >= 3) return 1;
+    return 0;
+  },
+
+  // Artifact star tier — only meaningful at T16 (artifacts don't drop below).
+  // Owner chances: 1★ 10% · 2★ 7% · 3★ 5% · 4★ 3% · 5★ 1% (else 0★).
+  artifactStars() {
+    const x = Math.random();
+    if (x < 0.01) return 5;
+    if (x < 0.04) return 4;   // +3%
+    if (x < 0.09) return 3;   // +5%
+    if (x < 0.16) return 2;   // +7%
+    if (x < 0.26) return 1;   // +10%
+    return 0;
   },
 
   generate(mLvl, boost = 0, forceSlot = null) {
@@ -37,8 +59,12 @@ const Items = {
     const def = ITEM_SLOTS[slot];
     const roll = this.rollRarity(boost);
     const rarity = roll.r;
-    const stars = roll.stars || 0;      // legendary star tier (1-3)
     const trash = !!roll.trash;         // grey junk
+    const tt = tormentTier();
+    // Star tier is gated by Torment band, not by the rarity roll (owner spec).
+    let stars = 0;
+    if (rarity === 4) stars = this.legendaryStars(tt);
+    else if (rarity === 6) stars = this.artifactStars();
     const R = RARITIES[rarity];
     const lvlScale = 1 + mLvl * 0.11;
     // Artifacts and starred legendaries roll a little hotter.
@@ -84,6 +110,24 @@ const Items = {
   generateGem(mLvl) {
     const tier = clamp(Math.floor(mLvl / 8) + (Math.random() < 0.25 ? 1 : 0), 0, GEM_TIERS.length - 1);
     return { type: pick(Object.keys(GEM_TYPES)), tier };
+  },
+
+  // The gem tier that DROPS at the current difficulty (owner spec):
+  //   below Torment → Chipped/Flawed/Regular (0-2, scaling with base tier)
+  //   T1–T10       → Flawless (3)
+  //   T11–T16      → Perfect  (4)
+  // (Crafted gems from the Jeweler still scale with jeweler level — this only
+  // governs monster/chest drops.)
+  dropGemTier() {
+    const tt = tormentTier();
+    if (tt >= 11) return 4;                 // Perfect
+    if (tt >= 1) return 3;                  // Flawless
+    const di = Hero.difficulty || 0;        // 0 Normal … 3 Master
+    return clamp(di - (Math.random() < 0.5 ? 1 : 0), 0, 2);
+  },
+
+  dropGem() {
+    return { type: pick(Object.keys(GEM_TYPES)), tier: this.dropGemTier() };
   },
 
   // A Grace of Inarius piece the hero doesn't own yet (or a re-roll if all

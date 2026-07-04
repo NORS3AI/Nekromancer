@@ -105,13 +105,21 @@ loot at the artisans. The hero is persistent (localStorage).
   normal Rifts (`Game.startRift('normal')`, levels 1–69, Guardians drop **Rift Keys**
   45%), Nephalem Rifts (`'greater'`, level 70, consumes `Hero.riftKeys`), Seasons.
 - **Rarity indexes: 0 Common · 1 Magic · 2 Rare · 3 Epic · 4 Legendary · 5 Set ·
-  6 Artifact (red).** Legendary drops can carry a **star tier** (`item.stars`
-  1–3, shown as ★, +1 affix each); the lowest tier is grey **trash**
-  (`item.trash`). Saves migrated via `Hero.migrate` (SAVE_VERSION 3).
-  Owner drop table (`Items.rollRarity` → `{r, stars, trash}`) interpolates
-  Normal→T16 from `DROP_N`/`DROP_T`/`DROP_MAP`: **Normal** trash 3 · common ~50
-  · magic 25 · rare 15 · epic 5 · legendary total 1.9 · artifact 0.1; **T16**
-  legendary total 30 · artifact 5 (trash gone). Gems drop ~5% on their own roll.
+  6 Artifact (red).** Items carry a **star tier** (`item.stars`, shown as ★,
+  +1 affix each) and the lowest common is grey **trash** (`item.trash`). Saves
+  migrated via `Hero.migrate` (SAVE_VERSION 3).
+- **Drop table (owner spec)** — `Items.rollRarity` returns the BASE rarity only,
+  interpolated Normal→T16 from `DROP_N`/`DROP_T`/`DROP_MAP` (7 entries: trash,
+  common, magic, rare, epic, legendary, artifact): **Normal** trash 3 · common 50
+  · magic 25 · rare 15 · epic 5 · legendary 2; **T16** trash 0 · common/magic/rare
+  15 · epic 20 · legendary 30 · artifact 5. **Star tiers are gated by Torment
+  band, NOT rolled here** (`tormentTier(di)` → 0/1–16):
+  - `legendaryStars(tt)`: 1★ **T3–T7** · 2★ **T8–T13** · 3★ **T14–T16** (0★ below T3).
+  - Artifacts drop **ONLY at T16** (below T16 the artifact slice rolls up as a
+    legendary). `artifactStars()`: 1★ 10% · 2★ 7% · 3★ 5% · 4★ 3% · 5★ 1% (else 0★).
+  - **Gem drops** (`Items.dropGem`/`dropGemTier` — monster/chest/cache, NOT the
+    Jeweler): below Torment → Chipped/Flawed/Regular (0–2) · **T1–T10** Flawless (3)
+    · **T11–T16** Perfect (4). Gems drop ~5% on their own roll.
 - **Torment I–XVI unlock at level 70** (`DIFFICULTIES` = 20 tiers, generated;
   `legBonus` +1%…+33.3%). Stepper caps at Master below 70.
 - **Endgame (level 70)**: Nephalem Rift Guardians drop guaranteed `INARIUS_SET`

@@ -451,7 +451,7 @@ const Game = {
       const lines = [[gold + ' gold', '#ffd76a']];
       Hero.mats.soul += 2;
       lines.push(['2× Forgotten Souls', MATERIALS.soul.color]);
-      const gem = Items.generateGem(mLvl + 4);
+      const gem = Items.dropGem();
       Hero.gems.push(gem);
       lines.push([gemName(gem), GEM_TYPES[gem.type].color]);
       lines.push(['Rifts cleared: ' + Hero.riftsCleared, '#b06adf']);
@@ -472,7 +472,7 @@ const Game = {
       const lines = [[gold + ' gold', '#ffd76a']];
       Hero.mats.soul += 3;
       lines.push(['3× Forgotten Souls', MATERIALS.soul.color]);
-      const gem = Items.generateGem(mLvl + 4);
+      const gem = Items.dropGem();
       Hero.gems.push(gem);
       lines.push([gemName(gem), GEM_TYPES[gem.type].color]);
       const item = Items.generate(mLvl + 2, 0.4);
@@ -496,7 +496,7 @@ const Game = {
       Hero.mats[k] += n;
       lines.push([`${n}× ${MATERIALS[k].name}`, MATERIALS[k].color]);
     }
-    const gem = Items.generateGem(mLvl);
+    const gem = Items.dropGem();
     Hero.gems.push(gem);
     lines.push([gemName(gem), GEM_TYPES[gem.type].color]);
     const item = Items.generate(mLvl + 1, 0.3);
@@ -558,7 +558,7 @@ const Game = {
       this.pickups.push(new Pickup(b.x, b.y, 'orb'));
     } else if (roll < 0.475 + bonus) {
       const pu = new Pickup(b.x, b.y, 'gem');
-      pu.gem = Items.generateGem(this.monsterLevel());
+      pu.gem = Items.dropGem();
       this.pickups.push(pu);
     } else if (roll < 0.49 + bonus) {
       const pu = new Pickup(b.x, b.y, 'item');
@@ -594,7 +594,7 @@ const Game = {
         }
         if (Math.random() < 0.35) {
           const pu = new Pickup(o.x, o.y, 'gem');
-          pu.gem = Items.generateGem(this.monsterLevel());
+          pu.gem = Items.dropGem();
           this.pickups.push(pu);
         }
       } else if (o.type === 'shrine' && d < 42) {
