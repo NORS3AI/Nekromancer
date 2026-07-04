@@ -36,7 +36,192 @@ const Screens = {
       case 'season': this.season(ctx, W, H); break;
       case 'wilds': this.wilds(ctx, W, H); break;
       case 'create': this.create(ctx, W, H); break;
+      case 'select': this.select(ctx, W, H); break;
     }
+  },
+
+  // The campfire roster: up to three Nekromancers stand around a fire, drawn
+  // with pseudo-3D depth (front figures larger, warm rim-light from the flames)
+  // instead of a list of buttons. Tap a hero to enter; tap an empty spot to
+  // create; the ✕ retires a hero.
+  select(ctx, W, H) {
+    ctx.fillStyle = '#050308';   // fully opaque — the title must not bleed through
+    ctx.fillRect(0, 0, W, H);
+    // Warm ground plane + firelight pool for depth.
+    const fx = W / 2, fy = H * 0.6;
+    const floor = ctx.createLinearGradient(0, fy - 120, 0, H);
+    floor.addColorStop(0, 'rgba(20,14,10,0)');
+    floor.addColorStop(1, 'rgba(46,26,12,0.55)');
+    ctx.fillStyle = floor; ctx.fillRect(0, fy - 120, W, H - (fy - 120));
+    const glow = ctx.createRadialGradient(fx, fy, 10, fx, fy, Math.max(W, H) * 0.6);
+    glow.addColorStop(0, 'rgba(255,150,60,0.30)');
+    glow.addColorStop(0.4, 'rgba(200,90,30,0.10)');
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'bold ' + Math.min(30, W * 0.07) + 'px Georgia';
+    ctx.fillStyle = '#e8d8b0';
+    ctx.fillText('CHOOSE YOUR HERO', W / 2, H * 0.12);
+    ctx.font = '12px Georgia'; ctx.fillStyle = '#9a8f7a';
+    ctx.fillText('Up to ' + Profiles.MAX + ' Nekromancers rest by the fire', W / 2, H * 0.12 + 26);
+
+    // Three stage marks: centre-back (behind the fire), left & right (front).
+    // Positions spread by screen width so phones don't crowd them together.
+    const s = clamp(W / 760, 0.72, 1.05);
+    const spots = [
+      { i: 0, x: fx,        y: fy - 34 * s, scale: 0.90 * s, front: false },  // behind the fire
+      { i: 1, x: W * 0.22,  y: fy + 12 * s, scale: 1.06 * s, front: true },
+      { i: 2, x: W * 0.78,  y: fy + 12 * s, scale: 1.06 * s, front: true }
+    ];
+
+    // Behind-the-fire hero first, then the fire, then the front heroes.
+    const back = spots.find(sp => !sp.front);
+    this.drawRosterSpot(ctx, back, back.scale);
+    this.drawCampfire(ctx, fx, fy, s);
+    for (const sp of spots) if (sp.front) this.drawRosterSpot(ctx, sp, sp.scale);
+
+    // Back to the title.
+    UI.btn(ctx, W / 2 - 70, H - 52, 140, 34, '‹ TITLE', () => UI.close(), { size: 12, border: '#6b5f80' });
+  },
+
+  // Draw one roster position: a hero (if the slot is filled) or an empty
+  // "create" plinth, plus its nameplate and tap regions.
+  drawRosterSpot(ctx, sp, scale) {
+    const snap = Profiles.slots[sp.i];
+    const R = 70 * scale;
+    if (snap) {
+      const active = Profiles.active === sp.i;
+      this.drawNecroFigure(ctx, sp.x, sp.y, scale, snap.eyeColor || '#6ff7c3', active);
+      // Nameplate — below the front heroes, above the one behind the fire.
+      const ny = sp.front ? sp.y + 80 * scale : sp.y - 78 * scale;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 14px Georgia';
+      ctx.fillStyle = active ? '#ffd76a' : '#e8e0cc';
+      ctx.fillText(this.fitText(ctx, snap.name || 'The Nekromancer', 150), sp.x, ny);
+      ctx.font = '11px Georgia'; ctx.fillStyle = '#9a8f7a';
+      ctx.fillText('Level ' + (snap.level || 1) + ' Necromancer', sp.x, ny + 16);
+      // Enter on tapping the figure.
+      UI.register(sp.x - R * 0.6, sp.y - R, R * 1.2, R * 1.6, () => {
+        Profiles.select(sp.i);
+        Game.toCamp();
+      });
+      // Retire (✕) badge.
+      const bx = sp.x + R * 0.55, byy = sp.y - R * 0.9;
+      ctx.fillStyle = '#7a1220';
+      ctx.beginPath(); ctx.arc(bx, byy, 11, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#e04a5a'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(bx, byy, 11, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = '#ffe0e4'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(bx - 4, byy - 4); ctx.lineTo(bx + 4, byy + 4);
+      ctx.moveTo(bx + 4, byy - 4); ctx.lineTo(bx - 4, byy + 4); ctx.stroke();
+      UI.register(bx - 13, byy - 13, 26, 26, () => { UI.sel.retire = sp.i; });
+      // Confirm retire.
+      if (UI.sel.retire === sp.i) {
+        UI.btn(ctx, sp.x - 84, sp.y + 104 * scale, 168, 30, 'RETIRE THIS HERO?', () => {
+          Profiles.remove(sp.i); UI.sel.retire = undefined;
+        }, { size: 11, border: '#c22843', color: '#e04a5a' });
+      }
+    } else {
+      // Empty plinth — a faint hooded ghost + "＋ New".
+      this.drawNecroFigure(ctx, sp.x, sp.y, scale, '#5a6f9a', false, true);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 22px Georgia'; ctx.fillStyle = '#6ff7c3';
+      ctx.fillText('＋', sp.x, sp.y - 6 * scale);
+      ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#8fb0e8';
+      ctx.fillText('New Nekromancer', sp.x, sp.front ? sp.y + 82 * scale : sp.y - 74 * scale);
+      UI.register(sp.x - R * 0.6, sp.y - R, R * 1.2, R * 1.6, () => {
+        if (Profiles.create(sp.i)) UI.open('create');
+      });
+    }
+  },
+
+  // A standing hooded Nekromancer with glowing eyes of the given colour.
+  drawNecroFigure(ctx, x, y, scale, eye, active, ghost) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    if (ghost) ctx.globalAlpha = 0.32;
+    // Ground shadow.
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.beginPath(); ctx.ellipse(0, 56, 34, 11, 0, 0, TAU); ctx.fill();
+    if (active) {
+      ctx.strokeStyle = 'rgba(255,215,106,0.7)'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.ellipse(0, 56, 40, 14, 0, 0, TAU); ctx.stroke();
+    }
+    // Robe (hooded cloak).
+    ctx.fillStyle = '#231d2e';
+    ctx.beginPath();
+    ctx.moveTo(0, -34);
+    ctx.quadraticCurveTo(30, -18, 26, 54);
+    ctx.lineTo(-26, 54);
+    ctx.quadraticCurveTo(-30, -18, 0, -34);
+    ctx.fill();
+    // Cloak highlight (firelit right side).
+    ctx.fillStyle = 'rgba(120,74,40,0.35)';
+    ctx.beginPath();
+    ctx.moveTo(0, -34); ctx.quadraticCurveTo(30, -18, 26, 54); ctx.lineTo(6, 54);
+    ctx.quadraticCurveTo(10, -14, 0, -34); ctx.fill();
+    // Hood opening + skull.
+    ctx.fillStyle = '#1a1622';
+    ctx.beginPath(); ctx.ellipse(0, -30, 15, 18, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = ghost ? '#5a5560' : '#ded5bd';
+    ctx.beginPath(); ctx.arc(0, -30, 10, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#0a070c';
+    ctx.beginPath(); ctx.ellipse(-3.6, -31, 2.4, 3, 0, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(3.6, -31, 2.4, 3, 0, 0, TAU); ctx.fill();
+    // Glowing eyes.
+    ctx.fillStyle = eye; ctx.shadowColor = eye; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(-3.6, -31, 1.4 + Math.sin(Game.time * 3) * 0.4, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(3.6, -31, 1.4 + Math.sin(Game.time * 3 + 1) * 0.4, 0, TAU); ctx.fill();
+    ctx.shadowBlur = 0;
+    // Staff.
+    ctx.strokeStyle = '#4a3c2c'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(22, 54); ctx.lineTo(26, -40); ctx.stroke();
+    ctx.fillStyle = eye; ctx.shadowColor = eye; ctx.shadowBlur = ghost ? 0 : 6;
+    ctx.beginPath(); ctx.arc(26, -44, 4, 0, TAU); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  },
+
+  // A crackling campfire: logs, glowing embers and a flickering flame.
+  drawCampfire(ctx, x, y, scale) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    // Logs.
+    ctx.strokeStyle = '#4a3320'; ctx.lineWidth = 8; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-22, 14); ctx.lineTo(20, 22); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-20, 22); ctx.lineTo(22, 12); ctx.stroke();
+    ctx.strokeStyle = '#2e2014'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(-18, 18); ctx.lineTo(18, 18); ctx.stroke();
+    // Ember bed.
+    ctx.fillStyle = 'rgba(255,120,40,0.5)';
+    ctx.beginPath(); ctx.ellipse(0, 16, 20, 6, 0, 0, TAU); ctx.fill();
+    // Flames — layered flickering teardrops.
+    const t = Game.time * 9;
+    const flame = (w, hgt, col, ph) => {
+      const f = 1 + Math.sin(t + ph) * 0.12;
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.moveTo(0, 14);
+      ctx.quadraticCurveTo(-w, -hgt * 0.4 * f, Math.sin(t + ph) * 3, -hgt * f);
+      ctx.quadraticCurveTo(w, -hgt * 0.4 * f, 0, 14);
+      ctx.fill();
+    };
+    ctx.shadowColor = '#ff8c2a'; ctx.shadowBlur = 24;
+    flame(18, 46, 'rgba(210,60,20,0.9)', 0);
+    flame(13, 36, 'rgba(255,140,40,0.95)', 1.3);
+    flame(8, 24, 'rgba(255,220,120,0.95)', 2.1);
+    ctx.shadowBlur = 0;
+    // Sparks.
+    for (let i = 0; i < 5; i++) {
+      const a = t * 0.5 + i * 1.7;
+      const sy = -20 - ((t * 12 + i * 40) % 60);
+      ctx.fillStyle = 'rgba(255,190,90,' + (0.5 + 0.5 * Math.sin(a)).toFixed(2) + ')';
+      ctx.beginPath(); ctx.arc(Math.sin(a) * 12, sy, 1.4, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
   },
 
   // Character creation: name your Nekromancer and choose your glowing-eye
@@ -106,11 +291,12 @@ const Screens = {
     });
     y += Math.ceil(EYE_COLORS.length / cols) * (sw + 20) + 6;
 
-    // Begin.
+    // Begin — the new hero joins the roster at the campfire.
     UI.btn(ctx, px + 16, py + ph - 46, pw - 32, 36, 'BEGIN THE JOURNEY', () => {
+      if (!Hero.name) Hero.name = 'The Nekromancer';
+      if (!Hero.eyeColor) Hero.eyeColor = '#6ff7c3';
       Hero.save();
-      UI.close();
-      Game.toCamp();
+      UI.open('select');
     }, { size: 15, border: '#57b894', color: '#6ff7c3' });
   },
 
@@ -182,21 +368,13 @@ const Screens = {
     ctx.fillText('~ A Sanctuary of the Dead ~', cx, cy + 46);
 
     const bw = Math.min(260, W * 0.7);
-    let by = H * 0.56;
-    if (Hero.exists()) {
-      UI.btn(ctx, cx - bw / 2, by, bw, 46,
-        `CONTINUE  ·  Level ${Hero.level}`, () => Game.toCamp(), { size: 16, border: '#57b894', color: '#6ff7c3' });
-      by += 58;
-      UI.btn(ctx, cx - bw / 2, by, bw, 40, 'NEW NEKROMANCER', () => { UI.sel.confirmNew = true; }, { size: 13 });
-      if (UI.sel.confirmNew) {
-        UI.btn(ctx, cx - bw / 2, by + 48, bw, 36, 'Erase old hero and begin anew?', () => {
-          UI.sel.confirmNew = false;
-          Hero.wipe();
-          UI.open('create');
-        }, { size: 12, border: '#c22843', color: '#e04a5a' });
-      }
-    } else {
-      UI.btn(ctx, cx - bw / 2, by, bw, 46, 'BEGIN', () => { Hero.fresh(); UI.open('create'); }, { size: 17, border: '#57b894', color: '#6ff7c3' });
+    const by = H * 0.56;
+    const has = Profiles.count() > 0;
+    UI.btn(ctx, cx - bw / 2, by, bw, 46, has ? 'CHOOSE YOUR HERO' : 'BEGIN',
+      () => UI.open('select'), { size: 16, border: '#57b894', color: '#6ff7c3' });
+    if (has) {
+      ctx.font = '11px Georgia'; ctx.fillStyle = '#6f6552'; ctx.textAlign = 'center';
+      ctx.fillText(Profiles.count() + ' / ' + Profiles.MAX + ' Nekromancers by the fire', cx, by + 62);
     }
     ctx.font = '11px Georgia';
     ctx.fillStyle = '#6f6552';
@@ -1744,10 +1922,21 @@ const Screens = {
     });
     cy += 32;
 
-    UI.btn(ctx, px + 16, cy, pw - 32, 28,
-      'DEPOSIT ALL FROM BAG  (bag ' + Hero.bag.length + '/' + Hero.BAG_SIZE + ')',
+    // Deposit-all + purchasable bag expansion.
+    const up = Hero.nextBagUpgrade();
+    const gshort = n => n >= 1e6 ? (n / 1e6) + 'm' : n >= 1000 ? (n / 1000) + 'k' : '' + n;
+    const depW = up ? (pw - 36) * 0.58 : pw - 32;
+    UI.btn(ctx, px + 16, cy, depW, 28,
+      'DEPOSIT ALL  (bag ' + Hero.bag.length + '/' + Hero.BAG_SIZE + ')',
       Hero.bag.length ? () => Items.depositAll() : null,
       { size: 11, disabled: !Hero.bag.length, border: '#57b894', color: '#6ff7c3' });
+    if (up) {
+      const afford = Hero.gold >= up.cost;
+      UI.btn(ctx, px + 20 + depW, cy, pw - 36 - depW, 28,
+        'BAG → ' + up.size + ' · ' + gshort(up.cost) + 'g',
+        afford ? () => Hero.buyBagUpgrade() : null,
+        { size: 10, disabled: !afford, border: '#8a6f4a', color: '#ffd76a' });
+    }
     cy += 36;
 
     // Filter + sort + search the view.

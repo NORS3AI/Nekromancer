@@ -51,7 +51,7 @@ const Game = {
     Settings.load();
     Skills.init();
     Hero.loadStash();   // shared vault first, so the character load won't reseed it
-    Hero.load();
+    Profiles.boot();    // load the roster and make the active hero current
     Hero.sanitize();
     World.generate(ZONES[0]);   // backdrop for the title screen
     Input.init(this.canvas);

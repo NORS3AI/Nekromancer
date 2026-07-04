@@ -18,11 +18,19 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.6.0-alpha';
+const GAME_VERSION = 'v0.7.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.7.0-alpha', date: 'July 2026',
+    notes: [
+      'NEW — up to THREE characters at once. No more deleting a hero to make room. Pick "Choose Your Hero" on the title screen',
+      'NEW — a CAMPFIRE roster scene: your Nekromancers stand around a crackling fire (one behind it, two to the sides), drawn in pseudo-3D with warm firelight instead of a list of buttons. Tap a hero to play, tap an empty spot to create one, tap the ✕ to retire one. The Stash is shared across all your heroes',
+      'NEW — buy BAG SPACE from the Stash: 24 → 30 → 45 → 60 → 75 → 90 → 105 → 120 slots for escalating gold (1k · 10k · 50k · 150k · 500k · 1m · 100m)'
+    ]
+  },
   {
     v: 'v0.6.0-alpha', date: 'July 2026',
     notes: [
@@ -895,6 +903,18 @@ const MONSTERS = {
   wraith:   { name: 'Vengeful Wraith', hp: 240, speed: 78, dmg: 21, r: 22, xp: 130, atkRange: 44, atkCd: 1.6, boss: true, ghost: true },
   skeletonking: { name: 'The Skeleton King', hp: 520, speed: 54, dmg: 30, r: 30, xp: 240, atkRange: 54, atkCd: 1.8, boss: true }
 };
+
+// Purchasable bag expansions. The bag starts at 24; each upgrade adds space
+// for escalating gold (owner rule): 24 → 30 → 45 → 60 → 75 → 90 → 105 → 120.
+const BAG_UPGRADES = [
+  { size: 30,  cost: 1000 },
+  { size: 45,  cost: 10000 },
+  { size: 60,  cost: 50000 },
+  { size: 75,  cost: 150000 },
+  { size: 90,  cost: 500000 },
+  { size: 105, cost: 1000000 },
+  { size: 120, cost: 100000000 }
+];
 
 // Glowing-eye colours offered at character creation.
 const EYE_COLORS = [

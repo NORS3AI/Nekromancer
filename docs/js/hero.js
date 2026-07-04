@@ -7,6 +7,9 @@
 
 const SAVE_KEY = 'nekromancer_hero_v1';
 const SAVES_KEY = 'nekromancer_saves_v1';
+// Up to 3 concurrent character profiles (Diablo-style roster). The active
+// character mirrors to SAVE_KEY for backward compatibility.
+const PROFILES_KEY = 'nekromancer_profiles_v1';
 // Shared, account-wide stash — one vault for ALL characters/saves, stored
 // separately from any single hero so it never travels with a save slot.
 const STASH_KEY = 'nekromancer_stash_v1';
@@ -89,7 +92,8 @@ const Hero = {
   artisans: { smith: 1, mystic: 1, jeweler: 1 },
   runes: {},                          // skillId -> rune id
   cheats: { god: false, essence: false }, // dev panel, kept per save
-  BAG_SIZE: 24,
+  bagTier: 0,               // purchased bag expansions (0 = base 24)
+  BAG_SIZE: 24,             // derived from bagTier via applyBagSize()
   STASH_SIZE: 100,
   SAVE_VERSION: 3,   // v2: Epic rarity @ index 3 · v3: item.gem → item.gems[]
 
@@ -118,6 +122,30 @@ const Hero = {
     this.artisans = { smith: 1, mystic: 1, jeweler: 1 };
     this.runes = {};
     this.cheats = { god: false, essence: false };
+    this.bagTier = 0;
+    this.applyBagSize();
+  },
+
+  // Bag capacity grows with purchased upgrades.
+  applyBagSize() {
+    this.BAG_SIZE = this.bagTier > 0 && BAG_UPGRADES[this.bagTier - 1]
+      ? BAG_UPGRADES[this.bagTier - 1].size : 24;
+  },
+
+  nextBagUpgrade() {
+    return this.bagTier < BAG_UPGRADES.length ? BAG_UPGRADES[this.bagTier] : null;
+  },
+
+  buyBagUpgrade() {
+    const up = this.nextBagUpgrade();
+    if (!up) { UI.toast('Bag is already at maximum size', '#9a9080'); AudioSys.sfx('denied'); return; }
+    if (this.gold < up.cost) { UI.toast('Not enough gold', '#9a9080'); AudioSys.sfx('denied'); return; }
+    this.gold -= up.cost;
+    this.bagTier++;
+    this.applyBagSize();
+    this.save();
+    UI.toast('Bag expanded to ' + this.BAG_SIZE + ' slots', '#6ff7c3');
+    AudioSys.sfx('level');
   },
 
   snapshot() {
@@ -130,7 +158,8 @@ const Hero = {
       zonesCleared: this.zonesCleared, difficulty: this.difficulty,
       bestZone: this.bestZone, totalKills: this.totalKills,
       riftsCleared: this.riftsCleared, riftKeys: this.riftKeys, masterKeys: this.masterKeys,
-      artisans: this.artisans, runes: this.runes, cheats: this.cheats
+      artisans: this.artisans, runes: this.runes, cheats: this.cheats,
+      bagTier: this.bagTier
     };
   },
 
@@ -179,8 +208,10 @@ const Hero = {
         return a;
       })(),
       runes: d.runes || {},
-      cheats: Object.assign({ god: false, essence: false }, d.cheats)
+      cheats: Object.assign({ god: false, essence: false }, d.cheats),
+      bagTier: clamp(d.bagTier || 0, 0, BAG_UPGRADES.length)
     });
+    this.applyBagSize();
     // Legacy migration: pre-shared saves embedded a per-character stash. If the
     // shared vault is still empty, absorb those items so nothing is lost.
     if (d.stash && d.stash.length && (!this.stash || !this.stash.length)) {
@@ -197,6 +228,8 @@ const Hero = {
       localStorage.setItem(SAVE_KEY, JSON.stringify(this.snapshot()));
     } catch (e) { /* storage unavailable */ }
     this.saveStash();
+    // Mirror into the active roster slot so profiles stay current.
+    if (typeof Profiles !== 'undefined') Profiles.saveActive();
   },
 
   // Persist the shared vault to its own key (never inside a save slot).
@@ -351,5 +384,85 @@ const Hero = {
     // Pad passives to the number of slots (a new lvl-3 slot was added).
     while (this.passives.length < PASSIVE_SLOT_LEVELS.length) this.passives.push(null);
     if (this.passives.length > PASSIVE_SLOT_LEVELS.length) this.passives.length = PASSIVE_SLOT_LEVELS.length;
+  }
+};
+
+// The character roster: up to 3 heroes at once, chosen from the campfire
+// select scene. The shared Stash is common to all of them.
+const Profiles = {
+  MAX: 3,
+  slots: [null, null, null],
+  active: 0,
+
+  load() {
+    try {
+      const raw = localStorage.getItem(PROFILES_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        this.slots = (d.slots || []).slice(0, this.MAX);
+        while (this.slots.length < this.MAX) this.slots.push(null);
+        this.active = clamp(d.active || 0, 0, this.MAX - 1);
+      }
+    } catch (e) { /* ignore */ }
+    // One-time migration: fold a legacy single hero into slot 0.
+    if (!this.slots.some(Boolean)) {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (raw) { this.slots[0] = JSON.parse(raw); this.active = 0; this.persist(); }
+      } catch (e) { /* ignore */ }
+    }
+  },
+
+  persist() {
+    try { localStorage.setItem(PROFILES_KEY, JSON.stringify({ slots: this.slots, active: this.active })); } catch (e) { /* ignore */ }
+  },
+
+  count() { return this.slots.filter(Boolean).length; },
+  full() { return this.count() >= this.MAX; },
+  firstEmpty() { return this.slots.findIndex(s => !s); },
+  firstFilled() { const i = this.slots.findIndex(Boolean); return i < 0 ? 0 : i; },
+
+  // Persist the currently-active Hero into its slot (called on every save).
+  saveActive() {
+    if (this.active >= 0 && this.active < this.MAX && this.slots[this.active] !== undefined) {
+      this.slots[this.active] = Hero.snapshot();
+      this.persist();
+    }
+  },
+
+  // Load an existing profile into the active Hero.
+  select(i) {
+    if (!this.slots[i]) return false;
+    this.active = i;
+    Hero.applySnapshot(this.slots[i]);
+    this.persist();
+    return true;
+  },
+
+  // Start a brand-new hero in slot i (the creation screen then customizes it).
+  create(i) {
+    if (i < 0 || i >= this.MAX || this.slots[i]) return false;
+    this.active = i;
+    Hero.name = ''; Hero.eyeColor = '';
+    Hero.fresh();
+    this.slots[i] = Hero.snapshot();
+    this.persist();
+    return true;
+  },
+
+  remove(i) {
+    if (i < 0 || i >= this.MAX) return;
+    this.slots[i] = null;
+    if (this.active === i) this.active = this.firstFilled();
+    this.persist();
+  },
+
+  // Load the roster at boot and make the active (or first) hero current.
+  boot() {
+    this.load();
+    const act = this.slots[this.active] ? this.active : this.firstFilled();
+    if (this.slots[act]) { this.active = act; Hero.applySnapshot(this.slots[act]); return true; }
+    Hero.fresh();
+    return false;
   }
 };
