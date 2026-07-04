@@ -794,8 +794,11 @@ const Items = {
     };
     for (const slot of Object.keys(ITEM_SLOTS)) gather(Hero.equipped[slot], slot);
     const lvl = Hero.level;
-    // Armor → damage reduction (diminishing, level-scaled), capped at 80%.
-    const armorDR = clamp(armor / (armor + 60 + 45 * lvl), 0, 0.80);
+    // Armor → damage reduction, capped at 80%. Big denominator (owner rule):
+    // low armor barely helps (201 armor ≈ 0.3%, you're squishy), while the
+    // best endgame armor climbs into the hundreds of thousands for real
+    // mitigation (≈75% at 200k, cap at ~268k).
+    const armorDR = clamp(armor / (armor + 67000), 0, 0.80);
     // The Royal Grandeur: set bonuses need one fewer piece (min 2) — modelled as
     // +1 effective set pieces once you already have at least 2.
     const powers = this.equippedPowers();

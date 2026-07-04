@@ -18,11 +18,18 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.6.5-alpha';
+const GAME_VERSION = 'v0.6.6-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.6.6-alpha', date: 'July 2026',
+    notes: [
+      'ARMOR rebalanced — low armor now barely mitigates (201 armor ≈ 0.3% instead of 30%), so you\'re genuinely squishy early. Only huge armor totals (hundreds of thousands, the endgame goal) reach real damage reduction, capped at 80%',
+      'The world gets tougher at the endgame: monsters hit +5% harder at level 60 and +9% harder at level 70'
+    ]
+  },
   {
     v: 'v0.6.5-alpha', date: 'July 2026',
     notes: [

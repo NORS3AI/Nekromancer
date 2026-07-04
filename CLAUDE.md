@@ -59,7 +59,9 @@ loot at the artisans. The hero is persistent (localStorage).
 - Packs sleep until the player is within ~440px (or they're hurt).
 - Items: 9 slots, affix count = rarity, socket chance by rarity, gems 5 types × 5 tiers.
 - **Stats/gems (owner rules):** `armor` affix + Diamond gem (`stat:'armor'`) → damage
-  reduction `armor/(armor+60+45·lvl)` capped 80% (applied in `Player.hurt`). Boots can
+  reduction `armor/(armor+67000)` capped 80% (applied in `Player.hurt`) — a big
+  fixed denominator so low armor barely helps (201 armor ≈ 0.3%, you're squishy)
+  and only hundreds-of-thousands of armor is tanky (owner rule). Boots can
   roll a `move` affix (1–25%, boots-only, flat) → `Player.speed = 180·(1+move)`. A
   **Perfect-tier gem in ANY slot = +20% damage** (per gem). A **Ruby in the HELM** gives
   **+3%→+20% XP** (by tier) instead of its damage (feeds `Hero.addXP` via `player.xpBonus`).
