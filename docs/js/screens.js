@@ -1517,19 +1517,19 @@ const Screens = {
     this.artisanRow(ctx, px, pw, 88, 'smith', 'FORGE');
     this.matsRow(ctx, px + 16, 114, pw - 32);
 
-    // Bulk salvage row (ease of access). Epics unlock at 60, Legendaries at 70;
-    // single items always break down free from the Inventory wheel.
+    // Bulk salvage row (ease of access). Epics unlock at smith 8, Legendaries at
+    // smith 10; single items always break down free from the Inventory wheel.
     const half = (pw - 40) / 2;
     const q = (pw - 32 - 3 * 6) / 4;
-    const epicLvl = Items.BULK_SALVAGE_LVL.epic, legLvl = Items.BULK_SALVAGE_LVL.legendary;
-    const epicOk = Hero.level >= epicLvl, legOk = Hero.level >= legLvl;
+    const epicLvl = Items.BULK_SALVAGE_SMITH.epic, legLvl = Items.BULK_SALVAGE_SMITH.legendary;
+    const epicOk = Hero.artisans.smith >= epicLvl, legOk = Hero.artisans.smith >= legLvl;
     UI.btn(ctx, px + 16 + 0 * (q + 6), 124, q, 32, 'COM+MAG', () => Items.salvageJunk(),
       { size: 10, border: '#8a6f4a', color: '#ffb43a' });
     UI.btn(ctx, px + 16 + 1 * (q + 6), 124, q, 32, 'RARES', () => Items.salvageRares(),
       { size: 10, border: '#8a6f4a', color: '#ffd76a' });
-    UI.btn(ctx, px + 16 + 2 * (q + 6), 124, q, 32, epicOk ? 'EPICS' : 'EPICS L' + epicLvl, () => Items.salvageEpics(),
+    UI.btn(ctx, px + 16 + 2 * (q + 6), 124, q, 32, epicOk ? 'EPICS' : 'EPICS S' + epicLvl, () => Items.salvageEpics(),
       { size: 10, border: '#7a4a8f', color: epicOk ? '#b06adf' : '#6f5a7a' });
-    UI.btn(ctx, px + 16 + 3 * (q + 6), 124, q, 32, legOk ? 'LEGENDS' : 'LEG L' + legLvl, () => Items.salvageLegendaries(),
+    UI.btn(ctx, px + 16 + 3 * (q + 6), 124, q, 32, legOk ? 'LEGENDS' : 'LEG S' + legLvl, () => Items.salvageLegendaries(),
       { size: 10, border: '#8a5a2a', color: legOk ? '#ff8c2a' : '#7a5f45' });
 
     // Forge quality selector.
@@ -1553,12 +1553,19 @@ const Screens = {
 
     const cost = Items.craftCost(UI.sel.master);
     const afford = Items.canAfford(cost);
+    // Forge band — smith level pins the gear level the Blacksmith can make —
+    // shown alongside the quality note on one line so the slot grid stays put.
+    const [flo, fhi] = Items.smithRange();
     ctx.font = '10px Georgia';
-    ctx.fillStyle = UI.sel.master ? '#ffd76a' : '#6f6552';
     ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffb43a';
+    const bandTxt = 'Forges lvl ' + flo + '–' + fhi + '.  ';
+    ctx.fillText(bandTxt, px + 16, 220);
+    const bandW = ctx.measureText(bandTxt).width;
+    ctx.fillStyle = UI.sel.master ? '#ffd76a' : '#6f6552';
     ctx.fillText(this.fitText(ctx, UI.sel.master
-      ? 'Masterwork: guaranteed Rare or better, 50% chance of a socket.'
-      : 'Standard: a quick roll of the dice for the chosen slot.', pw - 32), px + 16, 220);
+      ? 'Masterwork: Rare+ guaranteed, 50% socket.'
+      : 'Standard: a quick roll for the slot.', pw - 32 - bandW), px + 16 + bandW, 220);
 
     // Torches are recipe-crafted, not random-forged — keep them off the roll grid.
     const slots = Object.keys(ITEM_SLOTS).filter(s => !ITEM_SLOTS[s].torch);
@@ -1876,8 +1883,8 @@ const Screens = {
       ctx.textAlign = 'left';
       ctx.font = '12px Georgia';
       ctx.fillStyle = '#9a9080';
-      ctx.fillText('Choose an equipped item, then the exact property', px + 16, 112);
-      ctx.fillText('to reroll. The rest of the item is untouched.', px + 16, 128);
+      ctx.fillText('Choose an item, then a property to reroll. Each reroll', px + 16, 112);
+      ctx.fillText('stays in that property\'s group — you see the exact odds.', px + 16, 128);
       let y = 142;
       for (const slot of Object.keys(ITEM_SLOTS)) {
         const it = Hero.equipped[slot];
@@ -1915,36 +1922,52 @@ const Screens = {
     ctx.fillStyle = '#b06adf';
     ctx.fillText('CHOOSE WHICH PROPERTY TO REROLL:', px + 16, y + 8);
     y += 18;
+    const shortAffix = { dmg: 'Damage', hp: 'Life', crit: 'Crit', ess: 'Essence', reg: 'Life regen', gold: 'Gold find', armor: 'Armor', move: 'Move speed' };
+    // Signature affixes can't be selected (they define the legendary).
+    if (UI.sel.affix && !affixGroup(UI.sel.affix)) UI.sel.affix = null;
     for (const [key, v] of Object.entries(it.stats)) {
+      const grp = affixGroup(key);
       const selected = UI.sel.affix === key;
-      UI.btn(ctx, px + 16, y, pw - 32, 30, '', () => {
+      UI.btn(ctx, px + 16, y, pw - 32, 30, '', grp ? () => {
         UI.sel.affix = selected ? null : key;
-      }, { bg: selected ? 'rgba(70,44,90,0.95)' : undefined, border: selected ? '#b06adf' : undefined });
+      } : null, { bg: selected ? 'rgba(70,44,90,0.95)' : undefined, border: selected ? '#b06adf' : undefined, disabled: !grp });
       ctx.textAlign = 'left';
       ctx.font = 'bold 12px Georgia';
-      ctx.fillStyle = selected ? '#d8b4f0' : '#b5ab94';
+      ctx.fillStyle = !grp ? '#6f6552' : selected ? '#d8b4f0' : '#b5ab94';
       ctx.fillText(AFFIX_ROLLS[key].label(v), px + 28, y + 15);
       ctx.textAlign = 'right';
       ctx.font = '11px Georgia';
-      ctx.fillStyle = selected ? '#b06adf' : '#544d44';
-      ctx.fillText(selected ? 'will be rerolled ✦' : 'keep', px + pw - 28, y + 15);
+      ctx.fillStyle = !grp ? '#544d44' : selected ? '#b06adf' : '#6a8a5a';
+      ctx.fillText(!grp ? 'signature' : selected ? 'will be rerolled ✦' : AFFIX_GROUP_NAME[grp], px + pw - 28, y + 15);
       y += 34;
     }
 
-    // The list of properties this reroll could produce, plus the rare socket.
+    // Exact reroll odds for the selected property — so it never feels like a
+    // gamble (owner rule). Each outcome in the group has an equal chance.
     y += 6;
-    const shortAffix = { dmg: 'Damage', hp: 'Life', crit: 'Crit', ess: 'Essence', reg: 'Life regen', gold: 'Gold find' };
     ctx.textAlign = 'left';
     ctx.font = 'bold 11px Georgia';
     ctx.fillStyle = '#9a9080';
-    ctx.fillText('POSSIBLE ENCHANTS:', px + 16, y + 6);
-    y += 16;
-    const pool = Object.keys(AFFIX_ROLLS).filter(k =>
-      UI.sel.affix ? (k === UI.sel.affix || !(k in it.stats)) : !(k in it.stats));
-    ctx.font = '11px Georgia';
-    ctx.fillStyle = '#b5ab94';
-    ctx.fillText(this.fitText(ctx, pool.map(k => shortAffix[k]).join(' · ') || '—', pw - 32), px + 16, y + 4);
-    y += 16;
+    if (UI.sel.affix) {
+      const outs = Items.enchantOutcomes(it, UI.sel.affix);
+      ctx.fillText('REROLL ODDS  ·  ' + AFFIX_GROUP_NAME[affixGroup(UI.sel.affix)] + ' group', px + 16, y + 6);
+      y += 16;
+      ctx.font = '11px Georgia';
+      for (const o of outs) {
+        const pct = Math.round(o.chance * 100) + '%';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = o.current ? '#d8b4f0' : '#b5ab94';
+        ctx.fillText('•  ' + shortAffix[o.key] + (o.current ? '  (new value)' : ''), px + 24, y + 4);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#6a8a5a';
+        ctx.fillText(pct, px + pw - 24, y + 4);
+        y += 15;
+      }
+      y += 2;
+    } else {
+      ctx.fillText('Select a property above to see its reroll odds.', px + 16, y + 6);
+      y += 18;
+    }
     const maxS = MAX_SOCKETS[it.rarity] || 0;
     const room = (it.sockets || 0) < maxS;
     ctx.font = '11px Georgia';
@@ -2690,10 +2713,10 @@ const Screens = {
     row('Max level Blacksmith (10)', () => {
       Hero.artisans.smith = 10; UI.toast('Blacksmith mastered', '#ffb43a'); Hero.save();
     }, '#ffb43a');
-    row('Max level Enchantress (10)', () => {
+    row('Max level Mystic (10)', () => {
       Hero.artisans.mystic = 10; UI.toast('Mystic mastered', '#b06adf'); Hero.save();
     }, '#b06adf');
-    row('Max level Gem Crafter (10)', () => {
+    row('Max level Jeweler (10)', () => {
       Hero.artisans.jeweler = 10; UI.toast('Jeweler mastered', '#4ecbe0'); Hero.save();
     }, '#4ecbe0');
     ctx.textAlign = 'center';

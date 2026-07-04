@@ -71,9 +71,15 @@ loot at the artisans. The hero is persistent (localStorage).
   Legendary→Forgotten Souls (gems survive the forge). **Two salvage paths (owner
   rule): (1) INDIVIDUAL breakdown from the Inventory wheel is always free at any
   level for any rarity (`canSalvage` always true). (2) The BLACKSMITH's bulk
-  "ease of access" salvage is level-gated for the finest gear — Epics from lvl 60
-  (`salvageEpics`), Legendaries/Sets from lvl 70 (`salvageLegendaries`); common/
-  magic (`salvageJunk`) and rares (`salvageRares`) are always available.**
+  "ease of access" salvage is gated by SMITH LEVEL for the finest gear —
+  Epics from smith **8**, Legendaries/Sets from smith **10**
+  (`BULK_SALVAGE_SMITH`, `salvageEpics`/`salvageLegendaries`); common/magic
+  (`salvageJunk`) and rares (`salvageRares`) are always available.**
+- **Blacksmith forges by SMITH LEVEL, not hero level (owner spec, `SMITH_RANGE`/
+  `smithRange`)**: L1 makes lvl 1–5 gear, L2 6–10, L3 11–20, L4 21–30, L5 31–40,
+  L6 41–50, L7 51–60, L8 51–60 (unlocks epic salvage), L9 61–70, L10 61–70
+  (unlocks legendary salvage). `craft()` rolls `craftLvl` inside that band; the
+  forge screen shows the current band.
 - Potion button sits ON the skill-cluster arc past slot 1 (angle π·0.98, radius R+54·scale)
   — verified non-overlapping at 390×750 / 844×390 / 900×500 / 1280×720.
 - XP: `60·lvl^1.5`, cap 70. Level-up = full heal + toasts for new unlocks.
@@ -81,8 +87,15 @@ loot at the artisans. The hero is persistent (localStorage).
 - **Artisan resource lanes (owner rule)**: Blacksmith = gold/parts/dust/crystals;
   Mystic = gold + Forgotten Souls ONLY; Jeweler = gold + gems ONLY. Unsocketing is
   free (Jeweler has an UNSOCKET row); salvage always returns socketed gems.
-- Enchant gold cost is rarity-scaled (0.4/0.6/1.0/1.6/1.8 ×) over a low base
-  (80 + 28·mLvl) so early commons cost tens of gold, not hundreds (owner rule).
+- **Mystic reroll = TARGETED, not gambling (owner rule)**: every rerollable affix
+  belongs to a GROUP (`AFFIX_GROUPS` — Offense: dmg/crit/ess · Defense: hp/armor/reg
+  · Utility: gold/move) and a reroll can only land within that group; the Mystic UI
+  shows the EXACT equal odds for each outcome before you pay (`enchantOutcomes`).
+  Signature legendary affixes (`dnova`/`area`, no group) are locked. Gold cost
+  starts at **50g** and climbs ~1.42× per enchant (`enchantCost` — ~15–20 rolls to
+  reach the tens of thousands, softened by mystic training). Souls are charged ONLY
+  on legendary-and-above, a flat per-tier toll (`mysticSoulCost`): Set 1 · Legendary
+  1–4 by ★ · Artifact 5–10 by ★.
 - **Menus NEVER close from stray taps (owner rule)**: `UI.click()` swallows every
   unmatched tap while a screen is open. The only ways out are the red ✕
   (`Screens.closeX`, present on every screen incl. the gem popup), the Escape key,

@@ -528,6 +528,19 @@ const Items = {
     for (const m of ['parts', 'dust', 'crystal', 'soul']) Hero.mats[m] -= cost[m] || 0;
   },
 
+  // Gear level range the Blacksmith forges, by smith level (owner spec).
+  // Levels 8 & 10 don't add a new tier — they unlock inventory epic/legendary
+  // salvage — so they forge at the previous tier's range.
+  SMITH_RANGE: {
+    1: [1, 5],   2: [6, 10],  3: [11, 20], 4: [21, 30], 5: [31, 40],
+    6: [41, 50], 7: [51, 60], 8: [51, 60], 9: [61, 70], 10: [61, 70]
+  },
+
+  // The gear-level band the smith currently forges, as [lo, hi].
+  smithRange() {
+    return this.SMITH_RANGE[Hero.artisans.smith] || [1, 5];
+  },
+
   craft(slot, master = false) {
     const cost = this.craftCost(master);
     if (!this.canAfford(cost)) {
@@ -536,8 +549,9 @@ const Items = {
       return;
     }
     this.pay(cost);
-    // Level 1 forges low-tier gear; level 10 forges at your full level.
-    const craftLvl = Math.max(1, Math.round(Hero.level * (0.5 + 0.05 * Hero.artisans.smith)));
+    // Smith level pins the gear-level band (owner spec): L1 forges 1-5, L9 forges 61-70.
+    const [lo, hi] = this.smithRange();
+    const craftLvl = Math.max(1, Math.round(rand(lo, hi)));
     let item, tries = 0;
     do {
       item = this.generate(craftLvl, master ? 0.2 : 0.12, slot);
@@ -553,30 +567,30 @@ const Items = {
     this.bulkSalvage(r => r === 2, 0, 'rare');
   },
 
-  // Blacksmith bulk salvage is the "ease of access" path and is level-gated for
-  // the finest gear: Epics from level 60, Legendaries/Sets from level 70. This
-  // does NOT restrict breaking items down one at a time from the Inventory wheel
-  // (that is always free at any level — see canSalvage). Owner rule.
-  BULK_SALVAGE_LVL: { epic: 60, legendary: 70 },
+  // Blacksmith bulk salvage is the "ease of access" path, gated by SMITH LEVEL
+  // for the finest gear (owner spec): Epics at smith 8, Legendaries/Sets at
+  // smith 10. This does NOT restrict breaking items down one at a time from the
+  // Inventory wheel (that is always free at any level — see canSalvage).
+  BULK_SALVAGE_SMITH: { epic: 8, legendary: 10 },
 
   salvageEpics() {
-    if (Hero.level < this.BULK_SALVAGE_LVL.epic) {
-      UI.toast('Blacksmith bulk-salvages Epics at level ' + this.BULK_SALVAGE_LVL.epic +
-        ' — you can still break them down one at a time from your Inventory', '#b06adf');
+    if (Hero.artisans.smith < this.BULK_SALVAGE_SMITH.epic) {
+      UI.toast('Train the Blacksmith to level ' + this.BULK_SALVAGE_SMITH.epic +
+        ' to bulk-salvage Epics — you can still break them down one at a time from your Inventory', '#b06adf');
       AudioSys.sfx('denied');
       return;
     }
-    this.bulkSalvage(r => r === 3, this.BULK_SALVAGE_LVL.epic, 'Epic');
+    this.bulkSalvage(r => r === 3, 0, 'Epic');
   },
 
   salvageLegendaries() {
-    if (Hero.level < this.BULK_SALVAGE_LVL.legendary) {
-      UI.toast('Blacksmith bulk-salvages Legendaries at level ' + this.BULK_SALVAGE_LVL.legendary +
-        ' — you can still break them down one at a time from your Inventory', '#ff8c2a');
+    if (Hero.artisans.smith < this.BULK_SALVAGE_SMITH.legendary) {
+      UI.toast('Train the Blacksmith to level ' + this.BULK_SALVAGE_SMITH.legendary +
+        ' to bulk-salvage Legendaries — you can still break them down one at a time from your Inventory', '#ff8c2a');
       AudioSys.sfx('denied');
       return;
     }
-    this.bulkSalvage(r => r >= 4, this.BULK_SALVAGE_LVL.legendary, 'Legendary/Set');
+    this.bulkSalvage(r => r >= 4, 0, 'Legendary/Set');
   },
 
   // Salvage every bag item matching `pred` (a rarity predicate) at once.
@@ -692,27 +706,54 @@ const Items = {
 
   // ---------------------------------------------------------------- mystic
 
-  // Each enchant on an item drives the next one's price up, D3-style.
-  // The Mystic trades in gold and Forgotten Souls only; training softens
-  // both the base price and the escalation. Cheap for low rarities and
-  // low-level gear so enchanting is useful from the start.
+  // Forgotten Souls the Mystic needs per reroll, by item tier (owner table).
+  // ONLY legendary-and-above cost souls; common/magic/rare/epic are gold-only.
+  //   Set = 1 · Legendary 0-3★ = 1..4 · Artifact 0-5★ = 5..10
+  mysticSoulCost(item) {
+    const st = item.stars || 0;
+    if (item.rarity === 4) return 1 + st;   // Legendary
+    if (item.rarity === 5) return 1;        // Set
+    if (item.rarity === 6) return 5 + st;   // Artifact
+    return 0;                               // common / magic / rare / epic
+  },
+
+  // Reroll cost starts at 50g and climbs ~1.42× each time — 15-20 rerolls
+  // before it reaches the tens of thousands, never substantially beyond
+  // (owner rule). Mystic training softens the price. Souls are a flat per-tier
+  // toll (mysticSoulCost), NOT escalated by enchant count.
   enchantCost(item) {
     const n = item.enchants || 0;
     const d = this.artisanDiscount('mystic');
-    const escal = 0.5 * (1 - Hero.artisans.mystic / 20);
-    const rarityMult = [0.4, 0.6, 1.0, 1.3, 1.6, 1.8][item.rarity] || 1;
     return {
-      gold: Math.round((80 + item.mLvl * 28) * rarityMult * (1 + n * escal) * d),
-      soul: (item.rarity >= 4 ? 2 : 1) + Math.floor(n / 2)
+      gold: Math.round(50 * Math.pow(1.42, n) * d),
+      soul: this.mysticSoulCost(item)
     };
   },
 
-  // Reroll the affix the PLAYER chose; the rest of the item is untouched.
+  // The affixes a reroll of `statKey` could produce — restricted to statKey's
+  // own group, each with EQUAL odds — so the player sees exact chances before
+  // paying (owner rule). The current affix is always a candidate (a new value).
+  enchantOutcomes(item, statKey) {
+    const g = affixGroup(statKey);
+    if (!g) return [];   // signature affixes (dnova/area) can't be rerolled
+    const cands = AFFIX_GROUPS[g].filter(k =>
+      (k === statKey || !(k in item.stats)) &&
+      (k !== 'move' || item.slot === 'boots'));
+    const chance = cands.length ? 1 / cands.length : 0;
+    return cands.map(k => ({ key: k, chance, current: k === statKey }));
+  },
+
+  // Reroll the affix the PLAYER chose into another affix in its group.
   enchant(item, statKey) {
     if (!(statKey in item.stats)) return;
+    if (!affixGroup(statKey)) {   // dnova/area are signature — untouchable
+      UI.toast('This property is a signature affix and cannot be rerolled', '#9a9080');
+      AudioSys.sfx('denied');
+      return;
+    }
     const cost = this.enchantCost(item);
     if (!this.canAfford(cost)) {
-      UI.toast('Not enough gold or materials', '#9a9080');
+      UI.toast('Not enough gold or souls', '#9a9080');
       AudioSys.sfx('denied');
       return;
     }
@@ -729,11 +770,10 @@ const Items = {
       Hero.save();
       return 'socket';
     }
+    // New property comes from statKey's group only (the shown odds).
+    const outs = this.enchantOutcomes(item, statKey);
+    const nk = outs.length ? pick(outs).key : statKey;
     delete item.stats[statKey];
-    // New property: anything the item doesn't already have. `move` stays boots-only.
-    const pool = Object.keys(AFFIX_ROLLS).filter(k =>
-      !(k in item.stats) && k !== 'dnova' && k !== 'area' && (k !== 'move' || item.slot === 'boots'));
-    const nk = pick(pool);
     const R = RARITIES[item.rarity];
     if (nk === 'move') {
       item.stats.move = clamp(rand(0.01, 0.25), 0.01, 0.25);   // flat, not level-scaled

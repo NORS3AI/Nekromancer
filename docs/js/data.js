@@ -19,11 +19,21 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.6.7-alpha';
+const GAME_VERSION = 'v0.6.8-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.6.8-alpha', date: 'July 2026',
+    notes: [
+      'BLACKSMITH now forges by his own level, not yours: L1 makes lvl 1–5 gear, L2 6–10, L3 11–20, L4 21–30, L5 31–40, L6 41–50, L7 51–60, L9 61–70. His current forge band is shown on the anvil',
+      'Bulk-salvage gates moved to the smith: level 8 unlocks EPIC bulk-salvage, level 10 unlocks LEGENDARY/SET (single items still break down free from the Inventory any time)',
+      'MYSTIC reroll is no longer a gamble — every property belongs to a GROUP (Offense: damage/crit/essence · Defense: life/armor/life-regen · Utility: gold/move) and a reroll can only land within that group, with the EXACT odds shown before you pay. Signature legendary affixes are locked',
+      'Mystic pricing reworked: rerolls start at just 50g and climb gently (~15–20 rolls to reach the tens of thousands). Souls are charged ONLY on legendary-and-above, per tier: Set 1 · Legendary 1–4 by star · Artifact 5–10 by star',
+      'Dev panel labels corrected to Mystic and Jeweler'
+    ]
+  },
   {
     v: 'v0.6.7-alpha', date: 'July 2026',
     notes: [
@@ -865,6 +875,21 @@ const AFFIX_ROLLS = {
 };
 // Affixes that must never appear from the generic random pool.
 const RESTRICTED_AFFIXES = new Set(['move', 'dnova', 'area']);
+
+// Mystic reroll GROUPS (owner rule): a rerolled property can only become
+// another property in its OWN group, so the player always knows the exact
+// odds — enchanting is a targeted choice, not a slot machine. `dnova`/`area`
+// are signature legendary affixes and belong to no group (never rerollable).
+const AFFIX_GROUPS = {
+  offense: ['dmg', 'crit', 'ess'],   // damage, crit chance, essence/s
+  defense: ['hp', 'armor', 'reg'],   // life, armor, life/s
+  utility: ['gold', 'move']          // gold find, movement (move is boots-only)
+};
+const AFFIX_GROUP_NAME = { offense: 'Offense', defense: 'Defense', utility: 'Utility' };
+function affixGroup(key) {
+  for (const g in AFFIX_GROUPS) if (AFFIX_GROUPS[g].includes(key)) return g;
+  return null;
+}
 
 const LEGENDARY_PREFIX = ["Maltorius'", "The Widow's", "Rathma's", "Xul's", "Trag'Oul's", "Mendeln's"];
 const EPIC_PREFIX = ['Fabled', 'Mythic', 'Hallowed', 'Abyssal', 'Deathless', 'Umbral'];
