@@ -1585,22 +1585,25 @@ const Screens = {
   // ----------------------------------------------------------- artisans
 
   matsRow(ctx, x, y, w) {
-    // Compact, measured labels that never spill off narrow phones.
+    // Compact, measured labels that never spill off narrow phones. Shows the
+    // FORGE reagents only — including Souls (legendary/artifact salvage) right
+    // next to Crystals; gold is abbreviated so nothing gets clipped. Torch
+    // reagents (lumber/rivets/heart) live on the torch bench.
     ctx.textAlign = 'left';
     ctx.font = 'bold 11px Georgia';
-    const parts = [[Hero.gold + 'g', '#ffd76a']];
-    const short = { parts: 'Parts', dust: 'Dust', crystal: 'Cryst', soul: 'Souls',
-      lumber: 'Lumber', rivets: 'Rivets', heartstring: 'Heart' };
-    for (const [key, m] of Object.entries(MATERIALS)) {
-      parts.push([Hero.mats[key] + ' ' + short[key], m.color]);
+    const gs = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(0) + 'k' : '' + n;
+    const short = { parts: 'Parts', dust: 'Dust', crystal: 'Cryst', soul: 'Souls' };
+    const parts = [[gs(Hero.gold) + 'g', '#ffd76a']];
+    for (const key of ['parts', 'dust', 'crystal', 'soul']) {
+      parts.push([(Hero.mats[key] || 0) + ' ' + short[key], MATERIALS[key].color]);
     }
     let cx = x;
     for (const [txt, col] of parts) {
       const tw = ctx.measureText(txt).width;
-      if (cx + tw > x + w - 20) break;
+      if (cx + tw > x + w - 12) break;
       ctx.fillStyle = col;
       ctx.fillText(txt, cx, y);
-      cx += tw + Math.min(18, w * 0.04);
+      cx += tw + Math.min(16, w * 0.035);
     }
   },
 
@@ -3086,14 +3089,14 @@ const Screens = {
     const px = W / 2 - pw / 2;
     const ph = 210 + (Game.rewardLines ? Game.rewardLines.length * 20 : 0);
     const py = H / 2 - ph / 2;
-    UI.panel(ctx, px, py, pw, ph, 'BOUNTY COMPLETE');
+    UI.panel(ctx, px, py, pw, ph, Game.rewardTitle || 'BOUNTY COMPLETE');
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 15px Georgia';
     ctx.fillStyle = '#ffb43a';
     ctx.fillText(Game.zone ? Game.zone.boss + '  slain' : 'The bounty is done', W / 2, py + 60);
     ctx.font = '13px Georgia';
     ctx.fillStyle = '#c9bfa8';
-    ctx.fillText('Horadric cache:', W / 2, py + 86);
+    ctx.fillText(Game.rewardTitle === 'SEASON COMPLETE' ? 'Season cache:' : 'Horadric cache:', W / 2, py + 86);
     (Game.rewardLines || []).forEach((ln, i) => {
       ctx.fillStyle = ln[1];
       ctx.font = 'bold 13px Georgia';

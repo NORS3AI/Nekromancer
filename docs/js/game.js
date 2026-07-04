@@ -459,10 +459,25 @@ const Game = {
       const gem = Items.dropGem();
       Hero.gems.push(gem);
       lines.push([gemName(gem), GEM_TYPES[gem.type].color]);
-      const kd = this.riftKeysDropped || 0;
-      const klbl = this.riftKeyLabel || 'Nephalem Rift Key';
-      lines.push([kd ? kd + '× ' + klbl + (kd > 1 ? 's' : '') + ' dropped' : 'No rift keys dropped this run',
-        kd ? '#b06adf' : '#9a9080']);
+      const kind = (this.zone && this.zone.riftKind) || 'normal';
+      if (kind === 'season') {
+        // Seasons don't drop keys — they drop SET pieces. Roll one by difficulty
+        // (higher Torment = better odds); a hit is collected to the bag (owner rule).
+        const chance = clamp(0.35 + tormentTier() * 0.035, 0.35, 0.95);
+        if (Math.random() < chance) {
+          const sp = Items.generateSetPiece(mLvl);
+          Items.stash(sp);
+          lines.push(['✦ ' + sp.name, RARITIES[5].color]);
+        } else {
+          lines.push(['No set piece this run', '#9a9080']);
+        }
+      } else {
+        const kd = this.riftKeysDropped || 0;
+        const klbl = this.riftKeyLabel || 'Nephalem Rift Key';
+        lines.push([kd ? kd + '× ' + klbl + (kd > 1 ? 's' : '') + ' dropped' : 'No rift keys dropped this run',
+          kd ? '#b06adf' : '#9a9080']);
+      }
+      this.rewardTitle = kind === 'season' ? 'SEASON COMPLETE' : 'RIFT COMPLETE';
       this.rewardLines = lines;
       Hero.addXP(Math.round(400 * diff.reward));
       Hero.save();
@@ -487,6 +502,7 @@ const Game = {
       Items.stash(item);
       lines.push([item.name, RARITIES[item.rarity].color]);
       lines.push(['Act I complete — the Skeleton King is slain', '#ff8c2a']);
+      this.rewardTitle = 'ACT COMPLETE';
       this.rewardLines = lines;
       Hero.addXP(Math.round(1600 * diff.reward));
       Hero.save();
@@ -510,6 +526,7 @@ const Game = {
     const item = Items.generate(mLvl + 1, 0.3);
     Items.stash(item);
     lines.push([item.name, RARITIES[item.rarity].color]);
+    this.rewardTitle = 'BOUNTY COMPLETE';
     this.rewardLines = lines;
 
     Hero.zonesCleared = Math.max(Hero.zonesCleared, this.zoneIdx + 1);

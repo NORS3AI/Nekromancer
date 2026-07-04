@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.7.6-alpha';
+const GAME_VERSION = 'v0.7.7-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.7.7-alpha', date: 'July 2026',
+    notes: [
+      'Fixed upgrade arrows badly over-valuing legendary-power items: crit was weighted higher than damage (now damage leads, as +100% dmg beats +100% crit), and the legendary/set "build bump" was far too strong — it could flag a weapon with LESS than half the damage as an upgrade. The bump is now a gentle tiebreaker that never overrides a clearly stronger item',
+      'Blacksmith top bar now shows your Forgotten SOULS right next to Crystals (gold abbreviated so nothing clips) — handy when salvaging legendaries & artifacts',
+      'Season runs now say SEASON COMPLETE and, instead of a rift-keys line (seasons don\'t drop keys), roll a SET PIECE into the cache by difficulty (green) — higher Torment, better odds'
+    ]
+  },
   {
     v: 'v0.7.6-alpha', date: 'July 2026',
     notes: [

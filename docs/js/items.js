@@ -335,8 +335,10 @@ const Items = {
   // SURVIVAL (life & life-regen), then UTILITY (armor, gold, essence, movement).
   // Per-stat values just normalize the very different affix magnitudes so they
   // compare fairly within a tier.
+  // dmg is the headline offense stat: +100% damage is worth MORE than +100%
+  // crit chance, so dmg outweighs crit per point (they used to be reversed).
   STAT_TIER: { dmg: 0, crit: 0, dnova: 0, area: 0, hp: 1, reg: 1, armor: 2, gold: 2, ess: 2, move: 2 },
-  STAT_VAL:  { dmg: 1600, crit: 3300, dnova: 700, area: 500, hp: 2.4, reg: 34, armor: 0.7, gold: 110, ess: 16, move: 210 },
+  STAT_VAL:  { dmg: 1600, crit: 1000, dnova: 700, area: 500, hp: 2.4, reg: 34, armor: 0.7, gold: 110, ess: 16, move: 210 },
 
   // [offense, survival, utility] sub-scores. Sockets/gems credit offense (a
   // Perfect gem is +20% damage); a legendary power or set piece lifts the whole
@@ -360,7 +362,10 @@ const Items = {
       if (g.tier >= perfect) t[0] += 0.20 * this.STAT_VAL.dmg;                             // Perfect gem: +20% damage
       if (item.slot === 'weapon' && g.type === 'ruby') t[0] += 0.25 * this.STAT_VAL.dmg;   // ruby in weapon: +25%
     }
-    const mul = 1 + (item.power ? 0.6 : 0) + (item.set ? 0.35 : 0);
+    // Build-defining pieces get a GENTLE nudge — enough to break a near-tie in
+    // their favor, never enough to override a clearly stronger item (owner rule:
+    // a much higher raw-damage weapon must still win even without a power).
+    const mul = 1 + (item.power ? 0.15 : 0) + (item.set ? 0.10 : 0);
     return [t[0] * mul, t[1] * mul, t[2] * mul];
   },
 
