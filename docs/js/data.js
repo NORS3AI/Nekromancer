@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.7.4-alpha';
+const GAME_VERSION = 'v0.7.5-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.7.5-alpha', date: 'July 2026',
+    notes: [
+      'UPGRADE ARROWS are now priority-tiered (D3-style): damage & crit are weighed before all else, then life & life-regen, then armor/gold/essence — and a legendary power or set piece gets a build-value bump so it stops being under-rated next to a stat-stacked rare',
+      'Season screen now SCROLLS (drag the middle, START button pinned) so the set-bonus text is never cut off on mobile',
+      'Dev panel: buttons for +5000 inventory slots, +5 Master Keys, and +5 Nephalem Rift Keys'
+    ]
+  },
   {
     v: 'v0.7.4-alpha', date: 'July 2026',
     notes: [

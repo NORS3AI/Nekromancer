@@ -2717,10 +2717,10 @@ const Screens = {
     // (red ✕ drawn globally by UI.draw, above all content)
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 16, 500);
+    const ph = Math.min(H - 16, 548);
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, '☠ DEV CHEATS ☠');
-    let y = py + 52;
+    let y = py + 50;
 
     // Toggles — kept per save.
     UI.check(ctx, px + 16, y, Hero.cheats.god, () => {
@@ -2781,6 +2781,18 @@ const Screens = {
         () => { Hero.gold += g; UI.toast('+' + g + ' gold', '#ffd76a'); Hero.save(); },
         { size: 11, color: '#ffd76a' });
     });
+    y += 36;
+    // Keys + inventory-space row (dev grants).
+    const kw = (pw - 32 - 2 * 6) / 3;
+    UI.btn(ctx, px + 16, y, kw, 30, '+5000 Bag',
+      () => { Hero.BAG_SIZE += 5000; UI.toast('+5000 inventory slots (now ' + Hero.BAG_SIZE + ')', '#6ff7c3'); Hero.save(); },
+      { size: 11, color: '#6ff7c3', border: '#3a7a6a' });
+    UI.btn(ctx, px + 16 + kw + 6, y, kw, 30, '+5 Master Keys',
+      () => { Hero.masterKeys += 5; UI.toast('+5 Master Nephalem Rift Keys (' + Hero.masterKeys + ')', '#d8b4f0'); Hero.save(); },
+      { size: 10, color: '#d8b4f0', border: '#5a3a7a' });
+    UI.btn(ctx, px + 16 + 2 * (kw + 6), y, kw, 30, '+5 Nephalem Keys',
+      () => { Hero.riftKeys += 5; UI.toast('+5 Nephalem Rift Keys (' + Hero.riftKeys + ')', '#b06adf'); Hero.save(); },
+      { size: 10, color: '#b06adf', border: '#5a3a7a' });
     y += 36;
     // Level row.
     const lvls = [1, 5, 10];
@@ -2872,54 +2884,81 @@ const Screens = {
     // (red ✕ drawn globally by UI.draw, above all content)
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 16, 470);
+    const ph = Math.min(H - 16, 560);
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, SEASON.name.toUpperCase());
+
+    // Scrollable body (never ellipsize — owner rule) with the START button
+    // pinned as a footer so it's always reachable on phones.
+    const footerH = 72;
+    const footerTop = py + ph - footerH;
+    const scrollTop = py + 44;
+    const viewBot = footerTop - 2;
+    const viewH = Math.max(60, viewBot - scrollTop);
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
+    UI.sel.scrollY = scrollY;
+    UI.sel.scrollRegion = { x: px + 2, y: scrollTop, w: pw - 4, h: viewH };
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(px + 2, scrollTop, pw - 4, viewH);
+    ctx.clip();
+    let c = scrollTop + 12;
+
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'italic 12px Georgia';
     ctx.fillStyle = '#9a9080';
-    wrapText(ctx, SEASON.desc, W / 2, py + 54, pw - 40, 15, 2);
+    c = wrapText(ctx, SEASON.desc, W / 2, c - scrollY, pw - 40, 16, 8) + scrollY + 10;
 
-    // The set hunt.
     const owned = Hero.setPiecesOwned();
     ctx.font = 'bold 14px Georgia';
     ctx.fillStyle = '#4ade80';
-    ctx.fillText('GRACE OF INARIUS  —  ' + owned.size + ' / 6', W / 2, py + 96);
-    let y = py + 114;
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'center';
+    ctx.fillText('GRACE OF INARIUS  —  ' + owned.size + ' / 6', W / 2, c - scrollY);
+    c += 26;
     for (const [slot, name] of Object.entries(INARIUS_SET.pieces)) {
       const has = owned.has(slot);
+      ctx.textAlign = 'left';
       ctx.font = 'bold 12px Georgia';
       ctx.fillStyle = has ? '#4ade80' : '#544d44';
-      ctx.fillText((has ? '◆  ' : '◇  ') + name, px + 24, y);
+      ctx.fillText((has ? '◆  ' : '◇  ') + name, px + 24, c - scrollY);
       ctx.textAlign = 'right';
       ctx.font = '10px Georgia';
       ctx.fillStyle = has ? '#3a7a4a' : '#453f52';
-      ctx.fillText(ITEM_SLOTS[slot].label, px + pw - 24, y);
-      ctx.textAlign = 'left';
-      y += 22;
+      ctx.fillText(ITEM_SLOTS[slot].label, px + pw - 24, c - scrollY);
+      c += 22;
     }
-    y += 4;
+    c += 6;
+    ctx.textAlign = 'left';
     ctx.font = '11px Georgia';
-    ctx.fillStyle = '#8a8070';
     for (const b of INARIUS_SET.bonuses) {
       const active = Items.setCount() >= b.pieces;
       ctx.fillStyle = active ? '#4ade80' : '#6f6552';
-      y = wrapText(ctx, `(${b.pieces}) ${b.desc}` + (active ? '  ✓' : ''), px + 24, y, pw - 48, 14, 2) + 2;
+      c = wrapText(ctx, `(${b.pieces}) ${b.desc}` + (active ? '  ✓' : ''), px + 24, c - scrollY, pw - 48, 14, 8) + scrollY + 4;
     }
-    y += 8;
-    // The season is a Master Nephalem Rift: 1500 points, costs a Master key.
+    ctx.restore();
+
+    UI.sel.scrollMax = Math.max(0, (c - scrollTop) - viewH + 6);
+    ctx.textAlign = 'center';
+    ctx.font = '9px Georgia';
+    ctx.fillStyle = '#6f6552';
+    if (scrollY > 1) ctx.fillText('▲ drag ▲', W / 2, scrollTop + 2);
+    if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag for more ▼', W / 2, viewBot - 1);
+
+    // Pinned footer: the season is a Master Nephalem Rift (1500 pts, 1 Master key).
+    ctx.strokeStyle = '#3a3448';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px + 12, footerTop); ctx.lineTo(px + pw - 12, footerTop); ctx.stroke();
     const hasMaster = Hero.masterKeys > 0;
-    UI.btn(ctx, px + 16, y, pw - 32, 44,
+    UI.btn(ctx, px + 16, footerTop + 10, pw - 32, 40,
       hasMaster ? `◈ START MASTER RIFT — 1500 pts  (1 Master Key)`
         : '◈ NEED A MASTER NEPHALEM RIFT KEY',
       hasMaster ? () => { UI.close(); Game.startRift('season'); } : null,
       { size: 13, disabled: !hasMaster, border: '#3a7a4a', color: '#4ade80' });
-    y += 52;
     ctx.textAlign = 'center';
     ctx.font = '10px Georgia';
     ctx.fillStyle = '#6f6552';
-    ctx.fillText(this.fitText(ctx, '◈ Master Keys: ' + Hero.masterKeys + '  ·  Nephalem Guardians drop them & set pieces', pw - 24), W / 2, y);
+    ctx.fillText(this.fitText(ctx, '◈ Master Keys: ' + Hero.masterKeys + '  ·  Nephalem Guardians drop them & set pieces', pw - 24), W / 2, footerTop + 60);
   },
 
   // ------------------------------------------------------ pause / death

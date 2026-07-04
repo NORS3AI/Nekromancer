@@ -330,17 +330,47 @@ const Items = {
     return p;
   },
 
-  // D3-console-style compare arrows: -1 worse, 0 even, +1 better (per tier).
+  // Priority tiers for judging upgrades (owner rule): OFFENSE (damage & crit —
+  // plus Death Nova / Area, which ARE damage) is weighed BEFORE ALL ELSE, then
+  // SURVIVAL (life & life-regen), then UTILITY (armor, gold, essence, movement).
+  // Per-stat values just normalize the very different affix magnitudes so they
+  // compare fairly within a tier.
+  STAT_TIER: { dmg: 0, crit: 0, dnova: 0, area: 0, hp: 1, reg: 1, armor: 2, gold: 2, ess: 2, move: 2 },
+  STAT_VAL:  { dmg: 1600, crit: 3300, dnova: 700, area: 500, hp: 2.4, reg: 34, armor: 0.7, gold: 110, ess: 16, move: 210 },
+
+  // [offense, survival, utility] sub-scores. Sockets/gems credit offense (a
+  // Perfect gem is +20% damage); a legendary power or set piece lifts the whole
+  // piece so build-defining gear isn't under-rated by its raw affixes alone.
+  tierScores(item) {
+    const t = [0, 0, 0];
+    for (const [k, v] of Object.entries(item.stats || {})) {
+      const ti = this.STAT_TIER[k];
+      if (ti === undefined) continue;
+      t[ti] += (v || 0) * (this.STAT_VAL[k] || 0);
+    }
+    t[0] += (item.sockets || 0) * 200;
+    for (const g of item.gems || []) t[0] += gemStatValue(g) * 60;
+    const mul = 1 + (item.power ? 0.6 : 0) + (item.set ? 0.35 : 0);
+    return [t[0] * mul, t[1] * mul, t[2] * mul];
+  },
+
+  // Console-style compare arrows (−3…+3). The winner is decided by the HIGHEST
+  // priority tier in which the two differ by more than ~3%; a virtual tie in a
+  // tier falls through to the next tier down (dmg/crit first, then life, then
+  // the rest — owner rule).
   compareArrows(item, against) {
     if (!against) return 3;
-    const d = this.score(item) - this.score(against);
-    const rel = d / Math.max(30, this.score(against));
-    if (rel > 0.35) return 3;
-    if (rel > 0.12) return 2;
-    if (rel > 0.02) return 1;
-    if (rel < -0.35) return -3;
-    if (rel < -0.12) return -2;
-    if (rel < -0.02) return -1;
+    const a = this.tierScores(item), b = this.tierScores(against);
+    for (let t = 0; t < 3; t++) {
+      const rel = (a[t] - b[t]) / Math.max(30, b[t]);
+      if (rel > 0.35) return 3;
+      if (rel > 0.10) return 2;
+      if (rel > 0.03) return 1;
+      if (rel < -0.35) return -3;
+      if (rel < -0.10) return -2;
+      if (rel < -0.03) return -1;
+      // this tier is a virtual tie → let the next tier decide
+    }
     return 0;
   },
 
