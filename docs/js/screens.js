@@ -956,6 +956,7 @@ const Screens = {
         UI.sel.slot = slot;
         UI.sel.item = null;
         UI.sel.gemPick = false;
+        UI.sel.invScroll = 0;   // fresh slot → back to the top of the bag list
       });
     });
 
@@ -989,77 +990,113 @@ const Screens = {
     }
     dy += 34;
 
-    // Bag items for this slot (rings share both ring slots), with compare arrows.
+    // ---- Scrollable inventory region: bag list + selected card + actions.
+    // Drag it up/down (touch, mouse or wheel) so tall items — 3★ legendaries,
+    // artifacts — never leak their EQUIP/SALVAGE/SOCKET/STASH buttons off the
+    // bottom of the screen (owner rule). Everything above stays pinned.
     const fam = Items.slotFamily(slot);
     const bagItems = Hero.bag.filter(it => fam.includes(it.slot));
+    const listTop = dy;
+    const viewBot = H - 12;
+    const viewH = Math.max(60, viewBot - listTop);
+    const scrollY = clamp(UI.sel.invScroll || 0, 0, UI.sel.invMax || 0);
+    UI.sel.invScroll = scrollY;
+    UI.sel.invRegion = { x: dx - 4, y: listTop - 4, w: dw + 8, h: viewH + 8 };
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(dx - 4, listTop - 4, dw + 8, viewH + 8);
+    ctx.clip();
+
+    let c = listTop;   // content-space cursor; draw at (c - scrollY)
+    const vis = (top, h) => (top - scrollY + h > listTop) && (top - scrollY < viewBot);
+
+    ctx.textAlign = 'left';
     ctx.font = 'bold 13px Georgia';
     ctx.fillStyle = '#9a9080';
-    ctx.fillText('IN BAG (' + bagItems.length + ')', dx, dy + 14);
-    dy += 24;
-    // Reserve exactly the space the selected item's card + action buttons
-    // will need, so EQUIP/SALVAGE/SOCKET can never fall off screen.
-    let reserve = 0;
-    if (UI.sel.item) {
-      reserve = 30 + Items.statLines(UI.sel.item).length * 15 + 8 + 46 + 24;
-    }
-    const maxRows = Math.max(1, Math.floor((H - dy - 20 - reserve) / 34));
-    bagItems.slice(0, maxRows).forEach(it => {
-      const selected = UI.sel.item === it;
-      UI.btn(ctx, dx, dy, dw, 30, '', () => {
-        UI.sel.item = (UI.sel.item === it ? null : it);
-        UI.sel.gemPick = false;
-      }, { bg: selected ? 'rgba(60,52,78,0.95)' : 'rgba(28,24,38,0.92)' });
-      ctx.textAlign = 'left';
-      ctx.font = 'bold 12px Georgia';
-      ctx.fillStyle = RARITIES[it.rarity].color;
-      ctx.fillText(this.fitText(ctx, it.name, dw - 70), dx + 10, dy + 15);
-      const arrows = Items.compareArrows(it, equipped);
-      ctx.textAlign = 'right';
-      ctx.font = 'bold 13px Georgia';
-      ctx.fillStyle = arrows > 0 ? '#4ade80' : arrows < 0 ? '#e04a5a' : '#9a9080';
-      ctx.fillText(arrows > 0 ? '▲'.repeat(arrows) : arrows < 0 ? '▼'.repeat(-arrows) : '—', dx + dw - 10, dy + 15);
-      dy += 34;
-    });
-    if (bagItems.length > maxRows) {
-      ctx.textAlign = 'left';
-      ctx.font = '11px Georgia';
-      ctx.fillStyle = '#6f6552';
-      ctx.fillText('+' + (bagItems.length - maxRows) + ' more…', dx, dy + 8);
-      dy += 18;
-    }
+    ctx.fillText('IN BAG (' + bagItems.length + ')', dx, c - scrollY + 14);
+    c += 24;
 
-    // Selected bag item: card + actions.
+    if (!bagItems.length) {
+      ctx.font = '12px Georgia';
+      ctx.fillStyle = '#6f6552';
+      ctx.fillText('No ' + ITEM_SLOTS[slot].label.toLowerCase() + ' items in your bag.', dx, c - scrollY + 12);
+      c += 22;
+    }
+    bagItems.forEach(it => {
+      const yy = c - scrollY;
+      if (vis(c, 30)) {
+        const selected = UI.sel.item === it;
+        UI.btn(ctx, dx, yy, dw, 30, '', () => {
+          const now = (UI.sel.item === it) ? null : it;
+          UI.sel.item = now;
+          UI.sel.gemPick = false;
+          if (now) UI.sel.invToBottom = true;   // auto-reveal its action buttons
+        }, { bg: selected ? 'rgba(60,52,78,0.95)' : 'rgba(28,24,38,0.92)' });
+        ctx.textAlign = 'left';
+        ctx.font = 'bold 12px Georgia';
+        ctx.fillStyle = RARITIES[it.rarity].color;
+        ctx.fillText(this.fitText(ctx, it.name, dw - 70), dx + 10, yy + 15);
+        const arrows = Items.compareArrows(it, equipped);
+        ctx.textAlign = 'right';
+        ctx.font = 'bold 13px Georgia';
+        ctx.fillStyle = arrows > 0 ? '#4ade80' : arrows < 0 ? '#e04a5a' : '#9a9080';
+        ctx.fillText(arrows > 0 ? '▲'.repeat(arrows) : arrows < 0 ? '▼'.repeat(-arrows) : '—', dx + dw - 10, yy + 15);
+      }
+      c += 34;
+    });
+
+    // Selected bag item: card + 4-button action row (EQUIP · SALVAGE · SOCKET · STASH).
     if (UI.sel.item) {
-      dy += 6;
-      dy = this.itemCard(ctx, dx, dy, dw, UI.sel.item, equipped, true);
-      const bw = (dw - 16) / 3;
-      UI.btn(ctx, dx, dy, bw, 34, 'EQUIP', () => {
-        Items.equip(UI.sel.item, slot);
-        UI.sel.item = null;
-      }, { border: '#57b894', color: '#6ff7c3', size: 13 });
-      const canSalv = Items.canSalvage(UI.sel.item);
-      UI.btn(ctx, dx + bw + 8, dy, bw, 34, canSalv ? 'SALVAGE' : 'SALVAGE L' + Items.salvageReq(UI.sel.item),
-        canSalv ? () => { Items.salvage(UI.sel.item); UI.sel.item = null; } : null,
-        { disabled: !canSalv, border: '#8a6f4a', color: '#ffb43a', size: canSalv ? 13 : 11 });
-      const canSocket = !!UI.sel.item.sockets;
-      UI.btn(ctx, dx + (bw + 8) * 2, dy, bw, 34, 'SOCKET', canSocket ? () => {
-        UI.sel.gemTarget = UI.sel.item;
-        UI.sel.gemPick = true;
-        UI.sel.gemKey = undefined;
-      } : null, { disabled: !canSocket, border: '#7a4a8f', color: '#b06adf', size: 13 });
-      // Deposit this single item into the shared, account-wide vault.
-      const stashFull = Hero.stash.length >= Hero.STASH_SIZE;
-      UI.btn(ctx, dx, dy + 40, dw, 26, stashFull ? 'STASH FULL (' + Hero.STASH_SIZE + ')' : 'DEPOSIT TO STASH',
-        stashFull ? null : () => { if (Items.toStash(UI.sel.item)) UI.sel.item = null; },
-        { disabled: stashFull, border: '#5f7ab0', color: '#8fb0e8', size: 12 });
+      c += 6;
+      c = this.itemCard(ctx, dx, c - scrollY, dw, UI.sel.item, equipped, true) + scrollY;
+      const yy = c - scrollY;
+      const bw = (dw - 24) / 4;
+      if (vis(c, 34)) {
+        UI.btn(ctx, dx, yy, bw, 34, 'EQUIP', () => {
+          Items.equip(UI.sel.item, slot);
+          UI.sel.item = null;
+        }, { border: '#57b894', color: '#6ff7c3', size: 12 });
+        const canSalv = Items.canSalvage(UI.sel.item);
+        UI.btn(ctx, dx + bw + 8, yy, bw, 34, canSalv ? 'SALVAGE' : 'L' + Items.salvageReq(UI.sel.item),
+          canSalv ? () => { Items.salvage(UI.sel.item); UI.sel.item = null; } : null,
+          { disabled: !canSalv, border: '#8a6f4a', color: '#ffb43a', size: 12 });
+        const canSocket = !!UI.sel.item.sockets;
+        UI.btn(ctx, dx + (bw + 8) * 2, yy, bw, 34, 'SOCKET', canSocket ? () => {
+          UI.sel.gemTarget = UI.sel.item;
+          UI.sel.gemPick = true;
+          UI.sel.gemKey = undefined;
+        } : null, { disabled: !canSocket, border: '#7a4a8f', color: '#b06adf', size: 12 });
+        // STASH: deposit this single item into the shared, account-wide vault.
+        const stashFull = Hero.stash.length >= Hero.STASH_SIZE;
+        UI.btn(ctx, dx + (bw + 8) * 3, yy, bw, 34, stashFull ? 'FULL' : 'STASH',
+          stashFull ? null : () => { if (Items.toStash(UI.sel.item)) UI.sel.item = null; },
+          { disabled: stashFull, border: '#5f7ab0', color: '#8fb0e8', size: 12 });
+      }
+      c += 34;
     } else if (equipped && (equipped.sockets || (equipped.gems && equipped.gems.length))) {
       // Socket management for the equipped piece opens the gem popup.
-      UI.btn(ctx, dx, dy + 6, 150, 30, (equipped.gems && equipped.gems.length) ? 'MANAGE SOCKETS' : 'SOCKET GEM', () => {
-        UI.sel.gemTarget = equipped;
-        UI.sel.gemPick = true;
-        UI.sel.gemKey = undefined;
-      }, { border: '#7a4a8f', color: '#b06adf', size: 12 });
+      if (vis(c, 36)) {
+        UI.btn(ctx, dx, c - scrollY + 6, 150, 30, (equipped.gems && equipped.gems.length) ? 'MANAGE SOCKETS' : 'SOCKET GEM', () => {
+          UI.sel.gemTarget = equipped;
+          UI.sel.gemPick = true;
+          UI.sel.gemKey = undefined;
+        }, { border: '#7a4a8f', color: '#b06adf', size: 12 });
+      }
+      c += 40;
     }
+
+    ctx.restore();
+
+    // Scroll range for next frame; snap to the actions when an item was just picked.
+    UI.sel.invMax = Math.max(0, (c - listTop) - viewH + 6);
+    if (UI.sel.invToBottom) { UI.sel.invScroll = UI.sel.invMax; UI.sel.invToBottom = false; }
+    // Fade hints when there's more content above/below the fold.
+    ctx.textAlign = 'center';
+    ctx.font = '9px Georgia';
+    ctx.fillStyle = '#6f6552';
+    if (scrollY > 1) ctx.fillText('▲ drag ▲', dx + dw / 2, listTop + 4);
+    if (scrollY < (UI.sel.invMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', dx + dw / 2, viewBot - 1);
 
     // The socketing popup, drawn over everything.
     if (UI.sel.gemPick) this.gemModal(ctx, W, H);

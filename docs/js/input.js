@@ -90,11 +90,16 @@ const Input = {
     canvas.addEventListener('touchmove', e => { e.preventDefault(); this.onTouchMove(e); }, opts);
     canvas.addEventListener('touchend', e => { e.preventDefault(); this.onTouchEnd(e); }, opts);
     canvas.addEventListener('touchcancel', e => { e.preventDefault(); this.onTouchEnd(e); }, opts);
+    // Desktop mouse-wheel scrolls the radial inventory bag list.
+    canvas.addEventListener('wheel', e => {
+      if (UI.wheelInv(e.deltaY)) e.preventDefault();
+    }, opts);
 
     canvas.addEventListener('mousemove', e => {
       this.mousePos.x = e.clientX;
       this.mousePos.y = e.clientY;
       if (UI.dpsDrag) UI.moveDps(e.clientX, e.clientY);
+      if (UI.invDrag) UI.moveInvScroll(e.clientX, e.clientY);
       if (this.mouseSlider) this.mouseSlider.set(clamp((e.clientX - this.mouseSlider.x) / this.mouseSlider.w, 0, 1));
     });
     // Right click is the SECONDARY skill (slot 1), Diablo style.
@@ -119,6 +124,7 @@ const Input = {
         return;
       }
       if (UI.startDpsDrag(e.clientX, e.clientY, 'mouse')) return;
+      if (UI.startInvScroll(e.clientX, e.clientY, 'mouse')) return;
       if (UI.click(e.clientX, e.clientY)) return;
       if (!this.gameplayLive()) return;
       const slot = UI.buttonAt(e.clientX, e.clientY);
@@ -137,6 +143,7 @@ const Input = {
         return;
       }
       if (UI.dpsDrag) UI.endDps();
+      if (UI.invDrag) { UI.endInvScroll(e.clientX, e.clientY); return; }
       this.mousePrimary = false;
       this.mouseSlider = null;
       if (this.mouseSlot !== undefined) {
@@ -187,6 +194,7 @@ const Input = {
         continue;
       }
       if (UI.startDpsDrag(x, y, t.identifier)) continue;
+      if (UI.startInvScroll(x, y, t.identifier)) continue;
       if (UI.click(x, y)) continue;
       if (!this.gameplayLive()) continue;
       const slot = UI.buttonAt(x, y);
@@ -220,6 +228,7 @@ const Input = {
   onTouchMove(e) {
     for (const t of e.changedTouches) {
       if (UI.dpsDrag && UI.dpsDrag.id === t.identifier) { UI.moveDps(t.clientX, t.clientY); continue; }
+      if (UI.invDrag && UI.invDrag.id === t.identifier) { UI.moveInvScroll(t.clientX, t.clientY); continue; }
       const sl = this.sliderTouches.get(t.identifier);
       if (sl) {
         sl.set(clamp((t.clientX - sl.x) / sl.w, 0, 1));
@@ -257,6 +266,7 @@ const Input = {
   onTouchEnd(e) {
     for (const t of e.changedTouches) {
       if (UI.dpsDrag && UI.dpsDrag.id === t.identifier) UI.endDps();
+      if (UI.invDrag && UI.invDrag.id === t.identifier) { UI.endInvScroll(t.clientX, t.clientY); continue; }
       this.sliderTouches.delete(t.identifier);
       if (t.identifier === this.joy.id) {
         this.joy.active = false; this.joy.id = null;

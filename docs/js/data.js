@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.6.8-alpha';
+const GAME_VERSION = 'v0.6.9-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.6.9-alpha', date: 'July 2026',
+    notes: [
+      'INVENTORY now SCROLLS by touch (drag up/down) — no more arrows and no more truncation. Tall drops (3★ legendaries, artifacts) no longer leak their action buttons off the bottom; picking an item auto-scrolls to reveal them. Mouse-drag and the scroll-wheel work too',
+      'Added a fourth action button — STASH — beside EQUIP / SALVAGE / SOCKET, to deposit a single item straight into the shared vault'
+    ]
+  },
   {
     v: 'v0.6.8-alpha', date: 'July 2026',
     notes: [
