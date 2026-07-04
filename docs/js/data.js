@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.1.1-alpha';
+const GAME_VERSION = 'v1.1.2-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.1.2-alpha', date: 'July 2026',
+    notes: [
+      'Inventory: equipping a piece now snaps the bag list back to the TOP (instead of the bottom) so your other strong items stay in view',
+      'Inventory: added an "↑ Top" button beside SOCKET GEM to jump straight back to the top of the bag list',
+      'Jeweler: gems are now sorted best-tier-on-top within each kind (Marquise up top, Chipped at the bottom) — no more finest gem buried in the middle'
+    ]
+  },
   {
     v: 'v1.1.1-alpha', date: 'July 2026',
     notes: [

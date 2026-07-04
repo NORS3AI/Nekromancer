@@ -1606,6 +1606,7 @@ const Screens = {
         UI.btn(ctx, dx, yy, bw, 34, 'EQUIP', () => {
           Items.equip(UI.sel.item, slot);
           UI.sel.item = null;
+          UI.sel.scrollY = 0;   // back to the top so other strong items stay in view
         }, { border: '#57b894', color: '#6ff7c3', size: 12 });
         const canSalv = Items.canSalvage(UI.sel.item);
         UI.btn(ctx, dx + bw + 8, yy, bw, 34, canSalv ? 'SALVAGE' : 'L' + Items.salvageReq(UI.sel.item),
@@ -1632,6 +1633,9 @@ const Screens = {
           UI.sel.gemPick = true;
           UI.sel.gemKey = undefined;
         }, { border: '#7a4a8f', color: '#b06adf', size: 12 });
+        // Quick jump back to the top of the bag list.
+        UI.btn(ctx, dx + 158, c - scrollY + 6, 64, 30, '↑ Top', () => { UI.sel.scrollY = 0; },
+          { border: '#5f7ab0', color: '#8fb0e8', size: 12 });
       }
       c += 40;
     }
@@ -2501,7 +2505,12 @@ const Screens = {
       const key = g.type + ':' + g.tier;
       groups[key] = (groups[key] || 0) + 1;
     }
-    const keys = Object.keys(groups).sort();
+    // Keep each gem kind together, best (highest tier) on top, least on the bottom.
+    const keys = Object.keys(groups).sort((a, b) => {
+      const [ta, tia] = a.split(':'); const [tb, tib] = b.split(':');
+      if (ta !== tb) return ta < tb ? -1 : 1;   // group by kind
+      return (+tib) - (+tia);                     // then best tier first
+    });
     if (!keys.length) {
       ctx.font = 'italic 13px Georgia';
       ctx.fillStyle = '#544d44';
