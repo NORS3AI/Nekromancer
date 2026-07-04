@@ -402,6 +402,14 @@ class Enemy {
     this.chargeHits = null;
     this.telegraph = null;
     this.strikes = [];      // pending siege mortar impacts {x,y,r,dmg,t}
+    // Boss ability kits — each archetype fights differently.
+    if (this.unique || t.boss) {
+      this.abilities = ({
+        skeletonking: ['slam', 'summon', 'fissures', 'charge'],
+        wraith: ['nova', 'fissures', 'charge', 'summon'],
+        brute: ['charge', 'slam', 'nova']
+      })[type] || ['charge', 'slam', 'nova'];
+    }
   }
 
   wake() {
@@ -601,32 +609,87 @@ class Enemy {
     const tgt = this.target();
     const d = dist(this.x, this.y, tgt.x, tgt.y);
     switch (this.state) {
-      case 'normal':
+      case 'normal': {
         this.mechCd -= dt;
-        if (this.mechCd <= 0) {
-          if (d < 150) {
-            this.state = 'windSlam';
-            this.stateT = 0.75;
-            this.telegraph = { type: 'circle', x: this.x, y: this.y, r: 165, t: 0, maxT: 0.75 };
-            Game.telegraphs.push(this.telegraph);
-            this.mechCd = rand(4.5, 6.5);
-            AudioSys.sfx('wave');
-            return true;
+        if (this.mechCd > 0) return false;
+        // Choose an ability the boss can actually use at this range.
+        const kit = this.abilities || ['charge', 'slam'];
+        const pool = kit.filter(ab => ab === 'slam' ? d < 190 : ab === 'charge' ? d < 620 : true);
+        const ab = pick(pool.length ? pool : ['slam']);
+        this.mechCd = rand(3.6, 5.6);
+        if (ab === 'slam') {
+          this.state = 'windSlam'; this.stateT = 0.75;
+          this.telegraph = { type: 'circle', x: this.x, y: this.y, r: 165, t: 0, maxT: 0.75 };
+          Game.telegraphs.push(this.telegraph);
+          AudioSys.sfx('wave');
+          return true;
+        }
+        if (ab === 'charge') {
+          this.state = 'windCharge'; this.stateT = 0.8;
+          this.chargeA = angleTo(this.x, this.y, tgt.x, tgt.y);
+          this.facing = this.chargeA;
+          this.telegraph = { type: 'line', x: this.x, y: this.y, a: this.chargeA, len: 540, w: this.r * 2 + 18, t: 0, maxT: 0.8 };
+          Game.telegraphs.push(this.telegraph);
+          AudioSys.sfx('wave');
+          return true;
+        }
+        if (ab === 'nova') {
+          this.state = 'windNova'; this.stateT = 0.6;
+          this.telegraph = { type: 'circle', x: this.x, y: this.y, r: 130, t: 0, maxT: 0.6 };
+          Game.telegraphs.push(this.telegraph);
+          AudioSys.sfx('wave');
+          return true;
+        }
+        if (ab === 'summon') {
+          this.state = 'summon'; this.stateT = 0.5;
+          AudioSys.sfx('wave');
+          return true;
+        }
+        if (ab === 'fissures') {
+          // Erupting ground fissures chase the hero — several delayed blasts;
+          // the boss keeps moving while they land.
+          const pp = Game.player;
+          for (let i = 0; i < 4; i++) {
+            const tx = clamp(i === 0 ? pp.x : pp.x + rand(-170, 170), 40, World.W - 40);
+            const ty = clamp(i === 0 ? pp.y : pp.y + rand(-170, 170), 40, World.H - 40);
+            const delay = 0.9 + i * 0.24;
+            Game.telegraphs.push({ type: 'circle', x: tx, y: ty, r: 72, t: 0, maxT: delay });
+            this.strikes.push({ x: tx, y: ty, r: 72, dmg: Math.round(this.dmg * 1.1), t: delay });
           }
-          if (d < 560) {
-            this.state = 'windCharge';
-            this.stateT = 0.8;
-            this.chargeA = angleTo(this.x, this.y, tgt.x, tgt.y);
-            this.facing = this.chargeA;
-            this.telegraph = { type: 'line', x: this.x, y: this.y, a: this.chargeA, len: 540, w: this.r * 2 + 18, t: 0, maxT: 0.8 };
-            Game.telegraphs.push(this.telegraph);
-            this.mechCd = rand(4.5, 6.5);
-            AudioSys.sfx('wave');
-            return true;
-          }
-          this.mechCd = 1.0;
+          AudioSys.sfx('bolt');
+          return false;   // keep chasing
         }
         return false;
+      }
+      case 'windNova':
+        this.stateT -= dt;
+        if (this.stateT <= 0) {
+          this.state = 'normal';
+          if (this.telegraph) this.telegraph.done = true;
+          const n = 14;
+          for (let i = 0; i < n; i++) {
+            Game.projectiles.push(new Projectile(this.x, this.y, i / n * TAU, {
+              speed: 300, dmg: Math.round(this.dmg * 0.9), r: 7, life: 2.2, friendly: false, type: 'bolt'
+            }));
+          }
+          fxNova(this.x, this.y, 130); AudioSys.sfx('nova'); Particles.shake(4);
+        }
+        return true;
+      case 'summon':
+        this.stateT -= dt;
+        if (this.stateT <= 0) {
+          this.state = 'normal';
+          const n = randInt(2, 4);
+          const kinds = this.type === 'skeletonking' ? ['skeleton', 'skeleton', 'archer'] : ['skeleton', 'zombie', 'ghoul'];
+          for (let i = 0; i < n; i++) {
+            const a = rand(TAU), dd = rand(44, 92);
+            const add = new Enemy(pick(kinds), this.x + Math.cos(a) * dd, this.y + Math.sin(a) * dd, {});
+            add.sleep = false; add.spawnT = 0.4;
+            World.collide(add); Game.enemies.push(add);
+          }
+          fxSummon(this.x, this.y); AudioSys.sfx('summon');
+        }
+        return true;
       case 'windCharge':
         this.facing = this.chargeA;
         this.stateT -= dt;

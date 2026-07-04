@@ -18,11 +18,17 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.6.4-alpha';
+const GAME_VERSION = 'v0.6.5-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.6.5-alpha', date: 'July 2026',
+    notes: [
+      'Bosses fight with far more variety — each archetype has its own ability kit: a whirling BONE NOVA (a ring of shards), SUMMONING extra undead, and erupting GROUND FISSURES that chase you, on top of the classic charge and ground slam. The Skeleton King raises skeletal archers; the ghost lords favour novas and fissures'
+    ]
+  },
   {
     v: 'v0.6.4-alpha', date: 'July 2026',
     notes: [
