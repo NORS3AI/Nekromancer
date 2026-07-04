@@ -357,6 +357,8 @@ const UI = {
     if (this.screen === 'recipes') cb = () => this.open('cube');
     // The skill/rune chooser always returns to the skills screen.
     else if (this.screen === 'skillChooser') cb = () => this.open('skills');
+    // The Story menu returns to The Wilds.
+    else if (this.screen === 'storyacts') cb = () => this.open('wilds');
     else if (this.townMode) {
       if (this.screen === 'town') cb = () => { this.townMode = false; this.close(); };
       else if (['smith', 'jeweler', 'mystic', 'stash', 'torches', 'radial', 'cube'].includes(this.screen)) cb = () => this.open('town');

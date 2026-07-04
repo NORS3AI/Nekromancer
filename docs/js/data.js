@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.8.9-alpha';
+const GAME_VERSION = 'v0.9.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.9.0-alpha', date: 'July 2026',
+    notes: [
+      'STORY MODE now opens a menu: CONTINUE picks up at your next uncleared Act, or SELECT AN ACT to replay any Act you\'ve already cleared (the dropdown is barred until you\'ve finished at least one Act). The campaign spans 100 Acts — every Act after the hand-authored ones (I and III) is themed procedurally so the journey always continues',
+      'Campfire (Choose Your Hero) reworked: the fire sits closer to you and is softer in the centre, the two side heroes gather in close around it, the forest treeline reads clearly with a moonlit rim, and a field of wind-swept grass of varying heights sways in the foreground'
+    ]
+  },
   {
     v: 'v0.8.9-alpha', date: 'July 2026',
     notes: [
@@ -1467,9 +1474,49 @@ const STORY_ACT3_NAMES = [
 const STORY_KING_FLAVOR = '“You dare come to my grave? You will die!”';
 const STORY_WYRM_FLAVOR = '“The sands have swallowed kings. They will swallow you.”';
 
+// Every biome, and a rotation of finale bosses, so any Act (1–100) can be
+// generated. Acts 1 and 3 are hand-authored below; the rest are themed
+// procedurally off the act number so the journey always continues.
+const STORY_BIOME_KEYS = ['grass', 'forest', 'jungle', 'swamp', 'desert', 'badlands'];
+const STORY_FINAL_BOSSES = [
+  { type: 'brute',        name: 'The Warden' },
+  { type: 'wraith',       name: 'The Revenant Lord' },
+  { type: 'skeletonking', name: 'The Bone Tyrant' },
+  { type: 'sandwyrm',     name: 'The Dune Colossus' }
+];
+
+// A procedurally-themed Act for anything that isn't hand-authored (2, 4–100).
+function makeGenericStoryZone(stage, act) {
+  const fb = STORY_FINAL_BOSSES[act % STORY_FINAL_BOSSES.length];
+  if (stage >= 11) {
+    const bk = STORY_BIOME_KEYS[(act + 5) % STORY_BIOME_KEYS.length];
+    const B = BIOMES[bk];
+    return {
+      id: 'story' + act + '-grave', name: 'Act ' + act + ' · The Final Grave', kind: 'open', biome: bk,
+      mLvl: clamp(Hero.level, 1, 70), ground: B.ground, accent: B.accent, weather: B.weather,
+      monsters: B.monsters, boss: fb.name + ' of Act ' + act, bossType: fb.type,
+      packs: 4, sizeMul: 0.6, forest: false, rivers: 0,
+      story: true, storyAct: act, storyFinal: true,
+      desc: 'The final battle of Act ' + act + '.'
+    };
+  }
+  const bk = STORY_BIOME_KEYS[(stage + act) % STORY_BIOME_KEYS.length];
+  const B = BIOMES[bk];
+  const lord = STORY_GHOST_NAMES[(stage - 1 + act) % STORY_GHOST_NAMES.length];
+  return {
+    id: 'story' + act + '-' + stage, name: 'Act ' + act + ' · ' + B.name, kind: 'open', biome: bk,
+    mLvl: clamp(Hero.level, 1, 70), ground: B.ground, accent: B.accent, weather: B.weather,
+    monsters: B.monsters, boss: lord, bossType: 'wraith',
+    packs: randInt(9, 13), sizeMul: rand(0.9, 1.35), forest: B.forest, rivers: B.rivers,
+    story: true, storyAct: act, chapter: stage,
+    desc: 'Chapter ' + stage + ' of Act ' + act + '.'
+  };
+}
+
 // Build the zone for a Story-Mode stage of the given act. Stages 1–10 are biome
 // maps (each with its named boss); stage 11 is the act finale's grave arena.
 function makeStoryZone(stage, act = 1) {
+  if (act !== 1 && act !== 3) return makeGenericStoryZone(stage, act);
   if (act === 3) {
     if (stage >= 11) {
       return {

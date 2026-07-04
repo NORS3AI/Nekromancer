@@ -39,6 +39,7 @@ const Screens = {
       case 'cube': this.cube(ctx, W, H); break;
       case 'recipes': this.recipes(ctx, W, H); break;
       case 'wilds': this.wilds(ctx, W, H); break;
+      case 'storyacts': this.storyMenu(ctx, W, H); break;
       case 'create': this.create(ctx, W, H); break;
       case 'select': this.select(ctx, W, H); break;
     }
@@ -48,7 +49,8 @@ const Screens = {
   // with pseudo-3D depth. Tap a hero to select it, then the green PLAY button
   // to enter. "Delete Hero" toggles a retire flow. Empty spots create.
   select(ctx, W, H) {
-    const fx = W / 2, fy = H * 0.5;
+    // Fire sits nearer the viewer (foreground); heroes gather behind/around it.
+    const fx = W / 2, fy = H * 0.64;
     const t = Game.time || 0;
     // Night sky — deep blue-black at the top, warming toward the horizon.
     const sky = ctx.createLinearGradient(0, 0, 0, H);
@@ -89,13 +91,13 @@ const Screens = {
     floor.addColorStop(1, 'rgba(52,28,12,0.6)');
     ctx.fillStyle = floor; ctx.fillRect(0, fy - 120, W, H - (fy - 120));
     const glow = ctx.createRadialGradient(fx, fy, 10, fx, fy, Math.max(W, H) * 0.6);
-    const gf = 0.30 + 0.05 * Math.sin(t * 8) + 0.03 * Math.sin(t * 17); // firelight flicker
+    const gf = 0.18 + 0.04 * Math.sin(t * 8) + 0.02 * Math.sin(t * 17); // softer firelight
     glow.addColorStop(0, `rgba(255,150,60,${gf.toFixed(3)})`);
-    glow.addColorStop(0.4, 'rgba(200,90,30,0.10)');
+    glow.addColorStop(0.42, 'rgba(200,90,30,0.08)');
     glow.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
-    // Ground litter around the fire, its shadows dancing with the flames.
-    this.drawGroundLitter(ctx, fx, fy, W, t);
+    // Ground litter + a wind-swept grass field around the fire.
+    this.drawGroundLitter(ctx, fx, fy, W, H, t);
 
     const delMode = !!UI.sel.delMode;
     // Pre-select the active hero so PLAY is ready (unless we're deleting).
@@ -110,16 +112,16 @@ const Screens = {
     ctx.font = '12px Georgia'; ctx.fillStyle = '#9a8f7a';
     ctx.fillText(delMode ? 'Tap the hero you wish to retire' : 'Up to ' + Profiles.MAX + ' Nekromancers rest by the fire', W / 2, H * 0.1 + 26);
 
-    // Fire dead-centre; one hero stands behind it (higher & smaller), two front.
+    // One hero stands behind the fire (higher & smaller); two flank it up close.
     const s = clamp(W / 760, 0.72, 1.05);
     const spots = [
-      { i: 0, x: fx,        y: fy - 74 * s, scale: 0.74 * s, front: false },  // behind the fire
-      { i: 1, x: W * 0.22,  y: fy + 20 * s, scale: 1.06 * s, front: true },
-      { i: 2, x: W * 0.78,  y: fy + 20 * s, scale: 1.06 * s, front: true }
+      { i: 0, x: fx,             y: fy - 118 * s, scale: 0.74 * s, front: false },  // behind the fire
+      { i: 1, x: fx - W * 0.12,  y: fy + 20 * s,  scale: 1.06 * s, front: true },
+      { i: 2, x: fx + W * 0.12,  y: fy + 20 * s,  scale: 1.06 * s, front: true }
     ];
     const back = spots.find(sp => !sp.front);
     this.drawRosterSpot(ctx, back, back.scale, delMode);
-    this.drawCampfire(ctx, fx, fy, s);
+    this.drawCampfire(ctx, fx, fy, s * 1.12);
     for (const sp of spots) if (sp.front) this.drawRosterSpot(ctx, sp, sp.scale, delMode);
 
     // ---- bottom controls ----
@@ -171,18 +173,37 @@ const Screens = {
 
   // A ragged dark forest treeline silhouette across the given horizon y.
   drawTreeline(ctx, W, yh) {
-    ctx.fillStyle = '#0a0d0a';
+    // A faint moonlit mist BEHIND the trees so their silhouettes read clearly.
+    ctx.fillStyle = 'rgba(70,80,110,0.22)';
+    ctx.fillRect(0, yh - 70, W, 90);
+    // Far ridge — a fainter, lower row for depth.
+    ctx.fillStyle = '#13201a';
+    ctx.beginPath();
+    ctx.moveTo(0, yh + 40);
+    for (let x = -20; x < W + 20; x += 34) {
+      const h = 18 + (hash2(Math.round(x / 34), 9)) * 40;
+      ctx.lineTo(x, yh - h + 20);
+      ctx.lineTo(x + 17, yh - h * 0.5 + 20);
+    }
+    ctx.lineTo(W, yh + 40); ctx.closePath(); ctx.fill();
+    // Near treeline — taller pines, lifted out of pure black so the forest shows.
+    ctx.fillStyle = '#18261b';
     ctx.beginPath();
     ctx.moveTo(0, yh + 40);
     for (let x = -20; x < W + 20; x += 26) {
-      const h = 30 + (hash2(Math.round(x / 26), 3)) * 70;
+      const h = 34 + (hash2(Math.round(x / 26), 3)) * 78;
       ctx.lineTo(x, yh - h);
       ctx.lineTo(x + 13, yh - h * 0.5);
     }
     ctx.lineTo(W, yh + 40); ctx.closePath(); ctx.fill();
-    // A faint mist behind the trees.
-    ctx.fillStyle = 'rgba(40,44,60,0.12)';
-    ctx.fillRect(0, yh - 20, W, 40);
+    // Cool rim light on the tree tips from the moon.
+    ctx.strokeStyle = 'rgba(150,170,210,0.18)'; ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    for (let x = -20; x < W + 20; x += 26) {
+      const h = 34 + (hash2(Math.round(x / 26), 3)) * 78;
+      ctx.moveTo(x, yh - h); ctx.lineTo(x + 13, yh - h * 0.5);
+    }
+    ctx.stroke();
   },
 
   // Decrepit ruined buildings on the right background.
@@ -237,7 +258,26 @@ const Screens = {
 
   // Dry grass tufts, rocks, leaves and branches near the fire — their long
   // shadows sway with the firelight.
-  drawGroundLitter(ctx, fx, fy, W, t) {
+  drawGroundLitter(ctx, fx, fy, W, H, t) {
+    // A field of wind-swept grass of VARYING heights across the foreground —
+    // taller/darker nearer the viewer, all leaning together on the gusts.
+    const wind = Math.sin(t * 1.5) * 0.6 + Math.sin(t * 0.8 + 1.3) * 0.4;  // -1..1 gust
+    for (let i = 0; i < 46; i++) {
+      const gx = (i * 89 + 21) % W;
+      const depth = hash2(i * 1.7, 7);                 // 0 (far) .. 1 (near)
+      const gy = fy + 44 + depth * (H - fy - 30);
+      const hgt = 9 + hash2(i, 3) * 30 + depth * 16;   // varied heights
+      const sway = wind * (3 + depth * 9) + Math.sin(t * 3 + i) * 1.8;
+      ctx.strokeStyle = depth > 0.5 ? '#4a3a1e' : '#2f2614';
+      ctx.lineWidth = 1 + depth * 1.4; ctx.lineCap = 'round';
+      for (let b = -2; b <= 2; b++) {
+        const bx = gx + b * (2 + depth * 2);
+        ctx.beginPath();
+        ctx.moveTo(bx, gy);
+        ctx.quadraticCurveTo(bx + sway * 0.5, gy - hgt * 0.6, bx + sway, gy - hgt);
+        ctx.stroke();
+      }
+    }
     const flick = Math.sin(t * 9) * 0.12 + Math.sin(t * 5.3) * 0.06;
     const items = [
       [fx - 150, fy + 70, 'grass'], [fx + 160, fy + 60, 'grass'], [fx - 240, fy + 110, 'rock'],
@@ -402,10 +442,10 @@ const Screens = {
     ctx.beginPath(); ctx.arc(24, 14, 4.5, 0, TAU); ctx.fill();
     ctx.strokeStyle = '#2e2014'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(-18, 20); ctx.lineTo(18, 20); ctx.stroke();
-    // Glowing ember bed, breathing.
+    // Glowing ember bed, breathing (softer now).
     const t = Game.time;
-    const eb = 0.4 + 0.2 * Math.sin(t * 6);
-    ctx.fillStyle = `rgba(255,120,40,${eb.toFixed(2)})`;
+    const eb = 0.26 + 0.12 * Math.sin(t * 6);
+    ctx.fillStyle = `rgba(230,100,34,${eb.toFixed(2)})`;
     ctx.beginPath(); ctx.ellipse(0, 16, 22, 7, 0, 0, TAU); ctx.fill();
     // Real dancing flame: each tongue sways sideways and varies its height with
     // layered, out-of-phase noise, so it flickers organically (not a pulse).
@@ -422,11 +462,12 @@ const Screens = {
       ctx.quadraticCurveTo(0, 8, -w, 14);
       ctx.fill();
     };
-    ctx.shadowColor = '#ff8c2a'; ctx.shadowBlur = 26;
-    flame(19, 50, 'rgba(200,55,18,0.9)', 0.0);
-    flame(14, 40, 'rgba(255,130,36,0.95)', 1.7);
-    flame(9, 28, 'rgba(255,214,110,0.95)', 3.1);
-    flame(5, 18, 'rgba(255,244,190,0.9)', 4.6);
+    // Softer glow, and a dimmer/thinner white-hot core so the centre isn't blinding.
+    ctx.shadowColor = '#ff8c2a'; ctx.shadowBlur = 15;
+    flame(19, 50, 'rgba(180,48,16,0.82)', 0.0);
+    flame(14, 40, 'rgba(230,112,30,0.82)', 1.7);
+    flame(9, 28, 'rgba(240,180,84,0.72)', 3.1);
+    flame(4, 16, 'rgba(255,232,170,0.5)', 4.6);
     ctx.shadowBlur = 0;
     // Embers/sparks rising and drifting.
     for (let i = 0; i < 7; i++) {
@@ -909,10 +950,8 @@ const Screens = {
     const rows = [
       ['BOUNTIES', 'The lands of Sanctuary — hunt each land\'s unique boss', '#6ff7c3',
         () => { UI.close(); Game.state = 'map'; }],
-      ['STORY MODE — ACT I', 'Hunt 10 ghost lords across the lands, then the Skeleton King', '#ff8c2a',
-        () => { UI.close(); Game.startStory(1); }],
-      ['STORY MODE — ACT III', 'Cross ten desert lands to the grave of the Sand Wyrm — seek the Horadric\'s Cube', '#e0a24a',
-        () => { UI.close(); Game.startStory(3); }],
+      ['STORY MODE', 'The 100-Act journey — continue where you left off, or replay a cleared Act', '#ff8c2a',
+        () => UI.open('storyacts')],
       ['ADVENTURE MODE', 'A randomized land at your level, new every visit', '#ffd76a',
         () => { UI.close(); Game.startAdventure(); }],
       ['RIFT  (levels 1–69)', 'Gather 250 orb points from rare elites, then slay the Guardian', '#b06adf',
@@ -944,6 +983,79 @@ const Screens = {
     ctx.fillStyle = '#b06adf';
     ctx.fillText('◈ Nephalem Keys: ' + Hero.riftKeys + '   ·   ◈ Master Keys: ' + Hero.masterKeys +
       '   ·   Cleared: ' + Hero.riftsCleared, W / 2, y + 8);
+  },
+
+  // ------------------------------------------------------------ story menu
+  // CONTINUE the campaign, or SELECT AN ACT to replay a cleared one (the
+  // dropdown is barred until at least one Act is complete).
+  storyMenu(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const pw = Math.min(440, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 24, 500);
+    const py = Math.max(12, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, 'STORY MODE');
+
+    const cleared = Hero.actsCleared || 0;
+    const nextAct = Math.min(100, cleared + 1);
+
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.fillText(cleared + ' of 100 Acts cleared', W / 2, py + 52);
+
+    // CONTINUE — pick up at the next uncleared Act.
+    UI.btn(ctx, px + 20, py + 70, pw - 40, 48, 'CONTINUE  ·  ACT ' + nextAct,
+      () => { UI.close(); Game.startStory(nextAct); },
+      { size: 16, color: '#ff8c2a', border: '#8a5a2a' });
+    ctx.font = '10px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.fillText(cleared >= 100 ? 'You have conquered all 100 Acts — replay the finale.'
+      : 'Continue your journey where you left off.', W / 2, py + 128);
+
+    // SELECT AN ACT — dropdown of cleared Acts (barred until one is cleared).
+    const dy = py + 150;
+    if (cleared <= 0) {
+      UI.btn(ctx, px + 20, dy, pw - 40, 40, 'SELECT AN ACT  —  none cleared yet', null, { size: 13, disabled: true });
+      ctx.textAlign = 'center'; ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#5c5569';
+      ctx.fillText('Clear an Act to unlock replay.', W / 2, dy + 58);
+      return;
+    }
+    UI.btn(ctx, px + 20, dy, pw - 40, 40, 'SELECT AN ACT  ' + (UI.sel.actDropOpen ? '▲' : '▾'),
+      () => { UI.sel.actDropOpen = !UI.sel.actDropOpen; UI.sel.scrollY = 0; },
+      { size: 14, color: '#e0a24a', border: '#8a6f4a' });
+
+    if (!UI.sel.actDropOpen) {
+      ctx.textAlign = 'center'; ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText('Tap to choose a cleared Act to replay.', W / 2, dy + 58);
+      return;
+    }
+
+    // Scrollable grid of the cleared Act numbers.
+    const listTop = dy + 48;
+    const listBot = py + ph - 14;
+    const viewH = Math.max(40, listBot - listTop);
+    const cols = 5;
+    const cw = (pw - 40) / cols, chh = 34;
+    const rows = Math.ceil(cleared / cols);
+    const contentH = rows * chh;
+    const scrollMax = Math.max(0, contentH - viewH);
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, scrollMax);
+    UI.sel.scrollY = scrollY; UI.sel.scrollMax = scrollMax;
+    UI.sel.scrollRegion = { x: px + 18, y: listTop, w: pw - 36, h: viewH };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(px + 18, listTop, pw - 36, viewH); ctx.clip();
+    for (let a = 1; a <= cleared; a++) {
+      const i = a - 1;
+      const gx = px + 20 + (i % cols) * cw;
+      const gy = listTop + Math.floor(i / cols) * chh - scrollY;
+      if (gy + chh < listTop || gy > listBot) continue;   // off-view: skip draw + hit
+      UI.btn(ctx, gx + 2, gy + 2, cw - 4, chh - 4, '' + a,
+        () => { UI.close(); Game.startStory(a); }, { size: 13, color: '#ffd76a', border: '#8a6f4a' });
+    }
+    ctx.restore();
+    if (scrollY < scrollMax - 1) {
+      ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText('▼ drag for more ▼', W / 2, listBot - 2);
+    }
   },
 
   // ---------------------------------------------------------------- map

@@ -525,7 +525,8 @@ const Game = {
         AudioSys.sfx('setdrop');
       }
       lines.push([act === 3 ? 'Act III complete — the Sand Wyrm is slain'
-        : 'Act I complete — the Skeleton King is slain', '#ff8c2a']);
+        : act === 1 ? 'Act I complete — the Skeleton King is slain'
+        : 'Act ' + act + ' complete', '#ff8c2a']);
       this.rewardTitle = 'ACT COMPLETE';
       this.rewardLines = lines;
       Hero.addXP(Math.round(1600 * diff.reward));
