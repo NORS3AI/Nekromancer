@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.9.2-alpha';
+const GAME_VERSION = 'v0.9.3-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.9.3-alpha', date: 'July 2026',
+    notes: [
+      'FIX: choosing a skill & rune and hitting ACCEPT now keeps you focused on the slot you just edited (e.g. Command Skeletons in the Reanimation slot) instead of snapping back to the first Primary slot. CANCEL likewise returns to the slot you came from'
+    ]
+  },
   {
     v: 'v0.9.2-alpha', date: 'July 2026',
     notes: [

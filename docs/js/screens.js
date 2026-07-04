@@ -1927,10 +1927,18 @@ const Screens = {
         Hero.save();
         UI.toast(chSkill.name + (chRune && chRune.id !== 'base' ? ' · ' + chRune.name : '') + ' assigned', SKILL_CATS[cat].color);
         AudioSys.sfx('level');
+        // Return to the skills screen still focused on the slot we just edited —
+        // don't snap back to Primary (UI.open wipes UI.sel, so restore after).
         UI.open('skills');
+        UI.sel.tab = 'actives';
+        UI.sel.slotIdx = targetSlot;
       }, { size: 14, disabled: skillLocked, color: '#6ff7c3', border: '#3a7a6a' });
-    UI.btn(ctx, px + 28 + bw, y, bw, 40, 'CANCEL', () => UI.open('skills'),
-      { size: 14, color: '#9a9080' });
+    UI.btn(ctx, px + 28 + bw, y, bw, 40, 'CANCEL', () => {
+      const backSlot = UI.sel.chSlot != null ? UI.sel.chSlot : catIdx;
+      UI.open('skills');
+      UI.sel.tab = 'actives';
+      UI.sel.slotIdx = backSlot;
+    }, { size: 14, color: '#9a9080' });
   },
 
   // A centered section header with flanking rules (used by the chooser).
