@@ -42,6 +42,7 @@ const Game = {
   guardianUp: false,
   riftSpawnT: 0,
   fps: 60,
+  dpsHits: [],        // rolling {t, d} log feeding the optional DPS meter
 
   init() {
     this.canvas = document.getElementById('game');

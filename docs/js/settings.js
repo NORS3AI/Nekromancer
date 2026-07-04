@@ -54,7 +54,7 @@ const Settings = {
     weather:  { v: 0.6, mute: false }
   },
   g: {
-    dmgNumbers: true,     // floating damage text
+    dmgNumbers: true,     // floating damage text (red hit / yellow crit / green heal)
     shake: true,          // camera shake
     healthBars: true,     // enemy health bars
     aimIndicator: true,   // targeting chevrons while aiming
@@ -62,6 +62,11 @@ const Settings = {
     lowFx: false,         // particle quality (low = half)
     bigMinimap: false,    // larger minimap
     showFps: false,
+    lootPos: 'bottom',    // loot announcement anchor: top | middle | bottom
+    lootStyle: 'line',    // loot announcement layout: line | arc
+    dpsMeter: false,      // show the DPS meter (under the minimap by default)
+    dpsLocked: true,      // lock the DPS meter's position
+    dpsX: null, dpsY: null, // custom DPS meter position (null = default)
     corpseCap: 100        // corpses linger until this many exist (stress test)
   },
   keys: JSON.parse(JSON.stringify(KEY_DEFAULTS)),  // action -> [KeyboardEvent.code]

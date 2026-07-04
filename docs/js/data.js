@@ -18,11 +18,19 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.6.2-alpha';
+const GAME_VERSION = 'v0.6.3-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.6.3-alpha', date: 'July 2026',
+    notes: [
+      'NEW SETTING — a DPS meter (off by default) that lives under the minimap. Toggle its lock with the padlock; when unlocked, drag it anywhere on mobile, tablet or desktop',
+      'NEW SETTING — loot announcement position (Top / Middle / Bottom) and layout (Straight line or Arc)',
+      'Damage numbers toggle now notes the colours: red hits, yellow crits, green healing'
+    ]
+  },
   {
     v: 'v0.6.2-alpha', date: 'July 2026',
     notes: [

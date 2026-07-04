@@ -704,6 +704,8 @@ class Enemy {
     this.hp -= dmg;
     this.flash = 1;
     dmgText(this.x, this.y, dmg, crit);
+    // Feed the DPS meter (dealt damage over a rolling window).
+    if (Game.dpsHits) Game.dpsHits.push({ t: Game.time, d: dmg });
     // Area Damage: 20% proc to splash a share of the hit onto nearby foes.
     if (!opts.noSplash && p && p.areaDamage > 0 && Math.random() < 0.20) {
       const splash = dmg * p.areaDamage;

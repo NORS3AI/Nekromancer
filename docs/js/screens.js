@@ -2198,7 +2198,8 @@ const Screens = {
     ctx.fillStyle = '#57b894';
     ctx.fillText('— GAMEPLAY —', gx, gy - 14);
     const toggles = [
-      ['dmgNumbers', 'Damage numbers'],
+      ['dmgNumbers', 'Damage numbers (red/yellow/green)'],
+      ['dpsMeter', 'DPS meter (drag to move · lock)'],
       ['shake', 'Camera shake'],
       ['healthBars', 'Enemy health bars'],
       ['aimIndicator', 'Aim indicator'],
@@ -2214,6 +2215,23 @@ const Screens = {
       }, label);
       gy += rowStep;
     }
+
+    // Loot announcement — position and layout style.
+    const lpos = ['bottom', 'middle', 'top'];
+    ctx.textAlign = 'left'; ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
+    ctx.fillText('Loot text position', gx, gy + 14);
+    UI.btn(ctx, gx + colW - 118, gy + 1, 118, 26, (Settings.g.lootPos || 'bottom').toUpperCase(), () => {
+      Settings.g.lootPos = lpos[(lpos.indexOf(Settings.g.lootPos || 'bottom') + 1) % lpos.length];
+      Settings.save();
+    }, { size: 12, border: '#8a6f4a', color: '#ffd76a' });
+    gy += 30;
+    ctx.textAlign = 'left'; ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
+    ctx.fillText('Loot text style', gx, gy + 14);
+    UI.btn(ctx, gx + colW - 118, gy + 1, 118, 26, (Settings.g.lootStyle || 'line') === 'arc' ? 'ARC' : 'STRAIGHT', () => {
+      Settings.g.lootStyle = (Settings.g.lootStyle || 'line') === 'line' ? 'arc' : 'line';
+      Settings.save();
+    }, { size: 12, border: '#8a6f4a', color: '#ffd76a' });
+    gy += 30;
 
     // Corpse limit — corpses linger until this many exist, then the oldest fade.
     const caps = [100, 500, 1000, 2500, 5000, 10000];

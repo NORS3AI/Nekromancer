@@ -313,6 +313,7 @@ const UI = {
     else this.drawTopBar(ctx, W, H, p);
     this.drawObjective(ctx, W, H);
     this.drawMinimap(ctx, W, H);
+    this.drawDpsMeter(ctx, W, H);
     this.drawBossBar(ctx, W, H);
     if (Settings.g.showFps) {
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
@@ -635,6 +636,75 @@ const UI = {
     ctx.restore();
   },
 
+  // Optional DPS meter — sits under the minimap by default, movable when
+  // unlocked (drag it anywhere; the padlock toggles lock).
+  drawDpsMeter(ctx, W, H) {
+    if (!Settings.g.dpsMeter || Game.state !== 'playing') return;
+    const now = Game.time || 0, win = 2;
+    const hits = Game.dpsHits;
+    while (hits.length && hits[0].t < now - win) hits.shift();
+    let sum = 0; for (const h of hits) sum += h.d;
+    const dps = Math.round(sum / win);
+    const w = 120, h = 34;
+    const s = this.safe || { top: 0, right: 0 };
+    const S = Math.min(Settings.g.bigMinimap ? 160 : 110, W * (Settings.g.bigMinimap ? 0.3 : 0.2));
+    const defX = W - S - 12 - s.right;
+    const defY = 48 + s.top + S + 6 + 8;
+    const x = clamp(Settings.g.dpsX != null ? Settings.g.dpsX : defX, 4, W - w - 4);
+    const y = clamp(Settings.g.dpsY != null ? Settings.g.dpsY : defY, 40, H - h - 4);
+    this.dpsRect = { x, y, w, h, lx: x + w - 24, ly: y + 4 };
+    ctx.globalAlpha = 0.92;
+    ctx.fillStyle = 'rgba(8,6,12,0.85)';
+    rr(ctx, x, y, w, h, 6); ctx.fill();
+    ctx.strokeStyle = Settings.g.dpsLocked ? 'rgba(107,95,128,0.7)' : 'rgba(111,247,195,0.85)';
+    ctx.lineWidth = 1.5; rr(ctx, x, y, w, h, 6); ctx.stroke();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = '9px Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.fillText('DPS', x + 9, y + 10);
+    ctx.font = 'bold 16px Georgia'; ctx.fillStyle = '#ffb43a';
+    ctx.fillText(String(dps), x + 9, y + 23);
+    this.drawLockIcon(ctx, x + w - 13, y + h / 2, Settings.g.dpsLocked);
+    this.register(x + w - 24, y + 4, 24, h - 8, () => { Settings.g.dpsLocked = !Settings.g.dpsLocked; Settings.save(); });
+    ctx.globalAlpha = 1;
+  },
+
+  // A little padlock — closed shackle when locked, open when unlocked.
+  drawLockIcon(ctx, cx, cy, locked) {
+    ctx.save();
+    ctx.strokeStyle = locked ? '#9a9080' : '#6ff7c3';
+    ctx.fillStyle = locked ? '#9a9080' : '#6ff7c3';
+    ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+    // Shackle.
+    ctx.beginPath();
+    if (locked) ctx.arc(cx, cy - 3, 3.2, Math.PI, 0);
+    else ctx.arc(cx + 3, cy - 3, 3.2, Math.PI * 0.9, -0.2);
+    ctx.stroke();
+    if (locked) { ctx.beginPath(); ctx.moveTo(cx - 3.2, cy - 3); ctx.lineTo(cx - 3.2, cy); ctx.moveTo(cx + 3.2, cy - 3); ctx.lineTo(cx + 3.2, cy); ctx.stroke(); }
+    else { ctx.beginPath(); ctx.moveTo(cx + 6.2, cy - 3); ctx.lineTo(cx + 6.2, cy - 1); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx - 3.2, cy - 1); ctx.lineTo(cx - 3.2, cy); ctx.stroke(); }
+    // Body.
+    ctx.fillRect(cx - 4, cy, 8, 6.5);
+    ctx.restore();
+  },
+
+  // ---- DPS meter dragging (mouse + touch) ----
+  startDpsDrag(x, y, id) {
+    if (Settings.g.dpsLocked || !Settings.g.dpsMeter) return false;
+    const r = this.dpsRect;
+    if (!r) return false;
+    if (x >= r.lx && x <= r.lx + 24 && y >= r.ly && y <= r.ly + (r.h - 8)) return false; // lock icon → tap
+    if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
+      this.dpsDrag = { id, offx: x - r.x, offy: y - r.y };
+      return true;
+    }
+    return false;
+  },
+  moveDps(x, y) {
+    if (!this.dpsDrag) return;
+    Settings.g.dpsX = x - this.dpsDrag.offx;
+    Settings.g.dpsY = y - this.dpsDrag.offy;
+  },
+  endDps() { if (this.dpsDrag) { this.dpsDrag = null; Settings.save(); } },
+
   drawBossBar(ctx, W, H) {
     let boss = null;
     for (const e of Game.enemies) {
@@ -663,20 +733,35 @@ const UI = {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 13px Georgia';
     const sb = (this.safe || { bottom: 0 }).bottom || 0;
+    const st = (this.safe || { top: 0 }).top || 0;
     const n = this.toasts.length;
-    // Sit above the desktop action bar; near the bottom edge on touch.
-    const baseY = (Game.H || 700) - (this.desktop ? 116 : 30) - sb;
+    const H = Game.H || 700;
+    // Anchor position (owner setting): top / middle / bottom.
+    const pos = Settings.g.lootPos || 'bottom';
+    const anchorY = pos === 'top' ? 96 + st
+      : pos === 'middle' ? H * 0.44
+      : H - (this.desktop ? 116 : 30) - sb;
+    const dir = pos === 'top' ? 1 : -1;   // stack away from the anchored edge
+    const arc = Settings.g.lootStyle === 'arc';
     this.toasts.forEach((t, i) => {
       const left = t.until - Game.time;
       ctx.globalAlpha = clamp(left / 0.5, 0, 1);
-      const y = baseY - (n - 1 - i) * 24;
+      let x = W / 2, y;
+      if (arc) {
+        // Fan the messages along a shallow arc that bows off the anchor edge.
+        const rel = i - (n - 1) / 2;
+        x = W / 2 + rel * Math.min(140, W * 0.2);
+        y = anchorY + dir * (rel * rel) * 9;
+      } else {
+        y = anchorY + dir * (n - 1 - i) * 24;   // straight column
+      }
       const tw = ctx.measureText(t.text).width;
       ctx.fillStyle = 'rgba(6,4,10,0.85)';
-      rr(ctx, W / 2 - tw / 2 - 12, y - 11, tw + 24, 22, 7); ctx.fill();
+      rr(ctx, x - tw / 2 - 12, y - 11, tw + 24, 22, 7); ctx.fill();
       ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 1;
-      rr(ctx, W / 2 - tw / 2 - 12, y - 11, tw + 24, 22, 7); ctx.stroke();
+      rr(ctx, x - tw / 2 - 12, y - 11, tw + 24, 22, 7); ctx.stroke();
       ctx.fillStyle = t.color;
-      ctx.fillText(t.text, W / 2, y);
+      ctx.fillText(t.text, x, y);
     });
     ctx.globalAlpha = 1;
   },

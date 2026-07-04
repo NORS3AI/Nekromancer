@@ -94,6 +94,7 @@ const Input = {
     canvas.addEventListener('mousemove', e => {
       this.mousePos.x = e.clientX;
       this.mousePos.y = e.clientY;
+      if (UI.dpsDrag) UI.moveDps(e.clientX, e.clientY);
       if (this.mouseSlider) this.mouseSlider.set(clamp((e.clientX - this.mouseSlider.x) / this.mouseSlider.w, 0, 1));
     });
     // Right click is the SECONDARY skill (slot 1), Diablo style.
@@ -117,6 +118,7 @@ const Input = {
         sl.set(clamp((e.clientX - sl.x) / sl.w, 0, 1));
         return;
       }
+      if (UI.startDpsDrag(e.clientX, e.clientY, 'mouse')) return;
       if (UI.click(e.clientX, e.clientY)) return;
       if (!this.gameplayLive()) return;
       const slot = UI.buttonAt(e.clientX, e.clientY);
@@ -134,6 +136,7 @@ const Input = {
         this.mouseSecondary = false;
         return;
       }
+      if (UI.dpsDrag) UI.endDps();
       this.mousePrimary = false;
       this.mouseSlider = null;
       if (this.mouseSlot !== undefined) {
@@ -183,6 +186,7 @@ const Input = {
         sl.set(clamp((x - sl.x) / sl.w, 0, 1));
         continue;
       }
+      if (UI.startDpsDrag(x, y, t.identifier)) continue;
       if (UI.click(x, y)) continue;
       if (!this.gameplayLive()) continue;
       const slot = UI.buttonAt(x, y);
@@ -215,6 +219,7 @@ const Input = {
 
   onTouchMove(e) {
     for (const t of e.changedTouches) {
+      if (UI.dpsDrag && UI.dpsDrag.id === t.identifier) { UI.moveDps(t.clientX, t.clientY); continue; }
       const sl = this.sliderTouches.get(t.identifier);
       if (sl) {
         sl.set(clamp((t.clientX - sl.x) / sl.w, 0, 1));
@@ -251,6 +256,7 @@ const Input = {
 
   onTouchEnd(e) {
     for (const t of e.changedTouches) {
+      if (UI.dpsDrag && UI.dpsDrag.id === t.identifier) UI.endDps();
       this.sliderTouches.delete(t.identifier);
       if (t.identifier === this.joy.id) {
         this.joy.active = false; this.joy.id = null;
