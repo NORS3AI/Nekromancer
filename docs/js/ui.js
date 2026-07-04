@@ -355,6 +355,8 @@ const UI = {
     let cb;
     // The recipe book always returns to the Cube (whether in town or camp).
     if (this.screen === 'recipes') cb = () => this.open('cube');
+    // The skill/rune chooser always returns to the skills screen.
+    else if (this.screen === 'skillChooser') cb = () => this.open('skills');
     else if (this.townMode) {
       if (this.screen === 'town') cb = () => { this.townMode = false; this.close(); };
       else if (['smith', 'jeweler', 'mystic', 'stash', 'torches', 'radial', 'cube'].includes(this.screen)) cb = () => this.open('town');

@@ -20,6 +20,7 @@ const Screens = {
     switch (UI.screen) {
       case 'radial': this.radial(ctx, W, H); break;
       case 'skills': this.skills(ctx, W, H); break;
+      case 'skillChooser': this.skillChooser(ctx, W, H); break;
       case 'smith': this.smith(ctx, W, H); break;
       case 'torches': this.torches(ctx, W, H); break;
       case 'jeweler': this.jeweler(ctx, W, H); break;
@@ -1544,150 +1545,263 @@ const Screens = {
     else this.skillsPassives(ctx, W, H, px, pw);
 
     // Info footer.
-    if (UI.sel.info) {
+    if (UI.sel.tab === 'actives') {
+      // Action-bar slot footer: the equipped skill + its rune, and a RUNES
+      // button that opens the fleshed-out chooser (underneath the description).
+      const slot = UI.sel.slotIdx == null ? 0 : UI.sel.slotIdx;
+      const cat = LOADOUT_CATS[slot];
+      const sid = Hero.loadout[slot];
+      const s = sid ? SKILL_DATA.find(x => x.id === sid) : null;
+      const fy = H - 84;
+      UI.panel(ctx, px, fy, pw, 76);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.font = 'bold 13px Georgia';
+      ctx.fillStyle = SKILL_CATS[cat].color;
+      ctx.fillText(this.fitText(ctx, (s ? s.name : 'Empty slot') + '  ·  ' + SKILL_CATS[cat].name, pw - 130), px + 12, fy + 16);
+      ctx.font = '12px Georgia'; ctx.fillStyle = '#b5ab94';
+      if (s) {
+        wrapText(ctx, SKILL_DESCS[s.id], px + 12, fy + 33, pw - 150, 14, 2);
+        const rid = Hero.rune(s.id);
+        const rune = SKILL_RUNES[s.id] && SKILL_RUNES[s.id].find(r => r.id === rid);
+        if (rune && rune.id !== 'base') {
+          ctx.fillStyle = '#e0a24a'; ctx.font = '10px Georgia';
+          ctx.fillText(this.fitText(ctx, '◈ ' + rune.name, pw - 150), px + 12, fy + 66);
+        }
+      } else {
+        ctx.fillText(this.fitText(ctx, 'Tap RUNES to choose a ' + SKILL_CATS[cat].name + ' skill.', pw - 150), px + 12, fy + 34);
+      }
+      UI.btn(ctx, px + pw - 128, fy + 46, 116, 24, '◈  RUNES',
+        () => Screens.openChooser(slot, sid, null), { size: 12, color: '#e0a24a', border: '#8a6f4a' });
+    } else if (UI.sel.info) {
+      // Passives footer.
       const s = UI.sel.info;
       const fy = H - 84;
       UI.panel(ctx, px, fy, pw, 76);
-      ctx.textAlign = 'left';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
       ctx.font = 'bold 13px Georgia';
-      ctx.fillStyle = s.cat ? SKILL_CATS[s.cat].color : '#b06adf';
-      ctx.fillText(this.fitText(ctx, s.name + (s.cat ? '  ·  ' + SKILL_CATS[s.cat].name : '  ·  Passive'), pw - 24), px + 12, fy + 16);
-      ctx.font = '12px Georgia';
-      ctx.fillStyle = '#b5ab94';
-      const desc = s.cat ? SKILL_DESCS[s.id] : s.desc;
-      wrapText(ctx, desc, px + 12, fy + 33, pw - 24, 14, 2);
-      const runes = s.cat && typeof SKILL_RUNES !== 'undefined' ? SKILL_RUNES[s.id] : null;
-      if (runes && s.lvl <= Hero.level) {
-        // Rune picker: tap to choose how this skill behaves.
-        ctx.fillStyle = '#6f6552';
-        ctx.font = 'bold 10px Georgia';
-        ctx.fillText('RUNE', px + 12, fy + 63);
-        const bx0 = px + 48;
-        const bw = Math.min(160, (pw - 62 - (runes.length - 1) * 6) / runes.length);
-        // A per-skill starting rune, so each option below gets a DISTINCT stone
-        // (base + ri never repeats within one skill's list of ≤ RUNE_IMAGE_COUNT).
-        let runeBase = 0;
-        for (let k = 0; k < s.id.length; k++) runeBase += s.id.charCodeAt(k) * (k + 1);
-        runes.forEach((r, ri) => {
-          const locked = r.lvl && Hero.level < r.lvl;
-          const active = (Hero.runes[s.id] || 'base') === r.id && !locked;
-          const rbx = bx0 + ri * (bw + 6);
-          UI.tip(rbx, fy + 52, bw, 22,
-            r.name + (locked ? '  (lvl ' + r.lvl + ')' : ''), r.desc);
-          UI.btn(ctx, rbx + 16, fy + 52, bw - 16, 22,
-            this.fitText(ctx, locked ? r.name + ' L' + r.lvl : r.name, bw - 30), locked ? null : () => {
-              Hero.runes[s.id] = r.id;
-              Hero.save();
-              UI.toast(r.name + ': ' + r.desc, '#6ff7c3');
-            }, {
-            size: 10, disabled: locked,
-            bg: active ? 'rgba(70,44,90,0.95)' : undefined,
-            border: active ? '#6ff7c3' : undefined,
-            color: active ? '#6ff7c3' : undefined
-          });
-          // A carved-stone rune shard on the left of each option (dimmed if locked).
-          if (typeof drawRuneStone === 'function') {
-            if (locked) ctx.globalAlpha = 0.4;
-            drawRuneStone(ctx, rbx + 12, fy + 63, 8, 0, runeBase + ri);
-            ctx.globalAlpha = 1;
-          }
-        });
-      } else {
-        ctx.fillStyle = '#6f6552';
-        ctx.font = '11px Georgia';
-        ctx.fillText(
-          this.fitText(ctx,
-            s.cat ? `unlocks at level ${s.lvl}${s.cost ? ' · ' + s.cost + ' essence' : ''}${s.cd >= 2 ? ' · ' + s.cd + 's cooldown' : ''}` : `unlocks at level ${s.lvl}`,
-            pw - 24),
-          px + 12, fy + 65);
+      ctx.fillStyle = '#b06adf';
+      ctx.fillText(this.fitText(ctx, s.name + '  ·  Passive', pw - 24), px + 12, fy + 16);
+      ctx.font = '12px Georgia'; ctx.fillStyle = '#b5ab94';
+      wrapText(ctx, s.desc, px + 12, fy + 33, pw - 24, 14, 2);
+      if (s.lvl > Hero.level) {
+        ctx.fillStyle = '#6f6552'; ctx.font = '11px Georgia';
+        ctx.fillText(this.fitText(ctx, 'unlocks at level ' + s.lvl, pw - 24), px + 12, fy + 65);
       }
     }
   },
 
+  // Category names for the 6-slot action bar (matches LOADOUT_CATS order).
+  slotCatLabels: ['PRIMARY', 'SECONDARY', 'CORPSES', 'REANIM', 'CURSES', 'BLOOD'],
+
   skillsActives(ctx, W, H, px, pw) {
-    // Loadout slots.
     const sy = 96;
     ctx.textAlign = 'left';
     ctx.font = 'bold 12px Georgia';
     ctx.fillStyle = '#9a9080';
-    ctx.fillText('LOADOUT — tap a slot, then a skill', px, sy - 14);
-    const nSlots = Hero.loadout.length; // 7: primary · secondary · skills 1-5
+    ctx.fillText('ACTION BAR — one skill per category', px, sy - 14);
+
+    const nSlots = 6;
     const sw = pw / nSlots;
-    const cr = Math.min(23, sw / 2 - 3);
+    const cr = Math.min(26, sw / 2 - 4);
+    const cyc = sy + 24;
     for (let i = 0; i < nSlots; i++) {
       const bx = px + i * sw + sw / 2;
+      const cat = LOADOUT_CATS[i];
       const selected = UI.sel.slotIdx === i;
       ctx.fillStyle = selected ? '#2e2a3a' : '#16121d';
-      ctx.beginPath(); ctx.arc(bx, sy + 20, cr, 0, TAU); ctx.fill();
-      ctx.strokeStyle = selected ? '#6ff7c3' : '#3a3448';
+      ctx.beginPath(); ctx.arc(bx, cyc, cr, 0, TAU); ctx.fill();
+      ctx.strokeStyle = selected ? '#6ff7c3' : SKILL_CATS[cat].color;
       ctx.lineWidth = selected ? 3 : 2;
-      ctx.beginPath(); ctx.arc(bx, sy + 20, cr, 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.arc(bx, cyc, cr, 0, TAU); ctx.stroke();
       const id = Hero.loadout[i];
-      if (id) drawSkillIcon(ctx, id, bx, sy + 20, cr - 3);
+      if (id) drawSkillIcon(ctx, id, bx, cyc, cr - 3);
       else {
-        ctx.fillStyle = '#3a3448';
-        ctx.font = '20px Georgia';
-        ctx.textAlign = 'center';
-        ctx.fillText('+', bx, sy + 21);
+        ctx.fillStyle = '#3a3448'; ctx.font = '22px Georgia'; ctx.textAlign = 'center';
+        ctx.fillText('+', bx, cyc + 1);
       }
-      ctx.fillStyle = '#6f6552';
-      ctx.font = i === 1 ? '8px Georgia' : '9px Georgia';
-      ctx.textAlign = 'center';
-      ctx.fillText(i === 0 ? 'PRIMARY' : i === 1 ? 'SECONDARY' : 'SKILL ' + (i - 1), bx, sy + 50);
-      UI.register(bx - sw / 2 + 2, sy - 5, sw - 4, 62, () => {
+      ctx.fillStyle = SKILL_CATS[cat].color;
+      ctx.font = '8px Georgia'; ctx.textAlign = 'center';
+      ctx.fillText(this.slotCatLabels[i], bx, cyc + cr + 12);
+      UI.register(bx - sw / 2 + 2, sy - 4, sw - 4, cr * 2 + 30, () => {
         UI.sel.slotIdx = i;
-        // Name the skill already in this slot in the info footer, so you don't
-        // have to hunt for it in the grid below.
-        const sid = Hero.loadout[i];
-        UI.sel.info = sid ? (SKILL_DATA.find(s => s.id === sid) || null) : null;
+        UI.sel.info = null;   // the actives footer keys off slotIdx now
       });
     }
 
-    // All skills grid — row height adapts so it never collides with the footer.
-    const gy = sy + 66;
-    const cols = Math.min(7, Math.floor(pw / 64));
-    const cell = pw / cols;
-    const rows = Math.ceil(SKILL_DATA.length / cols);
-    const rowH = clamp((H - gy - 100) / rows, 42, 64);
-    const iconR = Math.min(21, rowH * 0.36);
-    SKILL_DATA.forEach((s, i) => {
-      const gx = px + (i % cols) * cell + cell / 2;
-      const gyy = gy + Math.floor(i / cols) * rowH + rowH * 0.4;
+    // A prominent button opens the fleshed-out category chooser for the
+    // selected slot (skills browsable by category, with their runes).
+    const slot = UI.sel.slotIdx == null ? 0 : UI.sel.slotIdx;
+    const by = cyc + cr + 26;
+    UI.btn(ctx, px + pw * 0.12, by, pw * 0.76, 44, '⚑  CHOOSE SKILLS & RUNES',
+      () => Screens.openChooser(slot, Hero.loadout[slot], null),
+      { size: 15, color: '#6ff7c3', border: '#3a7a6a' });
+    ctx.textAlign = 'center'; ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.fillText('Browse every skill & rune by category — they unlock as you level.', W / 2, by + 62);
+  },
+
+  // Open the category skill+rune chooser, seeded to a slot's category/skill.
+  openChooser(catIdx, skillId, runeId) {
+    const ci = clamp(catIdx || 0, 0, LOADOUT_CATS.length - 1);
+    UI.open('skillChooser');
+    UI.sel.chCat = ci;
+    const cs = CAT_SKILLS[LOADOUT_CATS[ci]];
+    UI.sel.chSkill = (skillId && cs.includes(skillId)) ? skillId : cs[0];
+    UI.sel.chRune = runeId || Hero.runes[UI.sel.chSkill] || 'base';
+  },
+
+  // The fleshed-out skill + rune chooser popup: a category selector with ◀ ▶
+  // arrows, the category's skills, that skill's runes (with unlock levels), an
+  // assigned-skill preview, and ACCEPT / CANCEL.
+  skillChooser(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const pw = Math.min(560, W - 16);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 16, 640);
+    const py = Math.max(8, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, 'SKILLS & RUNES');
+
+    if (UI.sel.chCat == null) UI.sel.chCat = 0;
+    const catIdx = clamp(UI.sel.chCat, 0, LOADOUT_CATS.length - 1);
+    const cat = LOADOUT_CATS[catIdx];
+    const catDef = SKILL_CATS[cat];
+    const catSkills = CAT_SKILLS[cat];
+    if (!catSkills.includes(UI.sel.chSkill)) UI.sel.chSkill = catSkills[0];
+
+    // ---- category selector with arrows ----
+    const selY = py + 44;
+    const stepCat = dir => {
+      UI.sel.chCat = (catIdx + dir + LOADOUT_CATS.length) % LOADOUT_CATS.length;
+      const cs = CAT_SKILLS[LOADOUT_CATS[UI.sel.chCat]];
+      UI.sel.chSkill = cs[0];
+      UI.sel.chRune = Hero.runes[cs[0]] || 'base';
+    };
+    UI.btn(ctx, px + 14, selY, 42, 32, '◀', () => stepCat(-1), { size: 15 });
+    UI.btn(ctx, px + pw - 56, selY, 42, 32, '▶', () => stepCat(1), { size: 15 });
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'bold 17px Georgia'; ctx.fillStyle = catDef.color;
+    ctx.fillText(catDef.name.toUpperCase(), W / 2, selY + 15);
+    ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.fillText((catIdx + 1) + ' / ' + LOADOUT_CATS.length, W / 2, selY + 30);
+
+    // ---- section 1: skills of this category ----
+    let y = selY + 46;
+    this.chooserLabel(ctx, px, pw, y, catDef.name.toUpperCase());
+    y += 22;
+    const nS = catSkills.length;
+    const sCell = pw / Math.max(4, nS);
+    const sR = Math.min(30, sCell / 2 - 8);
+    catSkills.forEach((id, i) => {
+      const s = SKILL_DATA.find(x => x.id === id);
+      const sx = px + (pw - nS * sCell) / 2 + i * sCell + sCell / 2;
       const locked = s.lvl > Hero.level;
-      const inSlot = Hero.loadout.indexOf(s.id);
-      ctx.globalAlpha = locked ? 0.32 : 1;
+      const sel = UI.sel.chSkill === id;
+      ctx.globalAlpha = locked ? 0.4 : 1;
       ctx.fillStyle = '#16121d';
-      ctx.beginPath(); ctx.arc(gx, gyy, iconR, 0, TAU); ctx.fill();
-      ctx.strokeStyle = inSlot >= 0 ? '#6ff7c3' : SKILL_CATS[s.cat].color;
-      ctx.lineWidth = inSlot >= 0 ? 2.5 : 1.5;
-      ctx.globalAlpha = locked ? 0.32 : (inSlot >= 0 ? 1 : 0.7);
-      ctx.beginPath(); ctx.arc(gx, gyy, iconR, 0, TAU); ctx.stroke();
-      ctx.globalAlpha = locked ? 0.32 : 1;
-      drawSkillIcon(ctx, s.id, gx, gyy, iconR * 0.86);
+      ctx.beginPath(); ctx.arc(sx, y + sR, sR, 0, TAU); ctx.fill();
+      ctx.strokeStyle = sel ? '#ffd76a' : catDef.color;
+      ctx.lineWidth = sel ? 3.5 : 1.5;
+      ctx.beginPath(); ctx.arc(sx, y + sR, sR, 0, TAU); ctx.stroke();
+      drawSkillIcon(ctx, id, sx, y + sR, sR - 3);
       ctx.globalAlpha = 1;
       if (locked) {
-        ctx.fillStyle = '#9a9080';
-        ctx.font = 'bold 10px Georgia';
-        ctx.textAlign = 'center';
-        ctx.fillText(s.lvl, gx + iconR * 0.7, gyy + iconR * 0.7);
+        ctx.fillStyle = '#e0402f'; ctx.font = 'bold 11px Georgia'; ctx.textAlign = 'center';
+        ctx.fillText(s.lvl, sx, y + sR * 0.05);
       }
-      UI.tip(gx - iconR - 2, gyy - iconR - 2, iconR * 2 + 4, iconR * 2 + 4,
-        s.name + (locked ? '  (lvl ' + s.lvl + ')' : ''), SKILL_DESCS[s.id]);
-      UI.register(gx - iconR - 2, gyy - iconR - 2, iconR * 2 + 4, iconR * 2 + 4, () => {
-        UI.sel.info = s;
-        if (locked) return;
-        const slot = UI.sel.slotIdx;
-        const existing = Hero.loadout.indexOf(s.id);
-        if (existing === slot) {
-          Hero.loadout[slot] = null;      // tap again to clear
-        } else {
-          if (existing >= 0) Hero.loadout[existing] = Hero.loadout[slot];
-          Hero.loadout[slot] = s.id;
-        }
-        Hero.sanitize();
-        Hero.save();
+      ctx.fillStyle = locked ? '#6f6552' : sel ? '#ffd76a' : '#b5ab94';
+      ctx.font = (sel ? 'bold ' : '') + '9px Georgia'; ctx.textAlign = 'center';
+      ctx.fillText(this.fitText(ctx, s.name, sCell - 4), sx, y + sR * 2 + 12);
+      UI.register(sx - sR - 2, y - 2, sR * 2 + 4, sR * 2 + 18, () => {
+        if (locked) { UI.toast(s.name + ' unlocks at level ' + s.lvl, '#9a9080'); AudioSys.sfx('denied'); return; }
+        UI.sel.chSkill = id;
+        UI.sel.chRune = Hero.runes[id] || 'base';
       });
     });
+    y += sR * 2 + 24;
+
+    // ---- section 2: runes for the selected skill ----
+    this.chooserLabel(ctx, px, pw, y, 'SKILL RUNES');
+    y += 22;
+    const runes = (typeof SKILL_RUNES !== 'undefined' && SKILL_RUNES[UI.sel.chSkill]) || [];
+    let runeBase = 0;
+    for (let k = 0; k < UI.sel.chSkill.length; k++) runeBase += UI.sel.chSkill.charCodeAt(k) * (k + 1);
+    const nR = runes.length;                 // base + 5
+    const rCell = pw / nR;
+    const rR = Math.min(24, rCell / 2 - 6);
+    runes.forEach((rune, ri) => {
+      const rx = px + ri * rCell + rCell / 2;
+      const locked = rune.lvl && Hero.level < rune.lvl;
+      const sel = UI.sel.chRune === rune.id;
+      if (locked && rune.lvl) {
+        ctx.fillStyle = '#e0402f'; ctx.font = 'bold 10px Georgia'; ctx.textAlign = 'center';
+        ctx.fillText(rune.lvl, rx, y - 3);
+      }
+      ctx.globalAlpha = locked ? 0.4 : 1;
+      if (ri === 0) {
+        // "No Rune" — a plain empty socket.
+        ctx.strokeStyle = sel ? '#6ff7c3' : '#6b5f80'; ctx.lineWidth = sel ? 3 : 1.5;
+        ctx.beginPath(); ctx.arc(rx, y + rR, rR - 2, 0, TAU); ctx.stroke();
+        ctx.fillStyle = '#6b5f80'; ctx.font = '9px Georgia'; ctx.textAlign = 'center';
+      } else {
+        drawRuneStone(ctx, rx, y + rR, rR, 0, runeBase + ri);
+        if (sel) {
+          ctx.strokeStyle = '#6ff7c3'; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(rx, y + rR, rR + 2, 0, TAU); ctx.stroke();
+        }
+      }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = locked ? '#6f6552' : sel ? '#6ff7c3' : '#b5ab94';
+      ctx.font = (sel ? 'bold ' : '') + '8px Georgia'; ctx.textAlign = 'center';
+      ctx.fillText(this.fitText(ctx, ri === 0 ? 'No Rune' : rune.name, rCell - 2), rx, y + rR * 2 + 10);
+      UI.register(rx - rR - 1, y - 2, rR * 2 + 2, rR * 2 + 14, () => {
+        if (locked) { UI.toast(rune.name + ' unlocks at level ' + rune.lvl, '#9a9080'); AudioSys.sfx('denied'); return; }
+        UI.sel.chRune = rune.id;
+      });
+    });
+    y += rR * 2 + 20;
+
+    // ---- section 3: assigned skill preview ----
+    this.chooserLabel(ctx, px, pw, y, 'ASSIGNED SKILL');
+    y += 20;
+    const chSkill = SKILL_DATA.find(x => x.id === UI.sel.chSkill);
+    const chRune = runes.find(r => r.id === UI.sel.chRune) || runes[0];
+    const cardH = 54;
+    UI.panel(ctx, px + 16, y, pw - 32, cardH);
+    drawSkillIcon(ctx, UI.sel.chSkill, px + 16 + 28, y + cardH / 2, 20);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = 'bold 14px Georgia'; ctx.fillStyle = catDef.color;
+    ctx.fillText(chSkill ? chSkill.name : '', px + 64, y + 18);
+    ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
+    ctx.fillText(this.fitText(ctx, (chRune && chRune.id !== 'base' ? '◈ ' + chRune.name + ' — ' : '') +
+      (chRune ? chRune.desc : ''), pw - 96), px + 64, y + 37);
+    y += cardH + 12;
+
+    // ---- accept / cancel ----
+    const skillLocked = chSkill && chSkill.lvl > Hero.level;
+    const bw = (pw - 44) / 2;
+    UI.btn(ctx, px + 16, y, bw, 40, skillLocked ? 'LOCKED — LVL ' + chSkill.lvl : 'ACCEPT',
+      skillLocked ? null : () => {
+        Hero.loadout[catIdx] = UI.sel.chSkill;
+        Hero.runes[UI.sel.chSkill] = UI.sel.chRune;
+        Hero.sanitize();
+        Hero.save();
+        UI.toast(chSkill.name + (chRune && chRune.id !== 'base' ? ' · ' + chRune.name : '') + ' assigned', SKILL_CATS[cat].color);
+        AudioSys.sfx('level');
+        UI.open('skills');
+      }, { size: 14, disabled: skillLocked, color: '#6ff7c3', border: '#3a7a6a' });
+    UI.btn(ctx, px + 28 + bw, y, bw, 40, 'CANCEL', () => UI.open('skills'),
+      { size: 14, color: '#9a9080' });
+  },
+
+  // A centered section header with flanking rules (used by the chooser).
+  chooserLabel(ctx, px, pw, y, text) {
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#8a7f6c';
+    const cx = px + pw / 2;
+    ctx.fillText(text, cx, y + 8);
+    const tw = ctx.measureText(text).width;
+    ctx.strokeStyle = '#3a3448'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px + 20, y + 8); ctx.lineTo(cx - tw / 2 - 10, y + 8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + tw / 2 + 10, y + 8); ctx.lineTo(px + pw - 20, y + 8); ctx.stroke();
   },
 
   skillsPassives(ctx, W, H, px, pw) {

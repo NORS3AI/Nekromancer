@@ -58,9 +58,15 @@ loot at the artisans. The hero is persistent (localStorage).
 
 - **Essence**: 100 max (+40 with Overwhelming Essence), tiny 2/s regen — primaries
   (Bone Spikes +18, Grim Scythe +12/hit, Siphon Blood channel) generate it, D3-style.
-- **Skill unlocks use the real D3 levels** (Bone Spikes 1 … Land of the Dead 38,
-  Simulacrum 61). Loadout = 6 slots, elective (any skill any slot). Tapping an
-  assigned skill again clears it. `Hero.sanitize()` drops locked skills.
+- **Skills AND runes are level-gated by the owner's progression table** (in
+  data.js: `SKILL_DATA[].lvl` + `RUNE_UNLOCKS` applied onto `SKILL_RUNES[*][i].lvl`).
+  The action bar is **CATEGORY-LOCKED**: 6 slots = `LOADOUT_CATS`
+  (primary·secondary·corpse·reanim·curse·blood), one skill per category.
+  `CAT_SKILLS` lists each category's skills in table order. `Hero.sanitize()`
+  rebuilds the loadout by category (drops locked/duplicate). Choose skills+runes
+  in the **`Screens.skillChooser`** popup (category ◀ ▶ arrows → skills → runes →
+  assigned preview → ACCEPT), opened by `Screens.openChooser(slot,skill,rune)`
+  from the action-bar "CHOOSE SKILLS & RUNES" button or the "◈ RUNES" footer button.
 - Corpses: every kill leaves one (fuel for Corpse Explosion/Lance/Devour/Revive).
 - Monster scaling: `(1+0.20·(mLvl−1)) × difficulty.mult`; `mLvl = zone.mLvl + 6·difficulty`.
 - Packs sleep until the player is within ~440px (or they're hurt).

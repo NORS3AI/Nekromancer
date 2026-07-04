@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.8.7-alpha';
+const GAME_VERSION = 'v0.8.8-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.8.8-alpha', date: 'July 2026',
+    notes: [
+      'NEW — a fleshed-out SKILLS & RUNES chooser: browse skills by category with ◀ ▶ arrows (Primary · Secondary · Corpses · Reanimation · Curses · Blood & Bone), pick a rune underneath, preview the assigned skill, then ACCEPT. Open it from the ⚑ CHOOSE SKILLS & RUNES button or the ◈ RUNES button under a skill\'s description',
+      'The action bar is now ONE skill per category (six category slots)',
+      'Skills AND runes are now locked behind character level — the chooser shows each unlock level in red, and dims what you can\'t use yet',
+      'Retuned skill & rune unlock levels to the owner\'s progression table (e.g. Skeletal Mage 19, Corpse Lance 28, Bone Armor 17); Revive is now a Corpse skill and Simulacrum a Blood & Bone skill'
+    ]
+  },
   {
     v: 'v0.8.7-alpha', date: 'July 2026',
     notes: [
@@ -1081,23 +1090,23 @@ const SKILL_DATA = [
   { id: 'boneSpear',       name: 'Bone Spear',        cat: 'secondary', lvl: 2,  cost: 20, cd: 0.5 },
   { id: 'grimScythe',      name: 'Grim Scythe',       cat: 'primary',   lvl: 3,  cost: 0,  gain: 12, cd: 0.4 },
   { id: 'corpseExplosion', name: 'Corpse Explosion',  cat: 'corpse',    lvl: 4,  cost: 8,  cd: 0.6 },
-  { id: 'skeletalMage',    name: 'Skeletal Mage',     cat: 'secondary', lvl: 5,  cost: 40, cd: 0.8 },
-  { id: 'corpseLance',     name: 'Corpse Lance',      cat: 'corpse',    lvl: 8,  cost: 15, cd: 0.5 },
+  { id: 'skeletalMage',    name: 'Skeletal Mage',     cat: 'secondary', lvl: 19, cost: 40, cd: 0.8 },
+  { id: 'corpseLance',     name: 'Corpse Lance',      cat: 'corpse',    lvl: 28, cost: 15, cd: 0.5 },
   { id: 'commandSkeletons',name: 'Command Skeletons', cat: 'reanim',    lvl: 9,  cost: 50, cd: 1.5 },
   { id: 'siphonBlood',     name: 'Siphon Blood',      cat: 'primary',   lvl: 11, cost: 0,  gain: 4,  cd: 0.16, channel: true },
   { id: 'deathNova',       name: 'Death Nova',        cat: 'secondary', lvl: 12, cost: 20, cd: 0.55 },
   { id: 'commandGolem',    name: 'Command Golem',     cat: 'reanim',    lvl: 13, cost: 0,  cd: 30 },
   { id: 'decrepify',       name: 'Decrepify',         cat: 'curse',     lvl: 14, cost: 10, cd: 1 },
   { id: 'devour',          name: 'Devour',            cat: 'corpse',    lvl: 16, cost: 0,  cd: 1.5 },
-  { id: 'leech',           name: 'Leech',             cat: 'curse',     lvl: 17, cost: 10, cd: 1 },
-  { id: 'boneArmor',       name: 'Bone Armor',        cat: 'blood',     lvl: 19, cost: 10, cd: 10 },
+  { id: 'boneArmor',       name: 'Bone Armor',        cat: 'blood',     lvl: 17, cost: 10, cd: 10 },
+  { id: 'leech',           name: 'Leech',             cat: 'curse',     lvl: 24, cost: 10, cd: 1 },
   { id: 'armyOfTheDead',   name: 'Army of the Dead',  cat: 'reanim',    lvl: 22, cost: 0,  cd: 45 },
-  { id: 'frailty',         name: 'Frailty',           cat: 'curse',     lvl: 22, cost: 10, cd: 1 },
-  { id: 'revive',          name: 'Revive',            cat: 'reanim',    lvl: 22, cost: 25, cd: 2 },
-  { id: 'boneSpirit',      name: 'Bone Spirit',       cat: 'blood',     lvl: 25, cost: 0,  cd: 12 },
-  { id: 'bloodRush',       name: 'Blood Rush',        cat: 'blood',     lvl: 30, cost: 0,  cd: 5 },
+  { id: 'revive',          name: 'Revive',            cat: 'corpse',    lvl: 22, cost: 25, cd: 2 },
+  { id: 'bloodRush',       name: 'Blood Rush',        cat: 'blood',     lvl: 27, cost: 0,  cd: 5 },
+  { id: 'frailty',         name: 'Frailty',           cat: 'curse',     lvl: 30, cost: 10, cd: 1 },
+  { id: 'boneSpirit',      name: 'Bone Spirit',       cat: 'blood',     lvl: 34, cost: 0,  cd: 12 },
   { id: 'landOfTheDead',   name: 'Land of the Dead',  cat: 'reanim',    lvl: 38, cost: 0,  cd: 60 },
-  { id: 'simulacrum',      name: 'Simulacrum',        cat: 'reanim',    lvl: 61, cost: 0,  cd: 60 }
+  { id: 'simulacrum',      name: 'Simulacrum',        cat: 'blood',     lvl: 61, cost: 0,  cd: 60 }
 ];
 
 const SKILL_CATS = {
@@ -1108,6 +1117,34 @@ const SKILL_CATS = {
   corpse:    { name: 'Corpses',      color: '#ffb43a' },
   reanim:    { name: 'Reanimation',  color: '#6ff7c3' }
 };
+
+// The 6-slot action bar is CATEGORY-LOCKED: slot i holds a skill of LOADOUT_CATS[i].
+// Order (and the per-category skill order) matches the owner's skill table.
+const LOADOUT_CATS = ['primary', 'secondary', 'corpse', 'reanim', 'curse', 'blood'];
+const CAT_SKILLS = {
+  primary:   ['boneSpikes', 'grimScythe', 'siphonBlood'],
+  secondary: ['boneSpear', 'deathNova', 'skeletalMage'],
+  corpse:    ['corpseExplosion', 'devour', 'revive', 'corpseLance'],
+  reanim:    ['commandSkeletons', 'commandGolem', 'armyOfTheDead', 'landOfTheDead'],
+  curse:     ['decrepify', 'leech', 'frailty'],
+  blood:     ['boneArmor', 'bloodRush', 'boneSpirit', 'simulacrum']
+};
+
+// Character-level a skill's 5 non-base runes unlock at (owner's table), applied
+// by position: index 0 of each SKILL_RUNES list is the always-free 'No Rune'.
+const RUNE_UNLOCKS = {
+  boneSpikes: [6, 12, 18, 24, 30],   grimScythe: [9, 14, 21, 27, 33],   siphonBlood: [17, 23, 35, 47, 54],
+  boneSpear: [7, 13, 19, 26, 32],    deathNova: [18, 23, 35, 48, 57],   skeletalMage: [24, 29, 36, 44, 55],
+  corpseExplosion: [10, 16, 22, 28, 34], devour: [21, 27, 33, 42, 59],  revive: [26, 31, 38, 49, 58],
+  corpseLance: [33, 39, 46, 52, 60], commandSkeletons: [19, 25, 31, 37, 43], commandGolem: [18, 24, 29, 36, 53],
+  armyOfTheDead: [34, 40, 45, 51, 58], landOfTheDead: [43, 47, 52, 56, 61], decrepify: [20, 26, 41, 50, 57],
+  leech: [29, 34, 39, 46, 54],       frailty: [35, 40, 45, 49, 60],     boneArmor: [22, 28, 34, 41, 59],
+  bloodRush: [32, 37, 44, 50, 56],   boneSpirit: [39, 45, 51, 55, 60],  simulacrum: [62, 63, 64, 65, 66]
+};
+for (const id in RUNE_UNLOCKS) {
+  const list = SKILL_RUNES[id];
+  if (list) RUNE_UNLOCKS[id].forEach((lv, i) => { if (list[i + 1]) list[i + 1].lvl = lv; });
+}
 
 const SKILL_DESCS = {
   boneSpikes: 'Bone erupts under the target. Generates 18 Essence.',

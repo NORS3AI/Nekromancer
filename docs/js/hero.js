@@ -417,16 +417,22 @@ const Hero = {
     return SKILL_DATA.filter(s => s.lvl <= this.level);
   },
 
-  // Ensure the loadout only references unlocked skills.
+  // Ensure the loadout is a category-locked 6-slot bar of unlocked skills.
+  // Slot i holds a skill of LOADOUT_CATS[i]; old/elective loadouts migrate by
+  // dropping each skill into its category's slot (first valid wins).
   sanitize() {
-    // Normalize to the 6-slot Diablo action bar (primary · secondary · 1-4).
-    while (this.loadout.length < 6) this.loadout.push(null);
-    if (this.loadout.length > 6) this.loadout.length = 6;
-    for (let i = 0; i < this.loadout.length; i++) {
-      const id = this.loadout[i];
-      if (id && !SKILL_DATA.some(s => s.id === id && s.lvl <= this.level)) this.loadout[i] = null;
+    const cats = (typeof LOADOUT_CATS !== 'undefined') ? LOADOUT_CATS
+      : ['primary', 'secondary', 'corpse', 'reanim', 'curse', 'blood'];
+    const next = [null, null, null, null, null, null];
+    for (const id of (this.loadout || [])) {
+      if (!id) continue;
+      const s = SKILL_DATA.find(x => x.id === id);
+      if (!s || s.lvl > this.level) continue;
+      const ci = cats.indexOf(s.cat);
+      if (ci >= 0 && !next[ci]) next[ci] = id;   // keep the first valid per category
     }
-    if (!this.loadout[0]) this.loadout[0] = 'boneSpikes';
+    if (!next[0]) next[0] = 'boneSpikes';         // always have a primary
+    this.loadout = next;
     // Pad passives to the number of slots (a new lvl-3 slot was added).
     while (this.passives.length < PASSIVE_SLOT_LEVELS.length) this.passives.push(null);
     if (this.passives.length > PASSIVE_SLOT_LEVELS.length) this.passives.length = PASSIVE_SLOT_LEVELS.length;
