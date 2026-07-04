@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.0.3-alpha';
+const GAME_VERSION = 'v1.0.4-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.0.4-alpha', date: 'July 2026',
+    notes: [
+      'Item rarity drops retuned to a full per-difficulty table (ITEM_DROP_TABLE in items.js) — Trash/Common/Magic/Rare/Epic/Legendary/Artifact odds are now set explicitly for every difficulty. Elite/boss/masterwork bonuses still tilt drops upward, and Artifacts remain Torment XVI only'
+    ]
+  },
   {
     v: 'v1.0.3-alpha', date: 'July 2026',
     notes: [

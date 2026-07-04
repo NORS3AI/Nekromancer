@@ -146,12 +146,12 @@ loot at the artisans. The hero is persistent (localStorage).
   6 Artifact (red).** Items carry a **star tier** (`item.stars`, shown as ★,
   +1 affix each) and the lowest common is grey **trash** (`item.trash`). Saves
   migrated via `Hero.migrate` (SAVE_VERSION 3).
-- **Drop table (owner spec)** — `Items.rollRarity` returns the BASE rarity only,
-  interpolated Normal→T16 from `DROP_N`/`DROP_T`/`DROP_MAP` (7 entries: trash,
-  common, magic, rare, epic, legendary, artifact): **Normal** trash 3 · common 50
-  · magic 25 · rare 15 · epic 5 · legendary 2; **T16** trash 0 · common/magic/rare
-  15 · epic 20 · legendary 30 · artifact 5. **Star tiers are gated by Torment
-  band, NOT rolled here** (`tormentTier(di)` → 0/1–16):
+- **Drop table (owner spec)** — `Items.rollRarity` returns the BASE rarity by
+  sampling `ITEM_DROP_TABLE` (items.js): one editable row per difficulty index,
+  7 columns `[Trash, Common, Magic, Rare, Epic, Legendary, Artifact]` as percents
+  summing to 100 (mapped via `DROP_MAP`). `boost` (elites/bosses/masterwork) gives
+  successive one-column upgrade chances; Artifact (col 6) is reachable only at T16.
+  **Star tiers are gated by Torment band, NOT rolled here** (`tormentTier(di)` → 0/1–16):
   - `legendaryStars(tt)`: 1★ **T3–T7** · 2★ **T8–T13** · 3★ **T14–T16** (0★ below T3).
   - Artifacts drop **ONLY at T16** (below T16 the artifact slice rolls up as a
     legendary). `artifactStars()`: 1★ 10% · 2★ 7% · 3★ 5% · 4★ 3% · 5★ 1% (else 0★).

@@ -9,28 +9,48 @@ const Items = {
 
   // ------------------------------------------------------------ generation
 
-  // Owner drop table — BASE rarity only, interpolated by difficulty Normal→T16.
-  //   NORMAL: trash 3 · common 50 · magic 25 · rare 15 · epic 5 · legendary 2
-  //   T16:    trash 0 · common 15 · magic 15 · rare 15 · epic 20 · legendary 30 · artifact 5
-  // Star tiers are NOT rolled here — they're gated by Torment band afterwards
-  // (legendaryStars / artifactStars). Artifacts drop ONLY at T16 (owner rule).
-  // `boost` (elites/bosses/masterwork) nudges toward the top; negative tilts down.
-  DROP_N: [0.03, 0.50, 0.25, 0.15, 0.05, 0.020, 0.000],
-  DROP_T: [0.00, 0.15, 0.15, 0.15, 0.20, 0.300, 0.050],
+  // BASE rarity drop table (owner-tuned) — one editable row per difficulty index
+  // (0 Normal … 3 Master, 4 Torment I … 19 Torment XVI). 7 columns, as percents:
+  //   [Trash, Common, Magic, Rare, Epic, Legendary, Artifact]  (each row sums 100)
+  // Artifacts are non-zero only at T16 (owner rule). Star tiers are NOT rolled
+  // here — gated by Torment band afterwards (legendaryStars / artifactStars).
   DROP_MAP: [
     { r: 0, trash: true }, { r: 0 }, { r: 1 }, { r: 2 }, { r: 3 }, { r: 4 }, { r: 6 }
   ],
+  ITEM_DROP_TABLE: [
+    [60, 40,  0,  0,  0,  0,  0],  // Normal
+    [40, 50, 10,  0,  0,  0,  0],  // Hard
+    [30, 60,  9,  1,  0,  0,  0],  // Expert
+    [20, 50, 20,  9,  0,  1,  0],  // Master
+    [10, 40, 40,  8,  2,  0,  0],  // Torment I
+    [ 8, 40, 30, 15,  7,  0,  0],  // Torment II
+    [ 6, 30, 25, 28, 10,  1,  0],  // Torment III
+    [ 3, 25, 30, 30, 10,  2,  0],  // Torment IV
+    [ 1, 20, 30, 35, 12,  2,  0],  // Torment V
+    [ 0, 15, 30, 35, 16,  4,  0],  // Torment VI
+    [ 0, 10, 25, 40, 20,  5,  0],  // Torment VII
+    [ 0,  4, 25, 40, 25,  6,  0],  // Torment VIII
+    [ 0,  2, 20, 35, 37,  6,  0],  // Torment IX
+    [ 0,  0, 18, 35, 40,  7,  0],  // Torment X
+    [ 0,  0, 15, 30, 45, 10,  0],  // Torment XI
+    [ 0,  0, 10, 25, 55, 10,  0],  // Torment XII
+    [ 0,  0,  0, 10, 80, 10,  0],  // Torment XIII
+    [ 0,  0,  0,  0, 80, 20,  0],  // Torment XIV
+    [ 0,  0,  0,  0, 70, 30,  0],  // Torment XV
+    [ 0,  0,  0,  0, 55, 40,  5]   // Torment XVI
+  ],
+  // Roll a base rarity. `boost` (elites/bosses/masterwork) gives a chance to
+  // upgrade the rolled rarity one column at a time (Artifact only reachable at T16).
   rollRarity(boost = 0) {
-    const di = Hero.difficulty || 0;                    // 0 (Normal) … 19 (T16)
-    let t = clamp(di / 19 + boost * 0.35, 0, 1);
-    if (Hero.level >= 70) t = Math.max(t, 0.12);        // endgame floor
-    const p = this.DROP_N.map((n, i) => n + (this.DROP_T[i] - n) * t);
-    // Artifacts drop ONLY at Torment XVI; below that, that slice rolls up as a
-    // legendary instead.
-    if (tormentTier(di) < 16) { p[5] += p[6]; p[6] = 0; }
-    let x = Math.random(), acc = 0;
-    for (let i = 0; i < p.length; i++) { acc += p[i]; if (x < acc) return this.DROP_MAP[i]; }
-    return { r: 0 };
+    const di = clamp(Hero.difficulty || 0, 0, this.ITEM_DROP_TABLE.length - 1);
+    const row = this.ITEM_DROP_TABLE[di];
+    let total = 0; for (const w of row) total += w;
+    let x = Math.random() * total, acc = 0, col = 0;
+    for (let i = 0; i < row.length; i++) { col = i; acc += row[i]; if (x < acc) break; }
+    const topCol = tormentTier(di) >= 16 ? 6 : 5;       // artifact (col 6) only at T16
+    let b = boost;
+    while (b > 0 && col < topCol && Math.random() < b) { col++; b -= 0.5; }
+    return this.DROP_MAP[col];
   },
 
   // Legendary star tier by Torment band (owner spec): 1★ at T3–T7, 2★ at
