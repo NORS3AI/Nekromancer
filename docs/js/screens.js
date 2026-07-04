@@ -1818,15 +1818,22 @@ const Screens = {
       ctx.beginPath(); ctx.arc(sx, y + sR, sR, 0, TAU); ctx.stroke();
       drawSkillIcon(ctx, id, sx, y + sR, sR - 3);
       ctx.globalAlpha = 1;
+      // Unlock-level badge on top so the art never clips it.
       if (locked) {
-        ctx.fillStyle = '#e0402f'; ctx.font = 'bold 11px Georgia'; ctx.textAlign = 'center';
-        ctx.fillText(s.lvl, sx, y + sR * 0.05);
+        ctx.fillStyle = 'rgba(10,7,14,0.9)';
+        ctx.beginPath(); ctx.arc(sx, y - 1, 10, 0, TAU); ctx.fill();
+        ctx.strokeStyle = '#e0402f'; ctx.lineWidth = 1.3;
+        ctx.beginPath(); ctx.arc(sx, y - 1, 10, 0, TAU); ctx.stroke();
+        ctx.fillStyle = '#ff6a5a'; ctx.font = 'bold 11px Georgia';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(s.lvl, sx, y - 0.5); ctx.textBaseline = 'alphabetic';
       }
       ctx.fillStyle = locked ? '#6f6552' : sel ? '#ffd76a' : '#b5ab94';
       ctx.font = (sel ? 'bold ' : '') + '9px Georgia'; ctx.textAlign = 'center';
       ctx.fillText(this.fitText(ctx, s.name, sCell - 4), sx, y + sR * 2 + 12);
-      UI.register(sx - sR - 2, y - 2, sR * 2 + 4, sR * 2 + 18, () => {
-        if (locked) { UI.toast(s.name + ' unlocks at level ' + s.lvl, '#9a9080'); AudioSys.sfx('denied'); return; }
+      // Selecting a locked skill is allowed (to READ it); ACCEPT stays disabled
+      // until you reach the unlock level.
+      UI.register(sx - sR - 2, y - 12, sR * 2 + 4, sR * 2 + 28, () => {
         UI.sel.chSkill = id;
         UI.sel.chRune = Hero.runes[id] || 'base';
       });
@@ -1846,16 +1853,11 @@ const Screens = {
       const rx = px + ri * rCell + rCell / 2;
       const locked = rune.lvl && Hero.level < rune.lvl;
       const sel = UI.sel.chRune === rune.id;
-      if (locked && rune.lvl) {
-        ctx.fillStyle = '#e0402f'; ctx.font = 'bold 10px Georgia'; ctx.textAlign = 'center';
-        ctx.fillText(rune.lvl, rx, y - 3);
-      }
       ctx.globalAlpha = locked ? 0.4 : 1;
       if (ri === 0) {
         // "No Rune" — a plain empty socket.
         ctx.strokeStyle = sel ? '#6ff7c3' : '#6b5f80'; ctx.lineWidth = sel ? 3 : 1.5;
         ctx.beginPath(); ctx.arc(rx, y + rR, rR - 2, 0, TAU); ctx.stroke();
-        ctx.fillStyle = '#6b5f80'; ctx.font = '9px Georgia'; ctx.textAlign = 'center';
       } else {
         drawRuneStone(ctx, rx, y + rR, rR, 0, runeBase + ri);
         if (sel) {
@@ -1865,12 +1867,23 @@ const Screens = {
       }
       ctx.globalAlpha = 1;
       ctx.fillStyle = locked ? '#6f6552' : sel ? '#6ff7c3' : '#b5ab94';
-      ctx.font = (sel ? 'bold ' : '') + '8px Georgia'; ctx.textAlign = 'center';
+      ctx.font = (sel ? 'bold ' : '') + '8px Georgia'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
       ctx.fillText(this.fitText(ctx, ri === 0 ? 'No Rune' : rune.name, rCell - 2), rx, y + rR * 2 + 10);
-      UI.register(rx - rR - 1, y - 2, rR * 2 + 2, rR * 2 + 14, () => {
-        if (locked) { UI.toast(rune.name + ' unlocks at level ' + rune.lvl, '#9a9080'); AudioSys.sfx('denied'); return; }
-        UI.sel.chRune = rune.id;
-      });
+      // Unlock-level badge drawn ON TOP (a dark chip) so the rune art never clips it.
+      if (locked && rune.lvl) {
+        const bx = rx, byy = y - 1;
+        ctx.fillStyle = 'rgba(10,7,14,0.9)';
+        ctx.beginPath(); ctx.arc(bx, byy, 9, 0, TAU); ctx.fill();
+        ctx.strokeStyle = '#e0402f'; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.arc(bx, byy, 9, 0, TAU); ctx.stroke();
+        ctx.fillStyle = '#ff6a5a'; ctx.font = 'bold 10px Georgia';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(rune.lvl, bx, byy + 0.5);
+        ctx.textBaseline = 'alphabetic';
+      }
+      // Selecting a locked rune is allowed (to READ it); it just won't apply
+      // until you reach the level (Hero.rune() gates usage).
+      UI.register(rx - rR - 1, y - 10, rR * 2 + 2, rR * 2 + 22, () => { UI.sel.chRune = rune.id; });
     });
     y += rR * 2 + 20;
 
@@ -2634,7 +2647,19 @@ const Screens = {
     const colW = twoCol ? (pw - 44) / 2 : pw - 32;
     const lx = px + 16;
     const rx = twoCol ? px + 28 + colW : lx;
-    let ly = py + 56, ry = py + 56;
+
+    // Scrollable body — the columns stack tall on phones, so the whole sheet
+    // (Combat, Journey, Holdings, ANALYSIS) drag-scrolls; the campfire button
+    // stays pinned below.
+    const bodyTop = py + 44;
+    const footTop = py + ph - 46;
+    const viewH = footTop - bodyTop;
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
+    UI.sel.scrollY = scrollY;
+    UI.sel.scrollRegion = { x: px + 2, y: bodyTop, w: pw - 4, h: viewH };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(px + 2, bodyTop, pw - 4, viewH); ctx.clip();
+    let ly = bodyTop + 14 - scrollY, ry = bodyTop + 14 - scrollY;
 
     const line = (x, yv, label, value, color = '#e8e0cc') => {
       ctx.textAlign = 'left';
@@ -2685,15 +2710,22 @@ const Screens = {
     ry = line(rx, ry, 'Bag', Hero.bagUsed() + ' / ' + Hero.BAG_SIZE);
     ry += 6;
 
-    // Analysis (leave room for the campfire button at the very bottom).
+    // Analysis — every tip is drawn; the body scrolls if it overflows.
     ry = header(rx, ry, '— ANALYSIS —', '#e04a5a');
     ctx.textAlign = 'left';
     ctx.font = '11px Georgia';
     ctx.fillStyle = '#b5ab94';
     for (const tip of this.analyze(s)) {
-      if (ry > py + ph - 50) break;
-      ry = wrapText(ctx, '• ' + tip, rx, ry, colW, 14, 2) + 3;
+      ry = wrapText(ctx, '• ' + tip, rx, ry, colW, 14, 3) + 3;
     }
+    ctx.restore();
+
+    // Scroll extent (from the taller column) + drag hints.
+    const contentBot = Math.max(ly, ry) + scrollY;
+    UI.sel.scrollMax = Math.max(0, (contentBot - (bodyTop + 14)) - viewH + 16);
+    ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+    if (scrollY > 1) ctx.fillText('▲ drag ▲', W / 2, bodyTop + 2);
+    if (scrollY < UI.sel.scrollMax - 1) ctx.fillText('▼ drag for more ▼', W / 2, footTop - 2);
 
     // Leave to the campfire roster — switch to another hero or make a new one.
     UI.btn(ctx, px + 16, py + ph - 40, pw - 32, 30, '⌂  CAMPFIRE — CHANGE HERO', () => {

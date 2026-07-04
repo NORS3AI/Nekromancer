@@ -551,6 +551,27 @@ const Game = {
     const item = Items.generate(mLvl + 1, 0.3);
     Items.stash(item);
     lines.push([item.name, RARITIES[item.rarity].color]);
+
+    // Every THREE bounties yields a HORADRIC STASH — the same loot as a Normal
+    // Rift (gold, souls, a gem, and a chance at a Nephalem Rift Key).
+    if (this.zoneIdx >= 0) {
+      Hero.bountyProgress = (Hero.bountyProgress || 0) + 1;
+      if (Hero.bountyProgress >= 3) {
+        Hero.bountyProgress = 0;
+        const cGold = Math.round((500 + mLvl * 70) * diff.reward);
+        Hero.gold += cGold; Hero.mats.soul += 2;
+        const cGem = Items.dropGem(); Hero.gems.push(cGem);
+        let keyLine = 'No rift key this time';
+        if (Math.random() < 0.45) { Hero.riftKeys += 1; keyLine = '1× Nephalem Rift Key'; }
+        lines.push(['◈ HORADRIC STASH — 3 bounties!', '#8fb0e8']);
+        lines.push([cGold + ' gold  ·  2× Forgotten Souls', '#ffd76a']);
+        lines.push([gemName(cGem), GEM_TYPES[cGem.type].color]);
+        lines.push([keyLine, keyLine[0] === '1' ? '#b06adf' : '#9a9080']);
+        AudioSys.sfx('setdrop');
+      } else {
+        lines.push(['Bounties toward Horadric Stash: ' + Hero.bountyProgress + ' / 3', '#8fb0e8']);
+      }
+    }
     this.rewardTitle = 'BOUNTY COMPLETE';
     this.rewardLines = lines;
 

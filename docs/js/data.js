@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.9.0-alpha';
+const GAME_VERSION = 'v0.9.1-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.9.1-alpha', date: 'July 2026',
+    notes: [
+      'NEW — every 3 Bounties you finish awards a HORADRIC STASH: the same loot as a Normal Rift (gold, Forgotten Souls, a gem, and a chance at a Nephalem Rift Key). The reward screen tracks your progress (x / 3)',
+      'FIX: the character sheet now SCROLLS (drag up/down) so the ANALYSIS section is reachable on phones',
+      'FIX: a rune\'s unlock level is no longer hidden behind the rune art — it shows as a clear badge on top',
+      'You can now tap a locked skill or rune in the chooser to READ it; it just can\'t be equipped/used until you reach its level'
+    ]
+  },
   {
     v: 'v0.9.0-alpha', date: 'July 2026',
     notes: [
