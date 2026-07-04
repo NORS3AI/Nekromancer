@@ -18,25 +18,31 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.7.2-alpha';
+const GAME_VERSION = 'v0.6.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
   {
-    v: 'v0.7.2-alpha', date: 'July 2026',
+    v: 'v0.6.0-alpha', date: 'July 2026',
+    notes: [
+      'Character stats now track "Story acts finished" (out of 100 planned) instead of "Lands cleared"'
+    ]
+  },
+  {
+    v: 'v0.5.9-alpha', date: 'July 2026',
     notes: [
       'The character sheet now has a "⌂ CAMPFIRE — CHANGE HERO" button — leave to the campfire roster to switch to another Nekromancer or create a new one, without restarting'
     ]
   },
   {
-    v: 'v0.7.1-alpha', date: 'July 2026',
+    v: 'v0.5.8-alpha', date: 'July 2026',
     notes: [
       'The buyable space upgrade is your INVENTORY (the bag that fills from combat loot & crafting) — the EXPAND button now lives in the Inventory screen, not the Stash, so it is never confused with the shared vault'
     ]
   },
   {
-    v: 'v0.7.0-alpha', date: 'July 2026',
+    v: 'v0.5.7-alpha', date: 'July 2026',
     notes: [
       'NEW — up to THREE characters at once. No more deleting a hero to make room. Pick "Choose Your Hero" on the title screen',
       'NEW — a CAMPFIRE roster scene: your Nekromancers stand around a crackling fire (one behind it, two to the sides), drawn in pseudo-3D with warm firelight instead of a list of buttons. Tap a hero to play, tap an empty spot to create one, tap the ✕ to retire one. The Stash is shared across all your heroes',
@@ -44,7 +50,7 @@ const PATCH_NOTES = [
     ]
   },
   {
-    v: 'v0.6.0-alpha', date: 'July 2026',
+    v: 'v0.5.6-alpha', date: 'July 2026',
     notes: [
       'NEW — CHARACTER CREATION: starting a new Nekromancer now lets you NAME your hero and choose your glowing-eye colour (green, yellow, red, blue, cyan, white, black, purple or pink). Your name shows in camp and on the character sheet',
       'Map edges no longer end in a solid wall — they now dissolve into FOG with a distant skyline beyond (forest, mountains, ocean or snow by land), so every place feels far bigger than its walkable bounds',

@@ -456,6 +456,7 @@ const Game = {
     // Finishing an Act of Story Mode: a bigger cache, and the run ends.
     if (this.story) {
       this.story = false;
+      Hero.actsCleared = Math.max(Hero.actsCleared || 0, this.storyAct || 1);
       const gold = Math.round((900 + mLvl * 90) * diff.reward);
       Hero.gold += gold;
       const lines = [[gold + ' gold', '#ffd76a']];

@@ -83,6 +83,7 @@ const Hero = {
   loadout: ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null],
   passives: [null, null, null, null, null],
   zonesCleared: 0,          // count of lands beaten (unlocks the next)
+  actsCleared: 0,           // Story Mode acts finished (of 100 planned)
   difficulty: 0,
   bestZone: 0,
   totalKills: 0,
@@ -113,6 +114,7 @@ const Hero = {
     this.loadout = ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null];
     this.passives = [null, null, null, null, null];
     this.zonesCleared = 0;
+    this.actsCleared = 0;
     this.difficulty = 0;
     this.bestZone = 0;
     this.totalKills = 0;
@@ -155,7 +157,7 @@ const Hero = {
       level: this.level, xp: this.xp, gold: this.gold, mats: this.mats,
       gems: this.gems, bag: this.bag, equipped: this.equipped,
       loadout: this.loadout, passives: this.passives,
-      zonesCleared: this.zonesCleared, difficulty: this.difficulty,
+      zonesCleared: this.zonesCleared, actsCleared: this.actsCleared, difficulty: this.difficulty,
       bestZone: this.bestZone, totalKills: this.totalKills,
       riftsCleared: this.riftsCleared, riftKeys: this.riftKeys, masterKeys: this.masterKeys,
       artisans: this.artisans, runes: this.runes, cheats: this.cheats,
@@ -199,7 +201,7 @@ const Hero = {
       gems: d.gems || [], bag: d.bag || [], equipped: d.equipped || {},
       loadout: d.loadout || ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null],
       passives: d.passives || [null, null, null, null, null],
-      zonesCleared: d.zonesCleared || 0, difficulty: d.difficulty || 0,
+      zonesCleared: d.zonesCleared || 0, actsCleared: d.actsCleared || 0, difficulty: d.difficulty || 0,
       bestZone: d.bestZone || 0, totalKills: d.totalKills || 0,
       riftsCleared: d.riftsCleared || 0, riftKeys: d.riftKeys || 0, masterKeys: d.masterKeys || 0,
       artisans: (() => {
