@@ -217,9 +217,12 @@ const Game = {
     this.camera.x = this.player.x - this.W / 2;
     this.camera.y = this.player.y - this.H / 2;
 
-    // Difficulty pours on more monsters: bigger packs and extra packs.
+    // Difficulty pours on more monsters: bigger packs and extra packs. A dev
+    // "spawn boost" (Hero.cheats.spawn = +0%…+1000%) scales pack SIZE so the
+    // total roughly multiplies by 1+boost (linear, not compounding).
+    const boost = 1 + (Hero.cheats.spawn || 0);
     const em = DIFFICULTIES[Hero.difficulty].enemyMult || 1;
-    const packSize = () => clamp(Math.round(randInt(3, 5) * em), 3, 14);
+    const packSize = () => clamp(Math.round(randInt(3, 5) * em * boost), 3, Math.round(14 * boost));
     const spawnPack = (x, y, eliteChance) => {
       const eliteLeader = Math.random() < eliteChance;
       const rareLeader = eliteLeader && Math.random() < 0.3;   // ~30% of elites are rare (purple)

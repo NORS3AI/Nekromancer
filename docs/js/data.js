@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.7.9-alpha';
+const GAME_VERSION = 'v0.8.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.8.0-alpha', date: 'July 2026',
+    notes: [
+      'Settings now SCROLL by touch (drag up/down) instead of ▲/▼ arrows — and the "GAMEPLAY" heading no longer overlaps the Weather slider',
+      'Tapping "Game creator" now opens a proper about card — the game, its creator (Sterling Grant) and version — with a checkbox below to enable the dev panel',
+      'Dev panel: a slider to boost enemy spawns in ALL difficulties, +0% up to +1000% (kept per hero) — great for stress-testing the horde',
+      'The Town Portal now includes INVENTORY (above Blacksmith), so you can manage gear mid-run, not just drop and go'
+    ]
+  },
   {
     v: 'v0.7.9-alpha', date: 'July 2026',
     notes: [

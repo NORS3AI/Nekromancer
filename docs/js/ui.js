@@ -355,7 +355,7 @@ const UI = {
     let cb;
     if (this.townMode) {
       if (this.screen === 'town') cb = () => { this.townMode = false; this.close(); };
-      else if (['smith', 'jeweler', 'mystic', 'stash', 'torches'].includes(this.screen)) cb = () => this.open('town');
+      else if (['smith', 'jeweler', 'mystic', 'stash', 'torches', 'radial'].includes(this.screen)) cb = () => this.open('town');
     }
     Screens.closeX(ctx, W, { x: W - 26 - s.right, y: 26 + s.top, cb });
   },

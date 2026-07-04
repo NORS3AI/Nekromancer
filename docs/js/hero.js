@@ -92,7 +92,7 @@ const Hero = {
   masterKeys: 0,        // Master Nephalem Rift Keys (open Season rifts)
   artisans: { smith: 1, mystic: 1, jeweler: 1 },
   runes: {},                          // skillId -> rune id
-  cheats: { god: false, essence: false }, // dev panel, kept per save
+  cheats: { god: false, essence: false, spawn: 0 }, // dev panel, kept per save
   bagTier: 0,               // purchased bag expansions (0 = base 24)
   BAG_SIZE: 24,             // derived from bagTier via applyBagSize()
   STASH_SIZE: 100,
@@ -123,7 +123,7 @@ const Hero = {
     this.masterKeys = 0;
     this.artisans = { smith: 1, mystic: 1, jeweler: 1 };
     this.runes = {};
-    this.cheats = { god: false, essence: false };
+    this.cheats = { god: false, essence: false, spawn: 0 };
     this.bagTier = 0;
     this.applyBagSize();
   },
@@ -210,7 +210,7 @@ const Hero = {
         return a;
       })(),
       runes: d.runes || {},
-      cheats: Object.assign({ god: false, essence: false }, d.cheats),
+      cheats: Object.assign({ god: false, essence: false, spawn: 0 }, d.cheats),
       bagTier: clamp(d.bagTier || 0, 0, BAG_UPGRADES.length)
     });
     this.applyBagSize();

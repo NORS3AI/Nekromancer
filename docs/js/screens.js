@@ -569,8 +569,8 @@ const Screens = {
     this.dim(ctx, W, H);
     const pw = Math.min(440, W - 20);
     const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 40, 440);
-    const py = Math.max(20, H / 2 - ph / 2);
+    const ph = Math.min(H - 30, 486);
+    const py = Math.max(15, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, 'TOWN PORTAL');
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'italic 12px Georgia';
@@ -579,6 +579,7 @@ const Screens = {
 
     let y = py + 82;
     const stops = [
+      ['🎒   INVENTORY', () => UI.open('radial'), '#6ff7c3', '#3a7a6a'],
       ['⚒   BLACKSMITH', () => UI.open('smith'), '#ffb43a', '#8a6f4a'],
       ['◆   JEWELER', () => UI.open('jeweler'), '#4ecbe0', '#2a6a7a'],
       ['✦   MYSTIC', () => UI.open('mystic'), '#b06adf', '#7a4a8f'],
@@ -2559,16 +2560,16 @@ const Screens = {
       UI.btn(ctx, px + 16 + i * (tw + 8), py + 40, tw, 30, t[1], () => { UI.sel.stab = t[0]; UI.sel.rebindAction = null; },
         { size: 12, bg: UI.sel.stab === t[0] ? 'rgba(60,52,78,0.95)' : undefined });
     });
+    UI.sel.scrollRegion = null;   // (options tab sets its own below; others don't scroll)
     if (UI.sel.stab === 'saves') { this.savesTab(ctx, W, H, px, py, pw, ph); return; }
     if (UI.sel.stab === 'keys') { this.keysTab(ctx, W, H, px, py, pw, ph); return; }
 
-    // The options list can exceed the panel on phones — scroll it (▲/▼), with
-    // the content clipped to the panel body below the tabs. A ▲/▼ row is
-    // reserved at the bottom when the content overflows.
-    const overflowing = (UI.sel.setMax || 0) > 0;
-    const bodyTop = py + 78, bodyBot = py + ph - 8 - (overflowing ? 34 : 0);
-    const sc = clamp(UI.sel.setScroll || 0, 0, UI.sel.setMax || 0);
-    UI.sel.setScroll = sc;
+    // The options list can exceed the panel on phones — DRAG it up/down to
+    // scroll (touch/mouse/wheel), clipped to the panel body below the tabs.
+    const bodyTop = py + 78, bodyBot = py + ph - 8;
+    const sc = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
+    UI.sel.scrollY = sc;
+    UI.sel.scrollRegion = { x: px + 2, y: bodyTop, w: pw - 4, h: bodyBot - bodyTop };
     ctx.save();
     ctx.beginPath(); ctx.rect(px + 2, bodyTop, pw - 4, bodyBot - bodyTop); ctx.clip();
 
@@ -2609,7 +2610,7 @@ const Screens = {
 
     // ---- gameplay (Diablo-Immortal-style options) ----
     let gx = twoCol ? px + 28 + colW : px + 16;
-    let gy = twoCol ? py + 106 - sc : ay + 8;
+    let gy = twoCol ? py + 106 - sc : ay + 24;   // clear the last audio slider
     ctx.textAlign = 'left';
     ctx.font = 'bold 12px Georgia';
     ctx.fillStyle = '#57b894';
@@ -2683,13 +2684,13 @@ const Screens = {
     ctx.restore();   // end scroll clip
 
     // How far the content overruns the panel body → the scrollable range.
-    UI.sel.setMax = Math.max(0, (gy + sc + abh + 12) - bodyBot);
-    if (UI.sel.setMax > 0 || overflowing) {
-      const half = (pw - 40) / 2, ry = py + ph - 34;
-      UI.btn(ctx, px + 16, ry, half, 26, '▲', sc > 0 ? () => { UI.sel.setScroll = Math.max(0, sc - 100); } : null,
-        { size: 13, disabled: sc <= 0 });
-      UI.btn(ctx, px + 24 + half, ry, half, 26, '▼', sc < UI.sel.setMax ? () => { UI.sel.setScroll = Math.min(UI.sel.setMax, sc + 100); } : null,
-        { size: 13, disabled: sc >= UI.sel.setMax });
+    UI.sel.scrollMax = Math.max(0, (gy + sc + abh + 12) - bodyBot);
+    if (UI.sel.scrollMax > 0) {
+      ctx.textAlign = 'center';
+      ctx.font = '9px Georgia';
+      ctx.fillStyle = '#6f6552';
+      if (sc > 1) ctx.fillText('▲ drag ▲', W / 2, bodyTop + 3);
+      if (sc < UI.sel.scrollMax - 1) ctx.fillText('▼ drag to scroll ▼', W / 2, bodyBot - 3);
     }
   },
 
@@ -2813,23 +2814,40 @@ const Screens = {
   devconfirm(ctx, W, H) {
     this.dim(ctx, W, H);
     // (red ✕ drawn globally by UI.draw, above all content)
-    const pw = Math.min(360, W - 30);
+    const pw = Math.min(400, W - 30);
     const px = W / 2 - pw / 2;
-    const py = H / 2 - 90;
-    UI.panel(ctx, px, py, pw, 180, 'DEVELOPER');
+    const ph = 306;
+    const py = Math.max(16, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, 'THE CREATOR');
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = '13px Georgia';
-    ctx.fillStyle = '#c9bfa8';
-    ctx.fillText('Would you like to open the dev panel?', W / 2, py + 58);
+    ctx.font = 'bold 19px Georgia';
+    ctx.fillStyle = '#6ff7c3';
+    ctx.fillText('NEKROMANCER', W / 2, py + 48);
+    ctx.font = 'italic 11px Georgia';
+    ctx.fillStyle = '#9a9080';
+    ctx.fillText('A Diablo-inspired dungeon-crawling ARPG', W / 2, py + 68);
+    ctx.font = 'bold 13px Georgia';
+    ctx.fillStyle = '#ffd76a';
+    ctx.fillText('Created by Sterling Grant', W / 2, py + 96);
+    ctx.font = '11px Georgia';
+    ctx.fillStyle = '#b5ab94';
+    wrapText(ctx, 'A fan-built game made with love for the Necromancers of Rathma.  ·  2026', W / 2, py + 116, pw - 54, 15, 3);
+    ctx.font = '10px Georgia';
+    ctx.fillStyle = '#6f6552';
+    ctx.fillText('Pure HTML / CSS / JS · no engine · everything procedural', W / 2, py + 158);
+    ctx.fillStyle = '#57b894';
+    ctx.fillText(GAME_VERSION, W / 2, py + 176);
+
+    // Dev-panel gate (checkbox reveals the button).
     if (UI.sel.devToggle === undefined) UI.sel.devToggle = false;
-    UI.check(ctx, px + pw / 2 - 60, py + 76, UI.sel.devToggle, () => {
+    UI.check(ctx, W / 2 - 66, py + 198, UI.sel.devToggle, () => {
       UI.sel.devToggle = !UI.sel.devToggle;
-    }, 'yes, I am sure');
+    }, 'Enable dev panel');
     const bw = (pw - 44) / 2;
-    UI.btn(ctx, px + 16, py + 118, bw, 38, 'OPEN',
+    UI.btn(ctx, px + 16, py + ph - 52, bw, 38, '☠ DEV PANEL',
       UI.sel.devToggle ? () => UI.open('cheats') : null,
       { size: 13, disabled: !UI.sel.devToggle, border: '#c22843', color: '#e04a5a' });
-    UI.btn(ctx, px + 28 + bw, py + 118, bw, 38, 'CANCEL', () => UI.close(), { size: 13 });
+    UI.btn(ctx, px + 28 + bw, py + ph - 52, bw, 38, 'CLOSE', () => UI.close(), { size: 13 });
   },
 
   // Grant a specific legendary (at level 70+) straight to the Stash.
@@ -2847,21 +2865,33 @@ const Screens = {
     // (red ✕ drawn globally by UI.draw, above all content)
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 16, 548);
+    const ph = Math.min(H - 16, 594);
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, '☠ DEV CHEATS ☠');
-    let y = py + 50;
+    let y = py + 48;
 
     // Toggles — kept per save.
     UI.check(ctx, px + 16, y, Hero.cheats.god, () => {
       Hero.cheats.god = !Hero.cheats.god;
       Hero.save();
     }, 'Immortality (god mode)');
-    y += 34;
+    y += 32;
     UI.check(ctx, px + 16, y, Hero.cheats.essence, () => {
       Hero.cheats.essence = !Hero.cheats.essence;
       Hero.save();
     }, 'Infinite essence (mana/rage/energy)');
+    y += 36;
+
+    // Enemy spawn boost — multiplies pack sizes & counts in ALL difficulties,
+    // +0% … +1000% (dev stress test). Applies to the next zone you enter.
+    ctx.textAlign = 'left'; ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
+    ctx.fillText('Enemy spawn boost', px + 16, y + 6);
+    ctx.textAlign = 'right'; ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#ffb43a';
+    ctx.fillText('+' + Math.round((Hero.cheats.spawn || 0) * 100) + '%', px + pw - 16, y + 6);
+    UI.slider(ctx, px + 16, y + 12, pw - 32, clamp((Hero.cheats.spawn || 0) / 10, 0, 1), v => {
+      Hero.cheats.spawn = Math.round(v * 100) / 10;   // 0..10 in 10% steps
+      Hero.save();
+    });
     y += 40;
 
     const row = (label, cb, color = '#e8e0cc') => {
