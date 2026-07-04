@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.9.9-alpha';
+const GAME_VERSION = 'v1.0.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.0.0-alpha', date: 'July 2026',
+    notes: [
+      'Town-portal Escape flow: in the town-portal menu, Escape returns to the wilds. Inside one of its menus (inventory/blacksmith/jeweler/mystic/stash), Escape steps back to the town-portal menu; pressing Escape again then returns to the wilds — matching the red ✕'
+    ]
+  },
   {
     v: 'v0.9.9-alpha', date: 'July 2026',
     notes: [

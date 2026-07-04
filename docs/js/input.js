@@ -67,10 +67,12 @@ const Input = {
         } else if (action === 'character') UI.screen === 'character' ? UI.close() : UI.open('character');
       }
       if (Game.state === 'playing') {
-        if (action === 'pause') UI.screen ? UI.close() : UI.open('pause');
+        // Escape mirrors the ✕: town-portal sub-menus step back to the town
+        // menu, the town menu exits to the wilds; everything else closes/pauses.
+        if (action === 'pause') UI.screen ? UI.closeAction()() : UI.open('pause');
         else if (action === 'potion' && this.gameplayLive()) Game.player.drinkPotion();
       } else if (action === 'pause') {
-        if (UI.screen) UI.close();
+        if (UI.screen) UI.closeAction()();
         else if (Game.state === 'map') Game.state = 'camp';
       }
 

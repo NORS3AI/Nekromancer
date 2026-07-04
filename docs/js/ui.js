@@ -154,6 +154,23 @@ const UI = {
     this.townMode = false;   // leaving any menu ends town-portal navigation
   },
 
+  // The navigation for the red ✕ / Escape on the CURRENT screen. Most screens
+  // just close, but a few step back to a parent menu instead:
+  //  · recipes → Cube, skillChooser → skills, storyacts → wilds
+  //  · in town-portal mode: an artisan/stash/inventory returns to the town menu,
+  //    and the town menu itself exits back to the wilds (Escape again).
+  // Returns a callback so both the ✕ and the Escape key run identical logic.
+  closeAction() {
+    if (this.screen === 'recipes') return () => this.open('cube');
+    if (this.screen === 'skillChooser') return () => this.open('skills');
+    if (this.screen === 'storyacts') return () => this.open('wilds');
+    if (this.townMode) {
+      if (this.screen === 'town') return () => { this.townMode = false; this.close(); };
+      if (['smith', 'jeweler', 'mystic', 'stash', 'torches', 'radial', 'cube'].includes(this.screen)) return () => this.open('town');
+    }
+    return () => this.close();
+  },
+
   toast(text, color) {
     this.toasts.push({ text, color, until: (Game.time || 0) + 3 });
     if (this.toasts.length > 4) this.toasts.shift();
@@ -350,20 +367,8 @@ const UI = {
   // (some panels used to paint over their own close button on phones).
   drawGlobalClose(ctx, W) {
     const s = this.safe || { top: 0, right: 0 };
-    // Town-portal navigation: the artisans & stash opened from town return TO
-    // town on ✕; town itself (and its ✕) exits back to the wilds.
-    let cb;
-    // The recipe book always returns to the Cube (whether in town or camp).
-    if (this.screen === 'recipes') cb = () => this.open('cube');
-    // The skill/rune chooser always returns to the skills screen.
-    else if (this.screen === 'skillChooser') cb = () => this.open('skills');
-    // The Story menu returns to The Wilds.
-    else if (this.screen === 'storyacts') cb = () => this.open('wilds');
-    else if (this.townMode) {
-      if (this.screen === 'town') cb = () => { this.townMode = false; this.close(); };
-      else if (['smith', 'jeweler', 'mystic', 'stash', 'torches', 'radial', 'cube'].includes(this.screen)) cb = () => this.open('town');
-    }
-    Screens.closeX(ctx, W, { x: W - 26 - s.right, y: 26 + s.top, cb });
+    // ✕ and Escape share one navigation policy (see closeAction).
+    Screens.closeX(ctx, W, { x: W - 26 - s.right, y: 26 + s.top, cb: this.closeAction() });
   },
 
   // ------------------------------------------------------------- HUD parts
