@@ -683,11 +683,6 @@ const Screens = {
         ctx.fillText('!', ex, ey + 0.5);
       }
     });
-
-    ctx.font = '11px Georgia';
-    ctx.fillStyle = '#544d44';
-    ctx.textAlign = 'center';
-    ctx.fillText('Progress: ' + Hero.zonesCleared + ' / ' + ZONES.length + ' lands cleared', W / 2, H - 16);
   },
 
   // -------------------------------------------------------------- wilds
@@ -956,7 +951,7 @@ const Screens = {
         UI.sel.slot = slot;
         UI.sel.item = null;
         UI.sel.gemPick = false;
-        UI.sel.invScroll = 0;   // fresh slot → back to the top of the bag list
+        UI.sel.scrollY = 0;   // fresh slot → back to the top of the bag list
       });
     });
 
@@ -999,9 +994,9 @@ const Screens = {
     const listTop = dy;
     const viewBot = H - 12;
     const viewH = Math.max(60, viewBot - listTop);
-    const scrollY = clamp(UI.sel.invScroll || 0, 0, UI.sel.invMax || 0);
-    UI.sel.invScroll = scrollY;
-    UI.sel.invRegion = { x: dx - 4, y: listTop - 4, w: dw + 8, h: viewH + 8 };
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
+    UI.sel.scrollY = scrollY;
+    UI.sel.scrollRegion = { x: dx - 4, y: listTop - 4, w: dw + 8, h: viewH + 8 };
 
     ctx.save();
     ctx.beginPath();
@@ -1031,7 +1026,7 @@ const Screens = {
           const now = (UI.sel.item === it) ? null : it;
           UI.sel.item = now;
           UI.sel.gemPick = false;
-          if (now) UI.sel.invToBottom = true;   // auto-reveal its action buttons
+          if (now) UI.sel.scrollToBottom = true;   // auto-reveal its action buttons
         }, { bg: selected ? 'rgba(60,52,78,0.95)' : 'rgba(28,24,38,0.92)' });
         ctx.textAlign = 'left';
         ctx.font = 'bold 12px Georgia';
@@ -1089,14 +1084,14 @@ const Screens = {
     ctx.restore();
 
     // Scroll range for next frame; snap to the actions when an item was just picked.
-    UI.sel.invMax = Math.max(0, (c - listTop) - viewH + 6);
-    if (UI.sel.invToBottom) { UI.sel.invScroll = UI.sel.invMax; UI.sel.invToBottom = false; }
+    UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 6);
+    if (UI.sel.scrollToBottom) { UI.sel.scrollY = UI.sel.scrollMax; UI.sel.scrollToBottom = false; }
     // Fade hints when there's more content above/below the fold.
     ctx.textAlign = 'center';
     ctx.font = '9px Georgia';
     ctx.fillStyle = '#6f6552';
     if (scrollY > 1) ctx.fillText('▲ drag ▲', dx + dw / 2, listTop + 4);
-    if (scrollY < (UI.sel.invMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', dx + dw / 2, viewBot - 1);
+    if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', dx + dw / 2, viewBot - 1);
 
     // The socketing popup, drawn over everything.
     if (UI.sel.gemPick) this.gemModal(ctx, W, H);
@@ -1906,6 +1901,14 @@ const Screens = {
     return bits.join(' · ');
   },
 
+  // The numeric token of an affix value ("150%", "18", "3.2"), pulled from its
+  // AFFIX_ROLLS label so range text never drifts from the real formatting.
+  valTok(key, v) {
+    const s = AFFIX_ROLLS[key].label(v);
+    const m = s.match(/[+-]?[\d.]+%?/);
+    return m ? m[0].replace('+', '') : s;
+  },
+
   mystic(ctx, W, H) {
     this.dim(ctx, W, H);
     // (red ✕ drawn globally by UI.draw, above all content)
@@ -1914,6 +1917,7 @@ const Screens = {
     const ph = Math.min(H - 56, 480);
     UI.panel(ctx, px, 46, pw, ph, 'MYRIAM — MYSTIC');
     this.artisanRow(ctx, px, pw, 88, 'mystic', 'ENCHANTING');
+    UI.sel.scrollRegion = null;   // only the detail view (below) is scrollable
 
     // ---- pick an item ----
     if (!UI.sel.item) {
@@ -1946,104 +1950,143 @@ const Screens = {
     }
 
     // ---- pick the affix & confirm ----
+    // Fixed header (BACK + count), a SCROLLABLE middle (card + affix list +
+    // odds), and a PINNED footer (cost + reroll) so the button is always
+    // reachable on phones no matter how many affixes the item has.
     const it = UI.sel.item;
-    UI.btn(ctx, px + 16, 88, 92, 28, '‹ BACK', () => { UI.sel.item = null; UI.sel.affix = null; }, { size: 12 });
+    UI.btn(ctx, px + 16, 88, 92, 28, '‹ BACK', () => { UI.sel.item = null; UI.sel.affix = null; UI.sel.scrollY = 0; }, { size: 12 });
     ctx.textAlign = 'right';
     ctx.font = '11px Georgia';
     ctx.fillStyle = '#9a9080';
     ctx.fillText((it.enchants || 0) + ' enchant' + (it.enchants === 1 ? '' : 's') + ' so far', px + pw - 16, 102);
 
-    let y = this.itemCard(ctx, px + 16, 124, pw - 32, it, null, true);
+    const shortAffix = { dmg: 'Damage', hp: 'Life', crit: 'Crit', ess: 'Essence', reg: 'Life regen', gold: 'Gold find', armor: 'Armor', move: 'Move speed' };
+    if (UI.sel.affix && !affixGroup(UI.sel.affix)) UI.sel.affix = null;   // signatures unselectable
+    const cost = Items.enchantCost(it);
+    const afford = Items.canAfford(cost);
+
+    // Footer geometry (pinned).
+    const footerH = 74;
+    const footerTop = 46 + ph - footerH;
+    const scrollTop = 116;
+    const viewBot = footerTop - 2;
+    const viewH = Math.max(60, viewBot - scrollTop);
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
+    UI.sel.scrollY = scrollY;
+    UI.sel.scrollRegion = { x: px + 2, y: scrollTop, w: pw - 4, h: viewH };
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(px + 2, scrollTop, pw - 4, viewH);
+    ctx.clip();
+    let c = 124;   // content-space cursor; draw at (c - scrollY)
+    const vis = (top, h) => (top - scrollY + h > scrollTop) && (top - scrollY < viewBot);
+
+    c = this.itemCard(ctx, px + 16, c - scrollY, pw - 32, it, null, true) + scrollY;
     ctx.textAlign = 'left';
     ctx.font = 'bold 12px Georgia';
     ctx.fillStyle = '#b06adf';
-    ctx.fillText('CHOOSE WHICH PROPERTY TO REROLL:', px + 16, y + 8);
-    y += 18;
-    const shortAffix = { dmg: 'Damage', hp: 'Life', crit: 'Crit', ess: 'Essence', reg: 'Life regen', gold: 'Gold find', armor: 'Armor', move: 'Move speed' };
-    // Signature affixes can't be selected (they define the legendary).
-    if (UI.sel.affix && !affixGroup(UI.sel.affix)) UI.sel.affix = null;
+    ctx.fillText('CHOOSE WHICH PROPERTY TO REROLL:', px + 16, c - scrollY + 8);
+    c += 18;
     for (const [key, v] of Object.entries(it.stats)) {
       const grp = affixGroup(key);
       const selected = UI.sel.affix === key;
-      UI.btn(ctx, px + 16, y, pw - 32, 30, '', grp ? () => {
-        UI.sel.affix = selected ? null : key;
-      } : null, { bg: selected ? 'rgba(70,44,90,0.95)' : undefined, border: selected ? '#b06adf' : undefined, disabled: !grp });
-      ctx.textAlign = 'left';
-      ctx.font = 'bold 12px Georgia';
-      ctx.fillStyle = !grp ? '#6f6552' : selected ? '#d8b4f0' : '#b5ab94';
-      ctx.fillText(AFFIX_ROLLS[key].label(v), px + 28, y + 15);
-      ctx.textAlign = 'right';
-      ctx.font = '11px Georgia';
-      ctx.fillStyle = !grp ? '#544d44' : selected ? '#b06adf' : '#6a8a5a';
-      ctx.fillText(!grp ? 'signature' : selected ? 'will be rerolled ✦' : AFFIX_GROUP_NAME[grp], px + pw - 28, y + 15);
-      y += 34;
+      const yy = c - scrollY;
+      if (vis(c, 30)) {
+        UI.btn(ctx, px + 16, yy, pw - 32, 30, '', grp ? () => {
+          UI.sel.affix = selected ? null : key;
+        } : null, { bg: selected ? 'rgba(70,44,90,0.95)' : undefined, border: selected ? '#b06adf' : undefined, disabled: !grp });
+        ctx.textAlign = 'left';
+        ctx.font = 'bold 12px Georgia';
+        ctx.fillStyle = !grp ? '#6f6552' : selected ? '#d8b4f0' : '#b5ab94';
+        ctx.fillText(AFFIX_ROLLS[key].label(v), px + 28, yy + 15);
+        ctx.textAlign = 'right';
+        ctx.font = '11px Georgia';
+        ctx.fillStyle = !grp ? '#544d44' : selected ? '#b06adf' : '#6a8a5a';
+        ctx.fillText(!grp ? 'signature' : selected ? 'will be rerolled ✦' : AFFIX_GROUP_NAME[grp], px + pw - 28, yy + 15);
+      }
+      c += 34;
     }
 
-    // Exact reroll odds for the selected property — so it never feels like a
-    // gamble (owner rule). Each outcome in the group has an equal chance.
-    y += 6;
+    // Reroll odds AND the value range of each outcome, so the player sees how
+    // close to a perfect roll they can get (owner rule).
+    c += 6;
     ctx.textAlign = 'left';
     ctx.font = 'bold 11px Georgia';
     ctx.fillStyle = '#9a9080';
     if (UI.sel.affix) {
-      const outs = Items.enchantOutcomes(it, UI.sel.affix);
-      ctx.fillText('REROLL ODDS  ·  ' + AFFIX_GROUP_NAME[affixGroup(UI.sel.affix)] + ' group', px + 16, y + 6);
-      y += 16;
-      ctx.font = '11px Georgia';
-      for (const o of outs) {
-        const pct = Math.round(o.chance * 100) + '%';
-        ctx.textAlign = 'left';
-        ctx.fillStyle = o.current ? '#d8b4f0' : '#b5ab94';
-        ctx.fillText('•  ' + shortAffix[o.key] + (o.current ? '  (new value)' : ''), px + 24, y + 4);
-        ctx.textAlign = 'right';
-        ctx.fillStyle = '#6a8a5a';
-        ctx.fillText(pct, px + pw - 24, y + 4);
-        y += 15;
+      if (vis(c, 14)) ctx.fillText('REROLL ODDS  ·  ' + AFFIX_GROUP_NAME[affixGroup(UI.sel.affix)] + ' group', px + 16, c - scrollY + 6);
+      c += 16;
+      for (const o of Items.enchantOutcomes(it, UI.sel.affix)) {
+        const rng = Items.affixRange(it, o.key);
+        if (vis(c, 26)) {
+          const yy = c - scrollY;
+          ctx.textAlign = 'left';
+          ctx.font = '11px Georgia';
+          ctx.fillStyle = o.current ? '#d8b4f0' : '#b5ab94';
+          ctx.fillText('•  ' + shortAffix[o.key] + (o.current ? '  (new value)' : ''), px + 24, yy + 4);
+          ctx.textAlign = 'right';
+          ctx.fillStyle = '#6a8a5a';
+          ctx.fillText(Math.round(o.chance * 100) + '%', px + pw - 24, yy + 4);
+          // Range line: min–max the roll can land on, plus the current value.
+          ctx.textAlign = 'left';
+          ctx.font = '10px Georgia';
+          ctx.fillStyle = '#8a7f6c';
+          let rtxt = 'rolls ' + this.valTok(o.key, rng.min) + '–' + this.valTok(o.key, rng.max) + ' (max)';
+          if (o.current) rtxt += '   ·   yours ' + this.valTok(o.key, it.stats[o.key]);
+          ctx.fillText(rtxt, px + 34, yy + 18);
+        }
+        c += 28;
       }
-      y += 2;
+      c += 2;
     } else {
-      ctx.fillText('Select a property above to see its reroll odds.', px + 16, y + 6);
-      y += 18;
+      if (vis(c, 14)) ctx.fillText('Select a property to see its reroll odds & value range.', px + 16, c - scrollY + 6);
+      c += 18;
     }
     const maxS = MAX_SOCKETS[it.rarity] || 0;
     const room = (it.sockets || 0) < maxS;
-    ctx.font = '11px Georgia';
-    ctx.fillStyle = room ? '#6ff7c3' : '#6f6552';
-    ctx.fillText(room
-      ? `Rare 10% chance: uncover a gem slot  (${it.sockets || 0}/${maxS})`
-      : `Gem slots maxed for ${RARITIES[it.rarity].name}  (${it.sockets || 0}/${maxS})`,
-      px + 16, y + 4);
-    y += 18;
+    if (vis(c, 14)) {
+      ctx.textAlign = 'left';
+      ctx.font = '11px Georgia';
+      ctx.fillStyle = room ? '#6ff7c3' : '#6f6552';
+      ctx.fillText(room
+        ? `Rare 10% chance: uncover a gem slot  (${it.sockets || 0}/${maxS})`
+        : `Gem slots maxed for ${RARITIES[it.rarity].name}  (${it.sockets || 0}/${maxS})`,
+        px + 16, c - scrollY + 4);
+    }
+    c += 20;
+    ctx.restore();
 
-    const cost = Items.enchantCost(it);
-    const afford = Items.canAfford(cost);
-    y += 4;
-    // Show each cost as owned/needed so you can see your souls at a glance,
-    // red when you're short.
+    UI.sel.scrollMax = Math.max(0, (c - scrollTop) - viewH + 4);
+    // Scroll affordances.
+    ctx.textAlign = 'center';
+    ctx.font = '9px Georgia';
+    ctx.fillStyle = '#6f6552';
+    if (scrollY > 1) ctx.fillText('▲ drag ▲', px + pw / 2, scrollTop + 2);
+    if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag for more ▼', px + pw / 2, viewBot - 1);
+
+    // ---- pinned footer: cost + reroll ----
+    ctx.strokeStyle = '#3a3448';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px + 12, footerTop); ctx.lineTo(px + pw - 12, footerTop); ctx.stroke();
     ctx.textAlign = 'left';
     ctx.font = '11px Georgia';
     let cxp = px + 16;
     ctx.fillStyle = '#9a9080';
-    ctx.fillText('Cost: ', cxp, y + 6); cxp += ctx.measureText('Cost: ').width;
-    const owned = { gold: Hero.gold, parts: Hero.mats.parts, dust: Hero.mats.dust, crystal: Hero.mats.crystal, soul: Hero.mats.soul };
+    ctx.fillText('Cost: ', cxp, footerTop + 14); cxp += ctx.measureText('Cost: ').width;
+    const owned = { gold: Hero.gold, soul: Hero.mats.soul };
     const parts = [];
-    if (cost.gold) parts.push(['gold', owned.gold, cost.gold, '#ffd76a']);
-    if (cost.parts) parts.push(['parts', owned.parts, cost.parts, MATERIALS.parts.color]);
-    if (cost.dust) parts.push(['dust', owned.dust, cost.dust, MATERIALS.dust.color]);
-    if (cost.crystal) parts.push(['crystals', owned.crystal, cost.crystal, MATERIALS.crystal.color]);
-    if (cost.soul) parts.push(['soul' + (cost.soul > 1 ? 's' : ''), owned.soul, cost.soul, MATERIALS.soul.color]);
+    if (cost.gold) parts.push(['gold', owned.gold, cost.gold]);
+    if (cost.soul) parts.push(['soul' + (cost.soul > 1 ? 's' : ''), owned.soul, cost.soul]);
     parts.forEach(([name, have, need], i) => {
-      const txt = need + '/' + have + ' ' + name;   // cost / what you have
+      const txt = need + '/' + have + ' ' + name;
       ctx.fillStyle = have >= need ? '#c9bfa8' : '#e04a5a';
-      ctx.fillText(txt, cxp, y + 6); cxp += ctx.measureText(txt).width;
-      if (i < parts.length - 1) { ctx.fillStyle = '#6f6552'; ctx.fillText('  ·  ', cxp, y + 6); cxp += ctx.measureText('  ·  ').width; }
+      ctx.fillText(txt, cxp, footerTop + 14); cxp += ctx.measureText(txt).width;
+      if (i < parts.length - 1) { ctx.fillStyle = '#6f6552'; ctx.fillText('  ·  ', cxp, footerTop + 14); cxp += ctx.measureText('  ·  ').width; }
     });
-    ctx.fillStyle = '#6f6552';
-    ctx.fillText('Each enchant on this item raises the next one\'s price.', px + 16, y + 21);
-    y += 32;
-    UI.btn(ctx, px + 16, y, pw - 32, 38,
+    UI.btn(ctx, px + 16, footerTop + 24, pw - 32, 38,
       !UI.sel.affix ? 'SELECT A PROPERTY ABOVE'
-        : !afford ? 'NOT ENOUGH GOLD OR MATERIALS'
+        : !afford ? 'NOT ENOUGH GOLD OR SOULS'
         : 'REROLL ' + AFFIX_ROLLS[UI.sel.affix].label(it.stats[UI.sel.affix]).toUpperCase(),
       (UI.sel.affix && afford) ? () => {
         Items.enchant(it, UI.sel.affix);

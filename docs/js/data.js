@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.7.2-alpha';
+const GAME_VERSION = 'v0.7.3-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.7.3-alpha', date: 'July 2026',
+    notes: [
+      'MYSTIC screen now SCROLLS — drag the middle (card + property list + odds) while the cost and REROLL button stay pinned at the bottom, so nothing runs off a phone screen no matter how many affixes an item has',
+      'Reroll odds now show each outcome\'s VALUE RANGE and the max, plus your current roll — e.g. "Damage · rolls 12–150% (max) · yours 142%" — so you know how close to perfect you are before spending',
+      'Removed the leftover "lands cleared" line at the bottom of the camp screen'
+    ]
+  },
   {
     v: 'v0.7.2-alpha', date: 'July 2026',
     notes: [

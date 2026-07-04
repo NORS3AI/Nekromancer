@@ -705,32 +705,32 @@ const UI = {
   },
   endDps() { if (this.dpsDrag) { this.dpsDrag = null; Settings.save(); } },
 
-  // ---- Inventory list drag-scroll (mouse + touch) ----
-  // Claims a touch that starts inside the radial inventory's scroll region so a
-  // vertical drag scrolls the bag list instead of firing a button. A tap that
-  // never moves is forwarded to click() on release, so selecting still works.
-  startInvScroll(x, y, id) {
-    if (this.screen !== 'radial') return false;
-    const r = this.sel.invRegion;
+  // ---- Generic menu drag-scroll (mouse + touch) ----
+  // Any overlay that sets `UI.sel.scrollRegion` (+ scrollY/scrollMax each frame)
+  // becomes scrollable: a touch/drag that starts inside the region scrolls it
+  // instead of firing a button; a tap that never moves is forwarded to click()
+  // on release, so buttons still work. Used by the inventory and the Mystic.
+  startDragScroll(x, y, id) {
+    const r = this.sel.scrollRegion;
     if (!r) return false;
     if (x < r.x || x > r.x + r.w || y < r.y || y > r.y + r.h) return false;
-    this.invDrag = { id, sx: x, sy: y, start: this.sel.invScroll || 0, moved: false };
+    this.dragScroll = { id, sx: x, sy: y, start: this.sel.scrollY || 0, moved: false };
     return true;
   },
-  moveInvScroll(x, y) {
-    const d = this.invDrag; if (!d) return;
+  moveDragScroll(x, y) {
+    const d = this.dragScroll; if (!d) return;
     if (Math.abs(y - d.sy) > 6 || Math.abs(x - d.sx) > 6) d.moved = true;
-    this.sel.invScroll = clamp(d.start - (y - d.sy), 0, this.sel.invMax || 0);
+    this.sel.scrollY = clamp(d.start - (y - d.sy), 0, this.sel.scrollMax || 0);
   },
-  endInvScroll(x, y) {
-    const d = this.invDrag; if (!d) return;
-    this.invDrag = null;
+  endDragScroll(x, y) {
+    const d = this.dragScroll; if (!d) return;
+    this.dragScroll = null;
     if (!d.moved) this.click(d.sx, d.sy);   // it was a tap, not a scroll
   },
-  // Desktop mouse-wheel over the inventory list.
-  wheelInv(dy) {
-    if (this.screen !== 'radial' || !this.sel.invRegion) return false;
-    this.sel.invScroll = clamp((this.sel.invScroll || 0) + dy, 0, this.sel.invMax || 0);
+  // Desktop mouse-wheel over a scrollable overlay.
+  wheelScroll(dy) {
+    if (!this.sel.scrollRegion) return false;
+    this.sel.scrollY = clamp((this.sel.scrollY || 0) + dy, 0, this.sel.scrollMax || 0);
     return true;
   },
 

@@ -90,7 +90,11 @@ loot at the artisans. The hero is persistent (localStorage).
 - **Mystic reroll = TARGETED, not gambling (owner rule)**: every rerollable affix
   belongs to a GROUP (`AFFIX_GROUPS` — Offense: dmg/crit/ess · Defense: hp/armor/reg
   · Utility: gold/move) and a reroll can only land within that group; the Mystic UI
-  shows the EXACT equal odds for each outcome before you pay (`enchantOutcomes`).
+  shows the EXACT equal odds for each outcome PLUS the value range it can roll
+  (`enchantOutcomes` + `Items.affixRange` → "rolls min–max (max) · yours X") so the
+  player sees how close to perfect they are. The Mystic detail view scrolls (drag
+  the middle; cost + REROLL pinned as a footer) via the shared
+  `UI.sel.scrollRegion`/`scrollY`/`scrollMax` drag-scroll (also used by the inventory).
   Signature legendary affixes (`dnova`/`area`, no group) are locked. Gold cost
   starts at **50g** and climbs ~1.42× per enchant (`enchantCost` — ~15–20 rolls to
   reach the tens of thousands, softened by mystic training). Souls are charged ONLY

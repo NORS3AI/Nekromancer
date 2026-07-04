@@ -818,6 +818,17 @@ const Items = {
     return cands.map(k => ({ key: k, chance, current: k === statKey }));
   },
 
+  // The [min, max] a reroll of `key` can land on THIS item — mirrors the roll
+  // in enchant() (base × slot × rarity × level × rand(0.85–1.25)) so the Mystic
+  // can show the player how close to perfect their current roll is (owner rule).
+  affixRange(item, key) {
+    if (key === 'move') return { min: 0.01, max: 0.25 };   // flat boots roll
+    const R = RARITIES[item.rarity] || RARITIES[0];
+    const base = AFFIX_ROLLS[key].base * (key === ITEM_SLOTS[item.slot].primary ? 1.6 : 0.85)
+      * R.mult * (1 + item.mLvl * 0.11);
+    return { min: base * 0.85, max: base * 1.25 };
+  },
+
   // Reroll the affix the PLAYER chose into another affix in its group.
   enchant(item, statKey) {
     if (!(statKey in item.stats)) return;
