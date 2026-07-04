@@ -41,14 +41,13 @@ const Screens = {
   },
 
   // The campfire roster: up to three Nekromancers stand around a fire, drawn
-  // with pseudo-3D depth (front figures larger, warm rim-light from the flames)
-  // instead of a list of buttons. Tap a hero to enter; tap an empty spot to
-  // create; the ✕ retires a hero.
+  // with pseudo-3D depth. Tap a hero to select it, then the green PLAY button
+  // to enter. "Delete Hero" toggles a retire flow. Empty spots create.
   select(ctx, W, H) {
     ctx.fillStyle = '#050308';   // fully opaque — the title must not bleed through
     ctx.fillRect(0, 0, W, H);
     // Warm ground plane + firelight pool for depth.
-    const fx = W / 2, fy = H * 0.6;
+    const fx = W / 2, fy = H * 0.5;
     const floor = ctx.createLinearGradient(0, fy - 120, 0, H);
     floor.addColorStop(0, 'rgba(20,14,10,0)');
     floor.addColorStop(1, 'rgba(46,26,12,0.55)');
@@ -59,80 +58,118 @@ const Screens = {
     glow.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
 
+    const delMode = !!UI.sel.delMode;
+    // Pre-select the active hero so PLAY is ready (unless we're deleting).
+    if (!delMode && UI.sel.pick === undefined) {
+      UI.sel.pick = Profiles.slots[Profiles.active] ? Profiles.active : null;
+    }
+
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'bold ' + Math.min(30, W * 0.07) + 'px Georgia';
-    ctx.fillStyle = '#e8d8b0';
-    ctx.fillText('CHOOSE YOUR HERO', W / 2, H * 0.12);
+    ctx.fillStyle = delMode ? '#e04a5a' : '#e8d8b0';
+    ctx.fillText(delMode ? 'RETIRE A HERO' : 'CHOOSE YOUR HERO', W / 2, H * 0.1);
     ctx.font = '12px Georgia'; ctx.fillStyle = '#9a8f7a';
-    ctx.fillText('Up to ' + Profiles.MAX + ' Nekromancers rest by the fire', W / 2, H * 0.12 + 26);
+    ctx.fillText(delMode ? 'Tap the hero you wish to retire' : 'Up to ' + Profiles.MAX + ' Nekromancers rest by the fire', W / 2, H * 0.1 + 26);
 
-    // Three stage marks: centre-back (behind the fire), left & right (front).
-    // Positions spread by screen width so phones don't crowd them together.
+    // Fire dead-centre; one hero stands behind it (higher & smaller), two front.
     const s = clamp(W / 760, 0.72, 1.05);
     const spots = [
-      { i: 0, x: fx,        y: fy - 34 * s, scale: 0.90 * s, front: false },  // behind the fire
-      { i: 1, x: W * 0.22,  y: fy + 12 * s, scale: 1.06 * s, front: true },
-      { i: 2, x: W * 0.78,  y: fy + 12 * s, scale: 1.06 * s, front: true }
+      { i: 0, x: fx,        y: fy - 74 * s, scale: 0.74 * s, front: false },  // behind the fire
+      { i: 1, x: W * 0.22,  y: fy + 20 * s, scale: 1.06 * s, front: true },
+      { i: 2, x: W * 0.78,  y: fy + 20 * s, scale: 1.06 * s, front: true }
     ];
-
-    // Behind-the-fire hero first, then the fire, then the front heroes.
     const back = spots.find(sp => !sp.front);
-    this.drawRosterSpot(ctx, back, back.scale);
+    this.drawRosterSpot(ctx, back, back.scale, delMode);
     this.drawCampfire(ctx, fx, fy, s);
-    for (const sp of spots) if (sp.front) this.drawRosterSpot(ctx, sp, sp.scale);
+    for (const sp of spots) if (sp.front) this.drawRosterSpot(ctx, sp, sp.scale, delMode);
 
-    // Back to the title.
-    UI.btn(ctx, W / 2 - 70, H - 52, 140, 34, '‹ TITLE', () => UI.close(), { size: 12, border: '#6b5f80' });
+    // ---- bottom controls ----
+    const pick = UI.sel.pick;
+    const delId = UI.sel.delConfirm;
+    if (delMode && delId !== undefined && Profiles.slots[delId]) {
+      // Confirm retire.
+      const nm = Profiles.slots[delId].name || 'this hero';
+      ctx.textAlign = 'center'; ctx.font = 'bold 15px Georgia'; ctx.fillStyle = '#e8e0cc';
+      ctx.fillText(this.fitText(ctx, 'Retire ' + nm + '? Are you sure? :(', W - 40), W / 2, H - 100);
+      const bw = Math.min(150, (W - 48) / 2);
+      UI.btn(ctx, W / 2 - bw - 6, H - 84, bw, 36, 'YES, RETIRE', () => {
+        Profiles.remove(delId);
+        UI.sel.delConfirm = undefined; UI.sel.delMode = false; UI.sel.pick = undefined;
+      }, { size: 13, border: '#c22843', color: '#e04a5a' });
+      UI.btn(ctx, W / 2 + 6, H - 84, bw, 36, 'NO, KEEP', () => { UI.sel.delConfirm = undefined; }, { size: 13 });
+    } else if (!delMode && pick !== undefined && pick !== null && Profiles.slots[pick]) {
+      // Selected hero → name/level + a green pulsing PLAY button.
+      const snap = Profiles.slots[pick];
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 18px Georgia'; ctx.fillStyle = '#ffd76a';
+      ctx.fillText(this.fitText(ctx, snap.name || 'The Nekromancer', W - 40), W / 2, H - 118);
+      ctx.font = '12px Georgia'; ctx.fillStyle = '#9a8f7a';
+      ctx.fillText('Level ' + (snap.level || 1) + ' Necromancer', W / 2, H - 100);
+      const bw = Math.min(220, W - 70), bh = 40, bx = W / 2 - bw / 2, byy = H - 86;
+      const pulse = 0.5 + 0.5 * Math.sin(Game.time * 4);
+      ctx.save();
+      ctx.shadowColor = '#4ade80'; ctx.shadowBlur = 10 + pulse * 16;
+      ctx.fillStyle = 'rgba(26,54,34,0.96)';
+      rr(ctx, bx, byy, bw, bh, 12); ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2 + pulse * 1.6;
+      rr(ctx, bx, byy, bw, bh, 12); ctx.stroke();
+      ctx.fillStyle = '#aef7c8'; ctx.font = 'bold 18px Georgia'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('▶  PLAY', W / 2, byy + bh / 2);
+      UI.register(bx, byy, bw, bh, () => { Profiles.select(pick); Game.toCamp(); });
+    }
+
+    // Delete / cancel toggle, lower-left (its own row, clear of PLAY / YES-NO).
+    UI.btn(ctx, 16, H - 40, 140, 30, delMode ? '‹ CANCEL' : '☠ DELETE HERO', () => {
+      UI.sel.delMode = !delMode;
+      UI.sel.delConfirm = undefined;
+      if (!delMode) UI.sel.pick = null;   // entering delete mode clears the play selection
+    }, { size: 12, border: delMode ? '#6b5f80' : '#8a4550', color: delMode ? '#c9bfa8' : '#e04a5a' });
   },
 
   // Draw one roster position: a hero (if the slot is filled) or an empty
-  // "create" plinth, plus its nameplate and tap regions.
-  drawRosterSpot(ctx, sp, scale) {
+  // "create" plinth, plus its nameplate, selection ring and tap region.
+  drawRosterSpot(ctx, sp, scale, delMode) {
     const snap = Profiles.slots[sp.i];
     const R = 70 * scale;
     if (snap) {
-      const active = Profiles.active === sp.i;
-      this.drawNecroFigure(ctx, sp.x, sp.y, scale, snap.eyeColor || '#6ff7c3', active);
-      // Nameplate — below the front heroes, above the one behind the fire.
-      const ny = sp.front ? sp.y + 80 * scale : sp.y - 78 * scale;
+      this.drawNecroFigure(ctx, sp.x, sp.y, scale, snap.eyeColor || '#6ff7c3', false);
+      // Selection / delete ring.
+      const selRing = !delMode && UI.sel.pick === sp.i;
+      const delRing = delMode && UI.sel.delConfirm === sp.i;
+      if (selRing || delRing) {
+        const pulse = 0.5 + 0.5 * Math.sin(Game.time * 4);
+        ctx.strokeStyle = delRing ? `rgba(224,74,90,${(0.55 + 0.35 * pulse).toFixed(2)})`
+          : `rgba(78,230,128,${(0.55 + 0.35 * pulse).toFixed(2)})`;
+        ctx.lineWidth = 2.5 + pulse * 1.5;
+        ctx.beginPath(); ctx.ellipse(sp.x, sp.y + 56 * scale, 42 * scale, 15 * scale, 0, 0, TAU); ctx.stroke();
+      }
+      // Nameplate — below the front heroes, higher above the one behind the fire.
+      const ny = sp.front ? sp.y + 80 * scale : sp.y - 96 * scale;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 14px Georgia';
-      ctx.fillStyle = active ? '#ffd76a' : '#e8e0cc';
+      ctx.fillStyle = selRing ? '#ffd76a' : '#e8e0cc';
       ctx.fillText(this.fitText(ctx, snap.name || 'The Nekromancer', 150), sp.x, ny);
       ctx.font = '11px Georgia'; ctx.fillStyle = '#9a8f7a';
       ctx.fillText('Level ' + (snap.level || 1) + ' Necromancer', sp.x, ny + 16);
-      // Enter on tapping the figure.
+      // Tap: select for play, or mark for retire in delete mode.
       UI.register(sp.x - R * 0.6, sp.y - R, R * 1.2, R * 1.6, () => {
-        Profiles.select(sp.i);
-        Game.toCamp();
+        if (delMode) UI.sel.delConfirm = sp.i;
+        else UI.sel.pick = sp.i;
       });
-      // Retire (✕) badge.
-      const bx = sp.x + R * 0.55, byy = sp.y - R * 0.9;
-      ctx.fillStyle = '#7a1220';
-      ctx.beginPath(); ctx.arc(bx, byy, 11, 0, TAU); ctx.fill();
-      ctx.strokeStyle = '#e04a5a'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(bx, byy, 11, 0, TAU); ctx.stroke();
-      ctx.strokeStyle = '#ffe0e4'; ctx.lineWidth = 2; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(bx - 4, byy - 4); ctx.lineTo(bx + 4, byy + 4);
-      ctx.moveTo(bx + 4, byy - 4); ctx.lineTo(bx - 4, byy + 4); ctx.stroke();
-      UI.register(bx - 13, byy - 13, 26, 26, () => { UI.sel.retire = sp.i; });
-      // Confirm retire.
-      if (UI.sel.retire === sp.i) {
-        UI.btn(ctx, sp.x - 84, sp.y + 104 * scale, 168, 30, 'RETIRE THIS HERO?', () => {
-          Profiles.remove(sp.i); UI.sel.retire = undefined;
-        }, { size: 11, border: '#c22843', color: '#e04a5a' });
-      }
     } else {
-      // Empty plinth — a faint hooded ghost + "＋ New".
+      // Empty plinth — a faint hooded ghost + "＋ New". (Not deletable.)
       this.drawNecroFigure(ctx, sp.x, sp.y, scale, '#5a6f9a', false, true);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 22px Georgia'; ctx.fillStyle = '#6ff7c3';
       ctx.fillText('＋', sp.x, sp.y - 6 * scale);
       ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#8fb0e8';
       ctx.fillText('New Nekromancer', sp.x, sp.front ? sp.y + 82 * scale : sp.y - 74 * scale);
-      UI.register(sp.x - R * 0.6, sp.y - R, R * 1.2, R * 1.6, () => {
-        if (Profiles.create(sp.i)) UI.open('create');
-      });
+      if (!delMode) {
+        UI.register(sp.x - R * 0.6, sp.y - R, R * 1.2, R * 1.6, () => {
+          if (Profiles.create(sp.i)) UI.open('create');
+        });
+      }
     }
   },
 

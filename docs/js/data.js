@@ -18,11 +18,18 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.6.0-alpha';
+const GAME_VERSION = 'v0.6.1-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.6.1-alpha', date: 'July 2026',
+    notes: [
+      'Campfire roster reworked: the fire sits dead-centre with one hero standing behind it (raised & smaller for depth). Tap a hero to select it — its name & level appear at the bottom with a green pulsing ▶ PLAY button. Removed the per-hero ✕ and the Title button',
+      'Retiring a hero is now a deliberate flow: tap "☠ Delete Hero" (lower-left), pick a hero, then confirm "Are you sure? :(" — YES retires, NO keeps'
+    ]
+  },
   {
     v: 'v0.6.0-alpha', date: 'July 2026',
     notes: [
