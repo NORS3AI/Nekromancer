@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.1.0-alpha';
+const GAME_VERSION = 'v1.1.1-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.1.1-alpha', date: 'July 2026',
+    notes: [
+      'The Jeweler gem list now scrolls by DRAGGING (the ▲/▼ arrow buttons are gone)',
+      'Confirmed the gem pouch uses the new 13-tier two-stat gems everywhere (Chipped → Marquise); any older gems convert automatically on load'
+    ]
+  },
   {
     v: 'v1.1.0-alpha', date: 'July 2026',
     notes: [

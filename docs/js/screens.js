@@ -2509,48 +2509,51 @@ const Screens = {
       ctx.fillText('No gems in your pouch — monsters and chests drop them.', px + 16, y + 14);
       return;
     }
-    // Scrollable stack list — every gem is reachable via the ▲/▼ arrows.
+    // Scrollable stack list — DRAG to scroll (no arrow buttons, owner request).
     const panelBot = 46 + Math.min(H - 56, 470);
     const detailNeed = UI.sel.gemKey && groups[UI.sel.gemKey] ? 176 : 0;
-    let visRows = Math.max(1, Math.floor((panelBot - 12 - detailNeed - y) / 40));
-    let scroll = 0;
-    const overflow = keys.length > visRows;
-    if (overflow) {
-      visRows = Math.max(1, visRows - 1); // reserve a row for the arrows
-      scroll = clamp(UI.sel.jewelScroll || 0, 0, keys.length - visRows);
-      UI.sel.jewelScroll = scroll;
-    }
-    keys.slice(scroll, scroll + visRows).forEach(key => {
+    const rowH = 40;
+    const listTop = y;
+    const listBot = panelBot - 12 - detailNeed;
+    const viewH = Math.max(rowH, listBot - listTop);
+    const contentH = keys.length * rowH;
+    const scrollMax = Math.max(0, contentH - viewH);
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, scrollMax);
+    UI.sel.scrollY = scrollY;
+    UI.sel.scrollMax = scrollMax;
+    UI.sel.scrollRegion = { x: px + 14, y: listTop, w: pw - 28, h: viewH };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(px + 14, listTop, pw - 28, viewH); ctx.clip();
+    keys.forEach((key, i) => {
+      const ry = listTop + i * rowH - scrollY;
+      if (ry + rowH - 6 < listTop || ry > listBot) return;   // off-view: skip draw + hit
       const [type, tierS] = key.split(':');
       const tier = +tierS;
       const n = groups[key];
       const gm = GEM_TYPES[type];
       const selected = UI.sel.gemKey === key;
-      UI.btn(ctx, px + 16, y, pw - 32, 34, '', () => {
+      UI.btn(ctx, px + 16, ry, pw - 32, 34, '', () => {
         UI.sel.gemKey = selected ? null : key;
       }, { bg: selected ? 'rgba(70,44,90,0.9)' : undefined, border: selected ? gm.color : undefined });
       // Gem chip.
-      drawGemIcon(ctx, type, tier, px + 34, y + 17, 11);
+      drawGemIcon(ctx, type, tier, px + 34, ry + 17, 11);
       ctx.textAlign = 'left';
       ctx.font = 'bold 12px Georgia';
       ctx.fillStyle = gm.color;
       // Tier only — the chip color names the gem; inspecting reveals the rest.
-      ctx.fillText(`${GEM_TIERS[tier]}  ×${n}`, px + 50, y + 17);
+      ctx.fillText(`${GEM_TIERS[tier]}  ×${n}`, px + 50, ry + 17);
       ctx.textAlign = 'right';
       ctx.font = '10px Georgia';
       ctx.fillStyle = '#8a8070';
-      ctx.fillText(selected ? '▾' : 'tap to inspect', px + pw - 26, y + 17);
-      y += 40;
+      ctx.fillText(selected ? '▾' : 'tap to inspect', px + pw - 26, ry + 17);
     });
-    if (overflow) {
-      const maxScroll = keys.length - visRows;
-      const half = (pw - 40) / 2;
-      UI.btn(ctx, px + 16, y, half, 26, '▲', scroll > 0 ? () => { UI.sel.jewelScroll = scroll - 1; } : null,
-        { size: 12, disabled: scroll <= 0 });
-      UI.btn(ctx, px + 24 + half, y, half, 26, '▼', scroll < maxScroll ? () => { UI.sel.jewelScroll = scroll + 1; } : null,
-        { size: 12, disabled: scroll >= maxScroll });
-      y += 32;
+    ctx.restore();
+    if (scrollMax > 0) {
+      ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+      if (scrollY > 1) ctx.fillText('▲ drag ▲', px + pw / 2, listTop + 3);
+      if (scrollY < scrollMax - 1) ctx.fillText('▼ drag for more ▼', px + pw / 2, listBot - 1);
     }
+    y = listBot + 4;   // the detail card (if any) sits below the scroll region
 
     // Detail card for the selected stack.
     if (UI.sel.gemKey && groups[UI.sel.gemKey]) {
