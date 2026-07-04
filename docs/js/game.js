@@ -109,18 +109,35 @@ const Game = {
 
   // ------------------------------------------------------------ zone flow
 
+  // A bounty hunts a land's unique boss THREE times (owner rule). Each of the 3
+  // parts is a short journey of 1–2 linked maps ending on that land's boss; when
+  // a boss falls the portal carries you to the next part, and clearing the third
+  // part awards the Horadric Stash.
   startZone(idx) {
-    // A bounty is a short journey of 2–3 linked areas; the final area holds the
-    // land's named unique boss, the earlier ones a champion that guards the descent.
     this.story = false;
+    this.bountyZoneIdx = idx;
+    this.startBountyPart(1);
+  },
+
+  startBountyPart(part) {
+    // Carry HP/essence from part to part — the hunt isn't a free heal.
+    const hpFrac = (part > 1 && this.player) ? this.player.hp / this.player.maxHp : 1;
+    const ess = (part > 1 && this.player) ? this.player.essence : 60;
+    this.bountyPart = part;
+    this.nextBountyPart = false;
     this.stage = 1;
-    this.stageCount = randInt(2, 3);
-    this.journeyIdx = idx;
-    this.startLand(ZONES[idx], idx);
+    this.stageCount = randInt(1, 2);
+    this.journeyIdx = this.bountyZoneIdx;
+    this.startLand(ZONES[this.bountyZoneIdx], this.bountyZoneIdx);
+    if (part > 1 && this.player) {
+      this.player.hp = Math.max(1, Math.round(this.player.maxHp * hpFrac));
+      this.player.essence = Math.min(ess, this.player.maxEssence);
+    }
   },
 
   startAdventure() {
     this.story = false;
+    this.bountyPart = 0;
     this.stage = 1;
     this.stageCount = randInt(2, 3);
     this.journeyIdx = null;
@@ -133,11 +150,12 @@ const Game = {
   startStory(act = 1) {
     this.story = true;
     this.storyAct = act;
+    this.bountyPart = 0;
     this.stage = 1;
-    this.stageCount = 11;
+    this.stageCount = randInt(2, 5);   // each Act is a short chain of 2–5 maps
     this.journeyIdx = null;
     this.cubeFoundThisAct = false;   // Act III: has the Horadric's Cube dropped this run?
-    this.startLand(makeStoryZone(1, act), null);
+    this.startLand(makeStoryZone(1, act, this.stageCount <= 1), null);
   },
 
   // kind: 'normal' (1-69, free · 250 pts) | 'greater' (Nephalem, lvl 70, costs a
@@ -167,6 +185,7 @@ const Game = {
     }
     // Rifts are one endless map — no multi-area descent.
     this.story = false;
+    this.bountyPart = 0;
     this.stage = 1; this.stageCount = 1; this.journeyIdx = null;
     this.startLand(makeRiftZone(kind), null);
   },
@@ -178,7 +197,7 @@ const Game = {
     // Carry HP/essence into the next area — descending isn't a free heal.
     const hpFrac = this.player ? this.player.hp / this.player.maxHp : 1;
     const ess = this.player ? this.player.essence : 60;
-    const zone = this.story ? makeStoryZone(this.stage, this.storyAct || 1)
+    const zone = this.story ? makeStoryZone(this.stage, this.storyAct || 1, this.stage >= this.stageCount)
       : this.journeyIdx !== null ? ZONES[this.journeyIdx]
       : makeAdventureZone();
     this.startLand(zone, this.journeyIdx);
@@ -194,6 +213,7 @@ const Game = {
     this.riftMode = !!zone.rift;
     this.finalStage = this.stage >= this.stageCount;
     this.descend = false;
+    this.nextBountyPart = false;
     this.riftProgress = 0;
     this.riftGoal = zone.riftGoal || 250;
     this.guardianUp = false;
@@ -286,14 +306,15 @@ const Game = {
 
     this.state = 'playing';
     let sub;
+    const bountyTag = this.bountyPart ? 'Bounty ' + this.bountyPart + ' of 3 — ' : '';
     if (this.riftMode) sub = 'Slay rare elites for their orbs — fill the rift';
     else if (this.story && this.finalStage) sub = this.zone.kingFlavor || 'Slay the Skeleton King';
-    else if (this.story) sub = 'Chapter ' + this.stage + '/10 — destroy ' + this.zone.boss;
-    else if (this.finalStage) sub = 'Bounty: slay ' + this.zone.boss;
-    else sub = 'Area ' + this.stage + ' of ' + this.stageCount + ' — slay the champion to descend';
+    else if (this.story) sub = 'Chapter ' + this.stage + '/' + this.stageCount + ' — destroy ' + this.zone.boss;
+    else if (this.finalStage) sub = bountyTag + 'slay ' + this.zone.boss;
+    else sub = bountyTag + 'Area ' + this.stage + ' of ' + this.stageCount + ' — slay the champion to descend';
     const title = this.story && this.finalStage ? (this.zone.boss || 'THE FINAL BOSS').toUpperCase()
       : this.zone.name + (this.riftMode || this.stageCount < 2 ? ''
-        : this.story ? '  ·  ' + this.stage + '/10'
+        : this.story ? '  ·  ' + this.stage + '/' + this.stageCount
         : '  ·  Area ' + this.stage + '/' + this.stageCount);
     this.showBanner(title, sub, this.story && this.finalStage ? 4 : 3);
     AudioSys.sfx('wave');
@@ -445,8 +466,15 @@ const Game = {
           this.pickups.push(rg);
           UI.toast('★ The Royal Grandeur!', '#ff8c2a');
         }
+      } else if (this.bountyPart && this.bountyPart < 3) {
+        // Bounty parts 1 & 2: the portal carries you to the next hunt.
+        this.nextBountyPart = true;
+        this.showBanner('BOUNTY ' + this.bountyPart + ' OF 3 CLEARED',
+          this.zone.boss + ' falls — a portal opens to the next hunt', 3.4);
       } else {
-        this.showBanner('BOUNTY COMPLETE', 'A portal tears open — step through', 3.4);
+        this.showBanner(this.bountyPart ? 'FINAL BOUNTY CLEARED' : 'BOUNTY COMPLETE',
+          this.bountyPart ? 'The hunt is done — claim the Horadric Stash beyond'
+                          : 'A portal tears open — step through', 3.4);
         // The Act 1 boss (the first land's unique) can drop The Royal Grandeur.
         if (this.zoneIdx === 0 && Math.random() < 0.4) {
           const rg = new Pickup(boss.x, boss.y, 'item');
@@ -527,12 +555,14 @@ const Game = {
       lines.push([act === 3 ? 'Act III complete — the Sand Wyrm is slain'
         : act === 1 ? 'Act I complete — the Skeleton King is slain'
         : 'Act ' + act + ' complete', '#ff8c2a']);
-      this.rewardTitle = 'ACT COMPLETE';
+      this.rewardTitle = 'ACT ' + act + ' COMPLETE';
       this.rewardLines = lines;
+      this.storyNextAct = act + 1;
       Hero.addXP(Math.round(1600 * diff.reward));
       Hero.save();
       this.state = 'camp';
-      UI.open('reward');
+      // Instead of dumping to the camp hub, offer a difficulty pick + CONTINUE.
+      UI.open('actclear');
       AudioSys.sfx('level');
       return;
     }
@@ -552,27 +582,23 @@ const Game = {
     Items.stash(item);
     lines.push([item.name, RARITIES[item.rarity].color]);
 
-    // Every THREE bounties yields a HORADRIC STASH — the same loot as a Normal
-    // Rift (gold, souls, a gem, and a chance at a Nephalem Rift Key).
+    // Clearing all three parts of a bounty yields a HORADRIC STASH — the same
+    // loot as a Rift for this difficulty (gold, souls, a gem, and a chance at a
+    // Nephalem Rift Key).
     if (this.zoneIdx >= 0) {
-      Hero.bountyProgress = (Hero.bountyProgress || 0) + 1;
-      if (Hero.bountyProgress >= 3) {
-        Hero.bountyProgress = 0;
-        const cGold = Math.round((500 + mLvl * 70) * diff.reward);
-        Hero.gold += cGold; Hero.mats.soul += 2;
-        const cGem = Items.dropGem(); Hero.gems.push(cGem);
-        let keyLine = 'No rift key this time';
-        if (Math.random() < 0.45) { Hero.riftKeys += 1; keyLine = '1× Nephalem Rift Key'; }
-        lines.push(['◈ HORADRIC STASH — 3 bounties!', '#8fb0e8']);
-        lines.push([cGold + ' gold  ·  2× Forgotten Souls', '#ffd76a']);
-        lines.push([gemName(cGem), GEM_TYPES[cGem.type].color]);
-        lines.push([keyLine, keyLine[0] === '1' ? '#b06adf' : '#9a9080']);
-        AudioSys.sfx('setdrop');
-      } else {
-        lines.push(['Bounties toward Horadric Stash: ' + Hero.bountyProgress + ' / 3', '#8fb0e8']);
-      }
+      const cGold = Math.round((500 + mLvl * 70) * diff.reward);
+      Hero.gold += cGold; Hero.mats.soul += 2;
+      const cGem = Items.dropGem(); Hero.gems.push(cGem);
+      let keyLine = 'No rift key this time';
+      if (Math.random() < 0.45) { Hero.riftKeys += 1; keyLine = '1× Nephalem Rift Key'; }
+      lines.push(['◈ HORADRIC STASH — three bounties slain!', '#8fb0e8']);
+      lines.push([cGold + ' gold  ·  2× Forgotten Souls', '#ffd76a']);
+      lines.push([gemName(cGem), GEM_TYPES[cGem.type].color]);
+      lines.push([keyLine, keyLine[0] === '1' ? '#b06adf' : '#9a9080']);
+      AudioSys.sfx('setdrop');
     }
-    this.rewardTitle = 'BOUNTY COMPLETE';
+    this.bountyPart = 0;
+    this.rewardTitle = this.zoneIdx >= 0 ? 'BOUNTIES COMPLETE' : 'ZONE COMPLETE';
     this.rewardLines = lines;
 
     Hero.zonesCleared = Math.max(Hero.zonesCleared, this.zoneIdx + 1);
@@ -700,6 +726,7 @@ const Game = {
     // (applied via goldFind at pickup time)
     if (World.portal && this.bossDead && dist(p.x, p.y, World.portal.x, World.portal.y) < 40) {
       if (this.descend) this.nextStage();
+      else if (this.nextBountyPart) this.startBountyPart(this.bountyPart + 1);
       else this.completeZone();
     }
   },

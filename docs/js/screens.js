@@ -40,6 +40,7 @@ const Screens = {
       case 'recipes': this.recipes(ctx, W, H); break;
       case 'wilds': this.wilds(ctx, W, H); break;
       case 'storyacts': this.storyMenu(ctx, W, H); break;
+      case 'actclear': this.actClear(ctx, W, H); break;
       case 'create': this.create(ctx, W, H); break;
       case 'select': this.select(ctx, W, H); break;
     }
@@ -924,49 +925,54 @@ const Screens = {
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, '⛰ THE WILDS');
 
-    // Global difficulty stepper — set it once here for every mode below.
+    // Global difficulty stepper — set it once here for every mode below. The
+    // arrows grey out at the bounds (Normal has nothing lower; the top Torment
+    // has nothing higher).
     const maxDiff = Hero.level >= MAX_LEVEL ? DIFFICULTIES.length - 1 : 3;
     Hero.difficulty = Math.min(Hero.difficulty, maxDiff);
+    const atMin = Hero.difficulty <= 0;
+    const atMax = Hero.difficulty >= maxDiff;
     const sdw = Math.min(320, pw - 40);
     const sdx = W / 2 - sdw / 2;
-    UI.btn(ctx, sdx, py + 46, 40, 32, '◀', () => {
-      Hero.difficulty = Math.max(0, Hero.difficulty - 1); Hero.save();
-    }, { size: 14 });
-    UI.btn(ctx, sdx + sdw - 40, py + 46, 40, 32, '▶', () => {
-      Hero.difficulty = Math.min(maxDiff, Hero.difficulty + 1); Hero.save();
-    }, { size: 14 });
+    UI.btn(ctx, sdx, py + 44, 40, 32, '◀',
+      atMin ? null : () => { Hero.difficulty = Math.max(0, Hero.difficulty - 1); Hero.save(); },
+      { size: 14, disabled: atMin });
+    UI.btn(ctx, sdx + sdw - 40, py + 44, 40, 32, '▶',
+      atMax ? null : () => { Hero.difficulty = Math.min(maxDiff, Hero.difficulty + 1); Hero.save(); },
+      { size: 14, disabled: atMax });
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 14px Georgia';
     ctx.fillStyle = Hero.difficulty >= 4 ? '#e04a5a' : '#ffd76a';
-    ctx.fillText('Difficulty: ' + DIFFICULTIES[Hero.difficulty].name, W / 2, py + 56);
-    ctx.font = '9px Georgia';
-    ctx.fillStyle = '#9a9080';
+    ctx.fillText('Difficulty: ' + DIFFICULTIES[Hero.difficulty].name, W / 2, py + 54);
     const D = DIFFICULTIES[Hero.difficulty];
-    ctx.fillText('monsters ×' + D.mult + '  ·  rewards ×' + D.reward +
-      (Hero.level < MAX_LEVEL ? '  ·  Torment unlocks at level 70' : (D.legBonus ? '  ·  +' + (D.legBonus * 100).toFixed(1) + '% legendary' : '')),
-      W / 2, py + 72);
+    ctx.font = 'bold 14px Georgia'; ctx.fillStyle = '#fff';
+    ctx.fillText('Monsters ×' + D.mult + '      Rewards ×' + D.reward +
+      (D.legBonus ? '      +' + (D.legBonus * 100).toFixed(1) + '% leg' : ''), W / 2, py + 74);
 
-    const at70 = Hero.level >= MAX_LEVEL;
-    const rows = [
-      ['BOUNTIES', 'The lands of Sanctuary — hunt each land\'s unique boss', '#6ff7c3',
-        () => { UI.close(); Game.state = 'map'; }],
-      ['STORY MODE', 'The 100-Act journey — continue where you left off, or replay a cleared Act', '#ff8c2a',
-        () => UI.open('storyacts')],
-      ['ADVENTURE MODE', 'A randomized land at your level, new every visit', '#ffd76a',
-        () => { UI.close(); Game.startAdventure(); }],
-      ['RIFT  (levels 1–69)', 'Gather 250 orb points from rare elites, then slay the Guardian', '#b06adf',
-        () => { UI.close(); Game.startRift('normal'); }],
-      ['NEPHALEM RIFT  (level 70)', at70
-        ? 'Uses a Nephalem Rift Key · 750 points · Guardians drop Master keys & set pieces'
-        : 'Opens at level 70 · requires a Nephalem Rift Key', '#4ade80',
-        at70 && Hero.riftKeys > 0 ? () => { UI.close(); Game.startRift('greater'); } : null],
-      ['SEASONS', at70 ? SEASON.name : 'The season begins at level 70', '#4ade80',
-        at70 ? () => UI.open('season') : null]
-    ];
-    let y = py + 88;
-    // Fit every mode row + the keys footer inside the panel on short phones.
-    const avail = (py + ph - 26) - y;
-    const rowH = clamp(avail / rows.length, 44, 55);
+    // Modes UNLOCK by level (locked ones are hidden entirely, not greyed):
+    // Story Mode & The Rift from level 1; Bounties 20; Adventure 60; Nephalem
+    // Rift 70; Seasons once you hold a Master Key.
+    const lvl = Hero.level;
+    const rows = [];
+    rows.push(['STORY MODE', 'Continue your campaign, or replay a cleared Act', '#ff8c2a',
+      () => UI.open('storyacts')]);
+    rows.push(['THE RIFT', 'Survive the onslaught and kill the Guardian', '#b06adf',
+      () => { UI.close(); Game.startRift('normal'); }]);
+    if (lvl >= 20) rows.push(['BOUNTIES', 'Hunt each land\'s unique boss thrice for a reward', '#6ff7c3',
+      () => { UI.close(); Game.state = 'map'; }]);
+    if (lvl >= 60) rows.push(['ADVENTURE MODE', 'A randomized land at your level, new every visit', '#ffd76a',
+      () => { UI.close(); Game.startAdventure(); }]);
+    if (lvl >= MAX_LEVEL) rows.push(['NEPHALEM RIFT', Hero.riftKeys > 0
+      ? 'Uses a Nephalem Rift Key · 750 points · Guardians drop Master keys & set pieces'
+      : 'Requires a Nephalem Rift Key — normal Rift Guardians drop them', '#4ade80',
+      Hero.riftKeys > 0 ? () => { UI.close(); Game.startRift('greater'); } : null]);
+    if ((Hero.masterKeys || 0) > 0) Hero.seasonUnlocked = true;   // latch once earned
+    if (Hero.seasonUnlocked) rows.push(['SEASONS', SEASON.name, '#4ade80',
+      () => UI.open('season')]);
+
+    let y = py + 92;
+    const avail = (py + ph - 24) - y;
+    const rowH = clamp(avail / rows.length, 44, 58);
     for (const [label, desc, col, cb] of rows) {
       UI.btn(ctx, px + 16, y, pw - 32, rowH - 5, '', cb, { disabled: !cb });
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
@@ -978,11 +984,17 @@ const Screens = {
       ctx.fillText(this.fitText(ctx, desc, pw - 60), px + 30, y + rowH * 0.66);
       y += rowH;
     }
-    ctx.textAlign = 'center';
-    ctx.font = 'bold 12px Georgia';
-    ctx.fillStyle = '#b06adf';
-    ctx.fillText('◈ Nephalem Keys: ' + Hero.riftKeys + '   ·   ◈ Master Keys: ' + Hero.masterKeys +
-      '   ·   Cleared: ' + Hero.riftsCleared, W / 2, y + 8);
+    // Keys footer — each shown only once earned; nothing here otherwise.
+    const foot = [];
+    if ((Hero.riftKeys || 0) > 0) foot.push(['◈ Nephalem Keys: ' + Hero.riftKeys, '#b06adf']);
+    if ((Hero.masterKeys || 0) > 0) foot.push(['◈ Master Keys: ' + Hero.masterKeys, '#d8b4f0']);
+    if (foot.length) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 12px Georgia';
+      const joined = foot.map(f => f[0]).join('     ');
+      // draw in a single neutral colour (simple + always fits)
+      ctx.fillStyle = '#c8b8e8';
+      ctx.fillText(joined, W / 2, y + 10);
+    }
   },
 
   // ------------------------------------------------------------ story menu
@@ -1066,31 +1078,25 @@ const Screens = {
     ctx.fillStyle = '#c9bfa8';
     ctx.fillText('BOUNTIES OF SANCTUARY', W / 2, 30);
 
-    // Difficulty stepper — Torment I–XVI unlock at level 70.
+    // Difficulty stepper — arrows grey out at Normal / T16.
     const maxDiff = Hero.level >= MAX_LEVEL ? DIFFICULTIES.length - 1 : 3;
     Hero.difficulty = Math.min(Hero.difficulty, maxDiff);
+    const atMin = Hero.difficulty <= 0, atMax = Hero.difficulty >= maxDiff;
     const dw = Math.min(340, W - 24);
     const dx = W / 2 - dw / 2;
-    UI.btn(ctx, dx, 50, 44, 36, '◀', () => {
-      Hero.difficulty = Math.max(0, Hero.difficulty - 1);
-      Hero.save();
-    }, { size: 15 });
-    UI.btn(ctx, dx + dw - 44, 50, 44, 36, '▶', () => {
-      Hero.difficulty = Math.min(maxDiff, Hero.difficulty + 1);
-      Hero.save();
-    }, { size: 15 });
+    UI.btn(ctx, dx, 50, 44, 36, '◀', atMin ? null : () => {
+      Hero.difficulty = Math.max(0, Hero.difficulty - 1); Hero.save();
+    }, { size: 15, disabled: atMin });
+    UI.btn(ctx, dx + dw - 44, 50, 44, 36, '▶', atMax ? null : () => {
+      Hero.difficulty = Math.min(maxDiff, Hero.difficulty + 1); Hero.save();
+    }, { size: 15, disabled: atMax });
     ctx.fillStyle = Hero.difficulty >= 4 ? '#e04a5a' : '#ffd76a';
     ctx.font = 'bold 16px Georgia';
     ctx.fillText(DIFFICULTIES[Hero.difficulty].name, W / 2, 68);
-    ctx.font = '10px Georgia';
-    ctx.fillStyle = '#9a9080';
     const D = DIFFICULTIES[Hero.difficulty];
-    ctx.fillText(`monsters ×${D.mult}  ·  rewards ×${D.reward}` +
-      (D.legBonus ? `  ·  +${(D.legBonus * 100).toFixed(1)}% legendary` : ''), W / 2, 84);
-    if (Hero.level < MAX_LEVEL) {
-      ctx.fillStyle = '#544d44';
-      ctx.fillText('Torment I–XVI unlock at level 70', W / 2, 96);
-    }
+    ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#fff';
+    ctx.fillText(`Monsters ×${D.mult}      Rewards ×${D.reward}` +
+      (D.legBonus ? `      +${(D.legBonus * 100).toFixed(1)}% leg` : ''), W / 2, 88);
 
     const pw = Math.min(560, W - 24);
     const px = W / 2 - pw / 2;
@@ -3652,5 +3658,48 @@ const Screens = {
     const by = py + ph - 56;
     UI.btn(ctx, px + 20, by, pw - 40, 42, 'RETURN TO CAMP', () => Game.toCamp(),
       { size: 14, border: '#57b894', color: '#6ff7c3' });
+  },
+
+  // Shown when an Act's finale falls. Offers the loot summary, a difficulty
+  // stepper (make the next Act easier/harder), then CONTINUE (into the next
+  // Act) or TOWN (bank the progress and continue later).
+  actClear(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const lines = Game.rewardLines || [];
+    const nextAct = Game.storyNextAct || 2;
+    const pw = Math.min(430, W - 24);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 20, 288 + lines.length * 20);
+    const py = H / 2 - ph / 2;
+    UI.panel(ctx, px, py, pw, ph, Game.rewardTitle || 'ACT COMPLETE');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+
+    ctx.font = 'bold 15px Georgia'; ctx.fillStyle = '#ffb43a';
+    ctx.fillText((Game.zone && Game.zone.boss ? Game.zone.boss : 'The Act boss') + ' is slain', W / 2, py + 52);
+    ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
+    ctx.fillText('Act cache:', W / 2, py + 74);
+    lines.forEach((ln, i) => {
+      ctx.fillStyle = ln[1]; ctx.font = 'bold 12px Georgia';
+      ctx.fillText(ln[0], W / 2, py + 94 + i * 19);
+    });
+
+    // Difficulty stepper for the NEXT Act.
+    const dy = py + 100 + lines.length * 19;
+    const maxDiff = Hero.level >= MAX_LEVEL ? DIFFICULTIES.length - 1 : 3;
+    Hero.difficulty = Math.min(Hero.difficulty, maxDiff);
+    const atMin = Hero.difficulty <= 0, atMax = Hero.difficulty >= maxDiff;
+    const sdw = Math.min(300, pw - 40), sdx = W / 2 - sdw / 2;
+    UI.btn(ctx, sdx, dy, 40, 30, '◀', atMin ? null : () => { Hero.difficulty = Math.max(0, Hero.difficulty - 1); Hero.save(); }, { size: 14, disabled: atMin });
+    UI.btn(ctx, sdx + sdw - 40, dy, 40, 30, '▶', atMax ? null : () => { Hero.difficulty = Math.min(maxDiff, Hero.difficulty + 1); Hero.save(); }, { size: 14, disabled: atMax });
+    ctx.font = 'bold 13px Georgia'; ctx.fillStyle = Hero.difficulty >= 4 ? '#e04a5a' : '#ffd76a';
+    ctx.fillText(DIFFICULTIES[Hero.difficulty].name, W / 2, dy + 15);
+
+    // CONTINUE → the next Act.  TOWN → bank progress, come back later.
+    const by = dy + 44;
+    UI.btn(ctx, px + 20, by, pw - 40, 44, 'CONTINUE  ·  ACT ' + nextAct,
+      () => { UI.close(); Game.startStory(nextAct); },
+      { size: 16, color: '#ff8c2a', border: '#8a5a2a' });
+    UI.btn(ctx, px + 20, by + 52, pw - 40, 38, 'TOWN', () => Game.toCamp(),
+      { size: 14, color: '#6ff7c3', border: '#57b894' });
   }
 };

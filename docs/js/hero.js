@@ -96,6 +96,7 @@ const Hero = {
   bountyProgress: 0,    // bounties finished toward the next Horadric Stash (0-2)
   riftKeys: 0,          // Nephalem Rift Keys (open Nephalem Rifts)
   masterKeys: 0,        // Master Nephalem Rift Keys (open Season rifts)
+  seasonUnlocked: false, // latches true once the first Master Key is earned — Seasons stays visible
   hasCube: false,       // Horadric's Cube found (Act 3) — unlocks the town button
   goldenMirror: false,  // Golden Mirror in inventory (Treasure Goblin drop)
   orbAutoPickup: false, // Golden Mirror converted → rift/season orbs auto-collect
@@ -132,6 +133,7 @@ const Hero = {
     this.bountyProgress = 0;
     this.riftKeys = 0;
     this.masterKeys = 0;
+    this.seasonUnlocked = false;
     this.hasCube = false;
     this.goldenMirror = false;
     this.orbAutoPickup = false;
@@ -181,7 +183,7 @@ const Hero = {
       zonesCleared: this.zonesCleared, actsCleared: this.actsCleared, difficulty: this.difficulty,
       bestZone: this.bestZone, totalKills: this.totalKills,
       riftsCleared: this.riftsCleared, bountyProgress: this.bountyProgress,
-      riftKeys: this.riftKeys, masterKeys: this.masterKeys,
+      riftKeys: this.riftKeys, masterKeys: this.masterKeys, seasonUnlocked: this.seasonUnlocked,
       hasCube: this.hasCube, goldenMirror: this.goldenMirror, orbAutoPickup: this.orbAutoPickup,
       artisans: this.artisans, runes: this.runes, cheats: this.cheats,
       bagTier: this.bagTier, bagBonus: this.bagBonus
@@ -228,6 +230,7 @@ const Hero = {
       bestZone: d.bestZone || 0, totalKills: d.totalKills || 0,
       riftsCleared: d.riftsCleared || 0, bountyProgress: d.bountyProgress || 0,
       riftKeys: d.riftKeys || 0, masterKeys: d.masterKeys || 0,
+      seasonUnlocked: !!d.seasonUnlocked || (d.masterKeys || 0) > 0,
       hasCube: !!d.hasCube, goldenMirror: !!d.goldenMirror, orbAutoPickup: !!d.orbAutoPickup,
       artisans: (() => {
         const a = Object.assign({ smith: 1, mystic: 1, jeweler: 1 }, d.artisans);

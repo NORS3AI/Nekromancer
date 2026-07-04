@@ -19,11 +19,23 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.9.1-alpha';
+const GAME_VERSION = 'v0.9.2-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.9.2-alpha', date: 'July 2026',
+    notes: [
+      'THE WILDS — modes now unlock by level and are HIDDEN until then: Story Mode & The Rift from level 1, Bounties at 20, Adventure Mode at 60, Nephalem Rift at 70, and Seasons once you earn your first Master Key (it stays unlocked after)',
+      'Rift renamed to THE RIFT — "Survive the onslaught and kill the Guardian"',
+      'The difficulty arrows now GREY OUT at the bounds (◀ dark on Normal, ▶ dark on the top Torment). "Monsters ×N" and "Rewards ×N" are bigger and white',
+      'Removed the "Torment unlocks at level 70" line from the menus',
+      'STORY MODE — each Act is now a short chain of 2–5 maps ending on the Act boss. When the boss falls, a new screen offers a difficulty choice with CONTINUE (straight into the next Act) or TOWN (bank your progress and continue later)',
+      'BOUNTIES are now a three-part hunt: each part is 1–2 maps ending on the land\'s unique boss, and the portal carries you onward. Slay all three bosses to claim the HORADRIC STASH (the same loot as a Rift for your difficulty)',
+      'The Wilds footer hides the Nephalem/Master key counts until you\'ve earned one, and the old "Cleared" line is gone'
+    ]
+  },
   {
     v: 'v0.9.1-alpha', date: 'July 2026',
     notes: [
@@ -1495,9 +1507,9 @@ const STORY_FINAL_BOSSES = [
 ];
 
 // A procedurally-themed Act for anything that isn't hand-authored (2, 4–100).
-function makeGenericStoryZone(stage, act) {
+function makeGenericStoryZone(stage, act, final) {
   const fb = STORY_FINAL_BOSSES[act % STORY_FINAL_BOSSES.length];
-  if (stage >= 11) {
+  if (final) {
     const bk = STORY_BIOME_KEYS[(act + 5) % STORY_BIOME_KEYS.length];
     const B = BIOMES[bk];
     return {
@@ -1522,12 +1534,13 @@ function makeGenericStoryZone(stage, act) {
   };
 }
 
-// Build the zone for a Story-Mode stage of the given act. Stages 1–10 are biome
-// maps (each with its named boss); stage 11 is the act finale's grave arena.
-function makeStoryZone(stage, act = 1) {
-  if (act !== 1 && act !== 3) return makeGenericStoryZone(stage, act);
+// Build the zone for a Story-Mode stage of the given act. Each act is a short
+// chain of 2–5 biome maps (each with its named boss); the LAST stage (`final`)
+// is the act finale's grave arena.
+function makeStoryZone(stage, act = 1, final = false) {
+  if (act !== 1 && act !== 3) return makeGenericStoryZone(stage, act, final);
   if (act === 3) {
-    if (stage >= 11) {
+    if (final) {
       return {
         id: 'story3-grave', name: 'The Sunken Grave of the Sand Wyrm', kind: 'open', biome: 'desert',
         mLvl: clamp(Hero.level, 1, 70),
@@ -1555,7 +1568,7 @@ function makeStoryZone(stage, act = 1) {
       desc: 'Chapter ' + stage + ' of Act III — hunt ' + horror + ' across the dunes.'
     };
   }
-  if (stage >= 11) {
+  if (final) {
     return {
       id: 'story-grave', name: 'The Grave of the Skeleton King', kind: 'open', biome: 'badlands',
       mLvl: clamp(Hero.level, 1, 70),
