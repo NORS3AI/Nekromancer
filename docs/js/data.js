@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.7.3-alpha';
+const GAME_VERSION = 'v0.7.4-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.7.4-alpha', date: 'July 2026',
+    notes: [
+      'Salvaging an ARTIFACT now returns Forgotten Souls by its star tier: 3 at 0★, 4 at 1★, 5 at 2★, 6 at 3★, 7 at 4★, 8 at 5★ — individual and bulk salvage both honor it'
+    ]
+  },
   {
     v: 'v0.7.3-alpha', date: 'July 2026',
     notes: [

@@ -491,17 +491,26 @@ const Items = {
 
   // ------------------------------------------------------------ blacksmith
 
+  // What a salvage returns: the material key and its count. Artifacts hand back
+  // MORE Forgotten Souls the higher their star tier (owner spec): 3 souls at 0★,
+  // +1 per star up to 8 at 5★.
+  salvageYield(item) {
+    const R = RARITIES[item.rarity] || RARITIES[0];
+    const n = item.rarity === 6 ? 3 + (item.stars || 0) : R.salvageN;
+    return { mat: R.salvage, n };
+  },
+
   grantSalvage(item, quiet = false) {
     // Fallback keeps ALL loot salvageable even if an item has a missing/odd rarity.
-    const R = RARITIES[item.rarity] || RARITIES[0];
-    Hero.mats[R.salvage] = (Hero.mats[R.salvage] || 0) + R.salvageN;
+    const { mat, n } = this.salvageYield(item);
+    Hero.mats[mat] = (Hero.mats[mat] || 0) + n;
     const gems = item.gems || [];
     for (const g of gems) Hero.gems.push(g); // socketed gems survive, back to the pouch
     if (gems.length) {
       UI.toast('Recovered ' + gems.length + ' gem' + (gems.length > 1 ? 's' : '') + ' to your pouch', '#6ff7c3');
     }
     if (!quiet) {
-      UI.toast(`Salvaged ${item.name} → ${R.salvageN}× ${MATERIALS[R.salvage].name}`, MATERIALS[R.salvage].color);
+      UI.toast(`Salvaged ${item.name} → ${n}× ${MATERIALS[mat].name}`, MATERIALS[mat].color);
       AudioSys.sfx('craft');
     } else {
       UI.toast(`Bag full — auto-salvaged ${item.name}`, '#9a9080');
@@ -674,8 +683,8 @@ const Items = {
     for (let i = Hero.bag.length - 1; i >= 0; i--) {
       if (pred(Hero.bag[i].rarity)) {
         const it = Hero.bag.splice(i, 1)[0];
-        const R = RARITIES[it.rarity] || RARITIES[0];
-        Hero.mats[R.salvage] = (Hero.mats[R.salvage] || 0) + R.salvageN;
+        const { mat, n: yield_ } = this.salvageYield(it);
+        Hero.mats[mat] = (Hero.mats[mat] || 0) + yield_;
         for (const g of it.gems || []) Hero.gems.push(g);
         n++;
       }

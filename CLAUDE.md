@@ -67,8 +67,10 @@ loot at the artisans. The hero is persistent (localStorage).
   **+3%→+20% XP** (by tier) instead of its damage (feeds `Hero.addXP` via `player.xpBonus`).
   An **Emerald in the BOOTS** grants **+20% movement speed** (flat, per gem) instead of crit.
   Ruby-in-weapon +25% dmg and the lvl70 weapon retune (emerald ×1.2 / ruby ×0.95) remain.
-- Salvage yields: Common→Reusable Parts, Magic→Arcane Dust, Rare→Veiled Crystals,
-  Legendary→Forgotten Souls (gems survive the forge). **Two salvage paths (owner
+- Salvage yields (`Items.salvageYield`): Common→Reusable Parts, Magic→Arcane Dust,
+  Rare→Veiled Crystals, Legendary/Set→Forgotten Souls (1/2). **Artifacts →
+  Forgotten Souls scaling with star tier: 3 at 0★, +1 per star up to 8 at 5★ (owner
+  rule).** Gems survive the forge. **Two salvage paths (owner
   rule): (1) INDIVIDUAL breakdown from the Inventory wheel is always free at any
   level for any rarity (`canSalvage` always true). (2) The BLACKSMITH's bulk
   "ease of access" salvage is gated by SMITH LEVEL for the finest gear —
