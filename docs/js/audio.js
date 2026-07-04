@@ -7,24 +7,26 @@
 // ---------------------------------------------------------------------------
 
 // ===== MUSIC — drop your tracks here ======================================
-// Put your audio files in  docs/sounds/music/  and list their filenames below.
-// They play SHUFFLED, on loop, forever (a random order that never repeats a
-// track until the rest have played). The EASIEST path: name your files
-// 1.mp3 … 16.mp3 and you don't have to touch anything. To use other names,
-// counts, or formats (.ogg/.m4a), just edit this list. If NO files are found
-// the game falls back to the built-in generative score. Volume = Settings ▸
-// Master × Music (muting either silences it).
+// Tracks play SHUFFLED, on loop, forever (a random order that never repeats a
+// track until the rest have played). Volume = Settings ▸ Master × Music (muting
+// either silences it). If nothing loads, the built-in generative score plays.
+//
+// Each MUSIC_PLAYLIST entry can be EITHER:
+//   • a bare filename ('1.mp3') — loaded from MUSIC_BASE_URL (or the repo's
+//     docs/sounds/music/ if the base is ''), OR
+//   • a FULL URL ('https://…/track.mp3') — used as-is, so you can host anywhere
+//     (a GitHub Release, Cloudflare R2, Dropbox/Drive DIRECT-download links, …).
+//
+// RECOMMENDED for full-size tracks: a GitHub *Release* (free, big files OK,
+// doesn't bloat the repo) — set MUSIC_BASE_URL to its download base:
+//   const MUSIC_BASE_URL = 'https://github.com/nors3ai/Nekromancer/releases/download/music-v1/';
+// (Google Drive works only via 'uc?export=download&id=…' DIRECT links and is
+//  unreliable for big files — prefer a Release. See docs/sounds/README.md.)
+const MUSIC_BASE_URL = '';
 const MUSIC_PLAYLIST = [
   '1.mp3', '2.mp3', '3.mp3', '4.mp3', '5.mp3', '6.mp3', '7.mp3', '8.mp3',
   '9.mp3', '10.mp3', '11.mp3', '12.mp3', '13.mp3', '14.mp3', '15.mp3', '16.mp3'
 ];
-// Where the tracks are hosted. Leave '' to load from docs/sounds/music/ in the
-// repo. BUT audio files are usually too big for a GitHub Pages repo — the easy
-// fix is to attach them to a GitHub *Release* (unlimited size, doesn't bloat the
-// repo) and paste that release's download base here, e.g.:
-//   const MUSIC_BASE_URL = 'https://github.com/nors3ai/Nekromancer/releases/download/music-v1/';
-// The filenames in MUSIC_PLAYLIST are appended to this base. See docs/sounds/README.md.
-const MUSIC_BASE_URL = '';
 // ==========================================================================
 
 const AudioSys = {
@@ -209,12 +211,16 @@ const AudioSys = {
     const n = MUSIC_PLAYLIST.length;
     this.musicIndex = ((i % n) + n) % n;
     const name = MUSIC_PLAYLIST[this.musicIndex];
-    // Local files get a version cache-bust; external Release URLs are versioned
-    // by their release tag, so leave them untouched.
-    const local = !MUSIC_BASE_URL;
-    const bust = (local && typeof GAME_VERSION !== 'undefined') ? '?v=' + GAME_VERSION : '';
     el.volume = this.fileMusicVolume();
-    el.src = (MUSIC_BASE_URL || 'sounds/music/') + name + bust;
+    if (/^https?:\/\//i.test(name)) {
+      el.src = name;                        // a full URL — use exactly as given
+    } else {
+      // A bare filename: prepend the base (or the repo folder). Local files get
+      // a version cache-bust; external base URLs are versioned by their own path.
+      const local = !MUSIC_BASE_URL;
+      const bust = (local && typeof GAME_VERSION !== 'undefined') ? '?v=' + GAME_VERSION : '';
+      el.src = (MUSIC_BASE_URL || 'sounds/music/') + name + bust;
+    }
     const pr = el.play();
     if (pr && pr.catch) pr.catch(() => {});   // ignore autoplay rejections
   },

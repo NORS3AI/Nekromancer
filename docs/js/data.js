@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.0.7-alpha';
+const GAME_VERSION = 'v1.0.8-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.0.8-alpha', date: 'July 2026',
+    notes: [
+      'Music playlist entries can now be FULL URLs — host tracks anywhere (a GitHub Release, a CDN, etc.) by pasting complete links into MUSIC_PLAYLIST, or keep bare filenames with a MUSIC_BASE_URL. (Google Drive works only via unreliable direct-download links — a GitHub Release is recommended.)'
+    ]
+  },
   {
     v: 'v1.0.7-alpha', date: 'July 2026',
     notes: [
