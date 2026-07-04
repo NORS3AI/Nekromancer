@@ -762,6 +762,22 @@ const Screens = {
     dy += 10;
     dy = this.itemCard(ctx, dx, dy, dw, equipped, null, false);
 
+    // Inventory capacity + purchasable expansion. This is the BAG that fills up
+    // from combat loot and crafting — NOT the shared Stash vault.
+    const up = Hero.nextBagUpgrade();
+    if (up) {
+      const afford = Hero.gold >= up.cost;
+      const gshort = n => n >= 1e6 ? (n / 1e6) + 'm' : n >= 1000 ? (n / 1000) + 'k' : '' + n;
+      UI.btn(ctx, dx, dy + 4, dw, 26,
+        'INVENTORY ' + Hero.bag.length + '/' + Hero.BAG_SIZE + '  —  EXPAND → ' + up.size + ' (' + gshort(up.cost) + 'g)',
+        afford ? () => Hero.buyBagUpgrade() : null,
+        { size: 10, disabled: !afford, border: '#8a6f4a', color: '#ffd76a' });
+    } else {
+      ctx.textAlign = 'left'; ctx.font = '11px Georgia'; ctx.fillStyle = '#8a8070';
+      ctx.fillText('INVENTORY ' + Hero.bag.length + '/' + Hero.BAG_SIZE + ' (max size)', dx, dy + 16);
+    }
+    dy += 34;
+
     // Bag items for this slot (rings share both ring slots), with compare arrows.
     const fam = Items.slotFamily(slot);
     const bagItems = Hero.bag.filter(it => fam.includes(it.slot));
@@ -1922,21 +1938,10 @@ const Screens = {
     });
     cy += 32;
 
-    // Deposit-all + purchasable bag expansion.
-    const up = Hero.nextBagUpgrade();
-    const gshort = n => n >= 1e6 ? (n / 1e6) + 'm' : n >= 1000 ? (n / 1000) + 'k' : '' + n;
-    const depW = up ? (pw - 36) * 0.58 : pw - 32;
-    UI.btn(ctx, px + 16, cy, depW, 28,
-      'DEPOSIT ALL  (bag ' + Hero.bag.length + '/' + Hero.BAG_SIZE + ')',
+    UI.btn(ctx, px + 16, cy, pw - 32, 28,
+      'DEPOSIT ALL FROM BAG  (bag ' + Hero.bag.length + '/' + Hero.BAG_SIZE + ')',
       Hero.bag.length ? () => Items.depositAll() : null,
       { size: 11, disabled: !Hero.bag.length, border: '#57b894', color: '#6ff7c3' });
-    if (up) {
-      const afford = Hero.gold >= up.cost;
-      UI.btn(ctx, px + 20 + depW, cy, pw - 36 - depW, 28,
-        'BAG → ' + up.size + ' · ' + gshort(up.cost) + 'g',
-        afford ? () => Hero.buyBagUpgrade() : null,
-        { size: 10, disabled: !afford, border: '#8a6f4a', color: '#ffd76a' });
-    }
     cy += 36;
 
     // Filter + sort + search the view.

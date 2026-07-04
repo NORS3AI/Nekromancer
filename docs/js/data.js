@@ -18,17 +18,23 @@ const RARITIES = [
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
 ];
 
-const GAME_VERSION = 'v0.7.0-alpha';
+const GAME_VERSION = 'v0.7.1-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
   {
+    v: 'v0.7.1-alpha', date: 'July 2026',
+    notes: [
+      'The buyable space upgrade is your INVENTORY (the bag that fills from combat loot & crafting) — the EXPAND button now lives in the Inventory screen, not the Stash, so it is never confused with the shared vault'
+    ]
+  },
+  {
     v: 'v0.7.0-alpha', date: 'July 2026',
     notes: [
       'NEW — up to THREE characters at once. No more deleting a hero to make room. Pick "Choose Your Hero" on the title screen',
       'NEW — a CAMPFIRE roster scene: your Nekromancers stand around a crackling fire (one behind it, two to the sides), drawn in pseudo-3D with warm firelight instead of a list of buttons. Tap a hero to play, tap an empty spot to create one, tap the ✕ to retire one. The Stash is shared across all your heroes',
-      'NEW — buy BAG SPACE from the Stash: 24 → 30 → 45 → 60 → 75 → 90 → 105 → 120 slots for escalating gold (1k · 10k · 50k · 150k · 500k · 1m · 100m)'
+      'NEW — buy INVENTORY space from the Inventory screen: 24 → 30 → 45 → 60 → 75 → 90 → 105 → 120 slots for escalating gold (1k · 10k · 50k · 150k · 500k · 1m · 100m)'
     ]
   },
   {
