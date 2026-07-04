@@ -298,7 +298,9 @@ const Items = {
       s += (v || 0) * (W[k] || 0);
     }
     if (item.sockets) s += 15 * item.sockets;
-    for (const g of item.gems || []) s += gemStatValue(g) * 30;
+    // Gems: tier-based credit (gem stats span wildly different magnitudes, so
+    // score by tier rather than raw value).
+    for (const g of item.gems || []) s += (g.tier + 1) * 22;
     return s;
   },
 
@@ -320,25 +322,10 @@ const Items = {
     }
     const gems = item.gems || [];
     for (const g of gems) {
-      // A helm ruby reads as an XP bonus, not damage.
-      if (item.slot === 'helm' && g.type === 'ruby') {
-        const xp = 0.03 + (0.20 - 0.03) * (g.tier / GEM_MAX_TIER);
-        lines.push('◆ ' + gemName(g) + ': +' + Math.round(xp * 100) + '% experience');
-      } else if (item.slot === 'boots' && g.type === 'emerald') {
-        lines.push('◆ ' + gemName(g) + ': +20% movement speed');
-      } else {
-        lines.push('◆ ' + gemName(g) + ': ' + GEM_TYPES[g.type].label(gemStatValue(g)));
-      }
+      lines.push('◆ ' + gemName(g) + ': ' + gemStatText(g));
     }
     const empty = (item.sockets || 0) - gems.length;
     for (let i = 0; i < empty; i++) lines.push('◇ empty socket');
-    // Any Perfect-or-better gem, any slot: +20% damage.
-    if (gems.some(g => g.tier >= GEM_PERFECT_TIER)) lines.push('❢ +20% damage (Perfect+ gem)');
-    if (item.slot === 'weapon') {
-      if (gems.some(g => g.type === 'ruby')) lines.push('❢ +25% weapon damage (ruby)');
-      if (Hero.level >= MAX_LEVEL && gems.some(g => g.type === 'emerald')) lines.push('❢ Emerald +20% in weapon (lvl 70)');
-      if (Hero.level >= MAX_LEVEL && gems.some(g => g.type === 'ruby')) lines.push('❢ Ruby -5% in weapon (lvl 70)');
-    }
     return lines;
   },
 
@@ -385,12 +372,9 @@ const Items = {
     // drop only gets the (smaller) empty-socket credit (owner rule).
     const filled = (item.gems || []).length;
     t[0] += Math.max(0, (item.sockets || 0) - filled) * 120;   // empty sockets: potential
-    for (const g of item.gems || []) {
-      t[0] += gemStatValue(g) * 60;
-      // Special gem rules are big offense multipliers a bare drop can't match.
-      if (g.tier >= GEM_PERFECT_TIER) t[0] += 0.20 * this.STAT_VAL.dmg;                     // Perfect+ gem: +20% damage
-      if (item.slot === 'weapon' && g.type === 'ruby') t[0] += 0.25 * this.STAT_VAL.dmg;   // ruby in weapon: +25%
-    }
+    // Socketed gems are realized power — credit by tier (their stats span very
+    // different magnitudes, so tier is the fair yardstick).
+    for (const g of item.gems || []) t[0] += (g.tier + 1) * 130;
     // Build-defining pieces get a GENTLE nudge — enough to break a near-tie in
     // their favor, never enough to override a clearly stronger item (owner rule:
     // a much higher raw-damage weapon must still win even without a power).
@@ -1017,6 +1001,9 @@ const Items = {
   // Works with no live Player (used by the character sheet in camp).
   computeStats() {
     let dmg = 0, hp = 0, crit = 0, ess = 0, reg = 0, gold = 0, armor = 0, move = 0, xpBonus = 0, dnova = 0, area = 0;
+    // New gem stats (each gem grants two; see GEM_STATS in data.js).
+    let resAll = 0, cdr = 0, critDmg = 0, rcr = 0, lph = 0, flatDmg = 0;
+    const at70 = Hero.level >= MAX_LEVEL;
     const gather = (it, slot) => {
       if (!it) return;
       dmg += it.stats.dmg || 0;
@@ -1030,35 +1017,17 @@ const Items = {
       dnova += it.stats.dnova || 0;
       area += it.stats.area || 0;
       for (const g of it.gems || []) {
-        // A Perfect-or-better gem grants +20% damage — in ANY slot, per gem.
-        if (g.tier >= GEM_PERFECT_TIER) dmg += 0.20;
-        // A Ruby in the HELM gives an XP bonus instead of its damage:
-        // 3% (Chipped) → 20% (Marquise).
-        if (slot === 'helm' && g.type === 'ruby') {
-          xpBonus += 0.03 + (0.20 - 0.03) * (g.tier / GEM_MAX_TIER);
-          continue;
-        }
-        // An Emerald in the BOOTS grants +20% movement speed instead of crit.
-        if (slot === 'boots' && g.type === 'emerald') {
-          move += 0.20;
-          continue;
-        }
-        let v = gemStatValue(g);
-        const s = GEM_TYPES[g.type].stat;
-        // At level 70, weapon-slot gems are retuned: green +20%, red -5%.
-        if (slot === 'weapon' && Hero.level >= MAX_LEVEL) {
-          if (g.type === 'emerald') v *= 1.20;
-          else if (g.type === 'ruby') v *= 0.95;
-        }
-        if (s === 'dmg') dmg += v;
-        else if (s === 'hp') hp += v;
-        else if (s === 'crit') crit += v;
-        else if (s === 'ess') ess += v;
-        else if (s === 'reg') reg += v;
-        else if (s === 'armor') armor += v;
+        const gs = gemStats(g);            // { keyA: valA, keyB: valB }
+        if (gs.flatDmg) flatDmg += gs.flatDmg;
+        if (gs.xp)      xpBonus += at70 ? gs.xp * 0.1 : gs.xp;   // XP bonus shrinks at cap
+        if (gs.critDmg) critDmg += gs.critDmg;
+        if (gs.gold)    gold += gs.gold;
+        if (gs.lph)     lph += gs.lph;
+        if (gs.hp)      hp += gs.hp;
+        if (gs.rcr)     rcr += gs.rcr;
+        if (gs.resAll)  resAll += gs.resAll;
+        if (gs.cdr)     cdr += gs.cdr;
       }
-      // A red gem (ruby) socketed in the weapon: +25% damage.
-      if (slot === 'weapon' && (it.gems || []).some(g => g.type === 'ruby')) dmg += 0.25;
     };
     for (const slot of Object.keys(ITEM_SLOTS)) gather(Hero.equipped[slot], slot);
     const lvl = Hero.level;
@@ -1067,6 +1036,9 @@ const Items = {
     // best endgame armor climbs into the hundreds of thousands for real
     // mitigation (≈75% at 200k, cap at ~268k).
     const armorDR = clamp(armor / (armor + 67000), 0, 0.80);
+    // All-element resistance → its own damage reduction, stacked with armor.
+    // Diminishing (owner-tunable): ~66% at 5000 resist, hard cap 80%.
+    const resistDR = clamp(resAll / (resAll + 2500), 0, 0.80);
     // The Royal Grandeur: set bonuses need one fewer piece (min 2) — modelled as
     // +1 effective set pieces once you already have at least 2.
     const powers = this.equippedPowers();
@@ -1083,10 +1055,18 @@ const Items = {
       maxEssence: 100 + (Hero.hasPassive('overwhelming') ? 40 : 0),
       armor: Math.round(armor),
       armorDR,
-      moveSpeed: clamp(move, 0, 1.0),   // affix (≤25%) + emerald boots (+20% each)
+      moveSpeed: clamp(move, 0, 1.0),   // boots move affix
       xpBonus,
       deathNovaBonus: dnova,
       areaDamage: clamp(area, 0, 1),
+      // Gem-driven stats.
+      resistAll: Math.round(resAll),
+      resistDR,
+      cooldownReduction: clamp(cdr, 0, 0.60),   // Diamond
+      critDamage: critDmg,                       // Emerald — added to the crit multiplier
+      resourceCostReduction: clamp(rcr, 0, 0.60),// Topaz
+      lifePerHit: Math.round(lph),               // Amethyst
+      flatDmg: Math.round(flatDmg),              // Ruby — flat damage per hit
       setCount: setCountEff,
       setCountRaw: rawSet,
       powers
@@ -1111,6 +1091,13 @@ const Items = {
     p.maxEssence = s.maxEssence;
     p.armor = s.armor;
     p.armorDR = s.armorDR;
+    p.resistAll = s.resistAll;
+    p.resistDR = s.resistDR;
+    p.cdr = s.cooldownReduction;
+    p.critDmg = s.critDamage;
+    p.rcr = s.resourceCostReduction;
+    p.lifePerHit = s.lifePerHit;
+    p.flatDmg = s.flatDmg;
     p.xpBonus = s.xpBonus;
     p.deathNovaBonus = s.deathNovaBonus;
     p.areaDamage = s.areaDamage;

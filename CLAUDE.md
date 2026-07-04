@@ -81,15 +81,19 @@ loot at the artisans. The hero is persistent (localStorage).
   gated by `GEM_ART_READY`; `GEM_ART_GRID` = the owner sheet's A–J/1–13 slice map)
   with a procedural faceted `drawGemGlyph()` fallback. Saves migrate 5→13 tiers via
   `Hero.migrate` (SAVE_VERSION 4).
-- **Stats/gems (owner rules):** `armor` affix + Diamond gem (`stat:'armor'`) → damage
-  reduction `armor/(armor+67000)` capped 80% (applied in `Player.hurt`) — a big
-  fixed denominator so low armor barely helps (201 armor ≈ 0.3%, you're squishy)
-  and only hundreds-of-thousands of armor is tanky (owner rule). Boots can
-  roll a `move` affix (1–25%, boots-only, flat) → `Player.speed = 180·(1+move)`. A
-  **Perfect-or-better gem (tier ≥ `GEM_PERFECT_TIER`) in ANY slot = +20% damage** (per gem). A **Ruby in the HELM** gives
-  **+3%→+20% XP** (scaled across all 13 tiers) instead of its damage (feeds `Hero.addXP` via `player.xpBonus`).
-  An **Emerald in the BOOTS** grants **+20% movement speed** (flat, per gem) instead of crit.
-  Ruby-in-weapon +25% dmg and the lvl70 weapon retune (emerald ×1.2 / ruby ×0.95) remain.
+- **Stats (owner rules):** `armor` affix → damage reduction `armor/(armor+67000)`
+  capped 80% (in `Player.hurt`) — big fixed denominator, so only hundreds-of-
+  thousands of armor is tanky. Boots roll a `move` affix (1–25%, flat) →
+  `Player.speed = 180·(1+move)`.
+- **Gems (owner rule): each gem grants TWO stats, per-tier tables in `GEM_STATS`
+  (data.js), applied regardless of slot** (no more slot-specific gem rules).
+  `gemStats(gem)`→`{keyA,keyB}`, `gemStatText(gem)` for tooltips. By type:
+  **Ruby** `flatDmg` (+N damage per hit, in `Enemy.hurt`) + `xp` (+% XP, ×0.1 at
+  level 70); **Emerald** `critDmg` (adds to the ×1.8 crit multiplier) + `gold`;
+  **Amethyst** `lph` (life per hit, heals in `Enemy.hurt`) + `hp`; **Topaz** `rcr`
+  (resource-cost reduction, `Skills.costFor`) + `gold`; **Diamond** `resAll`
+  (all-element resist → `resistDR = resAll/(resAll+2500)` cap 80%, in `Player.hurt`)
+  + `cdr` (cooldown reduction, `Skills.cdFor`). All fold in via `computeStats`/`apply`.
 - Salvage yields (`Items.salvageYield`): Common→Reusable Parts, Magic→Arcane Dust,
   Rare→Veiled Crystals, Legendary/Set→Forgotten Souls (1/2). **Artifacts →
   Forgotten Souls scaling with star tier: 3 at 0★, +1 per star up to 8 at 5★ (owner

@@ -1704,7 +1704,7 @@ const Screens = {
       const gm = GEM_TYPES[g.type];
       ctx.font = '11px Georgia';
       ctx.fillStyle = gm.color;
-      ctx.fillText(this.fitText(ctx, '◆ ' + GEM_TIERS[g.tier] + ' — ' + gm.label(gemStatValue(g)), pw - 170), px + 16, y + 8);
+      ctx.fillText(this.fitText(ctx, '◆ ' + GEM_TIERS[g.tier] + ' — ' + gemStatText(g), pw - 150), px + 16, y + 8);
       UI.btn(ctx, px + pw - 136, y - 6, 120, 24, 'UNSOCKET', () => {
         Items.unsocket(target, gi);
         UI.sel.gemKey = undefined;
@@ -1775,7 +1775,7 @@ const Screens = {
       ctx.fillText('◆ ' + gemName(g) + (selGroup.count > 1 ? '  (×' + selGroup.count + ')' : ''), px + 28, y + 16);
       ctx.font = '12px Georgia';
       ctx.fillStyle = '#b5ab94';
-      ctx.fillText('When socketed: ' + gm.label(gemStatValue(g)), px + 32, y + 33);
+      ctx.fillText(this.fitText(ctx, gemStatText(g), pw - 70), px + 32, y + 33);
       ctx.font = '11px Georgia';
       ctx.fillStyle = '#8a6f4a';
       ctx.fillText(emptyCount > 0 ? 'Fills an empty socket' : 'No empty socket — unsocket one first', px + 32, y + 49);
@@ -2573,11 +2573,11 @@ const Screens = {
       ctx.fillText('◆ ' + GEM_TIERS[tier] + ' ' + gm.name, px + 28, y + 16);
       ctx.font = '12px Georgia';
       ctx.fillStyle = '#b5ab94';
-      ctx.fillText('In a socket: ' + gm.label(gm.perTier * (tier + 1)), px + 32, y + 33);
+      ctx.fillText(this.fitText(ctx, gemStatText({ type, tier }), pw - 60), px + 32, y + 33);
       ctx.fillStyle = tier < GEM_MAX_TIER ? '#4ade80' : '#8a8070';
       ctx.fillText(
         tier < GEM_MAX_TIER
-          ? 'Next tier: ' + gm.label(gm.perTier * (tier + 2))
+          ? this.fitText(ctx, 'Next: ' + gemStatText({ type, tier: tier + 1 }), pw - 60)
           : 'This gem is already Marquise — the top tier.',
         px + 32, y + 50);
       y += 68;

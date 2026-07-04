@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.0.6-alpha';
+const GAME_VERSION = 'v1.0.7-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.0.7-alpha', date: 'July 2026',
+    notes: [
+      'GEMS REWORKED — each gem now grants TWO stats, with hand-tuned values for all 13 tiers (GEM_STATS in data.js). Ruby = +Damage & +XP · Emerald = +Crit Damage & +Gold · Amethyst = +Life-per-Hit & +Life · Topaz = -Resource Cost & +Gold · Diamond = +All-Resist & -Cooldowns',
+      'New gem stats are fully functional: crit damage boosts crits, all-resist adds damage reduction (stacked with armor), cooldown- and resource-cost reduction lower skill cooldowns/costs, life-per-hit heals on every hit, flat damage adds to each hit',
+      'Gems no longer have slot-specific rules — a gem gives its two stats in any socket. (Ruby XP still shrinks to 1/10 at level 70.)'
+    ]
+  },
   {
     v: 'v1.0.6-alpha', date: 'July 2026',
     notes: [
@@ -891,20 +899,58 @@ const GEM_DROP_TABLE = [
   [ 0,  0,  0,  0,  0,  0,  0,  0,  0, 10, 20, 30, 30, 10]   // Torment XVI
 ];
 
+// Each gem grants TWO stats (owner spec). GEM_TYPES[type].keys names them;
+// GEM_STATS[type][tier] = [valueA, valueB]. Percent-style values are stored as
+// fractions (0.02 = 2%). Stat keys:
+//   flatDmg (+N damage) · xp (+% experience, ×0.1 at level 70) ·
+//   critDmg (+% crit damage) · gold (+% gold find) · lph (life per hit) ·
+//   hp (+life) · rcr (-% resource cost) · resAll (+all-element resist) ·
+//   cdr (-% cooldowns)
 const GEM_TYPES = {
-  ruby:     { name: 'Ruby',     color: '#e04a5a', stat: 'dmg',  perTier: 0.05,  label: v => `+${Math.round(v * 100)}% damage` },
-  emerald:  { name: 'Emerald',  color: '#4ade80', stat: 'crit', perTier: 0.04,  label: v => `+${Math.round(v * 100)}% crit chance` },
-  amethyst: { name: 'Amethyst', color: '#b06adf', stat: 'hp',   perTier: 22,    label: v => `+${Math.round(v)} life` },
-  topaz:    { name: 'Topaz',    color: '#ffd76a', stat: 'ess',  perTier: 0.7,   label: v => `+${v.toFixed(1)} essence/s` },
-  diamond:  { name: 'Diamond',  color: '#bfe8f4', stat: 'armor', perTier: 30,   label: v => `+${Math.round(v)} armor` }
+  ruby:     { name: 'Ruby',     color: '#e04a5a', keys: ['flatDmg', 'xp'] },
+  emerald:  { name: 'Emerald',  color: '#4ade80', keys: ['critDmg', 'gold'] },
+  amethyst: { name: 'Amethyst', color: '#b06adf', keys: ['lph', 'hp'] },
+  topaz:    { name: 'Topaz',    color: '#ffd76a', keys: ['rcr', 'gold'] },
+  diamond:  { name: 'Diamond',  color: '#bfe8f4', keys: ['resAll', 'cdr'] }
+};
+const GEM_STATS = {
+  ruby:     [[9, .05], [12, .06], [14, .07], [25, .09], [30, .10], [40, .12], [50, .15], [70, .16], [100, .17], [150, .20], [250, .22], [400, .25], [750, .30]],
+  emerald:  [[.20, .02], [.40, .03], [.60, .04], [.80, .06], [1.0, .09], [1.2, .12], [1.4, .15], [1.6, .18], [1.8, .21], [2.0, .25], [2.3, .28], [2.6, .31], [3.0, .35]],
+  amethyst: [[35, 10], [60, 30], [160, 60], [260, 100], [500, 200], [750, 500], [1500, 700], [5000, 900], [10500, 1500], [17000, 3000], [28000, 7000], [40000, 15000], [75000, 30000]],
+  topaz:    [[.005, .03], [.01, .05], [.02, .07], [.03, .10], [.04, .12], [.05, .15], [.06, .20], [.07, .25], [.08, .30], [.09, .50], [.10, .70], [.11, 1.0], [.12, 2.5]],
+  diamond:  [[10, .012], [30, .016], [60, .02], [100, .035], [150, .05], [250, .07], [400, .09], [500, .11], [700, .13], [1000, .17], [1500, .19], [3000, .20], [5000, .25]]
 };
 
 // Most gem slots an item can hold, by rarity (Mystic enchants can uncover them):
 // Common 0 · Magic 1 · Rare 2 · Epic 3 · Legendary 4 · Set 4.
 const MAX_SOCKETS = [0, 1, 2, 3, 4, 4];
 
+// The two stats a gem grants, as a { key: value } object.
+function gemStats(gem) {
+  const keys = GEM_TYPES[gem.type].keys;
+  const row = GEM_STATS[gem.type][clamp(gem.tier, 0, GEM_MAX_TIER)];
+  return { [keys[0]]: row[0], [keys[1]]: row[1] };
+}
+
+// Primary stat value — a single number for scoring / sorting / vendor price.
 function gemStatValue(gem) {
-  return GEM_TYPES[gem.type].perTier * (gem.tier + 1);
+  return GEM_STATS[gem.type][clamp(gem.tier, 0, GEM_MAX_TIER)][0];
+}
+
+// One-line human-readable descriptions of a gem's two stats.
+const GEM_STAT_LABELS = {
+  flatDmg: v => '+' + Math.round(v) + ' Damage',
+  xp:      v => '+' + Math.round(v * 100) + '% XP',
+  critDmg: v => '+' + Math.round(v * 100) + '% Crit Dmg',
+  gold:    v => '+' + Math.round(v * 100) + '% Gold',
+  lph:     v => '+' + Math.round(v) + ' Life/Hit',
+  hp:      v => '+' + Math.round(v) + ' Life',
+  rcr:     v => '-' + Math.round(v * 100) + '% Resource Cost',
+  resAll:  v => '+' + Math.round(v) + ' All Resist',
+  cdr:     v => '-' + (+(v * 100).toFixed(1)) + '% Cooldowns'
+};
+function gemStatText(gem) {
+  return Object.entries(gemStats(gem)).map(([k, v]) => GEM_STAT_LABELS[k](v)).join('  ·  ');
 }
 
 function gemName(gem) {

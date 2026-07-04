@@ -34,6 +34,14 @@ class Player {
     this.hp = 110;
     this.dmgMult = 1;
     this.critChance = 0.10;
+    this.critDmg = 0;         // Emerald: extra crit damage (adds to the ×1.8 base)
+    this.flatDmg = 0;         // Ruby: flat damage per hit
+    this.resistAll = 0;       // Diamond: all-element resistance
+    this.resistDR = 0;        // derived damage reduction from resistAll
+    this.cdr = 0;             // Diamond: cooldown reduction (fraction)
+    this.rcr = 0;             // Topaz: resource cost reduction (fraction)
+    this.lifePerHit = 0;      // Amethyst: life restored per hit dealt
+    this.xpBonus = 0;
     this.essenceRegen = 2;
     this.hpRegen = 0;
     this.goldFind = 1;
@@ -221,7 +229,8 @@ class Player {
     if (Hero.hasPassive('standAlone') && Game.minions.length === 0) dmg *= 0.75;
     if (this.shrine && this.shrine.buff === 'blessed') dmg *= 0.75;
     if (this.boneArmorT > 0 && this.boneArmorDR > 0) dmg *= 1 - this.boneArmorDR;
-    if (this.armorDR > 0) dmg *= 1 - this.armorDR;   // armor mitigation from gear/diamonds
+    if (this.armorDR > 0) dmg *= 1 - this.armorDR;     // armor mitigation from gear
+    if (this.resistDR > 0) dmg *= 1 - this.resistDR;   // all-element resist (Diamonds)
     // Aquila Cuirass: above 90% essence, all damage taken is halved.
     if (this.powers && this.powers.aquila && this.essence >= this.maxEssence * 0.9) dmg *= 0.5;
     if (this.shield > 0) {
@@ -755,8 +764,10 @@ class Enemy {
     if (this.dead) return;
     this.wake();
     const p = Game.player;
+    // Ruby flat damage adds to each primary hit (not to splash/DoT ticks).
+    if (p && p.flatDmg && !opts.noSplash) dmg += p.flatDmg;
     const crit = Math.random() < (p ? p.critChance : 0.1);
-    if (crit) dmg *= 1.8;
+    if (crit) dmg *= 1.8 + (p ? (p.critDmg || 0) : 0);   // Emerald crit damage
     if (this.curse) {
       if (this.curse.type === 'frailty') dmg *= 1.15;
       if (this.curse.type === 'leech' && p && !p.dead) p.heal(p.maxHp * 0.012);
@@ -770,6 +781,8 @@ class Enemy {
     if (this.vulnT > 0) dmg *= 191; // Inarius 6pc: +19000% damage taken from you
     this.hp -= dmg;
     this.flash = 1;
+    // Amethyst life-per-hit: heal the Necromancer on each primary hit landed.
+    if (p && !p.dead && (p.lifePerHit || 0) > 0 && !opts.noSplash) p.heal(p.lifePerHit);
     dmgText(this.x, this.y, dmg, crit);
     // Feed the DPS meter (dealt damage over a rolling window).
     if (Game.dpsHits) Game.dpsHits.push({ t: Game.time, d: dmg });

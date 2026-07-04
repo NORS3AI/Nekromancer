@@ -561,12 +561,17 @@ const Skills = {
   cdFor(s) {
     let cd = s.cd;
     if (s.cat === 'primary' && Hero.hasPassive('quickening')) cd *= 0.85;
+    const p = Game.player;
+    if (p && p.cdr) cd *= 1 - p.cdr;            // Diamond cooldown reduction
     return cd;
   },
 
   costFor(s) {
     if (this.lotd > 0 && s.cat === 'corpse') return 0;
-    return s.cost;
+    let cost = s.cost;
+    const p = Game.player;
+    if (p && p.rcr) cost = Math.round(cost * (1 - p.rcr));   // Topaz resource cost reduction
+    return cost;
   },
 
   update(dt) {
