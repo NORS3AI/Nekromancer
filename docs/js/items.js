@@ -229,8 +229,11 @@ const Items = {
     if (item.torch) {
       const ex = Hero.stash.find(s => s.torch === item.torch);
       if (ex) { ex.count = (ex.count || 1) + (item.count || 1); return true; }
+      Hero.stash.push(item);   // torches stack — never blocked by a slot cap
+      return true;
     }
-    if (Hero.stash.length >= Hero.STASH_SIZE) return false;
+    // Auto-sorted per equip-slot bin, capped at the current upgrade tier.
+    if (Hero.stashSlotCount(item.slot) >= Hero.stashPerSlot()) return false;
     Hero.stash.push(item);
     return true;
   },
@@ -508,11 +511,12 @@ const Items = {
     const i = Hero.bag.indexOf(item);
     if (i < 0) return false;
     if (!this.addToStash(item)) {
-      UI.toast('Stash is full (' + Hero.STASH_SIZE + ')', '#9a9080');
+      UI.toast(ITEM_SLOTS[item.slot].label + ' stash bin is full (' + Hero.stashPerSlot().toLocaleString() + ')', '#9a9080');
       AudioSys.sfx('denied');
       return false;
     }
     Hero.bag.splice(i, 1);
+    Hero.saveStash();
     Hero.save();
     return true;
   },
@@ -535,6 +539,7 @@ const Items = {
       if (item.torch) item.count = 1;
       Hero.bag.push(item);
     }
+    Hero.saveStash();
     Hero.save();
     return true;
   },
@@ -544,8 +549,8 @@ const Items = {
     for (let i = Hero.bag.length - 1; i >= 0; i--) {
       if (this.addToStash(Hero.bag[i])) { Hero.bag.splice(i, 1); n++; }
     }
-    if (n) { UI.toast('Stashed ' + n + ' item' + (n > 1 ? 's' : ''), '#6ff7c3'); Hero.save(); }
-    else { AudioSys.sfx('denied'); }
+    if (n) { UI.toast('Stashed ' + n + ' item' + (n > 1 ? 's' : ''), '#6ff7c3'); Hero.saveStash(); Hero.save(); }
+    else { UI.toast('Stash bins full for those items', '#9a9080'); AudioSys.sfx('denied'); }
   },
 
   // ------------------------------------------------------------ blacksmith

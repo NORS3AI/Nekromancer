@@ -13,6 +13,10 @@ const PROFILES_KEY = 'nekromancer_profiles_v1';
 // Shared, account-wide stash — one vault for ALL characters/saves, stored
 // separately from any single hero so it never travels with a save slot.
 const STASH_KEY = 'nekromancer_stash_v1';
+const STASH_TIER_KEY = 'nekromancer_stashtier_v1';
+// Per-EQUIP-SLOT capacity by upgrade tier, and the gold cost to reach each.
+const STASH_PER_SLOT = [100, 1000, 5000, 10000];
+const STASH_UP_COST = [0, 500000, 50000000, 999000000];
 
 // Named manual save slots (up to 20), separate from the rolling autosave.
 const Saves = {
@@ -76,7 +80,8 @@ const Hero = {
   mats: { parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0 },
   gems: [],                 // [{type, tier}]
   bag: [],                  // unequipped items
-  stash: [],                // deep storage (up to STASH_SIZE)
+  stash: [],                // shared vault, auto-sorted into equip-slot bins
+  stashTier: 0,             // 0..3 → STASH_PER_SLOT capacity (account-wide)
   equipped: {},             // slot -> item
   // 6 slots, Diablo action bar: 0 primary (LMB) · 1 secondary (RMB) ·
   // 2-5 skills (keys 1-4).
@@ -234,10 +239,40 @@ const Hero = {
     if (typeof Profiles !== 'undefined') Profiles.saveActive();
   },
 
+  // --- Per-slot stash (auto-sorted, upgradable) ---
+  // Items live in one shared array but are BINNED by equip-slot family; each bin
+  // holds STASH_PER_SLOT[tier]. Torches stack and never count against a bin.
+  stashPerSlot() { return STASH_PER_SLOT[clamp(this.stashTier || 0, 0, STASH_PER_SLOT.length - 1)]; },
+  stashSlotCount(slot) {
+    const fam = Items.slotFamily(slot);
+    let n = 0;
+    for (const it of this.stash) if (it && !it.torch && fam.includes(it.slot)) n++;
+    return n;
+  },
+  stashSlotItems(slot) {
+    const fam = Items.slotFamily(slot);
+    return this.stash.filter(it => it && !it.torch && fam.includes(it.slot));
+  },
+  stashUpgradeCost() {
+    const t = (this.stashTier || 0) + 1;
+    return t < STASH_PER_SLOT.length ? STASH_UP_COST[t] : null;
+  },
+  buyStashUpgrade() {
+    const cost = this.stashUpgradeCost();
+    if (cost === null) return;
+    if (this.gold < cost) { UI.toast('Not enough gold to upgrade the stash', '#9a9080'); AudioSys.sfx('denied'); return; }
+    this.gold -= cost;
+    this.stashTier++;
+    this.saveStash(); this.save();
+    UI.toast('Stash upgraded — ' + this.stashPerSlot().toLocaleString() + ' per slot', '#6ff7c3');
+    AudioSys.sfx('craft');
+  },
+
   // Persist the shared vault to its own key (never inside a save slot).
   saveStash() {
     try {
       localStorage.setItem(STASH_KEY, JSON.stringify(this.stash || []));
+      localStorage.setItem(STASH_TIER_KEY, String(this.stashTier || 0));
     } catch (e) { /* storage unavailable */ }
   },
 
@@ -245,6 +280,7 @@ const Hero = {
   // from the active character's legacy embedded stash (one-time migration).
   loadStash() {
     try {
+      this.stashTier = clamp(+(localStorage.getItem(STASH_TIER_KEY) || 0) || 0, 0, STASH_PER_SLOT.length - 1);
       const raw = localStorage.getItem(STASH_KEY);
       if (raw !== null) { this.stash = JSON.parse(raw) || []; this.mergeStashTorches(); return; }
       // No shared vault yet — migrate from the current hero save if present.

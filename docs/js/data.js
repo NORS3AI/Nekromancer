@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.8.0-alpha';
+const GAME_VERSION = 'v0.8.1-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.8.1-alpha', date: 'July 2026',
+    notes: [
+      'STASH OVERHAUL: the vault now uses the equipment WHEEL — items auto-sort into per-slot bins (tap a slot to browse/withdraw/salvage). Each bin holds 100, and rings share a bin',
+      'Stash is upgradable: 1,000 per slot (500k g) · 5,000 per slot (50m g) · 10,000 per slot (999m g)',
+      'Dev panel: replaced the bag-space grant with "Max Stash upgrades"'
+    ]
+  },
   {
     v: 'v0.8.0-alpha', date: 'July 2026',
     notes: [

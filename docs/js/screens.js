@@ -1178,8 +1178,8 @@ const Screens = {
           UI.sel.gemPick = true;
           UI.sel.gemKey = undefined;
         } : null, { disabled: !canSocket, border: '#7a4a8f', color: '#b06adf', size: 12 });
-        // STASH: deposit this single item into the shared, account-wide vault.
-        const stashFull = Hero.stash.length >= Hero.STASH_SIZE;
+        // STASH: deposit this single item into its shared, per-slot vault bin.
+        const stashFull = !UI.sel.item.torch && Hero.stashSlotCount(UI.sel.item.slot) >= Hero.stashPerSlot();
         UI.btn(ctx, dx + (bw + 8) * 3, yy, bw, 34, stashFull ? 'FULL' : 'STASH',
           stashFull ? null : () => { if (Items.toStash(UI.sel.item)) UI.sel.item = null; },
           { disabled: stashFull, border: '#5f7ab0', color: '#8fb0e8', size: 12 });
@@ -2352,120 +2352,131 @@ const Screens = {
     return tips;
   },
 
-  // ------------------------------------------------- stash (100 slots)
-
+  // -------------------------------------------------- stash (per-slot radial)
+  // Auto-sorted into equip-slot bins (the inventory wheel), STASH_PER_SLOT[tier]
+  // each. Tap a slot chip to browse/withdraw/salvage that bin; upgrade for more.
   stash(ctx, W, H) {
     this.dim(ctx, W, H);
-    const pw = Math.min(640, W - 20);
-    const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 16, 560);
-    const py = Math.max(8, H / 2 - ph / 2);
-    UI.panel(ctx, px, py, pw, ph, 'STASH  (' + Hero.stash.length + ' / ' + Hero.STASH_SIZE + ')');
+    const slots = Object.keys(ITEM_SLOTS);
+    if (!UI.sel.stashSlot) UI.sel.stashSlot = 'weapon';
+    const narrow = W < 620;
+    const cx = narrow ? W / 2 : W * 0.26;
+    const cy = narrow ? 116 : H * 0.5;
+    const R = narrow ? Math.min(78, W * 0.30) : Math.min(150, H * 0.32);
+    const chipR = narrow ? 19 : 25;
 
-    if (!UI.sel.stashSort) UI.sel.stashSort = 'score';
-    if (!UI.sel.stashFilter) UI.sel.stashFilter = 'all';
-    const narrow = pw < 520;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'bold ' + (narrow ? 14 : 17) + 'px Georgia';
+    ctx.fillStyle = '#c9bfa8';
+    ctx.fillText('STASH', cx, cy - R - chipR - 8);
+    const total = Hero.stash.filter(it => it && !it.torch).length;
+    ctx.font = 'bold ' + (narrow ? 10 : 12) + 'px Georgia';
+    ctx.fillStyle = '#8fb0e8';
+    ctx.fillText(total + ' stored', cx, cy - (narrow ? 7 : 10));
+    ctx.font = (narrow ? 9 : 11) + 'px Georgia';
+    ctx.fillStyle = '#6f6552';
+    ctx.fillText(Hero.stashPerSlot().toLocaleString() + '/slot', cx, cy + (narrow ? 9 : 12));
 
-    // Controls, laid out in two clean rows so nothing overlaps on phones:
-    //   row 1 — Sort (left) + Search (right);  row 2 — the four filter chips.
-    let cy = py + 46;
-    const sorts = { score: 'Score', rarity: 'Rarity', slot: 'Slot', name: 'Name' };
-    const halfC = (pw - 32 - 8) / 2;
-    UI.btn(ctx, px + 16, cy, halfC, 26, 'Sort: ' + sorts[UI.sel.stashSort], () => {
-      const o = Object.keys(sorts);
-      UI.sel.stashSort = o[(o.indexOf(UI.sel.stashSort) + 1) % o.length];
-    }, { size: 11, border: '#6b5f80' });
-    UI.btn(ctx, px + 16 + halfC + 8, cy, halfC, 26,
-      UI.sel.stashSearch ? '\u{1F50D} ' + this.fitText(ctx, UI.sel.stashSearch, halfC - 34) : '\u{1F50D} Search…', () => {
-        let q = null;
-        try { q = window.prompt('Search stash by name:', UI.sel.stashSearch || ''); } catch (e) { /* blocked */ }
-        if (q !== null) { UI.sel.stashSearch = q.trim() || null; UI.sel.stashScroll = 0; }
-      }, { size: 10, border: '#6b5f80' });
-    cy += 32;
-    const fams = [['all', 'All'], ['weapon', 'Wpn'], ['armor', 'Armor'], ['jewelry', 'Jewel']];
-    const cw = (pw - 32 - 3 * 6) / 4;
-    fams.forEach((f, i) => {
-      UI.btn(ctx, px + 16 + i * (cw + 6), cy, cw, 26, f[1], () => { UI.sel.stashFilter = f[0]; UI.sel.stashScroll = 0; },
-        { size: 10, bg: UI.sel.stashFilter === f[0] ? 'rgba(60,52,78,0.95)' : undefined });
+    // The wheel — each chip shows how many items its bin holds.
+    slots.forEach((slot, i) => {
+      const a = -Math.PI / 2 + i * TAU / slots.length;
+      const bx = cx + Math.cos(a) * R, by = cy + Math.sin(a) * R;
+      const selected = UI.sel.stashSlot === slot;
+      const cnt = slot === 'torch'
+        ? Hero.stash.filter(it => it && it.torch).reduce((s, it) => s + (it.count || 1), 0)
+        : Hero.stashSlotCount(slot);
+      ctx.fillStyle = selected ? '#2e2a3a' : '#16121d';
+      ctx.beginPath(); ctx.arc(bx, by, chipR, 0, TAU); ctx.fill();
+      ctx.strokeStyle = cnt ? '#8fb0e8' : '#3a3448';
+      ctx.lineWidth = selected ? 3 : 2;
+      ctx.beginPath(); ctx.arc(bx, by, chipR, 0, TAU); ctx.stroke();
+      this.slotGlyph(ctx, slot, bx, by, chipR - 3);
+      if (cnt) {
+        const ex = bx + chipR * 0.72, ey = by - chipR * 0.72;
+        ctx.fillStyle = '#20364e';
+        ctx.beginPath(); ctx.arc(ex, ey, 8.5, 0, TAU); ctx.fill();
+        ctx.strokeStyle = '#8fb0e8'; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.arc(ex, ey, 8.5, 0, TAU); ctx.stroke();
+        ctx.fillStyle = '#dbeafe'; ctx.font = 'bold 9px Georgia';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(cnt > 99 ? '99+' : cnt, ex, ey + 0.5);
+      }
+      UI.register(bx - chipR - 3, by - chipR - 3, chipR * 2 + 6, chipR * 2 + 6,
+        () => { UI.sel.stashSlot = slot; UI.sel.scrollY = 0; });
     });
-    cy += 32;
 
-    UI.btn(ctx, px + 16, cy, pw - 32, 28,
-      'DEPOSIT ALL FROM BAG  (bag ' + Hero.bag.length + '/' + Hero.BAG_SIZE + ')',
+    // Detail column for the selected bin.
+    const dx = narrow ? 12 : W * 0.48;
+    const dw = narrow ? W - 24 : W * 0.48;
+    let dy = narrow ? cy + R + chipR + 20 : 54;
+    const slot = UI.sel.stashSlot;
+    const isTorch = slot === 'torch';
+    const items = isTorch ? Hero.stash.filter(it => it && it.torch) : Hero.stashSlotItems(slot);
+    if (!isTorch) items.sort((a, b) => Items.compareArrows(b, Hero.equipped[b.slot]) - Items.compareArrows(a, Hero.equipped[a.slot]));
+    const binCnt = isTorch ? items.reduce((s, it) => s + (it.count || 1), 0) : items.length;
+
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.fillText(ITEM_SLOTS[slot].label.toUpperCase() + ' BIN', dx, dy);
+    ctx.textAlign = 'right'; ctx.font = '11px Georgia'; ctx.fillStyle = '#8fb0e8';
+    ctx.fillText(binCnt + ' / ' + Hero.stashPerSlot().toLocaleString(), dx + dw, dy);
+    dy += 12;
+
+    const gs = n => n >= 1e6 ? (n / 1e6) + 'm' : n >= 1000 ? (n / 1000) + 'k' : '' + n;
+    const upCost = Hero.stashUpgradeCost();
+    const half = (dw - 8) / 2;
+    UI.btn(ctx, dx, dy, half, 26, 'DEPOSIT BAG (' + Hero.bag.length + ')',
       Hero.bag.length ? () => Items.depositAll() : null,
-      { size: 11, disabled: !Hero.bag.length, border: '#57b894', color: '#6ff7c3' });
-    cy += 36;
+      { size: 10, disabled: !Hero.bag.length, border: '#57b894', color: '#6ff7c3' });
+    UI.btn(ctx, dx + half + 8, dy, half, 26,
+      upCost === null ? 'STASH MAXED'
+        : 'UPGRADE → ' + STASH_PER_SLOT[Hero.stashTier + 1].toLocaleString() + ' (' + gs(upCost) + 'g)',
+      upCost !== null && Hero.gold >= upCost ? () => Hero.buyStashUpgrade() : null,
+      { size: 9, disabled: upCost === null || Hero.gold < upCost, border: '#8a6f4a', color: '#ffd76a' });
+    dy += 34;
 
-    // Filter + sort + search the view.
-    const famOf = s => (s === 'weapon' || s === 'offhand') ? 'weapon'
-      : (s === 'amulet' || s === 'ring1' || s === 'ring2') ? 'jewelry' : 'armor';
-    let view = Hero.stash.slice();
-    if (UI.sel.stashFilter !== 'all') view = view.filter(it => famOf(it.slot) === UI.sel.stashFilter);
-    if (UI.sel.stashSearch) {
-      const q = UI.sel.stashSearch.toLowerCase();
-      view = view.filter(it => it.name.toLowerCase().includes(q));
+    // Scrollable bin list — drag to scroll.
+    const listTop = dy, viewBot = H - 12, viewH = Math.max(60, viewBot - listTop);
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
+    UI.sel.scrollY = scrollY;
+    UI.sel.scrollRegion = { x: dx - 4, y: listTop - 4, w: dw + 8, h: viewH + 8 };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(dx - 4, listTop - 4, dw + 8, viewH + 8); ctx.clip();
+    let c = listTop;
+    const vis = (top, h) => (top - scrollY + h > listTop) && (top - scrollY < viewBot);
+    if (!items.length) {
+      ctx.textAlign = 'left'; ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText('Empty — deposit ' + ITEM_SLOTS[slot].label.toLowerCase() + ' items here.', dx, c - scrollY + 12);
+      c += 22;
     }
-    const sortFn = {
-      score: (a, b) => Items.score(b) - Items.score(a),
-      rarity: (a, b) => b.rarity - a.rarity || Items.score(b) - Items.score(a),
-      slot: (a, b) => a.slot.localeCompare(b.slot) || Items.score(b) - Items.score(a),
-      name: (a, b) => a.name.localeCompare(b.name)
-    }[UI.sel.stashSort];
-    view.sort(sortFn);
-
-    if (!view.length) {
-      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#544d44';
-      ctx.fillText(Hero.stash.length ? 'No items match this filter/search.' : 'Stash is empty — deposit items from your bag.', px + 16, cy + 18);
-      return;
-    }
-
-    const rowH = 34;
-    const listBot = py + ph - 38;
-    const visRows = Math.max(1, Math.floor((listBot - cy) / rowH));
-    const overflow = view.length > visRows;
-    const scroll = clamp(UI.sel.stashScroll || 0, 0, Math.max(0, view.length - visRows));
-    UI.sel.stashScroll = scroll;
-    view.slice(scroll, scroll + visRows).forEach((it, k) => {
-      const y = cy + k * rowH;
-      ctx.fillStyle = 'rgba(28,24,38,0.92)';
-      rr(ctx, px + 16, y, pw - 32, rowH - 4, 5); ctx.fill();
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 12px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
-      const cnt = it.torch && (it.count || 1) > 1 ? '  ×' + it.count : '';
-      ctx.fillText(this.fitText(ctx, it.name + cnt, pw * 0.36), px + 26, y + 11);
-      ctx.font = '10px Georgia'; ctx.fillStyle = '#8a8070';
-      // Torches have no item level — show their type/fuel instead of "lvl undefined".
-      const sub = it.torch
-        ? 'Torch · ' + (TORCH_TYPES[it.torch] ? TORCH_TYPES[it.torch].minutes + ' min' : 'light')
-        : ITEM_SLOTS[it.slot].label + ' · lvl ' + it.mLvl;
-      ctx.fillText(sub, px + 26, y + 23);
-      if (!it.torch) {
-        const arrows = Items.compareArrows(it, Hero.equipped[it.slot]);
-        ctx.textAlign = 'center'; ctx.font = 'bold 12px Georgia';
-        ctx.fillStyle = arrows > 0 ? '#4ade80' : arrows < 0 ? '#e04a5a' : '#9a9080';
-        ctx.fillText(arrows > 0 ? '▲'.repeat(arrows) : arrows < 0 ? '▼'.repeat(-arrows) : '—', px + pw * 0.50, y + (rowH - 4) / 2);
+    items.forEach(it => {
+      const yy = c - scrollY;
+      if (vis(c, 42)) {
+        ctx.fillStyle = 'rgba(28,24,38,0.92)';
+        rr(ctx, dx, yy, dw, 38, 6); ctx.fill();
+        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        ctx.font = 'bold 12px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
+        const nm = it.name + (it.torch && (it.count || 1) > 1 ? '  ×' + it.count : '');
+        ctx.fillText(this.fitText(ctx, nm, dw - 152), dx + 10, yy + 15);
+        ctx.font = '10px Georgia'; ctx.fillStyle = '#8a8070';
+        ctx.fillText(it.torch ? 'Torch' : (ITEM_SLOTS[it.slot].label + ' · lvl ' + it.mLvl), dx + 10, yy + 30);
+        const bw = 66;
+        UI.btn(ctx, dx + dw - bw * 2 - 12, yy + 5, bw, 28, it.torch ? 'TAKE 1' : 'WITHDRAW',
+          () => Items.fromStash(it), { size: 9, border: '#57b894', color: '#6ff7c3' });
+        if (!it.torch) {
+          const canSalv = Items.canSalvage(it);
+          UI.btn(ctx, dx + dw - bw - 6, yy + 5, bw, 28, 'SALVAGE',
+            canSalv ? () => { const k = Hero.stash.indexOf(it); if (k >= 0) { Hero.stash.splice(k, 1); Items.grantSalvage(it); Hero.saveStash(); Hero.save(); } } : null,
+            { size: 9, disabled: !canSalv, border: '#8a6f4a', color: '#ffb43a' });
+        }
       }
-      UI.tip(px + 16, y, pw * 0.45, rowH - 4, it.name, Items.statLines(it).join(' · '));
-      // Torches: WITHDRAW only (no salvage). Gear: WITHDRAW + SALVAGE.
-      if (it.torch) {
-        UI.btn(ctx, px + pw - 178, y + 3, 162, rowH - 10, 'WITHDRAW ONE', () => Items.fromStash(it),
-          { size: 10, border: '#57b894', color: '#6ff7c3' });
-      } else {
-        UI.btn(ctx, px + pw - 178, y + 3, 84, rowH - 10, 'WITHDRAW', () => Items.fromStash(it),
-          { size: 10, border: '#57b894', color: '#6ff7c3' });
-        const canSalv = Items.canSalvage(it);
-        UI.btn(ctx, px + pw - 88, y + 3, 72, rowH - 10, canSalv ? 'SALVAGE' : 'L' + Items.salvageReq(it),
-          canSalv ? () => { const i = Hero.stash.indexOf(it); if (i >= 0) { Hero.stash.splice(i, 1); Items.grantSalvage(it); Hero.save(); } } : null,
-          { size: 10, disabled: !canSalv, border: '#8a6f4a', color: '#ffb43a' });
-      }
+      c += 42;
     });
-    if (overflow) {
-      const half = (pw - 40) / 2, ay = py + ph - 32;
-      const maxS = view.length - visRows;
-      UI.btn(ctx, px + 16, ay, half, 24, '▲', scroll > 0 ? () => { UI.sel.stashScroll = scroll - 1; } : null, { size: 12, disabled: scroll <= 0 });
-      UI.btn(ctx, px + 24 + half, ay, half, 24, '▼', scroll < maxS ? () => { UI.sel.stashScroll = scroll + 1; } : null, { size: 12, disabled: scroll >= maxS });
-    }
+    ctx.restore();
+    UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 6);
+    ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+    if (scrollY > 1) ctx.fillText('▲ drag ▲', dx + dw / 2, listTop + 3);
+    if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', dx + dw / 2, viewBot - 1);
   },
 
   // ------------------------------------------------- wandering vendor
@@ -2944,9 +2955,9 @@ const Screens = {
     y += 36;
     // Keys + inventory-space row (dev grants).
     const kw = (pw - 32 - 2 * 6) / 3;
-    UI.btn(ctx, px + 16, y, kw, 30, '+5000 Bag',
-      () => { Hero.BAG_SIZE += 5000; UI.toast('+5000 inventory slots (now ' + Hero.BAG_SIZE + ')', '#6ff7c3'); Hero.save(); },
-      { size: 11, color: '#6ff7c3', border: '#3a7a6a' });
+    UI.btn(ctx, px + 16, y, kw, 30, 'Max Stash upgrades',
+      () => { Hero.stashTier = STASH_PER_SLOT.length - 1; Hero.saveStash(); Hero.save(); UI.toast('Stash maxed — ' + Hero.stashPerSlot().toLocaleString() + '/slot', '#8fb0e8'); },
+      { size: 10, color: '#8fb0e8', border: '#5f7ab0' });
     UI.btn(ctx, px + 16 + kw + 6, y, kw, 30, '+5 Master Keys',
       () => { Hero.masterKeys += 5; UI.toast('+5 Master Nephalem Rift Keys (' + Hero.masterKeys + ')', '#d8b4f0'); Hero.save(); },
       { size: 10, color: '#d8b4f0', border: '#5a3a7a' });
