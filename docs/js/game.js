@@ -363,6 +363,9 @@ const Game = {
       const mLvl = this.monsterLevel();
       const diff = DIFFICULTIES[Hero.difficulty];
       Hero.riftsCleared++;
+      // Track how many keys THIS guardian dropped, for the reward summary.
+      this.riftKeysDropped = 0;
+      this.riftKeyLabel = (kind === 'greater' || kind === 'season') ? 'Master Nephalem Rift Key' : 'Nephalem Rift Key';
       // Guaranteed loot.
       const pu = new Pickup(boss.x, boss.y, 'item');
       pu.item = Items.generate(mLvl, 0.3);
@@ -371,9 +374,11 @@ const Game = {
       // Nephalem (greater) Guardians drop 0–1 Master Nephalem Rift Keys.
       if (kind === 'normal') {
         const n = randInt(0, 3);
+        this.riftKeysDropped = n;
         if (n) { Hero.riftKeys += n; UI.toast('◈ ' + n + ' Nephalem Rift Key' + (n > 1 ? 's' : '') + '! (' + Hero.riftKeys + ' held)', '#b06adf'); }
       } else if (kind === 'greater') {
         const n = randInt(0, 1);
+        this.riftKeysDropped = n;
         if (n) { Hero.masterKeys += n; UI.toast('◈ Master Nephalem Rift Key! (' + Hero.masterKeys + ' held)', '#d8b4f0'); }
       }
       // Legendary chance scales with Torment: 5% at T1 → 30% at T16.
@@ -394,7 +399,7 @@ const Game = {
         sp.item = owned.size < 6 ? Items.generateSetPiece(mLvl) : Items.generatePowerItem(mLvl);
         this.pickups.push(sp);
         UI.toast('✦ ' + sp.item.name + '!', '#4ade80');
-        if (randInt(0, 1)) { Hero.masterKeys++; UI.toast('◈ Master Nephalem Rift Key! (' + Hero.masterKeys + ' held)', '#d8b4f0'); }
+        if (randInt(0, 1)) { Hero.masterKeys++; this.riftKeysDropped = (this.riftKeysDropped || 0) + 1; UI.toast('◈ Master Nephalem Rift Key! (' + Hero.masterKeys + ' held)', '#d8b4f0'); }
       } else if (kind === 'greater') {
         // Nephalem Guardians still occasionally cough up a set piece.
         if (Math.random() < 0.35) {
@@ -454,7 +459,10 @@ const Game = {
       const gem = Items.dropGem();
       Hero.gems.push(gem);
       lines.push([gemName(gem), GEM_TYPES[gem.type].color]);
-      lines.push(['Rifts cleared: ' + Hero.riftsCleared, '#b06adf']);
+      const kd = this.riftKeysDropped || 0;
+      const klbl = this.riftKeyLabel || 'Nephalem Rift Key';
+      lines.push([kd ? kd + '× ' + klbl + (kd > 1 ? 's' : '') + ' dropped' : 'No rift keys dropped this run',
+        kd ? '#b06adf' : '#9a9080']);
       this.rewardLines = lines;
       Hero.addXP(Math.round(400 * diff.reward));
       Hero.save();
