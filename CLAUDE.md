@@ -122,8 +122,19 @@ loot at the artisans. The hero is persistent (localStorage).
     · **T11–T16** Perfect (4). Gems drop ~5% on their own roll.
 - **Torment I–XVI unlock at level 70** (`DIFFICULTIES` = 20 tiers, generated;
   `legBonus` +1%…+33.3%). Stepper caps at Master below 70.
-- **Endgame (level 70)**: Nephalem Rift Guardians drop guaranteed `INARIUS_SET`
-  pieces (scaling via `Hero.riftsCleared`). Set bonuses hook: skills.js `boneArmor`
+- **Named power items in the wild (owner rule)**: `WILD_POWER_KEYS` (funeraryPick,
+  ironRose, coe, krysbin, bloodtide, cycleScythe, royalGrandeur) also seep into
+  wild loot — `Items.wildDrop()` makes ~10% of T1–T16 monster/chest drops a named
+  legendary. `generatePowerItem(mLvl, key, tiered=true)` scales it by Torment via
+  `tieredStars()`: legendary bands below T16, **full artifact grade (0–5★) at T16**.
+  Wild drop sites (Enemy.die, chests, breakables) call `wildDrop`; caches/act-boss
+  drops stay untiered.
+- **Set items are SEASON-ONLY (owner rule)**: `generateSetPiece` runs only in
+  season rifts (+ Haedrig's Gift dev cheat) — Nephalem/greater Guardians now drop a
+  tiered named legendary instead. Set pieces carry a `tieredStars()` star tier so
+  they scale legendary→artifact-5★ by Torment (each star = +1 affix + a power bump).
+- **Endgame (level 70)**: Nephalem Rift Guardians drop legendaries (leg chance 5%→30%
+  by Torment) and tiered named powers. Set bonuses hook: skills.js `boneArmor`
   (2/4pc) + Player.update bone tornado (6pc, `vulnT` on victims); `LEGENDARY_POWERS`
   checked via `p.powers` (bloodtide in deathNova, krysbin/corrodedFang in Enemy.hurt).
 - Patch notes screen shows FULL wrapped note text with ▲/▼ scrolling — never

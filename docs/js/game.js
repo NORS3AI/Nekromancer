@@ -396,16 +396,16 @@ const Game = {
       if (kind === 'season') {
         const owned = Hero.setPiecesOwned();
         const sp = new Pickup(boss.x, boss.y, 'item');
-        sp.item = owned.size < 6 ? Items.generateSetPiece(mLvl) : Items.generatePowerItem(mLvl);
+        sp.item = owned.size < 6 ? Items.generateSetPiece(mLvl) : Items.generatePowerItem(mLvl, null, true);
         this.pickups.push(sp);
         UI.toast('✦ ' + sp.item.name + '!', '#4ade80');
         if (randInt(0, 1)) { Hero.masterKeys++; this.riftKeysDropped = (this.riftKeysDropped || 0) + 1; UI.toast('◈ Master Nephalem Rift Key! (' + Hero.masterKeys + ' held)', '#d8b4f0'); }
       } else if (kind === 'greater') {
-        // Nephalem Guardians still occasionally cough up a set piece.
+        // Set items ONLY drop in Seasons (owner rule) — Nephalem Guardians
+        // instead cough up a tiered build-defining legendary.
         if (Math.random() < 0.35) {
-          const owned = Hero.setPiecesOwned();
           const sp = new Pickup(boss.x, boss.y, 'item');
-          sp.item = owned.size < 6 ? Items.generateSetPiece(mLvl) : Items.generatePowerItem(mLvl);
+          sp.item = Items.generatePowerItem(mLvl, null, true);
           this.pickups.push(sp);
         }
       }
@@ -570,7 +570,7 @@ const Game = {
       this.pickups.push(pu);
     } else if (roll < 0.49 + bonus) {
       const pu = new Pickup(b.x, b.y, 'item');
-      pu.item = Items.generate(this.monsterLevel());
+      pu.item = Items.wildDrop(this.monsterLevel());
       this.pickups.push(pu);
     }
   },
@@ -597,7 +597,7 @@ const Game = {
         this.pickups.push(g);
         if (Math.random() < 0.6) {
           const pu = new Pickup(o.x, o.y, 'item');
-          pu.item = Items.generate(this.monsterLevel(), 0.1);
+          pu.item = Items.wildDrop(this.monsterLevel(), 0.1);
           this.pickups.push(pu);
         }
         if (Math.random() < 0.35) {

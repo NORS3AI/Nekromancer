@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.7.1-alpha';
+const GAME_VERSION = 'v0.7.2-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.7.2-alpha', date: 'July 2026',
+    notes: [
+      'Build-defining legendaries now DROP IN THE WILD at Torment — Funerary Pick, Iron Rose, Convention of Elements, Krysbin\'s Sentence, Bloodtide Blade, Scythe of the Cycle and The Royal Grandeur each have a shot in the ~10% "named power" slice of T1–T16 loot',
+      'Their quality scales with the Torment level: legendary (1★ at T3–T7, 2★ T8–T13, 3★ T14–T15) and full ARTIFACT grade at T16 (up to 5★)',
+      'GRACE OF INARIUS set pieces now drop ONLY in Seasons — and they scale from legendary up to artifact-5★ by Torment (each star adds an affix and lifts every roll). Nephalem Rift Guardians now hand out a tiered named legendary instead of set pieces'
+    ]
+  },
   {
     v: 'v0.7.1-alpha', date: 'July 2026',
     notes: [
@@ -706,6 +714,12 @@ const LEGENDARY_POWERS = {
     desc: 'Reduces the number of items needed for set bonuses by 1 (to a minimum of 2). Drops from the Act 1 boss'
   }
 };
+
+// Named build-defining legendaries that ALSO seep into the wild loot pool at
+// Torment (owner spec): a 10% slice of wild drops in T1–T16 is one of these,
+// its tier scaling legendary→artifact with the Torment level. (They still drop
+// from their dedicated sources too — Act bosses, Rift Guardians.)
+const WILD_POWER_KEYS = ['funeraryPick', 'ironRose', 'coe', 'krysbin', 'bloodtide', 'cycleScythe', 'royalGrandeur'];
 
 // Skill runes — the full Diablo 3 Necromancer rune sets (choose one per skill
 // in the Skills menu).-marked runes have their combat effect wired; the rest

@@ -132,46 +132,77 @@ const Items = {
 
   // A Grace of Inarius piece the hero doesn't own yet (or a re-roll if all
   // six are claimed). Rift Guardian loot.
+  // Star tier for a tiered drop (wild power items, season set pieces) by
+  // Torment (owner spec): legendary bands 0–3 below T16, an artifact-grade
+  // roll (0–5★) at T16 — so quality varies from legendary up to artifact-5★.
+  tieredStars() {
+    const tt = tormentTier();
+    return tt >= 16 ? this.artifactStars() : this.legendaryStars(tt);
+  },
+
   generateSetPiece(mLvl, forceSlot) {
     const owned = Hero.setPiecesOwned();
     const missing = Object.keys(INARIUS_SET.pieces).filter(s => !owned.has(s));
     const slot = forceSlot || (missing.length ? pick(missing) : pick(Object.keys(INARIUS_SET.pieces)));
     const def = ITEM_SLOTS[slot];
     const R = RARITIES[5];
+    // Set pieces (season-only) scale legendary→artifact-5★ with Torment: each
+    // star adds an affix and lifts every roll (owner spec).
+    const stars = this.tieredStars();
+    const power = 1 + stars * 0.18;
     const lvlScale = 1 + mLvl * 0.11;
     const stats = {};
     const addStat = (key, mult) => {
-      stats[key] = (stats[key] || 0) + AFFIX_ROLLS[key].base * mult * lvlScale * rand(0.9, 1.2);
+      stats[key] = (stats[key] || 0) + AFFIX_ROLLS[key].base * mult * lvlScale * rand(0.9, 1.2) * power;
     };
     addStat(def.primary, 1.8 * R.mult);
     const pool = Object.keys(AFFIX_ROLLS).filter(k => k !== def.primary && !RESTRICTED_AFFIXES.has(k));
-    for (let i = 0; i < 3; i++) addStat(pick(pool), 0.9 * R.mult);
+    for (let i = 0; i < 3 + stars; i++) addStat(pick(pool), 0.9 * R.mult);
     if (slot === 'boots') stats.move = clamp((stats.move || 0) + rand(0.10, 0.25), 0.01, 0.25);
     // Grace of Inarius per-piece affixes (D3): Death Nova on helm/boots, Area
     // Damage on gloves/shoulders.
     if (slot === 'helm' || slot === 'boots') stats.dnova = 0.15;
     if (slot === 'gloves' || slot === 'shoulders') stats.area = 0.20;
-    return {
+    const item = {
       slot, rarity: 5, set: 'inarius',
-      name: INARIUS_SET.pieces[slot],
+      name: INARIUS_SET.pieces[slot] + (stars ? ' ' + '★'.repeat(stars) : ''),
       stats, mLvl, sockets: 1, gems: []
     };
+    if (stars) item.stars = stars;
+    return item;
   },
 
-  // Build-defining legendaries from the Inarius guide.
-  generatePowerItem(mLvl, forceKey) {
+  // Build-defining legendaries from the Inarius guide. `tiered` (wild drops)
+  // scales the piece legendary→artifact with the Torment level (owner spec).
+  generatePowerItem(mLvl, forceKey, tiered = false) {
     // Exclusive powers (e.g. The Royal Grandeur) only drop from their specific
     // source, never from the generic legendary pool.
     const key = forceKey || pick(Object.keys(LEGENDARY_POWERS).filter(k => !LEGENDARY_POWERS[k].exclusive));
     const P = LEGENDARY_POWERS[key];
     const item = this.generate(mLvl, 0, P.slot);
-    item.rarity = 4;
-    item.name = P.name;
+    let rarity = 4, stars = 0;
+    if (tiered) {
+      stars = this.tieredStars();
+      rarity = tormentTier() >= 16 ? 6 : 4;   // artifact-grade at T16, else legendary
+    }
+    item.rarity = rarity;
     item.power = key;
+    item.name = P.name + (stars ? ' ' + '★'.repeat(stars) : '');
+    if (stars) item.stars = stars; else delete item.stars;
+    delete item.trash;
     // Signature affixes that define the item (Area Damage, crit, Death Nova…).
     if (P.affixes) for (const [k, v] of Object.entries(P.affixes)) item.stats[k] = v;
     if (!item.sockets) item.sockets = Math.random() < 0.4 ? 1 : 0;
     return item;
+  },
+
+  // A single wild-loot roll: in Torment, a 10% slice becomes one of the named
+  // build-defining legendaries (tier by Torment); otherwise an ordinary drop.
+  wildDrop(mLvl, boost = 0) {
+    if (tormentTier() >= 1 && Math.random() < 0.10) {
+      return this.generatePowerItem(mLvl, pick(WILD_POWER_KEYS), true);
+    }
+    return this.generate(mLvl, boost);
   },
 
   // ------------------------------------------------------------------ torches

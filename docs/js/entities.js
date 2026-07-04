@@ -880,13 +880,13 @@ class Enemy {
     const dropChance = this.unique ? 1 : this.elite ? 0.45 : 0.035 * diff.reward;
     if (Math.random() < dropChance) {
       const pu = new Pickup(this.x, this.y, 'item');
-      pu.item = Items.generate(Game.monsterLevel(), (this.elite ? 0.12 : 0) + (this.unique ? 0.2 : 0));
+      pu.item = Items.wildDrop(Game.monsterLevel(), (this.elite ? 0.12 : 0) + (this.unique ? 0.2 : 0));
       Game.pickups.push(pu);
     }
     if (this.unique) {
       // The bounty boss always drops a second, better item.
       const pu = new Pickup(this.x, this.y, 'item');
-      pu.item = Items.generate(Game.monsterLevel() + 2, 0.35);
+      pu.item = Items.wildDrop(Game.monsterLevel() + 2, 0.35);
       Game.pickups.push(pu);
     }
     if (Math.random() < (this.unique ? 0.9 : this.elite ? 0.16 : 0.05)) {   // ~5% gem drop, tier by difficulty
