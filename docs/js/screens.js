@@ -2329,6 +2329,16 @@ const Screens = {
     if (UI.sel.stab === 'saves') { this.savesTab(ctx, W, H, px, py, pw, ph); return; }
     if (UI.sel.stab === 'keys') { this.keysTab(ctx, W, H, px, py, pw, ph); return; }
 
+    // The options list can exceed the panel on phones — scroll it (▲/▼), with
+    // the content clipped to the panel body below the tabs. A ▲/▼ row is
+    // reserved at the bottom when the content overflows.
+    const overflowing = (UI.sel.setMax || 0) > 0;
+    const bodyTop = py + 78, bodyBot = py + ph - 8 - (overflowing ? 34 : 0);
+    const sc = clamp(UI.sel.setScroll || 0, 0, UI.sel.setMax || 0);
+    UI.sel.setScroll = sc;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(px + 2, bodyTop, pw - 4, bodyBot - bodyTop); ctx.clip();
+
     // ---- audio: slider + mute per channel ----
     const chans = [
       ['master', 'Master volume'],
@@ -2338,7 +2348,7 @@ const Screens = {
       ['weather', 'Weather FX']
     ];
     const colW = twoCol ? (pw - 44) / 2 : pw - 32;
-    let ay = py + 92;
+    let ay = py + 92 - sc;
     ctx.textAlign = 'left';
     ctx.font = 'bold 12px Georgia';
     ctx.fillStyle = '#57b894';
@@ -2366,7 +2376,7 @@ const Screens = {
 
     // ---- gameplay (Diablo-Immortal-style options) ----
     let gx = twoCol ? px + 28 + colW : px + 16;
-    let gy = twoCol ? py + 106 : ay + 8;
+    let gy = twoCol ? py + 106 - sc : ay + 8;
     ctx.textAlign = 'left';
     ctx.font = 'bold 12px Georgia';
     ctx.fillStyle = '#57b894';
@@ -2437,6 +2447,17 @@ const Screens = {
       { size: 11, border: '#6b5f80' });
     UI.btn(ctx, gx + abw + 8, gy, abw, abh, GAME_VERSION, () => UI.open('patchnotes'),
       { size: 11, border: '#57b894', color: '#6ff7c3' });
+    ctx.restore();   // end scroll clip
+
+    // How far the content overruns the panel body → the scrollable range.
+    UI.sel.setMax = Math.max(0, (gy + sc + abh + 12) - bodyBot);
+    if (UI.sel.setMax > 0 || overflowing) {
+      const half = (pw - 40) / 2, ry = py + ph - 34;
+      UI.btn(ctx, px + 16, ry, half, 26, '▲', sc > 0 ? () => { UI.sel.setScroll = Math.max(0, sc - 100); } : null,
+        { size: 13, disabled: sc <= 0 });
+      UI.btn(ctx, px + 24 + half, ry, half, 26, '▼', sc < UI.sel.setMax ? () => { UI.sel.setScroll = Math.min(UI.sel.setMax, sc + 100); } : null,
+        { size: 13, disabled: sc >= UI.sel.setMax });
+    }
   },
 
   // ------------------------------------------------------- manual saves

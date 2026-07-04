@@ -15,14 +15,23 @@ const RARITIES = [
   { name: 'Rare',      color: '#ffd76a', mult: 1.9, salvage: 'crystal', salvageN: 1 },
   { name: 'Epic',      color: '#b06adf', mult: 2.3, salvage: 'crystal', salvageN: 2 },
   { name: 'Legendary', color: '#ff8c2a', mult: 2.7, salvage: 'soul',    salvageN: 1 },
-  { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 }
+  { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 },
+  { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v0.6.6-alpha';
+const GAME_VERSION = 'v0.6.7-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v0.6.7-alpha', date: 'July 2026',
+    notes: [
+      'LOOT TABLE overhaul (owner spec). New top rarity — the ARTIFACT (red) — plus LEGENDARY STAR tiers (★, ★★, ★★★, each a little stronger) and grey TRASH gear for salvage/vendor fodder',
+      'Drop odds now scale by difficulty: at Normal you mostly see commons (legendary ~1.9%, artifact ~0.1%); by Torment XVI legendaries hit 30% and artifacts 5%, with commons and trash drying up. ~5% of drops are gems',
+      'Settings screen now SCROLLS (▲/▼) so the bottom options (loot text style, corpse limit, about) are reachable on phones'
+    ]
+  },
   {
     v: 'v0.6.6-alpha', date: 'July 2026',
     notes: [

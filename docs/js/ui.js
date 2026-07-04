@@ -611,8 +611,8 @@ const UI = {
     for (const pk of Game.pickups) {
       if (pk.gone || pk.kind !== 'item' || !pk.item) continue;
       if (pk.item.rarity >= 4) {
-        this.star(ctx, x0 + pk.x / World.W * S, y0 + pk.y / World.H * S,
-          pk.item.rarity >= 5 ? '#4ade80' : '#ff8c2a', 4 + Math.sin(Game.time * 6) * 1.2);
+        const col = pk.item.rarity === 6 ? '#ff3b3b' : pk.item.rarity >= 5 ? '#4ade80' : '#ff8c2a';
+        this.star(ctx, x0 + pk.x / World.W * S, y0 + pk.y / World.H * S, col, 4 + Math.sin(Game.time * 6) * 1.2);
       }
     }
     if (Game.bossDead && World.portal) dot(World.portal.x, World.portal.y, '#b06adf', 3.5);

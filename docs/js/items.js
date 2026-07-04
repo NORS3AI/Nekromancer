@@ -9,54 +9,52 @@ const Items = {
 
   // ------------------------------------------------------------ generation
 
-  // Owner-specified drop table (before difficulty modifiers):
-  //   Common/trash 55% · Magic 20% · Rare 10% · Epic 5% · Legendary 1%,
-  //   with the leftover 4% "overlap" split between Rare and Epic (+2% each).
-  // Legendary by HERO level: 1% (1–59), 2.29% (60–69), 2.89% (70).
-  // Torment I–XVI add their flat legBonus (+1% … +33.3%) on top.
-  // `boost` (elites, bosses, masterwork) tilts the whole table upward;
-  // negative boost (vendor junk) tilts it down.
+  // Owner drop table, interpolated by difficulty from Normal → Torment XVI.
+  // Each outcome maps to a rarity index (+ legendary star tier / trash flag).
+  // NORMAL: trash 3 · common 50 · uncommon(Magic) 25 · rare 15 · epic 5 ·
+  //   legendary 1 · leg★ .4 · leg★★ .3 · leg★★★ .2 · artifact .1  (the 5%
+  //   chipped-gem slice is folded into common; gems drop on their own roll).
+  // T16: legendary total 30% · artifact 5% (trash gone, commons scarce).
+  // `boost` (elites/bosses/masterwork) nudges toward the top; negative tilts down.
+  DROP_N: [0.03, 0.50, 0.25, 0.15, 0.05, 0.01, 0.004, 0.003, 0.002, 0.001],
+  DROP_T: [0.00, 0.15, 0.15, 0.15, 0.20, 0.12, 0.08, 0.06, 0.04, 0.05],
+  DROP_MAP: [
+    { r: 0, trash: true }, { r: 0 }, { r: 1 }, { r: 2 }, { r: 3 },
+    { r: 4, stars: 0 }, { r: 4, stars: 1 }, { r: 4, stars: 2 }, { r: 4, stars: 3 }, { r: 6 }
+  ],
   rollRarity(boost = 0) {
-    const lvl = Hero.level;
-    let leg = lvl >= 70 ? 0.0289 : lvl >= 60 ? 0.0229 : 0.01;
-    leg += (DIFFICULTIES[Hero.difficulty].legBonus || 0);
-    let epic = 0.05 + 0.02;
-    let rare = 0.10 + 0.02;
-    let magic = 0.20;
-    if (boost > 0) {
-      leg += boost * 0.25;
-      epic += boost * 0.35;
-      rare += boost * 0.5;
-    } else if (boost < 0) {
-      leg = 0;
-      epic = Math.max(0, epic + boost * 0.2);
-      rare = Math.max(0.04, rare + boost * 0.3);
-      magic = Math.max(0.10, magic + boost * 0.4);
-    }
-    const r = Math.random();
-    if (r < leg) return 4;
-    if (r < leg + epic) return 3;
-    if (r < leg + epic + rare) return 2;
-    if (r < leg + epic + rare + magic) return 1;
-    return 0;
+    const di = Hero.difficulty || 0;                    // 0 (Normal) … 19 (T16)
+    let t = clamp(di / 19 + boost * 0.35, 0, 1);
+    if (Hero.level >= 70) t = Math.max(t, 0.12);        // endgame floor
+    const p = this.DROP_N.map((n, i) => n + (this.DROP_T[i] - n) * t);
+    let x = Math.random(), acc = 0;
+    for (let i = 0; i < p.length; i++) { acc += p[i]; if (x < acc) return this.DROP_MAP[i]; }
+    return { r: 0 };
   },
 
   generate(mLvl, boost = 0, forceSlot = null) {
     const slot = forceSlot || pick(Object.keys(ITEM_SLOTS).filter(s => !ITEM_SLOTS[s].torch));
     const def = ITEM_SLOTS[slot];
-    const rarity = this.rollRarity(boost);
+    const roll = this.rollRarity(boost);
+    const rarity = roll.r;
+    const stars = roll.stars || 0;      // legendary star tier (1-3)
+    const trash = !!roll.trash;         // grey junk
     const R = RARITIES[rarity];
     const lvlScale = 1 + mLvl * 0.11;
+    // Artifacts and starred legendaries roll a little hotter.
+    const power = (trash ? 0.6 : 1) * (1 + stars * 0.18) * (rarity === 6 ? 1.15 : 1);
 
     const stats = {};
     const addStat = (key, mult) => {
-      const roll = AFFIX_ROLLS[key].base * mult * lvlScale * rand(0.8, 1.2);
-      stats[key] = (stats[key] || 0) + roll;
+      const r2 = AFFIX_ROLLS[key].base * mult * lvlScale * rand(0.8, 1.2) * power;
+      stats[key] = (stats[key] || 0) + r2;
     };
     addStat(def.primary, 1.6 * R.mult);
-    // Restricted affixes (move/dnova/area) never roll from the generic pool.
+    // Affix count = rarity index (+1 per legendary star). Restricted affixes
+    // (move/dnova/area) never roll from the generic pool.
     const pool = Object.keys(AFFIX_ROLLS).filter(k => k !== def.primary && !RESTRICTED_AFFIXES.has(k));
-    for (let i = 0; i < rarity; i++) addStat(pick(pool), 0.85 * R.mult);
+    const affixN = rarity + stars;
+    for (let i = 0; i < affixN; i++) addStat(pick(pool), 0.85 * R.mult);
 
     // Boots can roll Movement Speed (1%–25%), a flat non-level-scaled roll.
     if (slot === 'boots' && Math.random() < 0.55) {
@@ -64,15 +62,23 @@ const Items = {
     }
 
     // Sockets: rarer items are likelier to bear one.
-    const sockets = Math.random() < [0.06, 0.14, 0.25, 0.38, 0.5, 0.6][rarity] ? 1 : 0;
+    const sockets = Math.random() < ([0.06, 0.14, 0.25, 0.38, 0.5, 0.6, 0.7][rarity] || 0.06) ? 1 : 0;
 
-    const prefix = rarity >= 4 ? pick(LEGENDARY_PREFIX)
-      : rarity === 3 ? pick(EPIC_PREFIX)
-      : rarity === 2 ? pick(RARE_PREFIX)
-      : rarity === 1 ? pick(MAGIC_PREFIX) : '';
-    const name = (prefix ? prefix + ' ' : '') + pick(def.nouns);
+    let prefix;
+    if (trash) prefix = pick(['Cracked', 'Rusted', 'Broken', 'Worn']);
+    else if (rarity === 6) prefix = pick(['Ancient', 'Primordial', 'Godforged', 'Eternal']);
+    else if (rarity >= 4) prefix = pick(LEGENDARY_PREFIX);
+    else if (rarity === 3) prefix = pick(EPIC_PREFIX);
+    else if (rarity === 2) prefix = pick(RARE_PREFIX);
+    else if (rarity === 1) prefix = pick(MAGIC_PREFIX);
+    else prefix = '';
+    let name = (prefix ? prefix + ' ' : '') + pick(def.nouns);
+    if (stars) name += ' ' + '★'.repeat(stars);
 
-    return { slot, rarity, name, stats, mLvl, sockets, gems: [] };
+    const item = { slot, rarity, name, stats, mLvl, sockets, gems: [] };
+    if (stars) item.stars = stars;
+    if (trash) item.trash = true;
+    return item;
   },
 
   generateGem(mLvl) {

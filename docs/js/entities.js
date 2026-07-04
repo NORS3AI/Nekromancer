@@ -889,7 +889,7 @@ class Enemy {
       pu.item = Items.generate(Game.monsterLevel() + 2, 0.35);
       Game.pickups.push(pu);
     }
-    if (Math.random() < (this.unique ? 0.9 : this.elite ? 0.14 : 0.015)) {
+    if (Math.random() < (this.unique ? 0.9 : this.elite ? 0.16 : 0.05)) {   // ~5% chipped-gem drop
       const pu = new Pickup(this.x, this.y, 'gem');
       pu.gem = Items.generateGem(Game.monsterLevel());
       Game.pickups.push(pu);
@@ -1723,7 +1723,7 @@ class Pickup {
       // Legendary (orange) and Set (green) drops fire a tall pillar of light.
       const rr2 = this.item.rarity;
       if (rr2 >= 4) {
-        const beamCol = rr2 >= 5 ? '78,222,128' : '255,140,42';
+        const beamCol = rr2 === 6 ? '255,59,59' : rr2 >= 5 ? '78,222,128' : '255,140,42';
         const bh2 = 150;
         const pillar = ctx.createLinearGradient(0, -bh2, 0, 0);
         pillar.addColorStop(0, `rgba(${beamCol},0)`);
