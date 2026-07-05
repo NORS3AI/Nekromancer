@@ -19,11 +19,21 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.4.0-alpha';
+const GAME_VERSION = 'v1.4.1-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.4.1-alpha', date: 'July 2026',
+    notes: [
+      'Horadric\'s Cube: the Instruction Leaflet now lists your Parts/Dust/Crystals/Souls at the top, "Instruction of Rathma" is the header, the placeholder icon is gone, and you can now run FOUR extracted powers at once (was 3)',
+      'The 6-piece Grace of Inarius BONE TORNADO is now huge and pronounced — a wide whirling circle of bone shards that grinds everything (and all the scenery) to bits',
+      'The Pause menu\'s abandon button now names the mode: Abandon Story Mode / Rift / Nephalem Rift / Set Dungeon / Adventure Mode / Bounty',
+      'Tidied The Wilds: removed the point/key flavor from Nephalem Rift and Seasons',
+      'Skills of Rathma and Passives screens are noticeably bigger on desktop'
+    ]
+  },
   {
     v: 'v1.4.0-alpha', date: 'July 2026',
     notes: [

@@ -180,28 +180,31 @@ class Player {
       this.boneArmorT -= dt;
       if (this.boneArmorT <= 0) this.boneArmorDR = 0;
       if (this.setCount >= 6) {
+        const R = 230;   // a WIDE grinding vortex of bone
         this.tornadoTick -= dt;
         if (this.tornadoTick <= 0) {
-          this.tornadoTick = 0.25;
-          const R = 150;
+          this.tornadoTick = 0.22;
           for (const e of Game.enemies) {
             if (e.dead || e.sleep || e.spawnT > 0) continue;
             if (dist(this.x, this.y, e.x, e.y) < R + e.r) {
               e.vulnT = 3;            // 6pc: +19000% damage taken from you (see hurt)
-              // Tornado hits for ~1000% weapon damage per tick.
-              e.hurt(60 * this.power(), { knock: { a: angleTo(this.x, this.y, e.x, e.y), f: 20 }, noSplash: true });
+              // Tornado hits for ~1000% weapon damage per tick + hurls them out.
+              e.hurt(60 * this.power(), { knock: { a: angleTo(this.x, this.y, e.x, e.y), f: 34 }, noSplash: true });
+              if (Math.random() < 0.5) fxBone(e.x, e.y, 4);   // shrapnel off every victim it grinds
             }
           }
-          World.smash(this.x, this.y, R); // the tornado grinds furniture to dust
-          if (Math.random() < 0.3) AudioSys.sfx('tornado');
+          World.smash(this.x, this.y, R); // grind all furniture in reach to bits
+          Particles.shake(2);
+          if (Math.random() < 0.5) AudioSys.sfx('tornado');
         }
-        // Orbiting bone shards.
-        const oa = Game.time * 7;
-        for (let i = 0; i < 2; i++) {
-          const a = oa + i * Math.PI;
-          Particles.spawn(this.x + Math.cos(a) * rand(40, 120), this.y + Math.sin(a) * rand(40, 120) * 0.6, {
-            count: 1, color: ['#e8e0cc', '#c9c0a8'], angle: a + Math.PI / 2, spread: 0.3,
-            minSpeed: 60, maxSpeed: 140, minLife: 0.15, maxLife: 0.35, minSize: 2, maxSize: 3.5
+        // A dense whirling ring of bone shards spanning the whole radius.
+        const oa = Game.time * 8;
+        for (let i = 0; i < 6; i++) {
+          const a = oa + i * TAU / 6;
+          const rr2 = R * rand(0.55, 0.98);
+          Particles.spawn(this.x + Math.cos(a) * rr2, this.y + Math.sin(a) * rr2 * 0.6, {
+            count: 1, color: ['#e8e0cc', '#c9c0a8', '#b0a488'], angle: a + Math.PI / 2, spread: 0.25,
+            minSpeed: 120, maxSpeed: 220, minLife: 0.15, maxLife: 0.4, minSize: 2.5, maxSize: 5
           });
         }
       }
@@ -299,6 +302,30 @@ class Player {
     ctx.beginPath(); ctx.ellipse(0, 4, 20, 9, 0, 0, TAU); ctx.stroke();
     ctx.fillStyle = 'rgba(0,0,0,0.45)';
     ctx.beginPath(); ctx.ellipse(0, 5, 13, 5.5, 0, 0, TAU); ctx.fill();
+
+    // 6pc Grace of Inarius: a big whirling CIRCLE OF BONES grinding around the hero.
+    if (this.setCount >= 6 && this.boneArmorT > 0) {
+      const R = 230, tt = Game.time;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(232,224,204,0.30)'; ctx.lineWidth = 3;
+      for (let ring = 0; ring < 2; ring++) {
+        const rr2 = R * (0.6 + ring * 0.32);
+        ctx.beginPath(); ctx.ellipse(0, 4, rr2, rr2 * 0.42, 0, 0, TAU); ctx.stroke();
+      }
+      ctx.fillStyle = '#e8e0cc'; ctx.strokeStyle = '#3a3020'; ctx.lineWidth = 1;
+      const n = 16;
+      for (let i = 0; i < n; i++) {
+        const a = tt * 5 + i * TAU / n;
+        const rr2 = R * (0.55 + 0.4 * ((i % 3) / 2));
+        const bx = Math.cos(a) * rr2, by = Math.sin(a) * rr2 * 0.42 + 4;
+        ctx.save(); ctx.translate(bx, by); ctx.rotate(a + Math.PI / 2);
+        ctx.beginPath(); ctx.roundRect(-2, -7, 4, 14, 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, -7, 2.4, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(0, 7, 2.4, 0, TAU); ctx.fill();
+        ctx.restore();
+      }
+      ctx.restore();
+    }
 
     if (this.dash) ctx.globalAlpha = 0.55;
     ctx.rotate(this.facing + Math.PI / 2);

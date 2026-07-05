@@ -906,10 +906,10 @@ const Screens = {
     ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#ff8c2a';
     ctx.fillText('Legendary powers extracted: ' + banked, rx + 14, y + 20);
     ctx.font = '11px Georgia'; ctx.fillStyle = active ? '#ffb86a' : '#9a9080';
-    ctx.fillText(active + ' / 3 powers active — swap them in the leaflet.', rx + 14, y + 40);
+    ctx.fillText(active + ' / 4 powers active — swap them in the leaflet.', rx + 14, y + 40);
     y += 68;
 
-    UI.btn(ctx, rx, y, rowW, 44, '📖   INSTRUCTION LEAFLET', () => { UI.open('recipes'); UI.sel.scrollY = 0; },
+    UI.btn(ctx, rx, y, rowW, 44, 'INSTRUCTION LEAFLET', () => { UI.open('recipes'); UI.sel.scrollY = 0; },
       { size: 15, color: '#e0a24a', border: '#8a6f4a' });
   },
 
@@ -933,10 +933,24 @@ const Screens = {
     let y = bodyTop + 6 - scrollY;
     const vis = (yy, hh) => yy + hh > bodyTop && yy < bodyBot;
 
-    // ---- INSTRUCTION 1: Instruction of Rathma (extraction) ----
+    // ---- Your extraction reagents, at the top ----
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'bold 10px Georgia';
+    if (vis(y, 14)) {
+      let mxx = rx;
+      for (const k of ['parts', 'dust', 'crystal', 'soul']) {
+        const txt = (Hero.mats[k] || 0) + ' ' + MATERIALS[k].name;
+        const w = ctx.measureText(txt).width;
+        if (mxx > rx && mxx + w > rx + rw) { mxx = rx; y += 14; }
+        ctx.fillStyle = MATERIALS[k].color;
+        ctx.fillText(txt, mxx, y + 8); mxx += w + 12;
+      }
+    }
+    y += 22;
+
+    // ---- Instruction of Rathma (extraction) ----
     ctx.font = 'bold 14px Georgia'; ctx.fillStyle = '#ff5a4a';
-    if (vis(y, 20)) ctx.fillText('Instruction 1 — Instruction of Rathma', rx, y + 6);
+    if (vis(y, 20)) ctx.fillText('Instruction of Rathma', rx, y + 6);
     y += 20;
     ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
     if (vis(y, 24)) y = wrapText(ctx, 'Rip the legendary power from a LOOSE item in your bag (not equipped, not stashed) into the Cube. The item is consumed.', rx, y + 8, rw, 13, 3) + 2;
@@ -976,9 +990,9 @@ const Screens = {
     }
     y += 10;
 
-    // ---- Powers in the Cube — toggle up to 3 active ----
+    // ---- Powers in the Cube — toggle up to 4 active ----
     ctx.textAlign = 'left'; ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#ff8c2a';
-    if (vis(y, 18)) ctx.fillText('Powers in the Cube (' + (Hero.cubeActive || []).length + '/3 active)', rx, y + 6);
+    if (vis(y, 18)) ctx.fillText('Powers in the Cube (' + (Hero.cubeActive || []).length + '/4 active)', rx, y + 6);
     y += 20;
     const bank = Hero.cubePowers || [];
     if (!bank.length) {
@@ -1226,7 +1240,7 @@ const Screens = {
     if (lvl >= 60) rows.push(['ADVENTURE MODE', 'A randomized land at your level, new every visit', '#ffd76a',
       () => { UI.close(); Game.startAdventure(); }]);
     if (lvl >= MAX_LEVEL) rows.push(['NEPHALEM RIFT', Hero.riftKeys > 0
-      ? 'Uses a Nephalem Rift Key · 750 points · Guardians drop Master keys & set pieces'
+      ? 'Uses a Nephalem Rift Key'
       : 'Requires a Nephalem Rift Key — normal Rift Guardians drop them', '#4ade80',
       Hero.riftKeys > 0 ? () => { UI.close(); Game.startRift('greater'); } : null]);
     if ((Hero.masterKeys || 0) > 0) Hero.seasonUnlocked = true;   // latch once earned
@@ -1923,11 +1937,12 @@ const Screens = {
     if (UI.sel.slotIdx === undefined) UI.sel.slotIdx = 0;
 
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 17px Georgia';
+    ctx.font = 'bold ' + (UI.desktop ? 22 : 17) + 'px Georgia';
     ctx.fillStyle = '#c9bfa8';
-    ctx.fillText('SKILLS OF RATHMA', W / 2, 22);
+    ctx.fillText('SKILLS OF RATHMA', W / 2, UI.desktop ? 26 : 22);
 
-    const pw = Math.min(600, W - 16);
+    // Roomier on desktop (mouse), tighter on phones.
+    const pw = Math.min(UI.desktop ? 860 : 600, W - 16);
     const px = W / 2 - pw / 2;
     UI.btn(ctx, px, 40, pw / 2 - 4, 32, 'ACTIVES', () => { UI.sel.tab = 'actives'; UI.sel.info = null; },
       { bg: UI.sel.tab === 'actives' ? 'rgba(60,52,78,0.95)' : undefined, size: 13 });
@@ -1995,7 +2010,7 @@ const Screens = {
 
     const nSlots = 6;
     const sw = pw / nSlots;
-    const cr = Math.min(26, sw / 2 - 4);
+    const cr = Math.min(UI.desktop ? 42 : 26, sw / 2 - 4);
     const cyc = sy + 24;
     for (let i = 0; i < nSlots; i++) {
       const bx = px + i * sw + sw / 2;
@@ -2249,12 +2264,13 @@ const Screens = {
       const bx = px + i * sw + sw / 2;
       const locked = i >= nSlots;
       const selected = UI.sel.slotIdx === i && !locked;
+      const pcr = Math.min(UI.desktop ? 34 : 23, sw / 2 - 4);
       ctx.globalAlpha = locked ? 0.35 : 1;
       ctx.fillStyle = selected ? '#2e2a3a' : '#16121d';
-      ctx.beginPath(); ctx.arc(bx, sy + 20, 23, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(bx, sy + 20, pcr, 0, TAU); ctx.fill();
       ctx.strokeStyle = selected ? '#b06adf' : '#3a3448';
       ctx.lineWidth = selected ? 3 : 2;
-      ctx.beginPath(); ctx.arc(bx, sy + 20, 23, 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.arc(bx, sy + 20, pcr, 0, TAU); ctx.stroke();
       const id = Hero.passives[i];
       ctx.textAlign = 'center';
       if (locked) {
@@ -2276,19 +2292,21 @@ const Screens = {
       if (!locked) UI.register(bx - 25, sy - 5, 50, 52, () => { UI.sel.slotIdx = i; });
     }
 
-    // More columns when the screen is too short for one tall list.
+    // More columns when the screen is too short for one tall list. Rows are
+    // taller on desktop so the passives read bigger.
     const gy = sy + 62;
-    const rowsFit = Math.max(3, Math.floor((H - gy - 100) / 30));
+    const rh = UI.desktop ? 40 : 30;
+    const rowsFit = Math.max(3, Math.floor((H - gy - 100) / rh));
     const listCols = Math.min(3, Math.max(1, Math.ceil(PASSIVE_DATA.length / rowsFit)));
     const colW2 = (pw - (listCols - 1) * 8) / listCols;
     PASSIVE_DATA.forEach((s, i) => {
       const cx2 = px + (i % listCols) * (colW2 + 8);
-      const y = gy + Math.floor(i / listCols) * 30;
+      const y = gy + Math.floor(i / listCols) * rh;
       if (y > H - 96) return;
       const locked = s.lvl > Hero.level;
       const active = Hero.passives.includes(s.id);
-      UI.tip(cx2, y, colW2, 26, s.name + (locked ? '  (lvl ' + s.lvl + ')' : ''), s.desc);
-      UI.btn(ctx, cx2, y, colW2, 26, '', locked ? null : () => {
+      UI.tip(cx2, y, colW2, rh - 4, s.name + (locked ? '  (lvl ' + s.lvl + ')' : ''), s.desc);
+      UI.btn(ctx, cx2, y, colW2, rh - 4, '', locked ? null : () => {
         UI.sel.info = s;
         const slot = clamp(UI.sel.slotIdx, 0, Math.max(0, nSlots - 1));
         const existing = Hero.passives.indexOf(s.id);
@@ -2304,10 +2322,10 @@ const Screens = {
         bg: active ? 'rgba(70,44,90,0.85)' : undefined
       });
       ctx.textAlign = 'left';
-      ctx.font = 'bold 12px Georgia';
+      ctx.font = 'bold ' + (UI.desktop ? 14 : 12) + 'px Georgia';
       ctx.fillStyle = locked ? '#5c5569' : (active ? '#d8b4f0' : '#c9bfa8');
       const name = s.name + (locked ? '  (lvl ' + s.lvl + ')' : '');
-      ctx.fillText(this.fitText(ctx, name, colW2 - 30), cx2 + 10, y + 13);
+      ctx.fillText(this.fitText(ctx, name, colW2 - 30), cx2 + 10, y + (rh - 4) / 2);
       const nameW = ctx.measureText(name).width;
       ctx.textAlign = 'right';
       ctx.font = '10px Georgia';
@@ -4046,7 +4064,7 @@ const Screens = {
     ctx.beginPath(); ctx.moveTo(px + 12, footerTop); ctx.lineTo(px + pw - 12, footerTop); ctx.stroke();
     const hasMaster = Hero.masterKeys > 0;
     UI.btn(ctx, px + 16, footerTop + 10, pw - 32, 40,
-      hasMaster ? `◈ START MASTER RIFT — 1500 pts  (1 Master Key)`
+      hasMaster ? `◈ START MASTER RIFT`
         : '◈ NEED A MASTER NEPHALEM RIFT KEY',
       hasMaster ? () => { UI.close(); Game.startRift('season'); } : null,
       { size: 13, disabled: !hasMaster, border: '#3a7a4a', color: '#4ade80' });
@@ -4076,7 +4094,12 @@ const Screens = {
     y += 50;
     UI.btn(ctx, cx, y, bw, 40, 'SETTINGS', () => UI.open('settings'), { size: 13 });
     y += 50;
-    UI.btn(ctx, cx, y, bw, 40, 'ABANDON BOUNTY → CAMP', () => Game.toCamp(), { size: 13, border: '#8a4550', color: '#e04a5a' });
+    const mode = Game.story ? 'Story Mode'
+      : Game.riftMode ? ((Game.zone && Game.zone.riftKind === 'season') ? 'Set Dungeon'
+        : (Game.zone && Game.zone.riftKind === 'greater') ? 'Nephalem Rift' : 'Rift')
+      : (Game.bountyPart === 0 && Game.journeyIdx === null) ? 'Adventure Mode'
+      : 'Bounty';
+    UI.btn(ctx, cx, y, bw, 40, 'ABANDON ' + mode.toUpperCase(), () => Game.toCamp(), { size: 13, border: '#8a4550', color: '#e04a5a' });
   },
 
   death(ctx, W, H) {

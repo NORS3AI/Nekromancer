@@ -401,7 +401,7 @@ const Items = {
     const i = Hero.cubeActive.indexOf(key);
     if (i >= 0) { Hero.cubeActive.splice(i, 1); }
     else {
-      if (Hero.cubeActive.length >= 3) { UI.toast('Only 3 powers can be active at once', '#9a9080'); AudioSys.sfx('denied'); return; }
+      if (Hero.cubeActive.length >= 4) { UI.toast('Only 4 powers can be active at once', '#9a9080'); AudioSys.sfx('denied'); return; }
       Hero.cubeActive.push(key);
     }
     this.apply();
