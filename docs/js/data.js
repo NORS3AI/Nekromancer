@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.2.1-alpha';
+const GAME_VERSION = 'v1.2.2-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.2.2-alpha', date: 'July 2026',
+    notes: [
+      'Character sheet now SHOWS every gem bonus that was previously invisible: Crit Damage (Emerald), Bonus Damage per hit (Ruby), Life per Hit (Amethyst), All Resist + Cooldown Reduction (Diamond) and Resource Cost Reduction (Topaz) — the values were always applied in combat, they just weren\'t displayed, so socketed gems looked like they did nothing',
+      'Socket-gem popup: gem choices now show each gem\'s ICON and TYPE name (Ruby / Emerald / Amethyst / Topaz / Diamond) instead of five identical "Marquise ×N" chips you couldn\'t tell apart',
+      'Fixed the torch action buttons reading a meaningless "L0" (looked like "Lo") — torches now show "—" for Salvage/Socket/Stash since they can\'t be broken down, socketed or stashed',
+      'Item tooltips no longer let long affix/gem lines spill off the edge of the card'
+    ]
+  },
   {
     v: 'v1.2.1-alpha', date: 'July 2026',
     notes: [

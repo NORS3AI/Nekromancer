@@ -1608,21 +1608,25 @@ const Screens = {
           UI.sel.item = null;
           UI.sel.scrollY = 0;   // back to the top so other strong items stay in view
         }, { border: '#57b894', color: '#6ff7c3', size: 12 });
+        // Torches are tools — they can't be salvaged, socketed or stashed, so
+        // those three actions read "—" (disabled) rather than a bogus "L0".
+        const isTorch = !!UI.sel.item.torch;
         const canSalv = Items.canSalvage(UI.sel.item);
-        UI.btn(ctx, dx + bw + 8, yy, bw, 34, canSalv ? 'SALVAGE' : 'L' + Items.salvageReq(UI.sel.item),
+        UI.btn(ctx, dx + bw + 8, yy, bw, 34, canSalv ? 'SALVAGE' : '—',
           canSalv ? () => { Items.salvage(UI.sel.item); UI.sel.item = null; } : null,
           { disabled: !canSalv, border: '#8a6f4a', color: '#ffb43a', size: 12 });
         const canSocket = !!UI.sel.item.sockets;
-        UI.btn(ctx, dx + (bw + 8) * 2, yy, bw, 34, 'SOCKET', canSocket ? () => {
+        UI.btn(ctx, dx + (bw + 8) * 2, yy, bw, 34, canSocket ? 'SOCKET' : (isTorch ? '—' : 'SOCKET'), canSocket ? () => {
           UI.sel.gemTarget = UI.sel.item;
           UI.sel.gemPick = true;
           UI.sel.gemKey = undefined;
         } : null, { disabled: !canSocket, border: '#7a4a8f', color: '#b06adf', size: 12 });
         // STASH: deposit this single item into its shared, per-slot vault bin.
-        const stashFull = !UI.sel.item.torch && Hero.stashSlotCount(UI.sel.item.slot) >= Hero.stashPerSlot();
-        UI.btn(ctx, dx + (bw + 8) * 3, yy, bw, 34, stashFull ? 'FULL' : 'STASH',
-          stashFull ? null : () => { if (Items.toStash(UI.sel.item)) UI.sel.item = null; },
-          { disabled: stashFull, border: '#5f7ab0', color: '#8fb0e8', size: 12 });
+        const stashFull = !isTorch && Hero.stashSlotCount(UI.sel.item.slot) >= Hero.stashPerSlot();
+        const canStash = !isTorch && !stashFull;
+        UI.btn(ctx, dx + (bw + 8) * 3, yy, bw, 34, isTorch ? '—' : (stashFull ? 'FULL' : 'STASH'),
+          canStash ? () => { if (Items.toStash(UI.sel.item)) UI.sel.item = null; } : null,
+          { disabled: !canStash, border: '#5f7ab0', color: '#8fb0e8', size: 12 });
       }
       c += 34;
     } else if (equipped && (equipped.sockets || (equipped.gems && equipped.gems.length))) {
@@ -1677,7 +1681,8 @@ const Screens = {
     }
     const groups = Object.values(groupsMap).sort((a, b) => b.tier - a.tier);
     const shown = groups.slice(0, 12);
-    const rows = Math.max(1, Math.ceil(shown.length / 4));
+    const GEM_COLS = 3;   // wider chips so the gem TYPE (not just the tier) reads
+    const rows = Math.max(1, Math.ceil(shown.length / GEM_COLS));
     const selGroup = UI.sel.gemKey ? groupsMap[UI.sel.gemKey] : null;
     const hasInfo = !!selGroup;
     const gems = target.gems || [];
@@ -1748,18 +1753,29 @@ const Screens = {
       ctx.fillStyle = '#9a9080';
       ctx.fillText('TAP A GEM TO INSPECT' + (groups.length > 12 ? '  (+' + (groups.length - 12) + ' more)' : ''), px + 16, y);
       y += 10;
+      const cw = (pw - 32) / GEM_COLS;
       shown.forEach((grp, k) => {
-        const gx = px + 16 + (k % 4) * ((pw - 32) / 4);
-        const gy = y + Math.floor(k / 4) * 36;
+        const gx = px + 16 + (k % GEM_COLS) * cw;
+        const gy = y + Math.floor(k / GEM_COLS) * 36;
         const selected = UI.sel.gemKey === grp.key;
-        UI.btn(ctx, gx, gy, (pw - 32) / 4 - 6, 30, GEM_TIERS[grp.tier] + (grp.count > 1 ? ' ×' + grp.count : ''), () => {
+        const gcol = GEM_TYPES[grp.type].color;
+        // Empty-label button = the tap target + selection highlight; the gem icon
+        // and its NAME (type + tier) are drawn on top so the five Marquises read
+        // apart at a glance.
+        UI.btn(ctx, gx, gy, cw - 6, 30, '', () => {
           UI.sel.gemKey = selected ? undefined : grp.key;
         }, {
-          size: 9, color: GEM_TYPES[grp.type].color,
           bg: selected ? 'rgba(70,44,90,0.95)' : undefined,
-          border: selected ? GEM_TYPES[grp.type].color : undefined
+          border: selected ? gcol : undefined
         });
+        drawGemIcon(ctx, grp.type, grp.tier, gx + 13, gy + 15, 8);
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.font = 'bold 10px Georgia'; ctx.fillStyle = gcol;
+        ctx.fillText(GEM_TYPES[grp.type].name + (grp.count > 1 ? ' ×' + grp.count : ''), gx + 24, gy + 10);
+        ctx.font = '8px Georgia'; ctx.fillStyle = '#8a8070';
+        ctx.fillText(GEM_TIERS[grp.tier], gx + 24, gy + 21);
       });
+      ctx.textAlign = 'left';
       y += rows * 36 + 4;
     }
 
@@ -1828,7 +1844,7 @@ const Screens = {
       ctx.fillStyle = ln[0] === '◆' ? '#8fe8c8' : ln[0] === '◇' ? '#6f6552'
         : ln[0] === '❢' ? '#ff9a6a' : ln[0] === '★' ? '#ff8c2a'
         : ln[0] === '◈' ? '#4ade80' : '#b5ab94';
-      ctx.fillText(ln, x + 16, y + 32 + i * 15);
+      ctx.fillText(this.fitText(ctx, ln, w - 26), x + 16, y + 32 + i * 15);
     });
     return y + h + 8;
   },
@@ -2904,11 +2920,17 @@ const Screens = {
     ly = header(lx, ly, '— COMBAT —', '#6ff7c3');
     ly = line(lx, ly, 'Damage', '×' + s.dmgMult.toFixed(2), '#6ff7c3');
     ly = line(lx, ly, 'Life', s.maxHp, '#e04a5a');
-    ly = line(lx, ly, 'Crit chance', Math.round(s.critChance * 100) + '%  (×1.8)', '#ffb43a');
+    ly = line(lx, ly, 'Crit chance', Math.round(s.critChance * 100) + '%  (×' + (1.8 + (s.critDamage || 0)).toFixed(2) + ')', '#ffb43a');
+    if (s.critDamage > 0) ly = line(lx, ly, 'Crit damage', '+' + Math.round(s.critDamage * 100) + '%  (Emerald)', '#4ade80');
+    if (s.flatDmg > 0) ly = line(lx, ly, 'Bonus damage', '+' + s.flatDmg + ' per hit  (Ruby)', '#e04a5a');
+    if (s.lifePerHit > 0) ly = line(lx, ly, 'Life per hit', '+' + s.lifePerHit + '  (Amethyst)', '#b06adf');
     ly = line(lx, ly, 'Max essence', s.maxEssence, '#4ecbe0');
     ly = line(lx, ly, 'Essence regen', s.essenceRegen.toFixed(1) + '/s', '#4ecbe0');
     ly = line(lx, ly, 'Life regen', s.hpRegen.toFixed(1) + '/s', '#e04a5a');
     ly = line(lx, ly, 'Armor', s.armor + '  (' + Math.round(s.armorDR * 100) + '% dmg reduced)', '#bfe8f4');
+    if (s.resistAll > 0) ly = line(lx, ly, 'All resist', s.resistAll + '  (' + Math.round(s.resistDR * 100) + '% reduced)  (Diamond)', '#bfe8f4');
+    if (s.cooldownReduction > 0) ly = line(lx, ly, 'Cooldown reduction', '-' + Math.round(s.cooldownReduction * 100) + '%  (Diamond)', '#bfe8f4');
+    if (s.resourceCostReduction > 0) ly = line(lx, ly, 'Resource cost', '-' + Math.round(s.resourceCostReduction * 100) + '%  (Topaz)', '#ffd76a');
     ly = line(lx, ly, 'Move speed', '+' + Math.round((s.moveSpeed || 0) * 100) + '%', '#6ff7c3');
     ly = line(lx, ly, 'Gold find', '+' + Math.round((s.goldFind - 1) * 100) + '%', '#ffd76a');
     if (s.xpBonus > 0) ly = line(lx, ly, 'Bonus XP', '+' + Math.round(s.xpBonus * 100) + '%', '#ffd76a');
