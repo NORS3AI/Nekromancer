@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.5.1-alpha';
+const GAME_VERSION = 'v1.5.2-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.5.2-alpha', date: 'July 2026',
+    notes: [
+      'FIXED iPhone music: the 16 soundtrack tracks are now served from the game\'s own site instead of a GitHub Release. The Release delivered them as a "download" (octet-stream/attachment) that iOS Safari refused to play inline — desktop tolerated it, iPhone did not. They now load as proper inline audio, so music plays on iPhone',
+      'The music is unchanged; only where it\'s hosted moved'
+    ]
+  },
   {
     v: 'v1.5.1-alpha', date: 'July 2026',
     notes: [

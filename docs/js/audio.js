@@ -17,12 +17,16 @@
 //   • a FULL URL ('https://…/track.mp3') — used as-is, so you can host anywhere
 //     (a GitHub Release, Cloudflare R2, Dropbox/Drive DIRECT-download links, …).
 //
-// RECOMMENDED for full-size tracks: a GitHub *Release* (free, big files OK,
-// doesn't bloat the repo) — set MUSIC_BASE_URL to its download base:
-//   const MUSIC_BASE_URL = 'https://github.com/nors3ai/Nekromancer/releases/download/music-v1/';
-// (Google Drive works only via 'uc?export=download&id=…' DIRECT links and is
-//  unreliable for big files — prefer a Release. See docs/sounds/README.md.)
-const MUSIC_BASE_URL = 'https://github.com/nors3ai/Nekromancer/releases/download/music-v1/';
+// The tracks are hosted SAME-ORIGIN in docs/sounds/music/ (MUSIC_BASE_URL = '').
+// This matters for mobile: a GitHub *Release* download serves audio as
+// `application/octet-stream` with `Content-Disposition: attachment` via a
+// redirect — desktop browsers sniff and play it, but iOS Safari treats it as a
+// download and refuses to play it inline, so music was silent on iPhone. GitHub
+// Pages serves docs/sounds/music/*.mp3 as real inline `audio/mpeg`, same-origin
+// and redirect-free, which iOS plays. (To host elsewhere instead, set
+// MUSIC_BASE_URL to a base that serves audio/mpeg INLINE with CORS — a plain
+// Release does not. See docs/sounds/README.md.)
+const MUSIC_BASE_URL = '';
 const MUSIC_PLAYLIST = [
   '1.mp3', '2.mp3', '3.mp3', '4.mp3', '5.mp3', '6.mp3', '7.mp3', '8.mp3',
   '9.mp3', '10.mp3', '11.mp3', '12.mp3', '13.mp3', '14.mp3', '15.mp3', '16.mp3'
