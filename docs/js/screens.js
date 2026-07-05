@@ -3577,6 +3577,16 @@ const Screens = {
       UI.toast('+6 of every gem', '#b06adf');
       Hero.save();
     });
+    row('+5 gem slots on equipped weapon', () => {
+      const w = Hero.equipped.weapon;
+      if (!w) { UI.toast('No weapon equipped', '#9a9080'); AudioSys.sfx('denied'); return; }
+      w.sockets = (w.sockets || 0) + 5;
+      w.maxSockets = Math.max(w.maxSockets || 0, w.sockets);   // let the Mystic keep pace
+      Items.apply();
+      UI.toast(w.name + ' now has ' + w.sockets + ' socket' + (w.sockets > 1 ? 's' : ''), '#6ff7c3');
+      AudioSys.sfx('gem');
+      Hero.save();
+    }, '#6ff7c3');
     row("✦ Haedrig's Gift — full Inarius set + legendaries to Stash", () => {
       const mLvl = Math.max(70, Hero.level);
       let n = 0;
