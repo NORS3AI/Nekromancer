@@ -1387,6 +1387,7 @@ const Game = {
     const torch = Hero.equipped.torch;
     const T = torch ? (TORCH_TYPES[torch.torch] || TORCH_TYPES.wood) : null;
     const sx = p.x - this.camera.x, sy = p.y - this.camera.y;
+    if (!isFinite(sx) || !isFinite(sy)) return;   // never let a bad coord crash the frame
     // Crypts are the true dark; open daylit lands stay bright (the torch just
     // adds a cozy glow there) so the wilds never read as "too dark".
     const dark = this.zone && this.zone.kind === 'dungeon';
@@ -1434,7 +1435,7 @@ const Game = {
       this.fogStamp = World.stamp;
     }
     const p = this.player;
-    if (p && !p.dead) {
+    if (p && !p.dead && isFinite(p.x) && isFinite(p.y)) {
       const fx = this.fogCtx;
       const bx = p.x / F, by = p.y / F, br = this.lightRadius() / F;
       // A feathered brush: solid clear at the centre, fading to nothing at the

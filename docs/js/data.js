@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.4.5-alpha';
+const GAME_VERSION = 'v1.4.6-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.4.6-alpha', date: 'July 2026',
+    notes: [
+      'Full code audit — verified every screen, all 21 skills, combat, map-chaining, the tile system and save/reload all run clean. Hardened the lighting/fog rendering so a stray bad coordinate can never freeze the frame'
+    ]
+  },
   {
     v: 'v1.4.5-alpha', date: 'July 2026',
     notes: [
