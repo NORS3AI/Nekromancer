@@ -1225,27 +1225,42 @@ const Game = {
   },
 
   // Fog of war: the whole map starts pitch black and only uncovers as the hero
-  // walks it (World.explored, the same grid the minimap uses). Drawn from a
-  // 1px-per-cell offscreen buffer scaled up with smoothing, so the revealed
-  // frontier reads as a soft fog edge instead of hard blocks.
+  // moves. Rather than a coarse per-cell grid (which unveils in blocky chunks),
+  // we keep a higher-res accumulation buffer and ERASE a soft-edged brush at the
+  // hero each frame — so the frontier melts away like a fine mist as you slide
+  // across the map. Scaled back up with smoothing for an even softer edge.
   drawWorldFog(ctx, cam) {
-    const ex = World.explored;
-    if (!ex || !World.cols) return;
-    const cols = World.cols, rows = World.rows;
-    if (!this.fogBuf || this.fogBuf.width !== cols || this.fogBuf.height !== rows) {
+    if (!World.W || !World.H) return;
+    const F = 6;   // world px per fog-buffer px (fine enough for a smooth mist)
+    const w = Math.max(1, Math.ceil(World.W / F));
+    const h = Math.max(1, Math.ceil(World.H / F));
+    if (!this.fogBuf || this.fogStamp !== World.stamp || this.fogBuf.width !== w || this.fogBuf.height !== h) {
       const c = document.createElement('canvas');
-      c.width = cols; c.height = rows;
-      this.fogBuf = c;
-      this.fogCtx = c.getContext('2d');
-      this.fogImage = this.fogCtx.createImageData(cols, rows);
-      // rgb stays 0 (black); we only ever touch the alpha channel below.
+      c.width = w; c.height = h;
+      const fx = c.getContext('2d');
+      fx.fillStyle = '#000';
+      fx.fillRect(0, 0, w, h);          // start fully shrouded
+      this.fogBuf = c; this.fogCtx = fx;
+      this.fogStamp = World.stamp;
     }
-    const d = this.fogImage.data;
-    for (let i = 0, n = cols * rows; i < n; i++) d[i * 4 + 3] = ex[i] ? 0 : 255;
-    this.fogCtx.putImageData(this.fogImage, 0, 0);
+    const p = this.player;
+    if (p && !p.dead) {
+      const fx = this.fogCtx;
+      const bx = p.x / F, by = p.y / F, br = this.lightRadius() / F;
+      // A feathered brush: solid clear at the centre, fading to nothing at the
+      // rim, punched out with destination-out so reveals accumulate permanently.
+      const g = fx.createRadialGradient(bx, by, br * 0.35, bx, by, br);
+      g.addColorStop(0, 'rgba(0,0,0,1)');
+      g.addColorStop(0.7, 'rgba(0,0,0,0.75)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      fx.globalCompositeOperation = 'destination-out';
+      fx.fillStyle = g;
+      fx.beginPath(); fx.arc(bx, by, br, 0, TAU); fx.fill();
+      fx.globalCompositeOperation = 'source-over';
+    }
     ctx.save();
     ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(this.fogBuf, -cam.x, -cam.y, cols * CELL, rows * CELL);
+    ctx.drawImage(this.fogBuf, -cam.x, -cam.y, w * F, h * F);
     ctx.restore();
   }
 };

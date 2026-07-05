@@ -45,6 +45,7 @@ const World = {
     if (zone.kind === 'dungeon') this.genDungeon(zone);
     else this.genOpen(zone);
     this.explored = new Uint8Array(this.cols * this.rows);
+    this.stamp = (this.stamp || 0) + 1;   // bumps so the world-fog buffer rebuilds
   },
 
   genOpen(zone) {
