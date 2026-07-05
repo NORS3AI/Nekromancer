@@ -15,7 +15,10 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  # Queue deploys instead of cancelling — a cancelled run can leave an orphaned
+  # "github-pages" artifact that makes the NEXT run fail with "Multiple artifacts
+  # named github-pages were unexpectedly found". Letting each finish avoids it.
+  cancel-in-progress: false
 
 jobs:
   deploy:
