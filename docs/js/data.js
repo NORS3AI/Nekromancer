@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.1.2-alpha';
+const GAME_VERSION = 'v1.1.3-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.1.3-alpha', date: 'July 2026',
+    notes: [
+      'A Ruby socketed in your HELM now grants a bonus +50% XP gain (softening to +5.0% at level 70, like all XP) — on top of its usual two stats',
+      'The Funerary Pick now drops with 0–3 gem sockets (rolled at random); the Mystic can uncover any it is missing, up to 3, just like a normal socket reveal',
+      'Artifacts can now gain sockets from the Mystic as well (were previously capped at zero)'
+    ]
+  },
   {
     v: 'v1.1.2-alpha', date: 'July 2026',
     notes: [
@@ -955,8 +963,8 @@ const GEM_STATS = {
 };
 
 // Most gem slots an item can hold, by rarity (Mystic enchants can uncover them):
-// Common 0 · Magic 1 · Rare 2 · Epic 3 · Legendary 4 · Set 4.
-const MAX_SOCKETS = [0, 1, 2, 3, 4, 4];
+// Common 0 · Magic 1 · Rare 2 · Epic 3 · Legendary 4 · Set 4 · Artifact 4.
+const MAX_SOCKETS = [0, 1, 2, 3, 4, 4, 4];
 
 // The two stats a gem grants, as a { key: value } object.
 function gemStats(gem) {

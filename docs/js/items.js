@@ -231,7 +231,14 @@ const Items = {
     delete item.trash;
     // Signature affixes that define the item (Area Damage, crit, Death Nova…).
     if (P.affixes) for (const [k, v] of Object.entries(P.affixes)) item.stats[k] = v;
-    if (!item.sockets) item.sockets = Math.random() < 0.4 ? 1 : 0;
+    if (key === 'funeraryPick') {
+      // The Funerary Pick carves 0–3 of its own gem sockets; the Mystic can
+      // uncover any it's missing, up to 3 (like a normal socket reveal).
+      item.sockets = randInt(0, 3);
+      item.maxSockets = 3;
+    } else if (!item.sockets) {
+      item.sockets = Math.random() < 0.4 ? 1 : 0;
+    }
     return item;
   },
 
@@ -323,6 +330,10 @@ const Items = {
     const gems = item.gems || [];
     for (const g of gems) {
       lines.push('◆ ' + gemName(g) + ': ' + gemStatText(g));
+      // A Ruby in the helm carries a bonus XP boon on top of its two stats.
+      if (g.type === 'ruby' && item.slot === 'helm') {
+        lines.push('   ⤷ +' + (Hero.level >= MAX_LEVEL ? '5.0' : '50') + '% XP (helm bonus)');
+      }
     }
     const empty = (item.sockets || 0) - gems.length;
     for (let i = 0; i < empty; i++) lines.push('◇ empty socket');
@@ -965,8 +976,9 @@ const Items = {
     }
     this.pay(cost);
     item.enchants = (item.enchants || 0) + 1;
-    // Rare 10% chance: the Mystic uncovers a new gem slot, up to the rarity cap.
-    const maxS = MAX_SOCKETS[item.rarity] || 0;
+    // Rare 10% chance: the Mystic uncovers a new gem slot, up to the item's cap
+    // (a per-item override like the Funerary Pick's 3, else the rarity cap).
+    const maxS = item.maxSockets != null ? item.maxSockets : (MAX_SOCKETS[item.rarity] || 0);
     if ((item.sockets || 0) < maxS && Math.random() < 0.10) {
       item.sockets = (item.sockets || 0) + 1;
       this.apply();
@@ -1027,6 +1039,9 @@ const Items = {
         if (gs.rcr)     rcr += gs.rcr;
         if (gs.resAll)  resAll += gs.resAll;
         if (gs.cdr)     cdr += gs.cdr;
+        // D3 rule: a Ruby socketed in the HELM grants bonus XP — +50%
+        // (shrinks to 5.0% at the level cap, like all XP gain).
+        if (g.type === 'ruby' && slot === 'helm') xpBonus += at70 ? 0.05 : 0.50;
       }
     };
     for (const slot of Object.keys(ITEM_SLOTS)) gather(Hero.equipped[slot], slot);
