@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.1.9-alpha';
+const GAME_VERSION = 'v1.2.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.2.0-alpha', date: 'July 2026',
+    notes: [
+      'The Town Portal is now bound to the T key on desktop (rebindable in Settings → Keys → "Town portal")'
+    ]
+  },
   {
     v: 'v1.1.9-alpha', date: 'July 2026',
     notes: [

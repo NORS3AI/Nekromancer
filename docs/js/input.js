@@ -71,6 +71,7 @@ const Input = {
         // menu, the town menu exits to the wilds; everything else closes/pauses.
         if (action === 'pause') UI.screen ? UI.closeAction()() : UI.open('pause');
         else if (action === 'potion' && this.gameplayLive()) Game.player.drinkPotion();
+        else if (action === 'portal' && this.gameplayLive()) Game.castTownPortal();
       } else if (action === 'pause') {
         if (UI.screen) UI.closeAction()();
         else if (Game.state === 'map') Game.state = 'camp';

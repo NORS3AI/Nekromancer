@@ -13,6 +13,7 @@ const KEY_ACTIONS = [
   ['primary', 'Primary attack'],
   ['skill1', 'Skill 1'], ['skill2', 'Skill 2'], ['skill3', 'Skill 3'], ['skill4', 'Skill 4'],
   ['potion', 'Health potion'],
+  ['portal', 'Town portal'],
   ['inventory', 'Inventory'], ['skills', 'Skills'],
   ['passives', 'Passives'], ['character', 'Character'],
   ['pause', 'Pause / back'], ['mute', 'Mute audio']
@@ -24,6 +25,7 @@ const KEY_DEFAULTS = {
   primary: ['Space', 'KeyJ'],
   skill1: ['Digit1'], skill2: ['Digit2'], skill3: ['Digit3'], skill4: ['Digit4'],
   potion: ['KeyQ'],
+  portal: ['KeyT'],
   inventory: ['KeyI', 'KeyB'], skills: ['KeyK'],
   passives: ['KeyP'], character: ['KeyC'],
   pause: ['Escape'], mute: ['KeyM']
