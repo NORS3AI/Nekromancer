@@ -3821,11 +3821,11 @@ const Screens = {
       UI.toast('+100 of every material', '#ffd76a');
       Hero.save();
     });
-    row('Add 6 of each gem type', () => {
+    row('Add 6 Marquise of each gem type', () => {
       for (const type of Object.keys(GEM_TYPES)) {
-        for (let i = 0; i < 6; i++) Hero.gems.push({ type, tier: 2 });
+        for (let i = 0; i < 6; i++) Hero.gems.push({ type, tier: GEM_MAX_TIER });
       }
-      UI.toast('+6 of every gem', '#b06adf');
+      UI.toast('+6 Marquise of every gem', '#b06adf');
       Hero.save();
     });
     row('+5 gem slots on equipped weapon', () => {
