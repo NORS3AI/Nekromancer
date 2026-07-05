@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.5.0-alpha';
+const GAME_VERSION = 'v1.5.1-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.5.1-alpha', date: 'July 2026',
+    notes: [
+      'New Settings ▸ Audio ▸ "Mono audio (single speaker)" toggle — folds the game audio to one channel so a single or mono Bluetooth speaker plays the whole mix',
+      'Note: Mono affects effects, ambience, weather and the built-in score; the uploaded music tracks play through your phone directly (the OS already routes them to a paired Bluetooth speaker automatically)'
+    ]
+  },
   {
     v: 'v1.5.0-alpha', date: 'July 2026',
     notes: [

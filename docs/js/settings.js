@@ -71,7 +71,8 @@ const Settings = {
     dpsLocked: true,      // lock the DPS meter's position
     dpsX: null, dpsY: null, // custom DPS meter position (null = default)
     corpseCap: 100,       // corpses linger until this many exist (stress test)
-    cursorScale: 1        // bone-hand mouse cursor size: 1× / 2× / 3×
+    cursorScale: 1,       // bone-hand mouse cursor size: 1× / 2× / 3×
+    mono: false           // fold WebAudio output to one channel (single/mono speaker)
   },
   keys: JSON.parse(JSON.stringify(KEY_DEFAULTS)),  // action -> [KeyboardEvent.code]
   _codeToAction: {},
@@ -160,5 +161,6 @@ const Settings = {
 
   applyAudio() {
     AudioSys.setVolumes();
+    AudioSys.applyOutputRouting();
   }
 };

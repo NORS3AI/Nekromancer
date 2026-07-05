@@ -32,6 +32,7 @@ const MUSIC_PLAYLIST = [
 const AudioSys = {
   ctx: null,
   master: null,
+  monoMix: null,        // 1-channel downmix node for the Mono setting
   ch: {},               // sfx / music / ambience / weather gain nodes
   enabled: true,
   musicTimer: null,
@@ -58,13 +59,20 @@ const AudioSys = {
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
       this.master = this.ctx.createGain();
-      this.master.connect(this.ctx.destination);
+      // A 1-channel node used to fold the whole mix to mono (Mono setting). The
+      // master's output goes either straight to the speakers (stereo) or through
+      // this node first — wired live by applyOutputRouting().
+      this.monoMix = this.ctx.createGain();
+      this.monoMix.channelCount = 1;
+      this.monoMix.channelCountMode = 'explicit';
+      this.monoMix.channelInterpretation = 'speakers';
       for (const name of ['sfx', 'music', 'ambience', 'weather']) {
         const g = this.ctx.createGain();
         g.connect(this.master);
         this.ch[name] = g;
       }
       this.setVolumes();
+      this.applyOutputRouting();
       this.startMusic();
     } catch (e) {
       this.enabled = false;
@@ -98,6 +106,25 @@ const AudioSys = {
     if (!el || this.usingFileMusic || !el.paused) return;
     const pr = el.play();
     if (pr && pr.catch) pr.catch(() => {});
+  },
+
+  // Route the master either straight to the speakers (stereo) or through the
+  // 1-channel monoMix first (Settings ▸ Audio ▸ Mono) — handy for a single or
+  // mono Bluetooth speaker so it plays the whole mix. NOTE: this only covers the
+  // WebAudio graph (effects/ambience/weather + the built-in score); the uploaded
+  // music tracks play through the OS on their own <audio> element and can't be
+  // folded here (cross-origin Release, no CORS to route them into WebAudio).
+  applyOutputRouting() {
+    if (!this.ctx || !this.master) return;
+    try { this.master.disconnect(); } catch (e) { /* */ }
+    try { if (this.monoMix) this.monoMix.disconnect(); } catch (e) { /* */ }
+    const mono = typeof Settings !== 'undefined' && Settings.g && Settings.g.mono;
+    if (mono && this.monoMix) {
+      this.master.connect(this.monoMix);
+      this.monoMix.connect(this.ctx.destination);
+    } else {
+      this.master.connect(this.ctx.destination);
+    }
   },
 
   now() { return this.ctx.currentTime; },

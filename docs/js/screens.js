@@ -3504,6 +3504,15 @@ const Screens = {
       }, 'mute');
       ay += audioStep;
     }
+    // Mono — fold the effects/ambience/weather/built-in score to one channel for
+    // a single or mono Bluetooth speaker. (Uploaded music tracks are unaffected.)
+    UI.check(ctx, px + 16, ay - 2, Settings.g.mono, () => {
+      Settings.g.mono = !Settings.g.mono;
+      Settings.save();
+      AudioSys.applyOutputRouting();
+      UI.toast(Settings.g.mono ? 'Mono audio ON (single speaker)' : 'Stereo audio ON', '#6ff7c3');
+    }, 'Mono audio (single speaker)');
+    ay += audioStep;
 
     // ---- gameplay (Diablo-Immortal-style options) ----
     let gx = twoCol ? px + 28 + colW : px + 16;
