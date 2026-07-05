@@ -361,7 +361,52 @@ const Items = {
       const it = Hero.equipped[slot];
       if (it && it.power) p[it.power] = true;
     }
+    // Cube: up to 3 EXTRACTED legendary powers the hero has switched on apply
+    // even without the item equipped (Kanai-style).
+    for (const k of (Hero.cubeActive || [])) if (LEGENDARY_POWERS[k]) p[k] = true;
     return p;
+  },
+
+  // Loose bag legendaries that carry an extractable power AND aren't already in
+  // the Cube. (Equipped or stashed items don't qualify — must be in inventory.)
+  extractable() {
+    return Hero.bag.filter(it => it && it.power && !it.torch && LEGENDARY_POWERS[it.power]
+      && !(Hero.cubePowers || []).includes(it.power));
+  },
+
+  extractCost() { return { parts: 30, dust: 50, crystal: 50, soul: 3 }; },
+
+  // Instruction of Rathma: rip the legendary power out of a loose item into the
+  // Cube's bank (destroys the item), paying reagents.
+  extractPower(item) {
+    if (!item || !item.power || !LEGENDARY_POWERS[item.power]) return;
+    if ((Hero.cubePowers || []).includes(item.power)) { UI.toast('That power is already in the Cube', '#9a9080'); return; }
+    const c = this.extractCost();
+    for (const [k, n] of Object.entries(c)) {
+      if ((Hero.mats[k] || 0) < n) { UI.toast('Need ' + n + ' ' + MATERIALS[k].name, '#9a9080'); AudioSys.sfx('denied'); return; }
+    }
+    for (const [k, n] of Object.entries(c)) Hero.mats[k] -= n;
+    const i = Hero.bag.indexOf(item);
+    if (i >= 0) Hero.bag.splice(i, 1);
+    Hero.cubePowers = Hero.cubePowers || [];
+    Hero.cubePowers.push(item.power);
+    Hero.save();
+    UI.toast('Extracted: ' + LEGENDARY_POWERS[item.power].name + ' → the Cube', '#ff5a4a');
+    AudioSys.sfx('setdrop');
+  },
+
+  // Toggle one of the banked powers on/off (max 3 active), then re-derive stats.
+  toggleCubePower(key) {
+    Hero.cubeActive = Hero.cubeActive || [];
+    const i = Hero.cubeActive.indexOf(key);
+    if (i >= 0) { Hero.cubeActive.splice(i, 1); }
+    else {
+      if (Hero.cubeActive.length >= 3) { UI.toast('Only 3 powers can be active at once', '#9a9080'); AudioSys.sfx('denied'); return; }
+      Hero.cubeActive.push(key);
+    }
+    this.apply();
+    Hero.save();
+    AudioSys.sfx('gem');
   },
 
   // Priority tiers for judging upgrades (owner rule): OFFENSE (damage & crit —

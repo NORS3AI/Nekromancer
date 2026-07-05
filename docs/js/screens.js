@@ -895,85 +895,145 @@ const Screens = {
     ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#9a9080';
     ctx.fillText('An ancient artifact of transmutation.', W / 2, py + 168);
 
-    // Golden Mirror row.
+    // Extracted-power summary (the Golden Mirror now lives at the END of the
+    // Instruction Leaflet, not here).
     let y = py + 194;
     const rowW = pw - 40, rx = px + 20;
-    if (Hero.orbAutoPickup) {
-      UI.panel(ctx, rx, y, rowW, 88);
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 14px Georgia'; ctx.fillStyle = '#ffd76a';
-      ctx.fillText('✦ Golden Mirror — transmuted', rx + 16, y + 26);
-      ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
-      ctx.fillText(this.fitText(ctx, 'Purple orbs (Rifts & Seasons) are now', rowW - 32), rx + 16, y + 48);
-      ctx.fillText(this.fitText(ctx, 'collected instantly — no chasing.', rowW - 32), rx + 16, y + 64);
-    } else if (Hero.goldenMirror) {
-      UI.panel(ctx, rx, y, rowW, 88);
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 14px Georgia'; ctx.fillStyle = '#ffd76a';
-      ctx.fillText('Golden Mirror', rx + 16, y + 22);
-      ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
-      ctx.fillText(this.fitText(ctx, 'Transmute to auto-collect every purple orb.', rowW - 32), rx + 16, y + 42);
-      UI.btn(ctx, rx + 16, y + 54, rowW - 32, 26, 'TRANSMUTE', () => {
-        Hero.goldenMirror = false;
-        Hero.orbAutoPickup = true;
-        Hero.save();
-        UI.toast('The Golden Mirror dissolves — purple orbs now come to you', '#ffd76a');
-        AudioSys.sfx('level');
-      }, { size: 13, color: '#ffd76a', border: '#8a6f2a' });
-    } else {
-      UI.panel(ctx, rx, y, rowW, 88);
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#6f6552';
-      ctx.fillText('Golden Mirror — not found', W / 2, y + 30);
-      ctx.font = '10px Georgia'; ctx.fillStyle = '#57503f';
-      ctx.fillText(this.fitText(ctx, 'The Treasure Goblin sometimes carries it (10%).', rowW - 32), W / 2, y + 54);
-    }
+    const active = (Hero.cubeActive || []).length, banked = (Hero.cubePowers || []).length;
+    UI.panel(ctx, rx, y, rowW, 56);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#ff8c2a';
+    ctx.fillText('Legendary powers extracted: ' + banked, rx + 14, y + 20);
+    ctx.font = '11px Georgia'; ctx.fillStyle = active ? '#ffb86a' : '#9a9080';
+    ctx.fillText(active + ' / 3 powers active — swap them in the leaflet.', rx + 14, y + 40);
+    y += 68;
 
-    // Recipe book button.
-    y += 100;
-    UI.btn(ctx, rx, y, rowW, 44, '📖   RECIPE BOOK', () => UI.open('recipes'),
+    UI.btn(ctx, rx, y, rowW, 44, '📖   INSTRUCTION LEAFLET', () => { UI.open('recipes'); UI.sel.scrollY = 0; },
       { size: 15, color: '#e0a24a', border: '#8a6f4a' });
   },
 
+  // The Instruction Leaflet: Instruction of Rathma (extract legendary powers into
+  // the Cube, pick up to 3 active) — with the Golden Mirror transmute at the end.
   recipes(ctx, W, H) {
     this.dim(ctx, W, H);
-    const pw = Math.min(400, W - 20);
+    const pw = Math.min(460, W - 20);
     const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 40, 360);
-    const py = Math.max(20, H / 2 - ph / 2);
-    UI.panel(ctx, px, py, pw, ph, 'RECIPE BOOK');
-
-    // A closed leather tome, clasped shut.
-    const cx = W / 2, cyc = py + ph * 0.44, t = Game.time;
+    const ph = Math.min(H - 24, 500);
+    const py = Math.max(12, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, 'INSTRUCTION LEAFLET');
+    const rx = px + 16, rw = pw - 32;
+    const bodyTop = py + 44, bodyBot = py + ph - 12;
+    const viewH = bodyBot - bodyTop;
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
+    UI.sel.scrollY = scrollY;
+    UI.sel.scrollRegion = { x: px + 2, y: bodyTop, w: pw - 4, h: viewH };
     ctx.save();
-    ctx.translate(cx, cyc + Math.sin(t * 1.3) * 3);
-    // Cover.
-    ctx.fillStyle = '#5a3320';
-    ctx.beginPath(); ctx.roundRect(-56, -70, 112, 140, 8); ctx.fill();
-    ctx.fillStyle = '#3f2416';
-    ctx.beginPath(); ctx.roundRect(-56, -70, 16, 140, 6); ctx.fill();   // spine
-    // Page edges.
-    ctx.fillStyle = '#e8dcc0';
-    ctx.fillRect(48, -62, 6, 124);
-    // Gilt border.
-    ctx.strokeStyle = '#c9a04a'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.roundRect(-46, -60, 88, 120, 5); ctx.stroke();
-    // Emblem — a small horadric cube.
-    ctx.strokeStyle = '#c9a04a'; ctx.lineWidth = 2.4;
-    ctx.beginPath();
-    ctx.moveTo(-16, -6); ctx.lineTo(0, -16); ctx.lineTo(16, -6);
-    ctx.lineTo(16, 12); ctx.lineTo(0, 22); ctx.lineTo(-16, 12); ctx.closePath(); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-16, -6); ctx.lineTo(0, 4); ctx.lineTo(16, -6); ctx.moveTo(0, 4); ctx.lineTo(0, 22); ctx.stroke();
-    // Clasp.
-    ctx.fillStyle = '#c9a04a';
-    ctx.fillRect(40, -8, 14, 16);
-    ctx.restore();
+    ctx.beginPath(); ctx.rect(px + 2, bodyTop, pw - 4, viewH); ctx.clip();
+    let y = bodyTop + 6 - scrollY;
+    const vis = (yy, hh) => yy + hh > bodyTop && yy < bodyBot;
 
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 16px Georgia'; ctx.fillStyle = '#e0a24a';
-    ctx.fillText('Coming soon ™', W / 2, py + ph - 52);
-    ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#9a9080';
-    ctx.fillText('The Cube\'s deeper transmutations await.', W / 2, py + ph - 30);
+    // ---- INSTRUCTION 1: Instruction of Rathma (extraction) ----
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'bold 14px Georgia'; ctx.fillStyle = '#ff5a4a';
+    if (vis(y, 20)) ctx.fillText('Instruction 1 — Instruction of Rathma', rx, y + 6);
+    y += 20;
+    ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
+    if (vis(y, 24)) y = wrapText(ctx, 'Rip the legendary power from a LOOSE item in your bag (not equipped, not stashed) into the Cube. The item is consumed.', rx, y + 8, rw, 13, 3) + 2;
+    else y += 26;
+    const c = Items.extractCost();
+    ctx.font = '10px Georgia';
+    if (vis(y, 14)) {
+      let cxx = rx;
+      for (const [k, n] of Object.entries(c)) {
+        const have = (Hero.mats[k] || 0) >= n;
+        ctx.fillStyle = have ? MATERIALS[k].color : '#a05a5a';
+        const txt = n + ' ' + MATERIALS[k].name;
+        ctx.fillText(txt, cxx, y + 8); cxx += ctx.measureText(txt).width + 12;
+      }
+    }
+    y += 20;
+    const items = Items.extractable();
+    if (!items.length) {
+      ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#6f6552';
+      if (vis(y, 16)) ctx.fillText('No loose legendary with an unclaimed power in your bag.', rx, y + 10);
+      y += 22;
+    } else {
+      for (const it of items) {
+        if (vis(y, 40)) {
+          ctx.fillStyle = 'rgba(28,24,38,0.9)'; rr(ctx, rx, y, rw, 38, 6); ctx.fill();
+          ctx.strokeStyle = '#8a3f3a'; ctx.lineWidth = 1; rr(ctx, rx, y, rw, 38, 6); ctx.stroke();
+          ctx.textAlign = 'left'; ctx.font = 'bold 11px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
+          ctx.fillText(this.fitText(ctx, it.name, rw - 96), rx + 10, y + 15);
+          ctx.font = '9px Georgia'; ctx.fillStyle = '#b06adf';
+          ctx.fillText(this.fitText(ctx, LEGENDARY_POWERS[it.power].name, rw - 96), rx + 10, y + 29);
+          const can = Object.entries(c).every(([k, n]) => (Hero.mats[k] || 0) >= n);
+          UI.btn(ctx, rx + rw - 84, y + 5, 78, 28, can ? 'EXTRACT' : 'NEED MATS',
+            can ? () => Items.extractPower(it) : null, { size: 10, disabled: !can, border: '#c22843', color: '#ff5a4a' });
+        }
+        y += 42;
+      }
+    }
+    y += 10;
+
+    // ---- Powers in the Cube — toggle up to 3 active ----
+    ctx.textAlign = 'left'; ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#ff8c2a';
+    if (vis(y, 18)) ctx.fillText('Powers in the Cube (' + (Hero.cubeActive || []).length + '/3 active)', rx, y + 6);
+    y += 20;
+    const bank = Hero.cubePowers || [];
+    if (!bank.length) {
+      ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#6f6552';
+      if (vis(y, 16)) ctx.fillText('Extract a power above to bank it here.', rx, y + 10);
+      y += 22;
+    } else {
+      for (const k of bank) {
+        const P = LEGENDARY_POWERS[k]; if (!P) continue;
+        const on = (Hero.cubeActive || []).includes(k);
+        if (vis(y, 46)) {
+          ctx.fillStyle = on ? 'rgba(70,44,26,0.95)' : 'rgba(24,20,30,0.9)'; rr(ctx, rx, y, rw, 44, 6); ctx.fill();
+          ctx.strokeStyle = on ? '#ff8c2a' : '#3a3448'; ctx.lineWidth = on ? 1.6 : 1; rr(ctx, rx, y, rw, 44, 6); ctx.stroke();
+          ctx.textAlign = 'left'; ctx.font = 'bold 11px Georgia'; ctx.fillStyle = on ? '#ffb86a' : '#c9bfa8';
+          ctx.fillText((on ? '◈ ' : '') + P.name, rx + 10, y + 14);
+          ctx.font = '9px Georgia'; ctx.fillStyle = '#9a9080';
+          this.fitText && wrapText(ctx, P.desc, rx + 10, y + 26, rw - 96, 11, 2);
+          UI.btn(ctx, rx + rw - 84, y + 8, 78, 28, on ? 'ACTIVE' : 'ACTIVATE',
+            () => Items.toggleCubePower(k), { size: 10, bg: on ? 'rgba(90,54,26,0.9)' : undefined, border: '#8a6f4a', color: on ? '#ffb86a' : '#c9bfa8' });
+        }
+        y += 48;
+      }
+    }
+    y += 12;
+
+    // ---- Golden Mirror (moved to the END of the leaflet) ----
+    ctx.textAlign = 'left'; ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#ffd76a';
+    if (vis(y, 18)) ctx.fillText('Golden Mirror', rx, y + 6);
+    y += 18;
+    if (Hero.orbAutoPickup) {
+      ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
+      if (vis(y, 16)) y = wrapText(ctx, '✦ Transmuted — purple orbs (Rifts & Seasons) now collect instantly.', rx, y + 10, rw, 13, 2) + 4;
+      else y += 20;
+    } else if (Hero.goldenMirror) {
+      ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
+      if (vis(y, 14)) ctx.fillText('Transmute to auto-collect every purple orb.', rx, y + 10);
+      y += 18;
+      if (vis(y, 28)) UI.btn(ctx, rx, y, rw, 26, 'TRANSMUTE GOLDEN MIRROR', () => {
+        Hero.goldenMirror = false; Hero.orbAutoPickup = true; Hero.save();
+        UI.toast('The Golden Mirror dissolves — purple orbs now come to you', '#ffd76a');
+        AudioSys.sfx('level');
+      }, { size: 12, color: '#ffd76a', border: '#8a6f2a' });
+      y += 32;
+    } else {
+      ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#57503f';
+      if (vis(y, 14)) ctx.fillText('Not found — the Treasure Goblin sometimes carries it (10%).', rx, y + 10);
+      y += 18;
+    }
+
+    ctx.restore();
+    UI.sel.scrollMax = Math.max(0, (y + scrollY) - bodyTop - viewH + 12);
+    if ((UI.sel.scrollMax || 0) > 0) {
+      ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+      if (scrollY > 1) ctx.fillText('▲ drag ▲', W / 2, bodyTop + 2);
+      if (scrollY < UI.sel.scrollMax - 1) ctx.fillText('▼ drag for more ▼', W / 2, bodyBot - 2);
+    }
   },
 
   // -------------------------------------------------------------- title
@@ -2973,7 +3033,7 @@ const Screens = {
     // set bonuses, so the player sees exactly what's shaping their build.
     ry = header(rx, ry, '— ACTIVE POWERS —', '#ff8c2a');
     ctx.textAlign = 'left'; ctx.font = '11px Georgia';
-    const cubeSel = (Hero.cubePowers && Hero.cubePowers.slice(0, 3)) || [];
+    const cubeSel = (Hero.cubeActive && Hero.cubeActive.slice()) || [];
     const powerKeys = Object.keys(s.powers || {});
     if (!powerKeys.length && !cubeSel.length && s.setCount < 2) {
       ctx.fillStyle = '#6f6552';

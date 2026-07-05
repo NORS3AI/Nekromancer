@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.3.1-alpha';
+const GAME_VERSION = 'v1.3.2-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.3.2-alpha', date: 'July 2026',
+    notes: [
+      'HORADRIC\'S CUBE — Instruction of Rathma: the Cube can now EXTRACT a legendary power from a loose item in your bag (not equipped, not stashed) for 30 Parts / 50 Dust / 50 Crystals / 3 Souls, banking it forever (the item is consumed)',
+      'Switch on up to 3 banked powers at once — they apply to your character WITHOUT wearing the item (Kanai-style). Check the Character Sheet\'s ACTIVE POWERS panel to see them',
+      'The Recipe Book is now the Instruction Leaflet; the Golden Mirror transmute moved to the END of it (and off the top of the Cube)',
+      'Only legendaries that actually carry a secondary power appear in the extract list — plain legendaries are skipped'
+    ]
+  },
   {
     v: 'v1.3.1-alpha', date: 'July 2026',
     notes: [
