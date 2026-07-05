@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.2.2-alpha';
+const GAME_VERSION = 'v1.2.3-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.2.3-alpha', date: 'July 2026',
+    notes: [
+      'TORCH LADDER expanded to SEVEN tiers: Wood (Common, r60) · Iron (Uncommon, r110) · NEW Wyrm-bound (Magic, r180) · Nephalem (Rare, r250) · NEW Master\'s Light (Epic, r350) · NEW Nekromancer\'s (Legendary, r500)',
+      'Three new crafting reagents — Wyrm Scale, Gluttonous Brain and Soul of Rathma — feed the top torches (their boss drop-sources are coming next)',
+      'The Torch Bench now scrolls so all seven torches fit, each showing its rarity tier'
+    ]
+  },
   {
     v: 'v1.2.2-alpha', date: 'July 2026',
     notes: [
@@ -947,15 +955,24 @@ const MATERIALS = {
   // Torch-crafting reagents.
   lumber:      { name: 'Lumber',                color: '#8a6f4a' },
   rivets:      { name: 'Iron Rivets',           color: '#9aa0a8' },
-  heartstring: { name: 'Nephalem Heartstring',  color: '#b06adf' }
+  heartstring: { name: 'Nephalem Heartstring',  color: '#b06adf' },
+  wyrmscale:   { name: 'Wyrm Scale',            color: '#4ea3c0' },   // roaming Wyrm boss (12%)
+  brain:       { name: 'Gluttonous Brain',      color: '#d0708c' },   // Gluttonous Brain ogre boss (10%)
+  rathmasoul:  { name: 'Soul of Rathma',        color: '#c88bf0' }    // rare caves + Rathma assassin (20%, 1–3)
 };
 
 // Torches — a consumable equipped in the Torch slot that lights the darkness
 // for a real-time duration, then burns out. Crafted at the Blacksmith.
+// Each torch carries a display tier (name + colour) since the ladder — Common,
+// Uncommon, Magic, Rare, Epic, Legendary — is finer than the gear rarity list.
+// `rarity` is the numeric order (sorting); `tier`/`tierColor` drive the label.
 const TORCH_TYPES = {
-  wood:     { name: 'Wood Torch',     minutes: 12, radius: 60,  color: '#ffb24a', rarity: 0, recipe: { lumber: 10 } },
-  iron:     { name: 'Iron Torch',     minutes: 37, radius: 110, color: '#ffcf6a', rarity: 2, recipe: { lumber: 10, rivets: 15 } },
-  nephalem: { name: 'Nephalem Torch', minutes: 75, radius: 180, color: '#d8b4f0', rarity: 4, recipe: { lumber: 25, rivets: 40, heartstring: 3 } }
+  wood:        { name: 'Wood Torch',           minutes: 12,  radius: 60,  color: '#ffb24a', rarity: 0, tier: 'Common',    tierColor: '#c9bfa8', recipe: { lumber: 10 } },
+  iron:        { name: 'Iron Torch',           minutes: 37,  radius: 110, color: '#ffcf6a', rarity: 1, tier: 'Uncommon',  tierColor: '#4ade80', recipe: { lumber: 10, rivets: 15 } },
+  wyrmbound:   { name: 'Wyrm-bound Torch',     minutes: 55,  radius: 180, color: '#7fe0ff', rarity: 2, tier: 'Magic',     tierColor: '#6a9aff', recipe: { lumber: 5, rivets: 10, wyrmscale: 5 } },
+  nephalem:    { name: 'Nephalem Torch',       minutes: 75,  radius: 250, color: '#d8b4f0', rarity: 3, tier: 'Rare',      tierColor: '#ffd76a', recipe: { lumber: 15, rivets: 30, heartstring: 3 } },
+  masterlight: { name: "Master's Light Torch", minutes: 110, radius: 350, color: '#ffe6a0', rarity: 4, tier: 'Epic',      tierColor: '#b06adf', recipe: { rivets: 50, heartstring: 5, brain: 1 } },
+  nekromancer: { name: "Nekromancer's Torch",  minutes: 180, radius: 500, color: '#c58bff', rarity: 5, tier: 'Legendary', tierColor: '#ff8c2a', recipe: { rathmasoul: 3 } }
 };
 // The lit/reveal radius (px) with no torch at all — deliberately tiny so the
 // dark presses right in until you craft one. Torches widen it (see TORCH_TYPES).

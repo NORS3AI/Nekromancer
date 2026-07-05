@@ -1825,19 +1825,23 @@ const Screens = {
     }
     const lines = Items.statLines(item);
     const h = 30 + lines.length * 15;
+    // Torches carry their own rarity ladder (Common → Legendary) and no ilvl.
+    const torchT = item.torch ? (TORCH_TYPES[item.torch] || TORCH_TYPES.wood) : null;
+    const rareCol = torchT ? torchT.tierColor : RARITIES[item.rarity].color;
+    const rareName = torchT ? torchT.tier : RARITIES[item.rarity].name;
     ctx.fillStyle = 'rgba(20,17,28,0.94)';
     rr(ctx, x, y, w, h, 6); ctx.fill();
-    ctx.strokeStyle = RARITIES[item.rarity].color;
+    ctx.strokeStyle = rareCol;
     ctx.lineWidth = 1.5;
     rr(ctx, x, y, w, h, 6); ctx.stroke();
     ctx.textAlign = 'left';
     ctx.font = 'bold 13px Georgia';
-    ctx.fillStyle = RARITIES[item.rarity].color;
+    ctx.fillStyle = rareCol;
     ctx.fillText(this.fitText(ctx, item.name, w - 116), x + 12, y + 15);
     ctx.textAlign = 'right';
     ctx.font = '10px Georgia';
     ctx.fillStyle = '#6f6552';
-    ctx.fillText(RARITIES[item.rarity].name + ' · lvl ' + item.mLvl, x + w - 10, y + 15);
+    ctx.fillText(torchT ? rareName : rareName + ' · lvl ' + item.mLvl, x + w - 10, y + 15);
     ctx.textAlign = 'left';
     ctx.font = '12px Georgia';
     lines.forEach((ln, i) => {
@@ -2380,25 +2384,26 @@ const Screens = {
     const ph = Math.min(H - 56, 468);
     UI.panel(ctx, px, 46, pw, ph, 'TORCH BENCH');
 
-    // Reagent tally.
+    // Reagent tally — every torch reagent, wrapping across lines as needed.
     ctx.textAlign = 'left';
     ctx.font = 'bold 11px Georgia';
-    const tally = [
-      [(Hero.mats.lumber || 0) + ' Lumber', MATERIALS.lumber.color],
-      [(Hero.mats.rivets || 0) + ' Rivets', MATERIALS.rivets.color],
-      [(Hero.mats.heartstring || 0) + ' Heartstring', MATERIALS.heartstring.color]
-    ];
-    let tx = px + 16;
-    for (const [txt, col] of tally) {
-      ctx.fillStyle = col;
-      ctx.fillText(txt, tx, 96);
-      tx += ctx.measureText(txt).width + 18;
+    const reagents = ['lumber', 'rivets', 'heartstring', 'wyrmscale', 'brain', 'rathmasoul'];
+    let tx = px + 16, ty = 96;
+    for (const k of reagents) {
+      const txt = (Hero.mats[k] || 0) + ' ' + MATERIALS[k].name;
+      const w = ctx.measureText(txt).width;
+      if (tx > px + 16 && tx + w > px + pw - 16) { tx = px + 16; ty += 15; }
+      ctx.fillStyle = MATERIALS[k].color;
+      ctx.fillText(txt, tx, ty);
+      tx += w + 16;
     }
+    ty += 17;
     ctx.font = '10px Georgia';
     ctx.fillStyle = '#8a8070';
     ctx.fillText(this.fitText(ctx,
-      'Smash chairs/tables/shelves for Lumber; cauldrons/braziers/pots for Rivets; Nephalem Mongrels drop Heartstring.',
-      pw - 32), px + 16, 112);
+      'Lumber from smashed furniture; Rivets from cauldrons/braziers; Heartstring from Nephalem Mongrels. Wyrm Scales, Gluttonous Brains and Souls of Rathma drop from their rare bosses.',
+      pw - 32), px + 16, ty);
+    ty += 17;
 
     // Current torch status.
     const eq = Hero.equipped.torch;
@@ -2407,17 +2412,29 @@ const Screens = {
       const mins = Math.floor(eq.burnT / 60), secs = Math.floor(eq.burnT % 60);
       const T = TORCH_TYPES[eq.torch] || TORCH_TYPES.wood;
       ctx.fillStyle = T.color;
-      ctx.fillText('Lit: ' + eq.name + '  —  ' + mins + ':' + String(secs).padStart(2, '0') + ' left', px + 16, 132);
+      ctx.fillText('Lit: ' + eq.name + '  —  ' + mins + ':' + String(secs).padStart(2, '0') + ' left', px + 16, ty);
     } else {
       ctx.fillStyle = '#6f6552';
-      ctx.fillText('No torch lit — darkness closes in.', px + 16, 132);
+      ctx.fillText('No torch lit — darkness closes in.', px + 16, ty);
     }
 
-    // Three craft rows.
-    const order = ['wood', 'iron', 'nephalem'];
-    let y = 146;
-    const rowH = 76;
-    for (const type of order) {
+    // Craft rows — all torches, DRAG to scroll (the ladder runs Common → Legendary).
+    const panelBot = 46 + ph;
+    const footTop = panelBot - 50;
+    const listTop = ty + 10;
+    const listBot = footTop - 4;
+    const viewH = Math.max(60, listBot - listTop);
+    const order = Object.keys(TORCH_TYPES);
+    const rowH = 72;
+    const scrollMax = Math.max(0, order.length * rowH - viewH);
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, scrollMax);
+    UI.sel.scrollY = scrollY; UI.sel.scrollMax = scrollMax;
+    UI.sel.scrollRegion = { x: px + 14, y: listTop, w: pw - 28, h: viewH };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(px + 14, listTop, pw - 28, viewH); ctx.clip();
+    order.forEach((type, i) => {
+      const y = listTop + i * rowH - scrollY;
+      if (y + rowH - 8 < listTop || y > listBot) return;   // off view: skip draw + hit
       const T = TORCH_TYPES[type];
       const can = Items.canCraftTorch(type);
       ctx.fillStyle = 'rgba(28,24,38,0.92)';
@@ -2425,19 +2442,20 @@ const Screens = {
       ctx.strokeStyle = can ? T.color : '#3a3448';
       ctx.lineWidth = 1.5;
       rr(ctx, px + 16, y, pw - 32, rowH - 8, 8); ctx.stroke();
-
-      // Name + duration.
+      // Name + rarity-tier badge.
       ctx.textAlign = 'left';
       ctx.font = 'bold 13px Georgia';
       ctx.fillStyle = T.color;
-      ctx.fillText(T.name, px + 28, y + 20);
+      ctx.fillText(T.name, px + 28, y + 18);
+      const nameW = ctx.measureText(T.name).width;   // measure at 13px, before the badge font
+      ctx.font = 'bold 9px Georgia';
+      ctx.fillStyle = T.tierColor;
+      ctx.fillText(T.tier.toUpperCase(), px + 34 + nameW, y + 17);
       ctx.font = '10px Georgia';
       ctx.fillStyle = '#9a9080';
-      ctx.fillText('Burns ' + T.minutes + ' min  ·  light radius ' + T.radius, px + 28, y + 36);
-
-      // Recipe (owned / needed per component). Short reagent names + a hard
-      // left edge at the CRAFT button so nothing slides under it on phones.
-      const shortMat = { lumber: 'Lumber', rivets: 'Rivets', heartstring: 'Heart' };
+      ctx.fillText('Burns ' + T.minutes + ' min  ·  light radius ' + T.radius, px + 28, y + 34);
+      // Recipe (owned / needed per component).
+      const shortMat = { lumber: 'Lumber', rivets: 'Rivets', heartstring: 'Heart', wyrmscale: 'Wyrm', brain: 'Brain', rathmasoul: 'Rathma' };
       ctx.font = (pw < 420 ? 10 : 11) + 'px Georgia';
       let rx = px + 28;
       const recipeRight = px + pw - 128;
@@ -2446,24 +2464,27 @@ const Screens = {
         const label = have + '/' + n + ' ' + (shortMat[k] || MATERIALS[k].name);
         if (rx + ctx.measureText(label).width > recipeRight) break;
         ctx.fillStyle = have >= n ? MATERIALS[k].color : '#a05a5a';
-        ctx.fillText(label, rx, y + 54);
-        rx += ctx.measureText(label).width + 14;
+        ctx.fillText(label, rx, y + 52);
+        rx += ctx.measureText(label).width + 12;
       }
-
       // Craft button.
-      UI.btn(ctx, px + pw - 118, y + 14, 92, rowH - 36, can ? 'CRAFT' : 'NEED MATS',
+      UI.btn(ctx, px + pw - 118, y + 12, 92, rowH - 32, can ? 'CRAFT' : 'NEED MATS',
         can ? () => Items.craftTorch(type) : null,
         { size: 11, disabled: !can, border: T.color, color: can ? T.color : '#5c5569' });
-
-      y += rowH;
+    });
+    ctx.restore();
+    if (scrollMax > 0) {
+      ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+      if (scrollY > 1) ctx.fillText('▲ drag ▲', px + pw / 2, listTop + 2);
+      if (scrollY < scrollMax - 1) ctx.fillText('▼ drag for more ▼', px + pw / 2, listBot - 1);
     }
 
     ctx.textAlign = 'center';
     ctx.font = 'italic 10px Georgia';
     ctx.fillStyle = '#6f6552';
-    ctx.fillText(this.fitText(ctx, 'Forged torches go to your inventory (they take no bag slot). Equip one from the Inventory wheel.', pw - 24),
-      px + pw / 2, y + 6);
-    UI.btn(ctx, px + 16, y + 14, pw - 32, 28, '«  BACK TO FORGE', () => UI.open('smith'),
+    ctx.fillText(this.fitText(ctx, 'Forged torches go to your inventory (no bag slot). Equip one from the Inventory wheel.', pw - 24),
+      px + pw / 2, footTop + 8);
+    UI.btn(ctx, px + 16, footTop + 18, pw - 32, 26, '«  BACK TO FORGE', () => UI.open('smith'),
       { size: 11, border: '#6b5f80' });
   },
 

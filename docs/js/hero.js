@@ -77,7 +77,7 @@ const Hero = {
   level: 1,
   xp: 0,
   gold: 0,
-  mats: { parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0 },
+  mats: { parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0, wyrmscale: 0, brain: 0, rathmasoul: 0 },
   gems: [],                 // [{type, tier}]
   bag: [],                  // unequipped items
   stash: [],                // shared vault, auto-sorted into equip-slot bins
@@ -114,7 +114,7 @@ const Hero = {
     if (!this.name) this.name = 'The Nekromancer';
     if (!this.eyeColor) this.eyeColor = '#6ff7c3';
     this.level = 1; this.xp = 0; this.gold = 0;
-    this.mats = { parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0 };
+    this.mats = { parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0, wyrmscale: 0, brain: 0, rathmasoul: 0 };
     this.gems = [];
     this.bag = [];
     // NOTE: stash is account-wide (shared vault) — a fresh character does NOT
@@ -231,7 +231,7 @@ const Hero = {
     Object.assign(this, {
       name: d.name || 'The Nekromancer', eyeColor: d.eyeColor || '#6ff7c3',
       level: d.level || 1, xp: d.xp || 0, gold: d.gold || 0,
-      mats: Object.assign({ parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0 }, d.mats),
+      mats: Object.assign({ parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0, wyrmscale: 0, brain: 0, rathmasoul: 0 }, d.mats),
       gems: d.gems || [], bag: d.bag || [], equipped: d.equipped || {},
       loadout: d.loadout || ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null],
       passives: d.passives || [null, null, null, null, null],
