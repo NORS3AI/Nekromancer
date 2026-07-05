@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.4.9-alpha';
+const GAME_VERSION = 'v1.5.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.5.0-alpha', date: 'July 2026',
+    notes: [
+      'Mobile music: the game now retries starting your music tracks on every tap, so a rejected or stalled first play (slow load / autoplay block) recovers instead of staying silent',
+      'NOTE for iPhone: music plays through HTML5 audio, which the phone\'s Ring/Silent switch mutes (game sound effects use a separate path and are unaffected). If you hear effects but no music, flip the Ring/Silent switch to Ring and turn media volume up'
+    ]
+  },
   {
     v: 'v1.4.9-alpha', date: 'July 2026',
     notes: [

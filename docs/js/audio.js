@@ -52,6 +52,7 @@ const AudioSys = {
   init() {
     if (this.ctx) {
       if (this.ctx.state === 'suspended') this.ctx.resume();
+      this.kickMusic();     // retry file music on later taps (mobile — see below)
       return;
     }
     try {
@@ -85,6 +86,18 @@ const AudioSys = {
 
   fileMusicVolume() {
     return clamp(Settings.volume('master') * Settings.volume('music'), 0, 1);
+  },
+
+  // Mobile browsers can REJECT or stall the very first el.play() — a slow Release
+  // fetch, an autoplay block, or a 302 redirect that breaks the user-gesture
+  // chain. That leaves the element paused with usingFileMusic=false (so the
+  // generative score covers the gap). Retry on every later user gesture until a
+  // real track is actually rolling; harmless once one is playing.
+  kickMusic() {
+    const el = this.musicEl;
+    if (!el || this.usingFileMusic || !el.paused) return;
+    const pr = el.play();
+    if (pr && pr.catch) pr.catch(() => {});
   },
 
   now() { return this.ctx.currentTime; },
@@ -173,6 +186,9 @@ const AudioSys = {
     const el = new Audio();
     el.preload = 'auto';
     el.loop = false;                    // we advance manually to chain the list
+    // iOS playback hints (inert for pure audio, but harmless and future-proof).
+    el.setAttribute('playsinline', '');
+    el.setAttribute('webkit-playsinline', '');
     // NOTE: do NOT set crossOrigin — we play the element directly (no WebAudio
     // graph), so cross-origin tracks play as opaque media without needing CORS
     // headers. Setting crossOrigin='anonymous' would REQUIRE them and could fail.
