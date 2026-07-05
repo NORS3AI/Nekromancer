@@ -28,6 +28,7 @@ const Screens = {
       case 'pause': this.pause(ctx, W, H); break;
       case 'reward': this.reward(ctx, W, H); break;
       case 'character': this.character(ctx, W, H); break;
+      case 'paragon': this.paragon(ctx, W, H); break;
       case 'stash': this.stash(ctx, W, H); break;
       case 'vendor': this.vendor(ctx, W, H); break;
       case 'settings': this.settings(ctx, W, H); break;
@@ -2956,7 +2957,7 @@ const Screens = {
     const twoCol = pw >= 420;
     const ph = Math.min(H - 16, twoCol ? 470 : 620);
     const py = Math.max(8, H / 2 - ph / 2);
-    UI.panel(ctx, px, py, pw, ph, this.fitText(ctx, Hero.name.toUpperCase() + '  ·  LVL ' + Hero.level, pw - 60));
+    UI.panel(ctx, px, py, pw, ph, this.fitText(ctx, Hero.name.toUpperCase() + '  ·  LVL ' + Hero.level + (Hero.paragon ? '  ·  P' + Hero.paragon : ''), pw - 60));
     const colW = twoCol ? (pw - 44) / 2 : pw - 32;
     const lx = px + 16;
     const rx = twoCol ? px + 28 + colW : lx;
@@ -3013,7 +3014,9 @@ const Screens = {
     if (s.xpBonus > 0) ly = line(lx, ly, 'Bonus XP', '+' + Math.round(s.xpBonus * 100) + '%', '#ffd76a');
     ly += 6;
     ly = header(lx, ly, '— JOURNEY —', '#b06adf');
-    ly = line(lx, ly, 'XP', `${Hero.xp} / ${XP_CURVE(Hero.level)}`);
+    ly = Hero.level >= MAX_LEVEL
+      ? line(lx, ly, 'Paragon', 'P' + (Hero.paragon || 0) + '  (' + (Hero.np || 0) + ' NP)', '#ff8c2a')
+      : line(lx, ly, 'XP', `${Hero.xp} / ${XP_CURVE(Hero.level)}`);
     ly = line(lx, ly, 'Story acts finished', (Hero.actsCleared || 0) + ' / 100');
     ly = line(lx, ly, 'Difficulty', DIFFICULTIES[Hero.difficulty].name);
     ly = line(lx, ly, 'Monsters slain', Hero.totalKills);
@@ -3071,12 +3074,97 @@ const Screens = {
     if (scrollY > 1) ctx.fillText('▲ drag ▲', W / 2, bodyTop + 2);
     if (scrollY < UI.sel.scrollMax - 1) ctx.fillText('▼ drag for more ▼', W / 2, footTop - 2);
 
-    // Leave to the campfire roster — switch to another hero or make a new one.
-    UI.btn(ctx, px + 16, py + ph - 40, pw - 32, 30, '⌂  CAMPFIRE — CHANGE HERO', () => {
-      Hero.save();
-      Game.state = 'menu';
-      UI.open('select');
-    }, { size: 12, border: '#c8722a', color: '#ffb24a' });
+    // Footer: Paragon (once level 70+) beside the campfire roster button.
+    const showPara = Hero.level >= MAX_LEVEL || Hero.paragon > 0;
+    const fbY = py + ph - 40, fbW = pw - 32;
+    if (showPara) {
+      const half = (fbW - 8) / 2;
+      const np = Hero.np || 0;
+      UI.btn(ctx, px + 16, fbY, half, 30, '✦ PARAGON' + (np ? ' (' + np + ' NP)' : ''), () => { UI.open('paragon'); UI.sel.paraCat = 'Core'; UI.sel.scrollY = 0; },
+        { size: 12, border: '#8a6f2a', color: np ? '#ffd76a' : '#c9a04a' });
+      UI.btn(ctx, px + 16 + half + 8, fbY, half, 30, '⌂  CHANGE HERO', () => {
+        Hero.save(); Game.state = 'menu'; UI.open('select');
+      }, { size: 12, border: '#c8722a', color: '#ffb24a' });
+    } else {
+      UI.btn(ctx, px + 16, fbY, fbW, 30, '⌂  CAMPFIRE — CHANGE HERO', () => {
+        Hero.save(); Game.state = 'menu'; UI.open('select');
+      }, { size: 12, border: '#c8722a', color: '#ffb24a' });
+    }
+  },
+
+  // The Paragon screen: spend Nekromancer Points across four trees. Past level 70
+  // every level earns 1 NP; caps and per-point values live in PARAGON_STATS.
+  paragon(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const pw = Math.min(500, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 20, 520);
+    const py = Math.max(10, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, 'PARAGON');
+    // Header: level, NP, XP-to-next bar.
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#ff8c2a';
+    ctx.fillText('Paragon ' + (Hero.paragon || 0), px + 16, py + 60);
+    ctx.textAlign = 'right'; ctx.fillStyle = (Hero.np || 0) ? '#ffd76a' : '#9a9080';
+    ctx.fillText((Hero.np || 0) + ' NP to spend', px + pw - 16, py + 60);
+    const need = PARAGON_XP(Hero.paragon || 0);
+    const frac = clamp((Hero.paragonXp || 0) / need, 0, 1);
+    ctx.fillStyle = '#241f30'; rr(ctx, px + 16, py + 68, pw - 32, 8, 4); ctx.fill();
+    ctx.fillStyle = '#ff8c2a'; rr(ctx, px + 16, py + 68, (pw - 32) * frac, 8, 4); ctx.fill();
+    ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.fillText(Math.floor(Hero.paragonXp || 0).toLocaleString() + ' / ' + need.toLocaleString() + ' XP to next', W / 2, py + 90);
+
+    // Category tabs.
+    if (!UI.sel.paraCat) UI.sel.paraCat = 'Core';
+    const tabW = (pw - 32) / PARAGON_CATS.length;
+    PARAGON_CATS.forEach((cat, i) => {
+      const on = UI.sel.paraCat === cat;
+      UI.btn(ctx, px + 16 + i * tabW, py + 98, tabW - 4, 26, cat, () => { UI.sel.paraCat = cat; },
+        { size: 11, bg: on ? 'rgba(90,54,26,0.95)' : undefined, color: on ? '#ffd76a' : '#c9bfa8', border: on ? '#ff8c2a' : undefined });
+    });
+
+    // Stat rows for the active category (drag-scroll in case of short screens).
+    const keys = Object.keys(PARAGON_STATS).filter(k => PARAGON_STATS[k].cat === UI.sel.paraCat);
+    const listTop = py + 132, listBot = py + ph - 14;
+    const viewH = listBot - listTop;
+    const rowH = 62;
+    const scrollMax = Math.max(0, keys.length * rowH - viewH);
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, scrollMax);
+    UI.sel.scrollY = scrollY; UI.sel.scrollMax = scrollMax;
+    UI.sel.scrollRegion = { x: px + 14, y: listTop, w: pw - 28, h: viewH };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(px + 14, listTop, pw - 28, viewH); ctx.clip();
+    keys.forEach((k, i) => {
+      const y = listTop + i * rowH - scrollY;
+      if (y + rowH - 8 < listTop || y > listBot) return;
+      const st = PARAGON_STATS[k];
+      const pts = Hero.para[k] || 0;
+      const capped = st.max && pts >= st.max;
+      ctx.fillStyle = 'rgba(24,20,30,0.92)'; rr(ctx, px + 16, y, pw - 32, rowH - 8, 8); ctx.fill();
+      ctx.strokeStyle = pts > 0 ? '#8a6f2a' : '#3a3448'; ctx.lineWidth = 1; rr(ctx, px + 16, y, pw - 32, rowH - 8, 8); ctx.stroke();
+      ctx.textAlign = 'left'; ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#ffd76a';
+      ctx.fillText(st.label, px + 28, y + 18);
+      ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
+      const bonus = (Hero.paragonBonus(k) * 100);
+      const bTxt = '+' + (bonus % 1 ? bonus.toFixed(1) : bonus) + '% ' + st.note;
+      ctx.fillText(bTxt, px + 28, y + 34);
+      ctx.font = '9px Georgia'; ctx.fillStyle = capped ? '#e0a24a' : '#6f6552';
+      ctx.fillText(pts + (st.max ? ' / ' + st.max + ' pts' : ' pts'), px + 28, y + 47);
+      // − / + controls.
+      const bw = 30, by = y + (rowH - 8) / 2 - 13;
+      UI.btn(ctx, px + pw - 32 - bw, by, bw, 26, '−', pts > 0 ? () => Hero.spendParagon(k, -1) : null,
+        { size: 15, disabled: pts <= 0, border: '#6b5f80', color: '#c9bfa8' });
+      const canAdd = (Hero.np || 0) > 0 && !capped;
+      UI.btn(ctx, px + pw - 30 - bw * 2 - 6, by, bw, 26, '+', canAdd ? () => Hero.spendParagon(k, +1) : null,
+        { size: 15, disabled: !canAdd, border: '#8a6f2a', color: '#ffd76a' });
+      UI.btn(ctx, px + pw - 28 - bw * 3 - 12, by, bw + 4, 26, '+10', canAdd ? () => Hero.spendParagon(k, +10) : null,
+        { size: 10, disabled: !canAdd, border: '#8a6f2a', color: '#ffd76a' });
+    });
+    ctx.restore();
+    if (scrollMax > 0) {
+      ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+      if (scrollY < scrollMax - 1) ctx.fillText('▼ drag for more ▼', W / 2, listBot - 1);
+    }
   },
 
   analyze(s) {
@@ -3784,6 +3872,12 @@ const Screens = {
     lvls.forEach((n, i) => {
       UI.btn(ctx, px + 16 + i * (lw + 6), y, lw, 30, '+' + n + ' level' + (n > 1 ? 's' : ''),
         () => Hero.grantLevels(n), { size: 11 });
+    });
+    y += 36;
+    // Paragon grants (dev): jump to 70 then bank Nekromancer Points.
+    const pw3 = (pw - 32 - 2 * 6) / 3;
+    [['Level 70', () => { Hero.grantLevels(70); }], ['+25 Paragon', () => { Hero.paragon += 25; Hero.np += 25; Items.apply(); Hero.save(); UI.toast('+25 Paragon (' + Hero.np + ' NP)', '#ff8c2a'); }], ['+200 NP', () => { Hero.np += 200; Hero.save(); UI.toast('+200 Nekromancer Points', '#ffd76a'); }]].forEach(([lbl, cb], i) => {
+      UI.btn(ctx, px + 16 + i * (pw3 + 6), y, pw3, 30, lbl, cb, { size: 10, color: '#ffb86a', border: '#8a6f2a' });
     });
     y += 36;
     row('Max level Blacksmith (10)', () => {

@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.3.3-alpha';
+const GAME_VERSION = 'v1.4.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.4.0-alpha', date: 'July 2026',
+    notes: [
+      'PARAGON LEVELS: past level 70 you keep leveling (near-infinite) — every paragon level grants a Nekromancer Point (NP) to spend',
+      'Spend NP across four trees — CORE (Vitality, Intelligence, Movement Speed, Maximum Mana), OFFENSE (Attack Speed, Crit Damage, Crit Chance, Cooldown Reduction), DEFENSE (Armor, Life %, All Resistance, Life per Second), UTILITY (Area Damage, Life per Hit, Resource Cost, Pickup Radius)',
+      'Vitality, Intelligence and Life % scale infinitely; the rest cap (200 pts, or 500 for Life per Hit). Open the Paragon screen from the Character Sheet footer, and points can be freely refunded',
+      'Dev panel: "Level 70", "+25 Paragon" and "+200 NP" buttons for testing'
+    ]
+  },
   {
     v: 'v1.3.3-alpha', date: 'July 2026',
     notes: [
@@ -1738,6 +1747,36 @@ function tormentTier(di) {
 
 const XP_CURVE = lvl => Math.round(60 * Math.pow(lvl, 1.5));
 const MAX_LEVEL = 70;
+
+// ---------------------------------------------------------------- PARAGON
+// Past level 70 the hero earns PARAGON levels (near-infinite); each grants one
+// Nekromancer Point (NP) to spend across four trees. `per` = bonus per point,
+// `max` = point cap (0 = infinite). Percentages are stored as fractions.
+const PARAGON_CATS = ['Core', 'Offense', 'Defense', 'Utility'];
+const PARAGON_STATS = {
+  // Core
+  vitality:     { cat: 'Core',    label: 'Vitality',           per: 0.02,  max: 0,   fmt: 'pct', note: 'Life' },
+  intelligence: { cat: 'Core',    label: 'Intelligence',       per: 0.02,  max: 0,   fmt: 'pct', note: 'Damage' },
+  moveSpeed:    { cat: 'Core',    label: 'Movement Speed',     per: 0.005, max: 200, fmt: 'pct', note: 'Move Speed' },
+  maxMana:      { cat: 'Core',    label: 'Maximum Mana',       per: 0.02,  max: 200, fmt: 'pct', note: 'Max Essence' },
+  // Offense
+  attackSpeed:  { cat: 'Offense', label: 'Attack Speed',       per: 0.005, max: 200, fmt: 'pct', note: 'Attack Speed' },
+  paraCritDmg:  { cat: 'Offense', label: 'Crit Hit Damage',    per: 0.002, max: 200, fmt: 'pct', note: 'Crit Damage' },
+  paraCritChance:{ cat: 'Offense', label: 'Crit Hit Chance',   per: 0.005, max: 200, fmt: 'pct', note: 'Crit Chance' },
+  paraCdr:      { cat: 'Offense', label: 'Cooldown Reduction', per: 0.005, max: 200, fmt: 'pct', note: 'Cooldowns' },
+  // Defense
+  paraArmor:    { cat: 'Defense', label: 'Armor',              per: 0.01,  max: 200, fmt: 'pct', note: 'Armor' },
+  lifePct:      { cat: 'Defense', label: 'Life %',             per: 0.02,  max: 0,   fmt: 'pct', note: 'Life' },
+  paraResAll:   { cat: 'Defense', label: 'All Resistance',     per: 0.005, max: 200, fmt: 'pct', note: 'Resist' },
+  lifeRegen:    { cat: 'Defense', label: 'Life per Second',    per: 0.01,  max: 200, fmt: 'pct', note: 'Regen (of max Life/s)' },
+  // Utility
+  paraArea:     { cat: 'Utility', label: 'Area Damage',        per: 0.005, max: 200, fmt: 'pct', note: 'Area Damage' },
+  paraLph:      { cat: 'Utility', label: 'Life per Hit',       per: 0.01,  max: 500, fmt: 'pct', note: 'Life on Hit (of max Life)' },
+  paraRcr:      { cat: 'Utility', label: 'Resource Cost',      per: 0.005, max: 200, fmt: 'pct', note: 'Cost Reduction' },
+  pickup:       { cat: 'Utility', label: 'Pickup Radius',      per: 0.002, max: 200, fmt: 'pct', note: 'Pickup Radius' }
+};
+// XP to earn the NEXT paragon level — a level-70's worth, creeping up per level.
+const PARAGON_XP = plevel => Math.round(XP_CURVE(70) * (1 + plevel * 0.05));
 
 // Rifts: filled by slaughter, capped by a Guardian.
 //  - 'normal' rifts (levels 1–69): open to all; Guardians may drop Rift Keys.

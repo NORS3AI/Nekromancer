@@ -76,6 +76,10 @@ const Hero = {
   eyeColor: '#6ff7c3',      // glowing-eye colour, chosen at character creation
   level: 1,
   xp: 0,
+  paragon: 0,       // paragon levels earned past 70 (near-infinite)
+  paragonXp: 0,     // XP banked toward the next paragon level
+  np: 0,            // unspent Nekromancer Points
+  para: {},         // allocated paragon points, keyed by PARAGON_STATS id
   gold: 0,
   mats: { parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0, wyrmscale: 0, brain: 0, rathmasoul: 0 },
   gems: [],                 // [{type, tier}]
@@ -116,6 +120,7 @@ const Hero = {
     if (!this.name) this.name = 'The Nekromancer';
     if (!this.eyeColor) this.eyeColor = '#6ff7c3';
     this.level = 1; this.xp = 0; this.gold = 0;
+    this.paragon = 0; this.paragonXp = 0; this.np = 0; this.para = {};
     this.mats = { parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0, wyrmscale: 0, brain: 0, rathmasoul: 0 };
     this.gems = [];
     this.bag = [];
@@ -182,6 +187,7 @@ const Hero = {
       v: this.SAVE_VERSION,
       name: this.name, eyeColor: this.eyeColor,
       level: this.level, xp: this.xp, gold: this.gold, mats: this.mats,
+      paragon: this.paragon, paragonXp: this.paragonXp, np: this.np, para: this.para,
       gems: this.gems, bag: this.bag, equipped: this.equipped,
       loadout: this.loadout, passives: this.passives,
       zonesCleared: this.zonesCleared, actsCleared: this.actsCleared, difficulty: this.difficulty,
@@ -236,6 +242,8 @@ const Hero = {
     Object.assign(this, {
       name: d.name || 'The Nekromancer', eyeColor: d.eyeColor || '#6ff7c3',
       level: d.level || 1, xp: d.xp || 0, gold: d.gold || 0,
+      paragon: d.paragon || 0, paragonXp: d.paragonXp || 0, np: d.np || 0,
+      para: (d.para && typeof d.para === 'object') ? Object.assign({}, d.para) : {},
       mats: Object.assign({ parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0, wyrmscale: 0, brain: 0, rathmasoul: 0 }, d.mats),
       gems: d.gems || [], bag: d.bag || [], equipped: d.equipped || {},
       loadout: d.loadout || ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null],
@@ -375,15 +383,27 @@ const Hero = {
   // ------------------------------------------------------------ progression
 
   addXP(n) {
-    if (this.level >= MAX_LEVEL) return;
     // Ruby-in-helm XP bonus (and any future XP find) scales the gain.
     const xpBonus = (Game.player && Game.player.xpBonus) || 0;
-    this.xp += Math.round(n * (1 + xpBonus));
+    const gain = Math.round(n * (1 + xpBonus));
     let leveled = false;
-    while (this.level < MAX_LEVEL && this.xp >= XP_CURVE(this.level)) {
-      this.xp -= XP_CURVE(this.level);
-      this.level++;
-      leveled = true;
+    if (this.level < MAX_LEVEL) {
+      this.xp += gain;
+      while (this.level < MAX_LEVEL && this.xp >= XP_CURVE(this.level)) {
+        this.xp -= XP_CURVE(this.level);
+        this.level++;
+        leveled = true;
+      }
+      // At the cap, any leftover XP rolls straight into paragon.
+      if (this.level >= MAX_LEVEL && this.xp > 0) { this.paragonXp += this.xp; this.xp = 0; }
+    } else {
+      this.paragonXp += gain;   // past 70: all XP feeds paragon
+    }
+    // Bank paragon levels — each grants one Nekromancer Point.
+    let gainedPara = 0;
+    while (this.paragonXp >= PARAGON_XP(this.paragon)) {
+      this.paragonXp -= PARAGON_XP(this.paragon);
+      this.paragon++; this.np++; gainedPara++;
     }
     if (leveled && Game.player) {
       Items.apply();
@@ -398,8 +418,41 @@ const Hero = {
       const pUnlocked = PASSIVE_DATA.filter(s => s.lvl === this.level);
       for (const s of pUnlocked) UI.toast('Passive unlocked: ' + s.name, '#b06adf');
       if (PASSIVE_SLOT_LEVELS.includes(this.level)) UI.toast('Passive slot unlocked!', '#b06adf');
-      this.save();
     }
+    if (gainedPara && Game.player) {
+      const p = Game.player;
+      Particles.text(p.x, p.y - 46, 'PARAGON ' + this.paragon, { color: '#ff8c2a', size: 20, life: 1.4 });
+      AudioSys.sfx('level');
+      UI.toast('Paragon ' + this.paragon + ' — +' + gainedPara + ' Nekromancer Point' + (gainedPara > 1 ? 's' : ''), '#ff8c2a');
+    }
+    if (leveled || gainedPara) this.save();
+  },
+
+  // The fraction a paragon stat currently grants (points × per-point value).
+  paragonBonus(key) {
+    const st = PARAGON_STATS[key];
+    return st ? (this.para[key] || 0) * st.per : 0;
+  },
+
+  // Spend (delta>0) or refund (delta<0) paragon points on a stat, respecting the
+  // NP pool and the per-stat cap.
+  spendParagon(key, delta) {
+    const st = PARAGON_STATS[key];
+    if (!st) return;
+    const cur = this.para[key] || 0;
+    if (delta > 0) {
+      const room = st.max ? st.max - cur : Infinity;
+      const spend = Math.min(delta, this.np, room);
+      if (spend <= 0) { AudioSys.sfx('denied'); return; }
+      this.para[key] = cur + spend; this.np -= spend;
+    } else {
+      const back = Math.min(-delta, cur);
+      if (back <= 0) { AudioSys.sfx('denied'); return; }
+      this.para[key] = cur - back; this.np += back;
+    }
+    if (typeof Items !== 'undefined') Items.apply();
+    AudioSys.sfx('gem');
+    this.save();
   },
 
   // Cheat / testing helper: jump N levels instantly.

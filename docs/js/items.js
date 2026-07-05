@@ -1097,6 +1097,23 @@ const Items = {
     };
     for (const slot of Object.keys(ITEM_SLOTS)) gather(Hero.equipped[slot], slot);
     const lvl = Hero.level;
+    // PARAGON — points spent past 70 amplify the derived stats. Fractions ADD to
+    // fractional stats (crit, cdr, resist…); multipliers scale base stats.
+    const pb = k => (Hero.paragonBonus ? Hero.paragonBonus(k) : 0);
+    const paraHpMul = 1 + pb('vitality') + pb('lifePct');
+    const paraDmgMul = 1 + pb('intelligence') + pb('attackSpeed');
+    const paraManaMul = 1 + pb('maxMana');
+    armor *= 1 + pb('paraArmor');
+    reg *= 1 + pb('lifeRegen');
+    lph *= 1 + pb('paraLph');
+    crit += pb('paraCritChance');
+    critDmg += pb('paraCritDmg');
+    cdr += pb('paraCdr');
+    rcr += pb('paraRcr');
+    area += pb('paraArea');
+    move += pb('moveSpeed');
+    const paraResistDR = pb('paraResAll');   // adds straight to the resist DR fraction
+    const pickupRadius = pb('pickup');
     // Armor → damage reduction, capped at 80%. Big denominator (owner rule):
     // low armor barely helps (201 armor ≈ 0.3%, you're squishy), while the
     // best endgame armor climbs into the hundreds of thousands for real
@@ -1104,27 +1121,28 @@ const Items = {
     const armorDR = clamp(armor / (armor + 67000), 0, 0.80);
     // All-element resistance → its own damage reduction, stacked with armor.
     // Diminishing (owner-tunable): ~66% at 5000 resist, hard cap 80%.
-    const resistDR = clamp(resAll / (resAll + 2500), 0, 0.80);
+    const resistDR = clamp(resAll / (resAll + 2500) + paraResistDR, 0, 0.80);
     // The Royal Grandeur: set bonuses need one fewer piece (min 2) — modelled as
     // +1 effective set pieces once you already have at least 2.
     const powers = this.equippedPowers();
     const rawSet = this.setCount();
     const setCountEff = (powers.royalGrandeur && rawSet >= 2) ? Math.min(6, rawSet + 1) : rawSet;
     return {
-      dmgMult: (1 + (lvl - 1) * 0.09) * (1 + dmg),
+      dmgMult: (1 + (lvl - 1) * 0.09) * (1 + dmg) * paraDmgMul,
       gearDmg: dmg,
-      maxHp: Math.round(110 + (lvl - 1) * 14 + hp),
+      maxHp: Math.round((110 + (lvl - 1) * 14 + hp) * paraHpMul),
       critChance: 0.10 + crit,
       essenceRegen: 2 + ess,
       hpRegen: reg,
       goldFind: 1 + gold,
-      maxEssence: 100 + (Hero.hasPassive('overwhelming') ? 40 : 0),
+      maxEssence: Math.round((100 + (Hero.hasPassive('overwhelming') ? 40 : 0)) * paraManaMul),
       armor: Math.round(armor),
       armorDR,
-      moveSpeed: clamp(move, 0, 1.0),   // boots move affix
+      moveSpeed: clamp(move, 0, 1.5),   // boots move affix + paragon
       xpBonus,
       deathNovaBonus: dnova,
-      areaDamage: clamp(area, 0, 1),
+      areaDamage: clamp(area, 0, 2),
+      pickupRadius,
       // Gem-driven stats.
       resistAll: Math.round(resAll),
       resistDR,
@@ -1167,6 +1185,7 @@ const Items = {
     p.xpBonus = s.xpBonus;
     p.deathNovaBonus = s.deathNovaBonus;
     p.areaDamage = s.areaDamage;
+    p.pickupRadius = s.pickupRadius || 0;   // paragon pickup radius (fraction)
     p.speed = 180 * (1 + s.moveSpeed);   // base 180 + movement-speed affix
     p.setCount = s.setCount;
     p.powers = s.powers;

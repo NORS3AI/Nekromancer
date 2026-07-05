@@ -1904,9 +1904,10 @@ class Pickup {
     // Gold/orbs/gems (they go to the pouch) are never blocked.
     const blocked = this.kind === 'item' && !Items.canPickup(this.item);
     const d = dist(this.x, this.y, p.x, p.y);
-    if (!blocked && d < 110 && !p.dead) {
+    const mag = 110 * (1 + (p.pickupRadius || 0));   // paragon Pickup Radius widens the magnet
+    if (!blocked && d < mag && !p.dead) {
       const a = angleTo(this.x, this.y, p.x, p.y);
-      const pull = (110 - d) * 6 + 120;
+      const pull = (mag - d) * 6 + 120;
       this.vx += Math.cos(a) * pull * dt * 4;
       this.vy += Math.sin(a) * pull * dt * 4;
     }

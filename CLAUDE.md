@@ -112,6 +112,7 @@ loot at the artisans. The hero is persistent (localStorage).
 - Potion button sits ON the skill-cluster arc past slot 1 (angle π·0.98, radius R+54·scale)
   — verified non-overlapping at 390×750 / 844×390 / 900×500 / 1280×720.
 - XP: `60·lvl^1.5`, cap 70. Level-up = full heal + toasts for new unlocks.
+- **PARAGON (past 70)**: XP overflow feeds `Hero.paragon` (near-infinite); each paragon level = 1 NP (`Hero.np`). Spend via `Hero.spendParagon(key,±)` across `PARAGON_STATS` (16 stats in 4 trees: Core/Offense/Defense/Utility; `per`=per-point, `max`=cap, 0=infinite). `Hero.paragonBonus(key)`→fraction, folded into `computeStats` (`paraHpMul`/`paraDmgMul`/`paraManaMul`, additive to crit/cdr/rcr/area/move/resistDR, ×armor/regen/lph, +pickupRadius). `Screens.paragon` (opened from the Character Sheet footer) is the spend UI; `PARAGON_XP(p)` is the per-level cost.
 - Difficulty unlocks: up to Master until all 5 lands cleared, then Torment I–III.
 - **Artisan resource lanes (owner rule)**: Blacksmith = gold/parts/dust/crystals;
   Mystic = gold + Forgotten Souls ONLY; Jeweler = gold + gems ONLY (and BUYS gems
