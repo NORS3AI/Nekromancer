@@ -616,9 +616,9 @@ const World = {
 
   // -------------------------------------------------------------- fog of war
 
-  reveal(x, y) {
+  reveal(x, y, cells) {
     const cx = Math.floor(x / CELL), cy = Math.floor(y / CELL);
-    const R = 6;
+    const R = Math.max(2, Math.round(cells || 6));
     for (let yy = cy - R; yy <= cy + R; yy++) {
       for (let xx = cx - R; xx <= cx + R; xx++) {
         if (xx < 0 || yy < 0 || xx >= this.cols || yy >= this.rows) continue;

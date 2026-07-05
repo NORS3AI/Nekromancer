@@ -212,7 +212,9 @@ class Player {
     this.essDisplay = this.essDisplay === undefined ? this.essence
       : this.essDisplay + (this.essence - this.essDisplay) * Math.min(1, dt * 9);
 
-    World.reveal(this.x, this.y);
+    // Uncover fog around the hero out to the torch's light — a hair past the lit
+    // pool so the edge you can just see becomes permanently explored.
+    World.reveal(this.x, this.y, Game.lightRadius() / CELL + 1);
   }
 
   drinkPotion() {

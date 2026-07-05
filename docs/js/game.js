@@ -1096,6 +1096,7 @@ const Game = {
     this.drawWeather(ctx);
     ctx.drawImage(this.vignette, 0, 0);
     this.drawTorchLight(ctx);
+    this.drawWorldFog(ctx, cam);
 
     // Land of the Dead ambience.
     if (Skills.lotd > 0) {
@@ -1113,6 +1114,14 @@ const Game = {
     UI.draw(ctx, this.W, this.H);
   },
 
+  // The lit / fog-reveal radius (px) around the hero: tiny with no torch, more
+  // with a Wood torch, more with Iron, a lot more with a Nephalem torch.
+  lightRadius() {
+    const torch = Hero.equipped.torch;
+    const T = torch ? (TORCH_TYPES[torch.torch] || TORCH_TYPES.wood) : null;
+    return T ? T.radius : NO_TORCH_RADIUS;
+  },
+
   // The torch's pool of light — a lit circle around the hero that fades to
   // darkness. With a torch it's a gentle atmospheric edge; once it burns out the
   // dark closes right in. Nephalem torches light the most.
@@ -1125,7 +1134,7 @@ const Game = {
     // Crypts are the true dark; open daylit lands stay bright (the torch just
     // adds a cozy glow there) so the wilds never read as "too dark".
     const dark = this.zone && this.zone.kind === 'dungeon';
-    const R = T ? T.radius : 150;                 // lit radius
+    const R = this.lightRadius();                 // lit radius
     const edge = dark ? (T ? 0.52 : 0.9) : (T ? 0.16 : 0.28); // darkness at the far edge
     const outer = Math.max(R + 60, Math.hypot(this.W, this.H) * 0.62);
     const g = ctx.createRadialGradient(sx, sy, R * 0.4, sx, sy, outer);
@@ -1147,6 +1156,31 @@ const Game = {
       ctx.fillRect(0, 0, this.W, this.H);
       ctx.globalCompositeOperation = 'source-over';
     }
+  },
+
+  // Fog of war: the whole map starts pitch black and only uncovers as the hero
+  // walks it (World.explored, the same grid the minimap uses). Drawn from a
+  // 1px-per-cell offscreen buffer scaled up with smoothing, so the revealed
+  // frontier reads as a soft fog edge instead of hard blocks.
+  drawWorldFog(ctx, cam) {
+    const ex = World.explored;
+    if (!ex || !World.cols) return;
+    const cols = World.cols, rows = World.rows;
+    if (!this.fogBuf || this.fogBuf.width !== cols || this.fogBuf.height !== rows) {
+      const c = document.createElement('canvas');
+      c.width = cols; c.height = rows;
+      this.fogBuf = c;
+      this.fogCtx = c.getContext('2d');
+      this.fogImage = this.fogCtx.createImageData(cols, rows);
+      // rgb stays 0 (black); we only ever touch the alpha channel below.
+    }
+    const d = this.fogImage.data;
+    for (let i = 0, n = cols * rows; i < n; i++) d[i * 4 + 3] = ex[i] ? 0 : 255;
+    this.fogCtx.putImageData(this.fogImage, 0, 0);
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(this.fogBuf, -cam.x, -cam.y, cols * CELL, rows * CELL);
+    ctx.restore();
   }
 };
 

@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.1.4-alpha';
+const GAME_VERSION = 'v1.1.5-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.1.5-alpha', date: 'July 2026',
+    notes: [
+      'FOG OF WAR is back on the world map: every land now starts pitch black and uncovers as you explore it, exactly like the minimap',
+      'Your torch controls how far you can see: with NO torch the pool of light is really small, a Wood Torch widens it, an Iron Torch a bit more, and a Nephalem Torch lights a LOT more (and uncovers the fog just as far)'
+    ]
+  },
   {
     v: 'v1.1.4-alpha', date: 'July 2026',
     notes: [
@@ -900,10 +907,13 @@ const MATERIALS = {
 // Torches — a consumable equipped in the Torch slot that lights the darkness
 // for a real-time duration, then burns out. Crafted at the Blacksmith.
 const TORCH_TYPES = {
-  wood:     { name: 'Wood Torch',     minutes: 12, radius: 300, color: '#ffb24a', rarity: 0, recipe: { lumber: 10 } },
-  iron:     { name: 'Iron Torch',     minutes: 37, radius: 380, color: '#ffcf6a', rarity: 2, recipe: { lumber: 10, rivets: 15 } },
-  nephalem: { name: 'Nephalem Torch', minutes: 75, radius: 470, color: '#d8b4f0', rarity: 4, recipe: { lumber: 25, rivets: 40, heartstring: 3 } }
+  wood:     { name: 'Wood Torch',     minutes: 12, radius: 320, color: '#ffb24a', rarity: 0, recipe: { lumber: 10 } },
+  iron:     { name: 'Iron Torch',     minutes: 37, radius: 430, color: '#ffcf6a', rarity: 2, recipe: { lumber: 10, rivets: 15 } },
+  nephalem: { name: 'Nephalem Torch', minutes: 75, radius: 640, color: '#d8b4f0', rarity: 4, recipe: { lumber: 25, rivets: 40, heartstring: 3 } }
 };
+// The lit/reveal radius (px) with no torch at all — deliberately small so the
+// dark presses in until you craft one. Torches multiply it (see TORCH_TYPES).
+const NO_TORCH_RADIUS = 150;
 
 // --------------------------------- gems ------------------------------------
 
