@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.4.4-alpha';
+const GAME_VERSION = 'v1.4.5-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.4.5-alpha', date: 'July 2026',
+    notes: [
+      'EVERY map now uses the new ground tiles — open graveyard/wet lands take the Marsh floor, sandy/windy wastes the Desert floor, all crypts the Dungeon floor, caves the Cave floor (no map is left on the old procedural ground)',
+      'Fixed: a normal Rift Guardian now ALWAYS drops 1–3 Nephalem Rift Keys (it could previously roll zero)'
+    ]
+  },
   {
     v: 'v1.4.4-alpha', date: 'July 2026',
     notes: [

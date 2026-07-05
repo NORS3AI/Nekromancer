@@ -478,12 +478,13 @@ const Game = {
       const pu = new Pickup(boss.x, boss.y, 'item');
       pu.item = Items.generate(mLvl, 0.3);
       this.pickups.push(pu);
-      // Key drops per tier: Normal Rift Guardians drop 0–3 Nephalem Rift Keys;
-      // Nephalem (greater) Guardians drop 0–1 Master Nephalem Rift Keys.
+      // Key drops per tier: Normal Rift Guardians ALWAYS drop 1–3 Nephalem Rift
+      // Keys (guaranteed, owner rule); Nephalem (greater) Guardians drop 0–1
+      // Master Nephalem Rift Keys.
       if (kind === 'normal') {
-        const n = randInt(0, 3);
+        const n = randInt(1, 3);
         this.riftKeysDropped = n;
-        if (n) { Hero.riftKeys += n; UI.toast('◈ ' + n + ' Nephalem Rift Key' + (n > 1 ? 's' : '') + '! (' + Hero.riftKeys + ' held)', '#b06adf'); }
+        Hero.riftKeys += n; UI.toast('◈ ' + n + ' Nephalem Rift Key' + (n > 1 ? 's' : '') + '! (' + Hero.riftKeys + ' held)', '#b06adf');
       } else if (kind === 'greater') {
         const n = randInt(0, 1);
         this.riftKeysDropped = n;

@@ -481,16 +481,21 @@ const World = {
     return `rgb(${r},${g},${b})`;
   },
 
-  // Map a zone to its ground-tile art key (owner PNGs in docs/art/tiles/).
+  // Map ANY zone to a ground-tile art key so every map is textured (owner PNGs
+  // in docs/art/tiles/). Dungeons/caves are explicit; open lands are matched by
+  // biome, then weather, then name keywords, and finally default to Marsh (the
+  // dark, wet graveyard look) so nothing is ever left on the procedural ground.
   tileKeyFor(zone) {
     if (!zone) return null;
     if (zone.cave) return 'cave';
     if (zone.kind === 'dungeon') return 'dungeon';
-    const b = zone.biome;
-    if (b === 'snow') return 'snow';
-    if (b === 'swamp' || b === 'marsh') return 'marsh';
-    if (b === 'desert' || b === 'badlands') return 'desert';
-    return null;
+    if (zone.tile) return zone.tile;                 // explicit per-zone override
+    const b = zone.biome || '';
+    const s = ((zone.id || '') + ' ' + (zone.name || '')).toLowerCase();
+    if (b === 'snow' || /snow|frost|ice|glaci|winter/.test(s)) return 'snow';
+    if (b === 'desert' || b === 'badlands' || zone.weather === 'wind' || /sand|desert|dune|waste|barren|scorch|badland|ash/.test(s)) return 'desert';
+    if (b === 'swamp' || b === 'marsh' || /marsh|swamp|bog|blood|mire|hollow|drown|fen/.test(s)) return 'marsh';
+    return 'marsh';   // every other open land takes the dark marsh floor
   },
   // Lazy-load the optional ground textures once; each falls back to procedural
   // if its PNG is absent, so the game always runs art-free.
