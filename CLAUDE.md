@@ -32,6 +32,10 @@ loot at the artisans. The hero is persistent (localStorage).
 - **Update `PATCH_NOTES` (data.js) with EVERY addition and bug fix** — prepend a new
   entry (newest first) and bump `GAME_VERSION` (vX.Y.Z-alpha). The version label on
   the title screen opens the notes; the owner reads them.
+- **Cache-busting: `docs/index.html` loads the js/ files via a `BUILD` constant that
+  appends `?v=BUILD` to each `<script>` (GitHub Pages caches assets ~10 min, so
+  without this a deploy serves STALE JS). BUMP `BUILD` in index.html whenever any
+  `js/` file changes — keep it in step with `GAME_VERSION`.**
 
 ## Architecture (docs/js/, plain script tags — load order matters)
 

@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.4.7-alpha';
+const GAME_VERSION = 'v1.4.8-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.4.8-alpha', date: 'July 2026',
+    notes: [
+      'Fixed stale updates: the game\'s scripts are now cache-busted per version, so a new deploy is picked up right away instead of your browser serving old cached code (this is why the "Add 6 Marquise gems" fix looked like it was still giving Perfect gems)'
+    ]
+  },
   {
     v: 'v1.4.7-alpha', date: 'July 2026',
     notes: [
