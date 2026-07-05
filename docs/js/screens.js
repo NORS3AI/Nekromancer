@@ -2384,10 +2384,11 @@ const Screens = {
     const ph = Math.min(H - 56, 468);
     UI.panel(ctx, px, 46, pw, ph, 'TORCH BENCH');
 
-    // Reagent tally — every torch reagent, wrapping across lines as needed.
+    // Reagent tally — only reagents the player actually holds (no teasing the
+    // ones they haven't found yet).
     ctx.textAlign = 'left';
     ctx.font = 'bold 11px Georgia';
-    const reagents = ['lumber', 'rivets', 'heartstring', 'wyrmscale', 'brain', 'rathmasoul'];
+    const reagents = ['lumber', 'rivets', 'heartstring', 'wyrmscale', 'brain', 'rathmasoul'].filter(k => (Hero.mats[k] || 0) > 0);
     let tx = px + 16, ty = 96;
     for (const k of reagents) {
       const txt = (Hero.mats[k] || 0) + ' ' + MATERIALS[k].name;
@@ -2397,13 +2398,7 @@ const Screens = {
       ctx.fillText(txt, tx, ty);
       tx += w + 16;
     }
-    ty += 17;
-    ctx.font = '10px Georgia';
-    ctx.fillStyle = '#8a8070';
-    ctx.fillText(this.fitText(ctx,
-      'Lumber from smashed furniture; Rivets from cauldrons/braziers; Heartstring from Nephalem Mongrels. Wyrm Scales, Gluttonous Brains and Souls of Rathma drop from their rare bosses.',
-      pw - 32), px + 16, ty);
-    ty += 17;
+    ty += reagents.length ? 20 : 0;
 
     // Current torch status.
     const eq = Hero.equipped.torch;
@@ -2418,13 +2413,18 @@ const Screens = {
       ctx.fillText('No torch lit — darkness closes in.', px + 16, ty);
     }
 
-    // Craft rows — all torches, DRAG to scroll (the ladder runs Common → Legendary).
+    // Craft rows — ONLY torches the player can actually forge right now (the
+    // rest stay hidden; let them discover the ladder for themselves). DRAG to scroll.
     const panelBot = 46 + ph;
     const footTop = panelBot - 50;
     const listTop = ty + 10;
     const listBot = footTop - 4;
     const viewH = Math.max(60, listBot - listTop);
-    const order = Object.keys(TORCH_TYPES);
+    const order = Object.keys(TORCH_TYPES).filter(t => Items.canCraftTorch(t));
+    if (!order.length) {
+      ctx.textAlign = 'left'; ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText('Gather reagents to forge a torch.', px + 16, listTop + 14);
+    }
     const rowH = 72;
     const scrollMax = Math.max(0, order.length * rowH - viewH);
     const scrollY = clamp(UI.sel.scrollY || 0, 0, scrollMax);
@@ -2446,11 +2446,7 @@ const Screens = {
       ctx.textAlign = 'left';
       ctx.font = 'bold 13px Georgia';
       ctx.fillStyle = T.color;
-      ctx.fillText(T.name, px + 28, y + 18);
-      const nameW = ctx.measureText(T.name).width;   // measure at 13px, before the badge font
-      ctx.font = 'bold 9px Georgia';
-      ctx.fillStyle = T.tierColor;
-      ctx.fillText(T.tier.toUpperCase(), px + 34 + nameW, y + 17);
+      ctx.fillText(T.name, px + 28, y + 18);   // the name colour signals the tier — no text badge
       ctx.font = '10px Georgia';
       ctx.fillStyle = '#9a9080';
       ctx.fillText('Burns ' + T.minutes + ' min  ·  light radius ' + T.radius, px + 28, y + 34);

@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.2.4-alpha';
+const GAME_VERSION = 'v1.2.5-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.2.5-alpha', date: 'July 2026',
+    notes: [
+      'The Gluttonous Brain is now properly grotesque — sickly green flesh mottled with bruise-purple welts (no more pink)',
+      'Torch Bench cleaned up: it only lists reagents you actually hold and only torches you can forge right now — no spoilers for gear you have not found. Removed the rarity labels (the craft colour says it all) and the reagent-source flavor text'
+    ]
+  },
   {
     v: 'v1.2.4-alpha', date: 'July 2026',
     notes: [

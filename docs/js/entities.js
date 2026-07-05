@@ -1554,25 +1554,30 @@ class Enemy {
         break;
       }
       case 'glutton': {
-        // A huge, huge, HUGE fat ogre — a bloated belly, stubby legs, a tiny
-        // head and a distended, dribbling maw. Flushes red once enraged.
-        const belly = this.enraged ? '#a5586a' : '#8a6a72';
-        const skin = this.enraged ? '#b96a7a' : '#9a7a82';
-        ctx.fillStyle = fl ? '#f0d0d8' : belly;
+        // A huge, huge, HUGE fat ogre — bloated, grotesque, sickly GREEN flesh
+        // mottled with BRUISE-PURPLE welts. Flushes an angrier bruise when enraged.
+        const belly = this.enraged ? '#5a5a3a' : '#66723f';
+        const skin = this.enraged ? '#5a3f5f' : '#6b5570';   // bruise purple
+        ctx.fillStyle = fl ? '#e6f0c0' : belly;
         ctx.beginPath(); ctx.ellipse(0, 6, 30, 26, 0, 0, TAU); ctx.fill();   // gut
-        ctx.strokeStyle = 'rgba(20,12,16,0.5)'; ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(14,10,18,0.6)'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.ellipse(0, 6, 30, 26, 0, 0, TAU); ctx.stroke();
-        ctx.fillStyle = fl ? '#f0d0d8' : skin;
+        // Bruise-purple welts blotching the gut.
+        ctx.fillStyle = fl ? '#d8c0e0' : 'rgba(90,60,110,0.7)';
+        ctx.beginPath(); ctx.ellipse(-12, 8, 7, 5, 0.4, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(10, 14, 6, 4, -0.3, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(4, -2, 5, 4, 0.2, 0, TAU); ctx.fill();
+        ctx.fillStyle = fl ? '#e6f0c0' : skin;
         ctx.beginPath(); ctx.arc(-20, -4, 8, 0, TAU); ctx.fill();            // shoulders
         ctx.beginPath(); ctx.arc(20, -4, 8, 0, TAU); ctx.fill();
         ctx.beginPath(); ctx.arc(0, -20, 11, 0, TAU); ctx.fill();           // small head
-        // Vile dribbling maw.
-        ctx.fillStyle = '#3a1420';
+        // Vile dribbling maw + green bile.
+        ctx.fillStyle = '#241a2a';
         ctx.beginPath(); ctx.ellipse(0, -17, 6, 4, 0, 0, TAU); ctx.fill();
-        ctx.fillStyle = '#7fa83a';
+        ctx.fillStyle = '#8fbf3a';
         for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(-4 + i * 4, -12 + (this.anim * 2 + i) % 3 * 2, 1.6, 0, TAU); ctx.fill(); }
         // Eyes.
-        ctx.fillStyle = this.enraged ? '#ff3b3b' : '#ffd76a';
+        ctx.fillStyle = this.enraged ? '#ff3b3b' : '#c8e06a';
         ctx.beginPath(); ctx.arc(-4, -22, 1.8, 0, TAU); ctx.fill();
         ctx.beginPath(); ctx.arc(4, -22, 1.8, 0, TAU); ctx.fill();
         break;
