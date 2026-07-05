@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.1.7-alpha';
+const GAME_VERSION = 'v1.1.8-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.1.8-alpha', date: 'July 2026',
+    notes: [
+      'Reworked the town-portal channel: instead of a circular cast bar, a gathering storm of blue lightning now crackles ABOVE your hero\'s head, climbing and intensifying as the 7-second channel fills'
+    ]
+  },
   {
     v: 'v1.1.7-alpha', date: 'July 2026',
     notes: [

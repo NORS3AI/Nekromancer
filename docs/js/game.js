@@ -818,12 +818,12 @@ const Game = {
       return;
     }
     pc.t += dt;
-    // Rising blue wisps as the rift knits together.
-    if (Math.random() < 0.6) {
-      const a = Math.random() * TAU, r = 10 + Math.random() * 22;
-      Particles.spawn(pc.x + Math.cos(a) * r, pc.y + Math.sin(a) * r * 0.6, {
-        count: 1, color: ['#8fd0ff', '#4aa3e0'], minSpeed: 8, maxSpeed: 26,
-        minLife: 0.4, maxLife: 0.9, minSize: 1.5, maxSize: 3, grav: -60, glow: true
+    // Electric sparks streaming up into the storm gathering over the hero's head.
+    if (Math.random() < 0.7) {
+      const a = Math.random() * TAU, r = 8 + Math.random() * 16;
+      Particles.spawn(p.x + Math.cos(a) * r, p.y - 16 + Math.sin(a) * r * 0.4, {
+        count: 1, color: ['#8fd0ff', '#4aa3e0', '#d8ecfa'], minSpeed: 10, maxSpeed: 34,
+        minLife: 0.3, maxLife: 0.7, minSize: 1.2, maxSize: 2.6, grav: -140, glow: true
       });
     }
     if (pc.t >= 7) {
@@ -985,42 +985,67 @@ const Game = {
 
   // The town-portal channel animation (world space): a spinning blue rune ring
   // under the hero and a portal that knits together over the 7 seconds.
+  // A jagged lightning arc from (x1,y1) to (x2,y2), displaced at each segment.
+  strokeLightning(ctx, x1, y1, x2, y2, segs, spread) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    for (let i = 1; i < segs; i++) {
+      const f = i / segs;
+      ctx.lineTo(x1 + (x2 - x1) * f + rand(-spread, spread),
+                 y1 + (y2 - y1) * f + rand(-spread, spread));
+    }
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  },
+
+  // The town-portal channel: a gathering storm of blue lightning crackling ABOVE
+  // the hero's head (no goofy circular cast bar) — it climbs and intensifies as
+  // the 7-second channel fills, then discharges into the open portal.
   drawPortalCast(ctx) {
     const pc = this.portalCast;
     if (!pc) return;
+    const p = this.player;
+    if (!p) return;
     const k = clamp(pc.t / 7, 0, 1);
     const t = this.time;
+    const crownX = p.x, crownY = p.y - 18;        // the crown of the hero's head
+    const hx = p.x, hy = p.y - 32 - 16 * k;        // focal point, rising as it charges
     ctx.save();
-    ctx.translate(pc.x, pc.y);
-    // Ground rune ring — two counter-rotating rings of ticks, brightening.
-    ctx.globalAlpha = 0.3 + 0.5 * k;
-    for (let ring = 0; ring < 2; ring++) {
-      const rr2 = (ring ? 20 : 30) + Math.sin(t * 3 + ring) * 2;
-      const dir = ring ? -1 : 1;
-      ctx.strokeStyle = ring ? '#8fd0ff' : '#4aa3e0';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.ellipse(0, 4, rr2, rr2 * 0.42, 0, 0, TAU); ctx.stroke();
-      const ticks = 12;
-      for (let i = 0; i < ticks; i++) {
-        const a = t * dir + i / ticks * TAU;
-        const cx = Math.cos(a) * rr2, cy = 4 + Math.sin(a) * rr2 * 0.42;
-        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx * 1.12, 4 + (cy - 4) * 1.12); ctx.stroke();
-      }
+    ctx.globalCompositeOperation = 'lighter';
+    // Soft glow halo behind the storm.
+    const gr = 22 + 18 * k;
+    const glow = ctx.createRadialGradient(hx, hy, 0, hx, hy, gr);
+    glow.addColorStop(0, `rgba(143,208,255,${(0.22 + 0.34 * k).toFixed(3)})`);
+    glow.addColorStop(1, 'rgba(74,163,224,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(hx, hy, gr, 0, TAU); ctx.fill();
+    // Forming energy core.
+    ctx.fillStyle = `rgba(216,236,250,${(0.5 + 0.4 * k).toFixed(3)})`;
+    const core = 1.6 + 4 * k + Math.sin(t * 20) * 0.8;
+    ctx.beginPath(); ctx.arc(hx, hy, Math.max(1, core), 0, TAU); ctx.fill();
+    // Lightning bolts arcing from around the crown up into the core.
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    const bolts = 2 + Math.round(k * 3);
+    for (let i = 0; i < bolts; i++) {
+      const a = rand(0, TAU), rad = 11 + rand(0, 9);
+      const ox = crownX + Math.cos(a) * rad, oy = crownY + Math.sin(a) * rad * 0.5;
+      const tx = hx + rand(-4, 4), ty = hy + rand(-4, 4);
+      ctx.strokeStyle = `rgba(74,163,224,${(0.35 + 0.3 * k).toFixed(3)})`;
+      ctx.lineWidth = 3;
+      this.strokeLightning(ctx, ox, oy, tx, ty, 5, 6);
+      ctx.strokeStyle = `rgba(220,238,252,${(0.7 + 0.3 * k).toFixed(3)})`;
+      ctx.lineWidth = 1.3;
+      this.strokeLightning(ctx, ox, oy, tx, ty, 5, 5);
     }
-    // The forming portal — grows and brightens as the channel completes.
-    ctx.globalAlpha = 0.5 * k;
-    const ph = 46 * k;
-    const g = ctx.createLinearGradient(0, -ph, 0, 4);
-    g.addColorStop(0, 'rgba(143,208,255,0.9)');
-    g.addColorStop(1, 'rgba(74,163,224,0.1)');
-    ctx.fillStyle = g;
-    ctx.shadowColor = '#4aa3e0'; ctx.shadowBlur = 16 * k;
-    ctx.beginPath(); ctx.ellipse(0, -ph / 2 + 4, 11 * k, ph / 2, 0, 0, TAU); ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.globalAlpha = 1;
-    // A ring that sweeps up as the timer fills (progress read-out).
-    ctx.strokeStyle = '#8fd0ff'; ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.arc(0, -18, 34, -Math.PI / 2, -Math.PI / 2 + TAU * k); ctx.stroke();
+    // An occasional wild arc crackling around the crown.
+    if (Math.random() < 0.55) {
+      const a1 = rand(0, TAU), a2 = a1 + rand(1, 2.4), r = 13;
+      ctx.strokeStyle = 'rgba(143,208,255,0.5)';
+      ctx.lineWidth = 1.2;
+      this.strokeLightning(ctx,
+        crownX + Math.cos(a1) * r, crownY + Math.sin(a1) * r * 0.5,
+        crownX + Math.cos(a2) * r, crownY + Math.sin(a2) * r * 0.5, 4, 5);
+    }
     ctx.restore();
   },
 
