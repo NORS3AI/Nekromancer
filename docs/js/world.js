@@ -26,6 +26,9 @@ const World = {
   portal: null,         // {x, y} exit portal once the bounty is done
   pattern: null,
   patternFill: null,
+  // Flip to true ONCE the ground-tile PNGs are uploaded to docs/art/tiles/
+  // (snow/marsh/desert/dungeon/cave.png). Left false so no 404s fire art-free.
+  TILES_READY: false,
 
   // ------------------------------------------------------------- generation
 
@@ -478,7 +481,44 @@ const World = {
     return `rgb(${r},${g},${b})`;
   },
 
+  // Map a zone to its ground-tile art key (owner PNGs in docs/art/tiles/).
+  tileKeyFor(zone) {
+    if (!zone) return null;
+    if (zone.cave) return 'cave';
+    if (zone.kind === 'dungeon') return 'dungeon';
+    const b = zone.biome;
+    if (b === 'snow') return 'snow';
+    if (b === 'swamp' || b === 'marsh') return 'marsh';
+    if (b === 'desert' || b === 'badlands') return 'desert';
+    return null;
+  },
+  // Lazy-load the optional ground textures once; each falls back to procedural
+  // if its PNG is absent, so the game always runs art-free.
+  loadTiles() {
+    if (this.tileImages) return;
+    this.tileImages = {};
+    const files = { snow: 'snow.png', marsh: 'marsh.png', desert: 'desert.png', dungeon: 'dungeon.png', cave: 'cave.png' };
+    for (const [k, f] of Object.entries(files)) {
+      const rec = { img: new Image(), ready: false };
+      rec.img.onload = () => { rec.ready = true; };
+      rec.img.src = 'art/tiles/' + f;
+      this.tileImages[k] = rec;
+    }
+  },
   makePattern(zone) {
+    // Owner-supplied ground texture (docs/art/tiles/<key>.png) tiles the ground
+    // per biome/theme when present; otherwise fall through to the procedural
+    // pattern below (art-free still works). Gated by TILES_READY so no 404s fire
+    // until the PNGs are actually uploaded — flip it to true then.
+    if (World.TILES_READY) {
+      this.loadTiles();
+      const tk = this.tileKeyFor(zone);
+      if (tk && this.tileImages[tk] && this.tileImages[tk].ready) {
+        this.pattern = this.tileImages[tk].img;
+        this.patternFill = null;
+        return;
+      }
+    }
     // A SEAMLESS ground tile: every feature is also drawn wrapped across the
     // four edges (and corners), so when it repeats there are no visible seams —
     // the land reads as one continuous, flowing biome. A large tile keeps the
