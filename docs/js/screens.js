@@ -2969,6 +2969,31 @@ const Screens = {
     ry = line(rx, ry, 'Bag', Hero.bagUsed() + ' / ' + Hero.BAG_SIZE);
     ry += 6;
 
+    // Active POWERS — equipped legendary powers, Cube-extracted powers and live
+    // set bonuses, so the player sees exactly what's shaping their build.
+    ry = header(rx, ry, '— ACTIVE POWERS —', '#ff8c2a');
+    ctx.textAlign = 'left'; ctx.font = '11px Georgia';
+    const cubeSel = (Hero.cubePowers && Hero.cubePowers.slice(0, 3)) || [];
+    const powerKeys = Object.keys(s.powers || {});
+    if (!powerKeys.length && !cubeSel.length && s.setCount < 2) {
+      ctx.fillStyle = '#6f6552';
+      ry = wrapText(ctx, 'None yet — equip legendaries or extract powers in the Cube.', rx, ry, colW, 14, 2) + 3;
+    } else {
+      for (const k of powerKeys) {
+        const P = LEGENDARY_POWERS[k]; if (!P) continue;
+        const cubed = cubeSel.includes(k);
+        ctx.fillStyle = cubed ? '#ff5a4a' : '#ffb86a';
+        ry = wrapText(ctx, (cubed ? '◈ ' : '★ ') + P.name + (cubed ? ' (Cube)' : ''), rx, ry, colW, 14, 2) + 2;
+      }
+      if (s.setCount >= 2) {
+        ctx.fillStyle = '#4ade80';
+        for (const bonus of INARIUS_SET.bonuses) {
+          if (s.setCount >= bonus.pieces) ry = wrapText(ctx, '◈ Inarius ' + bonus.pieces + 'pc active', rx, ry, colW, 14, 1) + 2;
+        }
+      }
+    }
+    ry += 6;
+
     // Analysis — every tip is drawn; the body scrolls if it overflows.
     ry = header(rx, ry, '— ANALYSIS —', '#e04a5a');
     ctx.textAlign = 'left';

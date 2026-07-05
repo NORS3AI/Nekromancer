@@ -325,7 +325,13 @@ const Items = {
     }
     if (item.set === 'inarius') {
       const n = this.setCount();
-      lines.push('◈ Grace of Inarius (' + n + '/6 equipped)');
+      // Royal Grandeur lets bonuses count one fewer piece (min 2).
+      const eff = (this.equippedPowers().royalGrandeur && n >= 2) ? Math.min(6, n + 1) : n;
+      lines.push('◈ Grace of Inarius — ' + n + '/6 pieces worn' + (eff > n ? '  (+1 Royal Grandeur)' : ''));
+      for (const bonus of INARIUS_SET.bonuses) {
+        const active = eff >= bonus.pieces;
+        lines.push((active ? '◈ ' : '◇ ') + '(' + bonus.pieces + ' pc) ' + bonus.desc);
+      }
     }
     const gems = item.gems || [];
     for (const g of gems) {

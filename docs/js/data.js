@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.3.0-alpha';
+const GAME_VERSION = 'v1.3.1-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.3.1-alpha', date: 'July 2026',
+    notes: [
+      'Set items now spell out their bonuses on every piece: how many you are wearing (e.g. 4/6) and which tier bonuses are ACTIVE (◈) vs dormant (◇), Royal Grandeur\'s extra piece included',
+      'The Character Sheet has a new ACTIVE POWERS panel listing every legendary power and set bonus currently shaping your build',
+      'Verified all 11 legendary secondary powers fire when equipped (Bloodtide, Cycle Scythe, Funerary Pick, Iron Rose, Convention of Elements, Krysbin\'s Sentence, Royal Grandeur, and more)'
+    ]
+  },
   {
     v: 'v1.3.0-alpha', date: 'July 2026',
     notes: [
