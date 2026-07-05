@@ -853,7 +853,7 @@ const Screens = {
     }
     y += 8;
     UI.btn(ctx, px + 20, y, pw - 40, 46, '↩   BACK TO THE WILDS',
-      () => { UI.townMode = false; UI.close(); },
+      () => { UI.townMode = false; UI.close(); Game.returnFromTownPortal(); },
       { size: 15, color: '#6ff7c3', border: '#3a7a6a' });
   },
 

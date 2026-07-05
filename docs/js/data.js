@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.2.0-alpha';
+const GAME_VERSION = 'v1.2.1-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.2.1-alpha', date: 'July 2026',
+    notes: [
+      'Returning from town now CLOSES your town portal (so you can cast a fresh one), with a 30-second cooldown before the next portal — the HUD Portal button shows the countdown'
+    ]
+  },
   {
     v: 'v1.2.0-alpha', date: 'July 2026',
     notes: [

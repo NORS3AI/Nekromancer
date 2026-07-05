@@ -24,6 +24,7 @@ const Game = {
   kills: 0,
   bossDead: false,
   portalCast: null,       // {t, x, y} — 7s channel to open a town portal
+  portalCd: 0,            // cooldown (s) after a portal closes before a new one can be cast
   townPortalNear: false,  // debounce so standing on the portal doesn't loop the menu
   // Multi-area journeys: a bounty/adventure run spans several linked maps.
   stage: 1,
@@ -258,6 +259,7 @@ const Game = {
     this.descend = false;
     this.nextBountyPart = false;
     this.portalCast = null;
+    this.portalCd = 0;
     this.townPortalNear = false;
     this.riftProgress = 0;
     this.riftGoal = zone.riftGoal || 250;
@@ -800,9 +802,27 @@ const Game = {
       UI.toast('A town portal is already open — step through it', '#8fd0ff');
       return;
     }
+    if (this.portalCd > 0) {
+      UI.toast('Town portal on cooldown — ' + Math.ceil(this.portalCd) + 's', '#9a9080');
+      AudioSys.sfx('denied');
+      return;
+    }
     this.portalCast = { t: 0, x: this.player.x, y: this.player.y };
     AudioSys.sfx('portal');
     UI.toast('Opening a town portal — hold still…', '#8fd0ff');
+  },
+
+  // Returning to the wilds from town collapses the portal and starts a 30-second
+  // cooldown before another can be cast (called by "Back to the Wilds").
+  returnFromTownPortal() {
+    if (World.townPortal) {
+      // A brief blue implosion where the portal winks out.
+      Particles.ring(World.townPortal.x, World.townPortal.y, 70, '#8fd0ff', 5, 0.4);
+      World.townPortal = null;
+      this.portalCd = 30;
+      this.townPortalNear = false;
+      UI.toast('Town portal closed — 30s until you can open another', '#8fd0ff');
+    }
   },
 
   // Advance the town-portal channel; complete it at 7s, cancel it if the hero
@@ -891,6 +911,7 @@ const Game = {
 
     p.update(dt);
     this.updatePortalCast(dt);
+    if (this.portalCd > 0) this.portalCd = Math.max(0, this.portalCd - dt);
     Skills.update(dt);
     // A held torch burns down in real time; when it's out it disappears.
     const torch = Hero.equipped.torch;

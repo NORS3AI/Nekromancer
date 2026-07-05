@@ -955,12 +955,13 @@ const UI = {
     if (!b) return;
     const casting = !!Game.portalCast;
     const open = !!(typeof World !== 'undefined' && World.townPortal);
+    const cd = Game.portalCd > 0 && !casting && !open ? Game.portalCd : 0;
     const k = casting ? clamp(Game.portalCast.t / 7, 0, 1) : 0;
     const t = Game.time;
     ctx.globalAlpha = 0.85;
-    ctx.fillStyle = '#0e1a26';
+    ctx.fillStyle = cd > 0 ? '#141018' : '#0e1a26';
     ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = cd > 0 ? 0.45 : 1;
     // Blue swirl glyph — two spiral arms.
     ctx.save();
     ctx.translate(b.x, b.y);
@@ -977,6 +978,7 @@ const UI = {
       ctx.stroke();
     }
     ctx.restore();
+    ctx.globalAlpha = 1;
     // Casting countdown ring + seconds remaining.
     if (casting) {
       ctx.strokeStyle = '#8fd0ff'; ctx.lineWidth = 3;
@@ -984,8 +986,15 @@ const UI = {
       ctx.fillStyle = '#e8f2ff'; ctx.font = `bold ${Math.round(b.r * 0.62)}px Georgia`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(Math.ceil(7 - Game.portalCast.t), b.x, b.y);
+    } else if (cd > 0) {
+      // Cooldown sweep + seconds remaining after the portal closed.
+      ctx.strokeStyle = '#5f7ab0'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r - 1, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - cd / 30)); ctx.stroke();
+      ctx.fillStyle = '#c9d4e8'; ctx.font = `bold ${Math.round(b.r * 0.62)}px Georgia`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(Math.ceil(cd), b.x, b.y);
     }
-    ctx.strokeStyle = open ? '#57b894' : (casting ? '#8fd0ff' : '#2a6a8a');
+    ctx.strokeStyle = open ? '#57b894' : (casting ? '#8fd0ff' : cd > 0 ? '#3a3448' : '#2a6a8a');
     ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.stroke();
     // Label.
