@@ -3641,6 +3641,18 @@ const Screens = {
       AudioSys.sfx('gem');
       Hero.save();
     }, '#6ff7c3');
+    row('Spawn reagent bosses near you (Wyrm/Glutton/Rathma)', () => {
+      if (Game.state !== 'playing' || !Game.player || Game.player.dead) { UI.toast('Enter a zone first', '#9a9080'); AudioSys.sfx('denied'); return; }
+      const p = Game.player;
+      for (const [t, opts] of [['wyrm', {}], ['glutton', {}], ['rathma', { rare: true }]]) {
+        const a = Math.random() * TAU;
+        const e = new Enemy(t, p.x + Math.cos(a) * 170, p.y + Math.sin(a) * 170, Object.assign({ name: MONSTERS[t].name }, opts));
+        e.sleep = false; e.spawnT = 0.3;
+        World.collide(e); Game.enemies.push(e);
+      }
+      UI.toast('Spawned Bonewyrm, Gluttonous Brain & Rathma\'s Chosen', '#ff8c2a');
+      UI.close();
+    }, '#ff8c2a');
     row("✦ Haedrig's Gift — full Inarius set + legendaries to Stash", () => {
       const mLvl = Math.max(70, Hero.level);
       let n = 0;

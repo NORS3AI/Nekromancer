@@ -761,7 +761,7 @@ const UI = {
   drawBossBar(ctx, W, H) {
     let boss = null;
     for (const e of Game.enemies) {
-      if (e.unique && !e.dead && !e.sleep) boss = e;
+      if ((e.unique || (e.def && e.def.roamBoss)) && !e.dead && !e.sleep) boss = e;
     }
     if (!boss) return;
     const w = Math.min(360, W * 0.5);

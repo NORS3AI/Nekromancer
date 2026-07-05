@@ -322,6 +322,26 @@ const Game = {
       const gob = new Enemy('goblin', gx, gy, { name: 'Treasure Goblin' });
       this.enemies.push(gob);
     }
+    // Phase-2 roaming bosses & the super-rare cave dweller (owner spec). A
+    // Bonewyrm or Gluttonous Brain sometimes stalks eligible modes (everything
+    // outside Story Mode: Bounties, Adventure, Rifts, Nephalem, Seasons); a 3%
+    // cave hides Rathma's Chosen on any map. All spawn away from the entrance.
+    const placeAway = (minSp, minBs) => {
+      let x, y, t = 0;
+      do { x = rand(200, World.W - 200); y = rand(200, World.H - 200); t++; }
+      while ((dist(x, y, World.spawn.x, World.spawn.y) < minSp || dist(x, y, World.bossPos.x, World.bossPos.y) < minBs || !World.isFloorAt(x, y)) && t < 30);
+      return { x, y };
+    };
+    const eligibleRoam = !this.story && !(this.zone && this.zone.storyFinal);
+    if (eligibleRoam && Math.random() < 0.18) {
+      const rb = Math.random() < 0.5 ? 'wyrm' : 'glutton';
+      const pos = placeAway(700, 320);
+      this.enemies.push(new Enemy(rb, pos.x, pos.y, { name: MONSTERS[rb].name }));
+    }
+    if (!(this.zone && this.zone.storyFinal) && Math.random() < 0.03) {
+      const pos = placeAway(600, 260);
+      this.enemies.push(new Enemy('rathma', pos.x, pos.y, { rare: true, name: MONSTERS.rathma.name }));
+    }
     // Act III: the Horadric's Cube has a 10% chance to be half-buried on any
     // (non-final) map. If the player reaches the Sand Wyrm without finding it,
     // the Wyrm drops it for certain (see onBossDead). Only spawns if unowned.

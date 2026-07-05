@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.2.3-alpha';
+const GAME_VERSION = 'v1.2.4-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.2.4-alpha', date: 'July 2026',
+    notes: [
+      'THREE new bosses now drop the top-torch reagents: THE BONEWYRM roams outside Story Mode (Bounties/Adventure/Rifts/Nephalem/Seasons) and drops Wyrm Scales (12%)',
+      'THE GLUTTONOUS BRAIN — a huge, huge, HUGE fat ogre who vomits bile AoE, chain-pulls and STUNS you for 2s, summons fat zombies, and ENRAGES at 50% life (+15% dmg, +10% life). Drops Gluttonous Brain (10%)',
+      'RATHMA\'S CHOSEN — a tall, slender assassin who fades to smoke while you damage it and enrages at 35% (+20% life, +25% dmg). Lurks in a super-rare cave (3% of maps) and drops 1-3 Souls of Rathma (20%)',
+      'Dev panel: "Spawn reagent bosses near you" summons all three for testing'
+    ]
+  },
   {
     v: 'v1.2.3-alpha', date: 'July 2026',
     notes: [
@@ -1559,7 +1568,21 @@ const MONSTERS = {
   wraith:   { name: 'Vengeful Wraith', hp: 240, speed: 78, dmg: 21, r: 22, xp: 130, atkRange: 44, atkCd: 1.6, boss: true, ghost: true },
   skeletonking: { name: 'The Skeleton King', hp: 520, speed: 54, dmg: 30, r: 30, xp: 240, atkRange: 54, atkCd: 1.8, boss: true },
   // Act III finale — a colossal burrowing desert serpent.
-  sandwyrm: { name: 'The Sand Wyrm', hp: 640, speed: 60, dmg: 34, r: 34, xp: 300, atkRange: 60, atkCd: 1.7, boss: true }
+  sandwyrm: { name: 'The Sand Wyrm', hp: 640, speed: 60, dmg: 34, r: 34, xp: 300, atkRange: 60, atkCd: 1.7, boss: true },
+  // --- Phase-2 reagent bosses ------------------------------------------------
+  // The Bonewyrm roams eligible modes and drops Wyrm Scales (12%).
+  wyrm:    { name: 'The Bonewyrm',         hp: 720, speed: 66, dmg: 34, r: 34, xp: 340, atkRange: 60, atkCd: 1.7,
+             boss: true, roamBoss: true, dropMat: 'wyrmscale', dropChance: 0.12, dropN: [1, 1] },
+  // A huge, huge, HUGE fat ogre: vomits AoE, summons fat zombies, chain-pulls
+  // and stuns, and enrages at half health. Drops Gluttonous Brain (10%).
+  glutton: { name: 'The Gluttonous Brain', hp: 980, speed: 30, dmg: 30, r: 44, xp: 440, atkRange: 64, atkCd: 2.0,
+             boss: true, roamBoss: true, enrageAt: 0.5, enrageDmg: 0.15, enrageHp: 0.10,
+             dropMat: 'brain', dropChance: 0.10, dropN: [1, 1] },
+  // Rathma's Chosen: a tall, slender assassin who stealths (goes to smoke) while
+  // you damage it, enrages at 35%, and drops 1-3 Souls of Rathma (20%).
+  rathma:  { name: "Rathma's Chosen",      hp: 150, speed: 150, dmg: 26, r: 15, xp: 320, atkRange: 34, atkCd: 1.0,
+             lunges: true, rareBoss: true, stealth: true, enrageAt: 0.35, enrageHp: 0.20, enrageDmg: 0.25,
+             dropMat: 'rathmasoul', dropChance: 0.20, dropN: [1, 3] }
 };
 
 // Purchasable bag expansions. The bag starts at 24; each upgrade adds space

@@ -86,6 +86,7 @@ class Player {
     this.flash = Math.max(0, this.flash - dt * 5);
     this.invuln = Math.max(0, this.invuln - dt);
     this.potionCd = Math.max(0, this.potionCd - dt);
+    this.stun = Math.max(0, (this.stun || 0) - dt);
     this.speedBuffT = Math.max(0, this.speedBuffT - dt);
     this.funeraryT = Math.max(0, this.funeraryT - dt);
     if (this.funeraryT <= 0) this.funeraryStacks = 0;
@@ -112,7 +113,7 @@ class Player {
       }
     } else {
       const mx = Input.move.x, my = Input.move.y;
-      this.moving = (mx !== 0 || my !== 0);
+      this.moving = (mx !== 0 || my !== 0) && this.stun <= 0;   // chained = rooted in place
       const spd = this.speed * (this.speedBuffT > 0 ? 1.2 : 1);
       if (this.moving) {
         this.x += mx * spd * dt;
@@ -422,9 +423,13 @@ class Enemy {
         skeletonking: ['slam', 'summon', 'fissures', 'charge'],
         wraith: ['nova', 'fissures', 'charge', 'summon'],
         sandwyrm: ['fissures', 'charge', 'slam', 'nova'],
+        wyrm: ['fissures', 'charge', 'nova', 'slam'],
+        glutton: ['vomit', 'chain', 'summon', 'slam'],
         brute: ['charge', 'slam', 'nova']
       })[type] || ['charge', 'slam', 'nova'];
     }
+    this.enraged = false;      // set once when hp drops past def.enrageAt
+    this.stealthT = 0;         // Rathma's Chosen fades to smoke while hurt
   }
 
   wake() {
@@ -456,9 +461,21 @@ class Enemy {
     this.slow = Math.max(0, this.slow - dt);
     this.root = Math.max(0, this.root - dt);
     this.vulnT = Math.max(0, this.vulnT - dt);
+    this.stealthT = Math.max(0, this.stealthT - dt);
     if (this.curse) {
       this.curse.t -= dt;
       if (this.curse.t <= 0) this.curse = null;
+    }
+    // Enrage: once health drops past the threshold, permanently harder-hitting
+    // and (retroactively) higher max health (owner spec per boss).
+    if (!this.enraged && this.def.enrageAt && this.hp <= this.maxHp * this.def.enrageAt) {
+      this.enraged = true;
+      this.dmg = Math.round(this.dmg * (1 + (this.def.enrageDmg || 0)));
+      const hpBump = Math.round(this.maxHp * (this.def.enrageHp || 0));
+      this.maxHp += hpBump; this.hp += hpBump;
+      Particles.text(this.x, this.y - this.r - 12, 'ENRAGED!', { color: '#ff3b3b', size: 15, life: 1.4 });
+      Particles.spawn(this.x, this.y, { count: 22, color: ['#ff3b3b', '#ff8c2a', '#c22843'], minSpeed: 60, maxSpeed: 240, minLife: 0.3, maxLife: 0.7, glow: true });
+      Particles.shake(6); AudioSys.sfx('wave');
     }
     if (this.spawnT > 0) { this.spawnT -= dt; return; }
 
@@ -629,7 +646,7 @@ class Enemy {
         if (this.mechCd > 0) return false;
         // Choose an ability the boss can actually use at this range.
         const kit = this.abilities || ['charge', 'slam'];
-        const pool = kit.filter(ab => ab === 'slam' ? d < 190 : ab === 'charge' ? d < 620 : true);
+        const pool = kit.filter(ab => ab === 'slam' ? d < 190 : ab === 'charge' ? d < 620 : ab === 'chain' ? d < 520 : true);
         const ab = pick(pool.length ? pool : ['slam']);
         this.mechCd = rand(3.6, 5.6);
         if (ab === 'slam') {
@@ -657,6 +674,29 @@ class Enemy {
         }
         if (ab === 'summon') {
           this.state = 'summon'; this.stateT = 0.5;
+          AudioSys.sfx('wave');
+          return true;
+        }
+        if (ab === 'vomit') {
+          // Vomits a spreading bile pool — several overlapping AoE splats around
+          // the hero that deal exceptional area damage as they land.
+          const pp = Game.player;
+          this.state = 'vomit'; this.stateT = 0.7;
+          this.facing = angleTo(this.x, this.y, pp.x, pp.y);
+          this.vomitAt = { x: clamp(pp.x, 40, World.W - 40), y: clamp(pp.y, 40, World.H - 40) };
+          this.telegraph = { type: 'circle', x: this.vomitAt.x, y: this.vomitAt.y, r: 150, t: 0, maxT: 0.7 };
+          Game.telegraphs.push(this.telegraph);
+          AudioSys.sfx('wave');
+          return true;
+        }
+        if (ab === 'chain') {
+          // Hurls a hooked chain in a wide cone; if it catches the hero it reels
+          // them in and stuns for 2s.
+          this.state = 'windChain'; this.stateT = 0.65;
+          this.chainA = angleTo(this.x, this.y, tgt.x, tgt.y);
+          this.facing = this.chainA;
+          this.telegraph = { type: 'line', x: this.x, y: this.y, a: this.chainA, len: 500, w: 240, t: 0, maxT: 0.65 };
+          Game.telegraphs.push(this.telegraph);
           AudioSys.sfx('wave');
           return true;
         }
@@ -690,12 +730,58 @@ class Enemy {
           fxNova(this.x, this.y, 130); AudioSys.sfx('nova'); Particles.shake(4);
         }
         return true;
+      case 'vomit':
+        this.stateT -= dt;
+        if (this.stateT <= 0) {
+          this.state = 'normal';
+          if (this.telegraph) this.telegraph.done = true;
+          // The splat lands, plus two smaller bile pools spreading outward — all
+          // dealing exceptional area damage where they hit.
+          const va = this.vomitAt || { x: this.x, y: this.y };
+          fxExplosion(va.x, va.y, 150);
+          Particles.spawn(va.x, va.y, { count: 30, color: ['#7fa83a', '#4a5e2a', '#a8c24a', '#9ac24a'], minSpeed: 40, maxSpeed: 230, minLife: 0.4, maxLife: 1.0, grav: 60 });
+          Particles.shake(6); AudioSys.sfx('explode');
+          const bileDmg = Math.round(this.dmg * 1.6);
+          const splats = [[va.x, va.y, 150], [va.x + rand(-120, 120), va.y + rand(-120, 120), 100], [va.x + rand(-120, 120), va.y + rand(-120, 120), 100]];
+          for (const [sx, sy, sr] of splats) {
+            const pp = Game.player;
+            if (pp && !pp.dead && dist(sx, sy, pp.x, pp.y) < sr + pp.r) pp.hurt(bileDmg);
+            for (const m of Game.minions) if (!m.dead && dist(sx, sy, m.x, m.y) < sr + m.r) m.hurt(bileDmg);
+          }
+        }
+        return true;
+      case 'windChain': {
+        this.facing = this.chainA;
+        this.stateT -= dt;
+        if (this.stateT <= 0) {
+          this.state = 'normal';
+          if (this.telegraph) this.telegraph.done = true;
+          // Reel the hero in if they're inside the cone, then stun for 2s.
+          const pp = Game.player;
+          if (pp && !pp.dead) {
+            const dd = dist(this.x, this.y, pp.x, pp.y);
+            const rel = Math.abs(((angleTo(this.x, this.y, pp.x, pp.y) - this.chainA + Math.PI * 3) % TAU) - Math.PI);
+            if (dd < 520 && rel < 0.55) {
+              const stopA = angleTo(this.x, this.y, pp.x, pp.y);
+              pp.x = this.x + Math.cos(stopA) * (this.r + pp.r + 16);
+              pp.y = this.y + Math.sin(stopA) * (this.r + pp.r + 16);
+              World.collide(pp);
+              pp.stun = Math.max(pp.stun || 0, 2);
+              pp.hurt(Math.round(this.dmg * 0.6));
+              Particles.text(pp.x, pp.y - 22, 'CHAINED!', { color: '#ff8c2a', size: 14, life: 1.2 });
+              Particles.shake(5); AudioSys.sfx('explode');
+            }
+          }
+        }
+        return true;
+      }
       case 'summon':
         this.stateT -= dt;
         if (this.stateT <= 0) {
           this.state = 'normal';
           const n = randInt(2, 4);
-          const kinds = this.type === 'skeletonking' ? ['skeleton', 'skeleton', 'archer'] : ['skeleton', 'zombie', 'ghoul'];
+          const kinds = this.type === 'skeletonking' ? ['skeleton', 'skeleton', 'archer']
+            : this.type === 'glutton' ? ['zombie', 'bloat', 'zombie'] : ['skeleton', 'zombie', 'ghoul'];
           for (let i = 0; i < n; i++) {
             const a = rand(TAU), dd = rand(44, 92);
             const add = new Enemy(pick(kinds), this.x + Math.cos(a) * dd, this.y + Math.sin(a) * dd, {});
@@ -783,6 +869,14 @@ class Enemy {
     if (this.vulnT > 0) dmg *= 191; // Inarius 6pc: +19000% damage taken from you
     this.hp -= dmg;
     this.flash = 1;
+    // Rathma's Chosen fades to smoke while you damage it — briefly hard to see.
+    if (this.def.stealth && !this.dead) {
+      if (this.stealthT <= 0) {
+        Particles.spawn(this.x, this.y, { count: 10, color: ['#2a2436', '#4a4258', '#6b5f80'], minSpeed: 30, maxSpeed: 120, minLife: 0.3, maxLife: 0.7 });
+        AudioSys.sfx('wave');
+      }
+      this.stealthT = 0.9;
+    }
     // Amethyst life-per-hit: heal the Necromancer on each primary hit landed.
     if (p && !p.dead && (p.lifePerHit || 0) > 0 && !opts.noSplash) p.heal(p.lifePerHit);
     dmgText(this.x, this.y, dmg, crit);
@@ -835,6 +929,19 @@ class Enemy {
         AudioSys.sfx('setdrop');
       } else {
         Particles.text(this.x, this.y - 14, 'No Heartstring…', { color: '#7a6f80', size: 11, life: 1.2 });
+      }
+    }
+    // Phase-2 reagent bosses: a chance to drop their crafting material (owner
+    // spec — Wyrm Scale 12%, Gluttonous Brain 10%, Souls of Rathma 20% ×1-3).
+    if (this.def.dropMat) {
+      if (Math.random() < (this.def.dropChance || 0.1)) {
+        const [lo, hi] = this.def.dropN || [1, 1];
+        const n = randInt(lo, hi);
+        Hero.mats[this.def.dropMat] = (Hero.mats[this.def.dropMat] || 0) + n;
+        Particles.text(this.x, this.y - this.r - 10, '+' + n + ' ' + MATERIALS[this.def.dropMat].name, { color: MATERIALS[this.def.dropMat].color, size: 13, life: 1.6 });
+        AudioSys.sfx('setdrop');
+      } else {
+        Particles.text(this.x, this.y - this.r - 10, 'No ' + MATERIALS[this.def.dropMat].name + '…', { color: '#7a6f80', size: 11, life: 1.2 });
       }
     }
     // Corpse Bloats burst on death — a toxic AoE that hits you and your minions.
@@ -955,6 +1062,8 @@ class Enemy {
       return;
     }
 
+    // Stealth: the assassin all but vanishes into smoke while being hit.
+    if (this.stealthT > 0) ctx.globalAlpha = 0.16 + 0.08 * Math.sin(this.anim * 8);
     if (this.elite || this.unique) {
       // Owner rule: normal elites glow YELLOW, rare elites PURPLE, bosses orange.
       const col = this.unique ? '255,140,42' : this.rare ? '176,106,223' : '255,216,74';
@@ -1235,6 +1344,7 @@ class Enemy {
         ctx.restore();
         break;
       }
+      case 'wyrm':
       case 'sandwyrm': {
         // A colossal desert serpent rearing from the sand — segmented coils,
         // a fanged maw and gnashing mandibles.
@@ -1441,6 +1551,51 @@ class Enemy {
         ctx.beginPath(); ctx.arc(0, -22, 5, 0, TAU); ctx.fill();
         ctx.restore();
         ctx.restore();
+        break;
+      }
+      case 'glutton': {
+        // A huge, huge, HUGE fat ogre — a bloated belly, stubby legs, a tiny
+        // head and a distended, dribbling maw. Flushes red once enraged.
+        const belly = this.enraged ? '#a5586a' : '#8a6a72';
+        const skin = this.enraged ? '#b96a7a' : '#9a7a82';
+        ctx.fillStyle = fl ? '#f0d0d8' : belly;
+        ctx.beginPath(); ctx.ellipse(0, 6, 30, 26, 0, 0, TAU); ctx.fill();   // gut
+        ctx.strokeStyle = 'rgba(20,12,16,0.5)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(0, 6, 30, 26, 0, 0, TAU); ctx.stroke();
+        ctx.fillStyle = fl ? '#f0d0d8' : skin;
+        ctx.beginPath(); ctx.arc(-20, -4, 8, 0, TAU); ctx.fill();            // shoulders
+        ctx.beginPath(); ctx.arc(20, -4, 8, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(0, -20, 11, 0, TAU); ctx.fill();           // small head
+        // Vile dribbling maw.
+        ctx.fillStyle = '#3a1420';
+        ctx.beginPath(); ctx.ellipse(0, -17, 6, 4, 0, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#7fa83a';
+        for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(-4 + i * 4, -12 + (this.anim * 2 + i) % 3 * 2, 1.6, 0, TAU); ctx.fill(); }
+        // Eyes.
+        ctx.fillStyle = this.enraged ? '#ff3b3b' : '#ffd76a';
+        ctx.beginPath(); ctx.arc(-4, -22, 1.8, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(4, -22, 1.8, 0, TAU); ctx.fill();
+        break;
+      }
+      case 'rathma': {
+        // A tall, slender assassin — a lean cloaked figure with a hood and thin
+        // twin blades; reads as smoke-and-shadow.
+        const cloak = fl ? '#e8e0cc' : '#241f30';
+        ctx.fillStyle = cloak;
+        ctx.beginPath();
+        ctx.moveTo(0, -22); ctx.quadraticCurveTo(9, -6, 6, 18);
+        ctx.lineTo(-6, 18); ctx.quadraticCurveTo(-9, -6, 0, -22); ctx.fill();
+        ctx.strokeStyle = 'rgba(176,106,223,0.5)'; ctx.lineWidth = 1.2; ctx.stroke();
+        // Hood + eyes.
+        ctx.fillStyle = '#0c0a12';
+        ctx.beginPath(); ctx.arc(0, -18, 5, 0, TAU); ctx.fill();
+        ctx.fillStyle = this.enraged ? '#ff3b3b' : '#b06adf';
+        ctx.beginPath(); ctx.arc(-2, -18, 1.3, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(2, -18, 1.3, 0, TAU); ctx.fill();
+        // Thin blades.
+        ctx.strokeStyle = fl ? '#fff' : '#9aa0b0'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-7, 2); ctx.lineTo(-13, 12); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(7, 2); ctx.lineTo(13, 12); ctx.stroke();
         break;
       }
     }
