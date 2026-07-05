@@ -336,9 +336,12 @@ const Items = {
     const gems = item.gems || [];
     for (const g of gems) {
       lines.push('◆ ' + gemName(g) + ': ' + gemStatText(g));
-      // A Ruby in the helm carries a bonus XP boon on top of its two stats.
+      // Slot-specific gem boons, shown on top of the gem's two stats.
       if (g.type === 'ruby' && item.slot === 'helm') {
-        lines.push('   ⤷ +' + (Hero.level >= MAX_LEVEL ? '5.0' : '50') + '% XP (helm bonus)');
+        lines.push('   ⤷ +' + (Hero.level >= MAX_LEVEL ? '2.0' : '20') + '% XP (helm bonus)');
+      }
+      if (g.type === 'emerald' && item.slot === 'boots') {
+        lines.push('   ⤷ +20% Movement Speed (boots bonus)');
       }
     }
     const empty = (item.sockets || 0) - gems.length;
@@ -1090,9 +1093,11 @@ const Items = {
         if (gs.rcr)     rcr += gs.rcr;
         if (gs.resAll)  resAll += gs.resAll;
         if (gs.cdr)     cdr += gs.cdr;
-        // D3 rule: a Ruby socketed in the HELM grants bonus XP — +50%
-        // (shrinks to 5.0% at the level cap, like all XP gain).
-        if (g.type === 'ruby' && slot === 'helm') xpBonus += at70 ? 0.05 : 0.50;
+        // Slot-specific gem boons:
+        //  · Ruby in the HELM  → +20% XP (2.0% at the level cap, like all XP)
+        //  · Emerald in BOOTS  → +20% movement speed
+        if (g.type === 'ruby' && slot === 'helm') xpBonus += at70 ? 0.02 : 0.20;
+        if (g.type === 'emerald' && slot === 'boots') move += 0.20;
       }
     };
     for (const slot of Object.keys(ITEM_SLOTS)) gather(Hero.equipped[slot], slot);
