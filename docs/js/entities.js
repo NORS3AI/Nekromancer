@@ -1029,11 +1029,16 @@ class Enemy {
 
     const p = Game.player;
     const diff = DIFFICULTIES[Hero.difficulty];
-    if (Math.random() < 0.32) {
+    const dropGold = () => {
       const g = new Pickup(this.x, this.y, 'gold');
       g.amount = Math.round(g.amount * diff.reward * (p ? p.goldFind : 1) * (this.elite ? 3 : 1) * (this.unique ? 15 : 1));
       Game.pickups.push(g);
-    }
+    };
+    // Not every kill needs to spew gear/gems/trash — roughly HALF of ordinary
+    // monsters just cough up a little gold and nothing else (owner rule). Elites
+    // and uniques always roll the full loot table.
+    if (!this.elite && !this.unique && Math.random() < 0.5) { dropGold(); return; }
+    if (Math.random() < 0.32) dropGold();
     if (Math.random() < (this.unique ? 1 : this.elite ? 0.3 : 0.06)) {
       Game.pickups.push(new Pickup(this.x, this.y, 'orb'));
     }

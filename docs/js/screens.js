@@ -3017,16 +3017,16 @@ const Screens = {
     ly = line(lx, ly, 'Damage', '×' + s.dmgMult.toFixed(2), '#6ff7c3');
     ly = line(lx, ly, 'Life', s.maxHp, '#e04a5a');
     ly = line(lx, ly, 'Crit chance', Math.round(s.critChance * 100) + '%  (×' + (1.8 + (s.critDamage || 0)).toFixed(2) + ')', '#ffb43a');
-    if (s.critDamage > 0) ly = line(lx, ly, 'Crit damage', '+' + Math.round(s.critDamage * 100) + '%  (Emerald)', '#4ade80');
-    if (s.flatDmg > 0) ly = line(lx, ly, 'Bonus damage', '+' + s.flatDmg + ' per hit  (Ruby)', '#e04a5a');
-    if (s.lifePerHit > 0) ly = line(lx, ly, 'Life per hit', '+' + s.lifePerHit + '  (Amethyst)', '#b06adf');
+    if (s.critDamage > 0) ly = line(lx, ly, 'Crit damage', '+' + Math.round(s.critDamage * 100) + '%', '#4ade80');
+    if (s.flatDmg > 0) ly = line(lx, ly, 'Bonus damage', '+' + s.flatDmg + ' per hit', '#e04a5a');
+    if (s.lifePerHit > 0) ly = line(lx, ly, 'Life per hit', '+' + s.lifePerHit, '#b06adf');
     ly = line(lx, ly, 'Max essence', s.maxEssence, '#4ecbe0');
     ly = line(lx, ly, 'Essence regen', s.essenceRegen.toFixed(1) + '/s', '#4ecbe0');
     ly = line(lx, ly, 'Life regen', s.hpRegen.toFixed(1) + '/s', '#e04a5a');
     ly = line(lx, ly, 'Armor', s.armor + '  (' + Math.round(s.armorDR * 100) + '% dmg reduced)', '#bfe8f4');
-    if (s.resistAll > 0) ly = line(lx, ly, 'All resist', s.resistAll + '  (' + Math.round(s.resistDR * 100) + '% reduced)  (Diamond)', '#bfe8f4');
-    if (s.cooldownReduction > 0) ly = line(lx, ly, 'Cooldown reduction', '-' + Math.round(s.cooldownReduction * 100) + '%  (Diamond)', '#bfe8f4');
-    if (s.resourceCostReduction > 0) ly = line(lx, ly, 'Resource cost', '-' + Math.round(s.resourceCostReduction * 100) + '%  (Topaz)', '#ffd76a');
+    if (s.resistAll > 0) ly = line(lx, ly, 'All resist', s.resistAll + '  (' + Math.round(s.resistDR * 100) + '% reduced)', '#bfe8f4');
+    if (s.cooldownReduction > 0) ly = line(lx, ly, 'Cooldown reduction', '-' + Math.round(s.cooldownReduction * 100) + '%', '#bfe8f4');
+    if (s.resourceCostReduction > 0) ly = line(lx, ly, 'Resource cost', '-' + Math.round(s.resourceCostReduction * 100) + '%', '#ffd76a');
     ly = line(lx, ly, 'Move speed', '+' + Math.round((s.moveSpeed || 0) * 100) + '%', '#6ff7c3');
     ly = line(lx, ly, 'Gold find', '+' + Math.round((s.goldFind - 1) * 100) + '%', '#ffd76a');
     if (s.xpBonus > 0) ly = line(lx, ly, 'Bonus XP', '+' + Math.round(s.xpBonus * 100) + '%', '#ffd76a');
@@ -3278,7 +3278,7 @@ const Screens = {
         ctx.fillText(cnt > 99 ? '99+' : cnt, ex, ey + 0.5);
       }
       UI.register(bx - chipR - 3, by - chipR - 3, chipR * 2 + 6, chipR * 2 + 6,
-        () => { UI.sel.stashSlot = slot; UI.sel.scrollY = 0; });
+        () => { UI.sel.stashSlot = slot; UI.sel.scrollY = 0; UI.sel.stashItem = null; });
     });
 
     // Detail column for the selected bin.
@@ -3327,26 +3327,36 @@ const Screens = {
     }
     items.forEach(it => {
       const yy = c - scrollY;
+      const expanded = UI.sel.stashItem === it;
       if (vis(c, 42)) {
-        ctx.fillStyle = 'rgba(28,24,38,0.92)';
+        ctx.fillStyle = expanded ? 'rgba(46,42,58,0.95)' : 'rgba(28,24,38,0.92)';
         rr(ctx, dx, yy, dw, 38, 6); ctx.fill();
+        if (expanded) { ctx.strokeStyle = RARITIES[it.rarity].color; ctx.lineWidth = 1.5; rr(ctx, dx, yy, dw, 38, 6); ctx.stroke(); }
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
         ctx.font = 'bold 12px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
         const nm = it.name + (it.torch && (it.count || 1) > 1 ? '  ×' + it.count : '');
         ctx.fillText(this.fitText(ctx, nm, dw - 152), dx + 10, yy + 15);
         ctx.font = '10px Georgia'; ctx.fillStyle = '#8a8070';
-        ctx.fillText(it.torch ? 'Torch' : (ITEM_SLOTS[it.slot].label + ' · lvl ' + it.mLvl), dx + 10, yy + 30);
+        ctx.fillText(it.torch ? 'Torch' : (ITEM_SLOTS[it.slot].label + ' · lvl ' + it.mLvl) + '  ·  tap to inspect', dx + 10, yy + 30);
         const bw = 66;
+        // Tap the card area (left of the buttons) to inspect the item.
+        UI.register(dx, yy, dw - bw * 2 - 16, 38, () => { UI.sel.stashItem = expanded ? null : it; });
         UI.btn(ctx, dx + dw - bw * 2 - 12, yy + 5, bw, 28, it.torch ? 'TAKE 1' : 'WITHDRAW',
           () => Items.fromStash(it), { size: 9, border: '#57b894', color: '#6ff7c3' });
         if (!it.torch) {
           const canSalv = Items.canSalvage(it);
           UI.btn(ctx, dx + dw - bw - 6, yy + 5, bw, 28, 'SALVAGE',
-            canSalv ? () => { const k = Hero.stash.indexOf(it); if (k >= 0) { Hero.stash.splice(k, 1); Items.grantSalvage(it); Hero.saveStash(); Hero.save(); } } : null,
+            canSalv ? () => { const k = Hero.stash.indexOf(it); if (k >= 0) { Hero.stash.splice(k, 1); Items.grantSalvage(it); Hero.saveStash(); Hero.save(); if (UI.sel.stashItem === it) UI.sel.stashItem = null; } } : null,
             { size: 9, disabled: !canSalv, border: '#8a6f4a', color: '#ffb43a' });
         }
       }
       c += 42;
+      // Expanded inspect card: full stats + upgrade arrows vs what's equipped.
+      if (expanded) {
+        const cardH = 30 + Items.statLines(it).length * 15 + 8;
+        if (vis(c, cardH)) this.itemCard(ctx, dx, c - scrollY, dw, it, it.torch ? null : Hero.equipped[it.slot], true);
+        c += cardH;
+      }
     });
     ctx.restore();
     UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 6);

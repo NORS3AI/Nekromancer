@@ -885,6 +885,9 @@ const Game = {
     this.enemies = s.enemies; this.projectiles = s.projectiles;
     this.corpses = s.corpses; this.pickups = s.pickups; this.telegraphs = s.telegraphs;
     this.fogBuf = s.fogBuf; this.fogStamp = s.fogStamp;
+    // Re-derive the fog buffer's 2D context, or the reveal brush would keep
+    // erasing into a STALE canvas (the cave's) and this map would never uncover.
+    this.fogCtx = this.fogBuf ? this.fogBuf.getContext('2d') : null;
     this.bossDead = s.bossDead; this.linkedMap = s.linkedMap;
     this.player.x = s.returnX; this.player.y = s.returnY;
     World.collide(this.player);

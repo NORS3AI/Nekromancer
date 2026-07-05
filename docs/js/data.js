@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.4.2-alpha';
+const GAME_VERSION = 'v1.4.3-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.4.3-alpha', date: 'July 2026',
+    notes: [
+      'Stash: TAP an item to inspect it — a card unfolds with its full stats and upgrade arrows vs what you have equipped',
+      'Fixed the fog of war staying dark after returning from a cave (or any linked map) — the world now uncovers around you again as it should',
+      'Loot cleanup: roughly HALF of ordinary monsters now just drop a little gold instead of gear/gems/trash (elites and bosses still roll full loot)',
+      'Character Sheet no longer spells out the gem name on each bonus (Emerald/Ruby/…) — the coloured value already says which gem it is'
+    ]
+  },
   {
     v: 'v1.4.2-alpha', date: 'July 2026',
     notes: [
