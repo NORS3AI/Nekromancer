@@ -3318,6 +3318,17 @@ const Screens = {
     }, { size: 12, border: '#8a6f4a', color: '#ffd76a' });
     gy += 30;
 
+    // Bone-hand mouse cursor size (desktop pointer). 1× / 2× / 3×.
+    const cscale = clamp(Settings.g.cursorScale || 1, 1, 3);
+    ctx.textAlign = 'left'; ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
+    ctx.fillText('Bone cursor size', gx, gy + 14);
+    UI.btn(ctx, gx + colW - 118, gy + 1, 118, 26, cscale + '×', () => {
+      Settings.g.cursorScale = (cscale % 3) + 1;   // 1 → 2 → 3 → 1
+      Settings.save();
+      if (typeof Game !== 'undefined') Game.applyCursor();
+    }, { size: 12, border: '#8a6f4a', color: '#ffd76a' });
+    gy += 30;
+
     // Corpse limit — corpses linger until this many exist, then the oldest fade.
     const caps = [100, 500, 1000, 2500, 5000, 10000];
     const curCap = Settings.g.corpseCap || 100;

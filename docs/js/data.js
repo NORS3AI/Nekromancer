@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.1.6-alpha';
+const GAME_VERSION = 'v1.1.7-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.1.7-alpha', date: 'July 2026',
+    notes: [
+      'The mouse pointer is now a boldly-outlined skeletal BONE HAND — far easier to spot on the dark battlefield',
+      'Settings → "Bone cursor size" lets you scale the pointer up to 2× or 3× for extra visibility'
+    ]
+  },
   {
     v: 'v1.1.6-alpha', date: 'July 2026',
     notes: [

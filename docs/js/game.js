@@ -52,6 +52,7 @@ const Game = {
     window.addEventListener('resize', () => this.resize());
     this.resize();
     Settings.load();
+    this.applyCursor();
     Skills.init();
     Hero.loadStash();   // shared vault first, so the character load won't reseed it
     Profiles.boot();    // load the roster and make the active hero current
@@ -92,6 +93,46 @@ const Game = {
     x.fillStyle = g;
     x.fillRect(0, 0, this.W, this.H);
     this.vignette = c;
+  },
+
+  // A skeletal bone-hand mouse pointer, boldly outlined so it stays legible over
+  // the dark battlefield. Sized 1× / 2× / 3× from Settings (a data-URI CSS
+  // cursor with its hotspot at the index fingertip).
+  buildCursor(scale) {
+    const s = clamp(scale || 1, 1, 3);
+    const unit = 22 * s;                 // rendered px (22 / 44 / 66 — well under the 128 cap)
+    const stroke = '#0b0810', bone = '#efe6d2', shade = '#cdbf9f';
+    // Design space is 22×22; hotspot sits at the fingertip (top-left).
+    const svg =
+      `<svg xmlns='http://www.w3.org/2000/svg' width='${unit}' height='${unit}' viewBox='0 0 22 22'>` +
+      `<g fill='${bone}' stroke='${stroke}' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'>` +
+      // palm / fist cluster
+      `<path d='M4.2 10.5 Q3.2 18.5 9 20 Q16 21.4 17 14.5 Q17.4 11 13.8 10.6 L6.5 10.2 Q4.4 10 4.2 10.5 Z'/>` +
+      // extended index finger (two bone segments + knuckle joints)
+      `<rect x='4.6' y='1.4' width='4.2' height='10.6' rx='2.1'/>` +
+      `<circle cx='6.7' cy='4.6' r='1.55'/>` +
+      `<circle cx='6.7' cy='8.4' r='1.55'/>` +
+      // folded-finger knuckle bumps along the top of the fist
+      `<circle cx='10.7' cy='11' r='2.1'/>` +
+      `<circle cx='13.4' cy='11.3' r='1.95'/>` +
+      `<circle cx='15.6' cy='12.4' r='1.7'/>` +
+      // thumb
+      `<path d='M4.3 12 Q1.4 12.4 1.6 15 Q1.9 17 4 16.4'/>` +
+      `</g>` +
+      // faint knuckle shading for a touch of bone depth
+      `<g fill='none' stroke='${shade}' stroke-width='0.7' stroke-linecap='round' opacity='0.5'>` +
+      `<path d='M9 13.5 Q11 15.5 13.5 14.5'/>` +
+      `</g></svg>`;
+    const uri = 'data:image/svg+xml,' + encodeURIComponent(svg);
+    const hot = Math.round(6 * s);       // fingertip hotspot (~x6,y1 in design space)
+    return `url("${uri}") ${hot} ${Math.round(1.5 * s)}, auto`;
+  },
+
+  applyCursor() {
+    if (!this.canvas) return;
+    const scale = (typeof Settings !== 'undefined' && Settings.g && Settings.g.cursorScale) || 1;
+    try { this.canvas.style.cursor = this.buildCursor(scale); }
+    catch (e) { this.canvas.style.cursor = 'auto'; }
   },
 
   monsterLevel() {
