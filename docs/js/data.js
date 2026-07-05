@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.4.1-alpha';
+const GAME_VERSION = 'v1.4.2-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.4.2-alpha', date: 'July 2026',
+    notes: [
+      'Groundwork for BIOME GROUND TEXTURES: each biome/theme (Snow, Marsh, Desert, Dungeon, Cave) can now tile the floor with its own art — drop the PNGs into docs/art/tiles/ and the game uses them (procedural ground until then). Dungeons & caves stay treeless, deserts keep cactus, marsh keeps marsh-trees'
+    ]
+  },
   {
     v: 'v1.4.1-alpha', date: 'July 2026',
     notes: [
