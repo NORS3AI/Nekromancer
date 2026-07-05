@@ -399,6 +399,7 @@ const Game = {
     this.riftProgress = Math.min(this.riftGoal, this.riftProgress + n);
     if (this.riftProgress >= this.riftGoal) {
       this.guardianUp = true;
+      World.linksClosed = true;   // seal the entrance/exit — the Guardian must be faced here
       const pt = this.spawnNear(this.player, 420);
       const g = new Enemy('brute', pt.x, pt.y, { unique: true, name: this.zone.boss });
       g.guardian = true;
@@ -501,9 +502,10 @@ const Game = {
       // (or a legendary power once the set is complete). Also refunds a Master key
       // sometimes so the season loop doesn't run dry.
       if (kind === 'season') {
-        const owned = Hero.setPiecesOwned();
+        // Seasons ALWAYS drop one of the six set pieces — duplicates are fine,
+        // chasing better rolls IS the ARPG loop (owner rule).
         const sp = new Pickup(boss.x, boss.y, 'item');
-        sp.item = owned.size < 6 ? Items.generateSetPiece(mLvl) : Items.generatePowerItem(mLvl, null, true);
+        sp.item = Items.generateSetPiece(mLvl);
         this.pickups.push(sp);
         UI.toast('✦ ' + sp.item.name + '!', '#4ade80');
         if (randInt(0, 1)) { Hero.masterKeys++; this.riftKeysDropped = (this.riftKeysDropped || 0) + 1; UI.toast('◈ Master Nephalem Rift Key! (' + Hero.masterKeys + ' held)', '#d8b4f0'); }
@@ -575,16 +577,11 @@ const Game = {
       lines.push([gemName(gem), GEM_TYPES[gem.type].color]);
       const kind = (this.zone && this.zone.riftKind) || 'normal';
       if (kind === 'season') {
-        // Seasons don't drop keys — they drop SET pieces. Roll one by difficulty
-        // (higher Torment = better odds); a hit is collected to the bag (owner rule).
-        const chance = clamp(0.35 + tormentTier() * 0.035, 0.35, 0.95);
-        if (Math.random() < chance) {
-          const sp = Items.generateSetPiece(mLvl);
-          Items.stash(sp);
-          lines.push(['✦ ' + sp.name, RARITIES[5].color]);
-        } else {
-          lines.push(['No set piece this run', '#9a9080']);
-        }
+        // Seasons don't drop keys — they GUARANTEE a set piece (owner rule): one
+        // of the six Grace of Inarius pieces, whether or not you own it already.
+        const sp = Items.generateSetPiece(mLvl);
+        Items.stash(sp);
+        lines.push(['✦ ' + sp.name, RARITIES[5].color]);
       } else {
         const kd = this.riftKeysDropped || 0;
         const klbl = this.riftKeyLabel || 'Nephalem Rift Key';
@@ -798,7 +795,7 @@ const Game = {
       // On a LINKED sub-map the boss portal simply walks you back to the parent
       // map (its objective/journey lives one level up); base maps keep the
       // normal descent / bounty / completion flow.
-      if (this.linkedMap && this.mapStack.length) this.goBack();
+      if (this.linkedMap && this.mapStack.length && !this.riftMode) this.goBack();
       else if (this.descend) this.nextStage();
       else if (this.nextBountyPart) this.startBountyPart(this.bountyPart + 1);
       else this.completeZone();
@@ -910,8 +907,11 @@ const Game = {
   // level), or a dank dungeon CAVE that harbours Rathma's Chosen.
   linkedZone() {
     const z = this.zone;
-    return { name: z.name, kind: z.kind, mLvl: z.mLvl, monsters: z.monsters,
-             biome: z.biome, weather: z.weather, tiles: z.tiles, rift: false };
+    // Preserve RIFT character so cycling through season/rift maps stays a rift
+    // (orb progress carries, the Guardian rises when the bar fills on any map).
+    return { name: z.name, kind: Math.random() < 0.5 ? 'dungeon' : 'open', mLvl: z.mLvl, monsters: z.monsters,
+             biome: z.biome, weather: z.weather, tiles: z.tiles, ground: z.ground, accent: z.accent,
+             boss: z.boss, packs: z.packs, rift: z.rift, riftKind: z.riftKind, riftGoal: z.riftGoal };
   },
   caveZone() {
     return { name: 'Hidden Cave', kind: 'dungeon', mLvl: this.zone.mLvl,
@@ -927,6 +927,9 @@ const Game = {
     this.pickups = []; this.telegraphs = [];
     this.fogBuf = null; this.bossDead = false; this.descend = false;
     this.linkedMap = true;   // reached via an exit/cave — its boss portal returns to parent
+    this.riftMode = !!zone.rift;
+    this.riftGoal = zone.riftGoal || this.riftGoal;
+    this.guardianUp = false;   // a fresh map: the Guardian isn't up (orb progress carries)
     const boost = 1 + (Hero.cheats.spawn || 0);
     const em = DIFFICULTIES[Hero.difficulty].enemyMult || 1;
     const packSize = () => clamp(Math.round(randInt(3, 5) * em * boost), 3, Math.round(14 * boost));
@@ -941,10 +944,13 @@ const Game = {
         World.collide(e); this.enemies.push(e);
       }
     };
-    for (const pk of World.packs) spawnPack(pk.x, pk.y, 0.18);
+    for (const pk of World.packs) spawnPack(pk.x, pk.y, zone.rift ? 0.5 : 0.18);
     if (cave) {
       // The cave's dweller: Rathma's Chosen, a stealthing rare-elite assassin.
       this.enemies.push(new Enemy('rathma', World.bossPos.x, World.bossPos.y, { rare: true, name: MONSTERS.rathma.name }));
+    } else if (zone.rift) {
+      // Rift/season linked maps carry NO fixed boss — you fill the orb bar across
+      // the chain and the Guardian rises wherever the bar completes.
     } else {
       const nm = pick(ELITE_PREFIX) + pick(ELITE_SUFFIX) + ' the ' + pick(['Warden', 'Gatekeeper', 'Deepwalker', 'Threshold']);
       this.enemies.push(new Enemy('brute', World.bossPos.x, World.bossPos.y, { unique: true, name: nm }));

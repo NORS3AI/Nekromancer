@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.3.2-alpha';
+const GAME_VERSION = 'v1.3.3-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.3.3-alpha', date: 'July 2026',
+    notes: [
+      'Seasons now GUARANTEE a Grace of Inarius set piece on every run — duplicates included, because chasing better rolls is the whole point',
+      'Season orb requirement cut from 1500 to 1000 points',
+      'Season maps are now MEDIUM instead of extra-large, and their entrance/exit portals work — roam and cycle through several smaller maps to fill the orb bar (your progress carries across them; the Guardian rises wherever the bar completes and seals the links)'
+    ]
+  },
   {
     v: 'v1.3.2-alpha', date: 'July 2026',
     notes: [
@@ -1144,7 +1152,7 @@ const ITEM_SLOTS = {
 
 const SEASON = {
   name: 'Season of the Grace of Inarius',
-  desc: 'Requires a Master Nephalem Rift Key — slay Nephalem Rift Guardians to earn one. Gather 1500 points, then claim all six pieces of the Grace of Inarius.'
+  desc: 'Requires a Master Nephalem Rift Key — slay Nephalem Rift Guardians to earn one. Gather 1000 points across the linked maps, then claim all six pieces of the Grace of Inarius.'
 };
 
 const INARIUS_SET = {
@@ -1739,9 +1747,11 @@ const RIFT_GUARDIANS = ['Blighter', 'The Choker', 'Bloodmaw', 'Sand Shaper', 'Er
 
 // Rift point goals: gather purple orbs (10 pts each) from rare elites, then
 // the Rift Guardian rises. normal 250 · Nephalem 750 · Master (Season) 1500.
-const RIFT_GOALS = { normal: 250, greater: 750, season: 1500 };
+const RIFT_GOALS = { normal: 250, greater: 750, season: 1000 };
 const RIFT_NAMES = { normal: 'Rift', greater: 'Nephalem Rift', season: 'Master Nephalem Rift' };
-const RIFT_TILES = { normal: 10, greater: 12, season: 14 };
+// Season maps are now MEDIUM so you cycle through several via the entrance/exit
+// links rather than roaming one giant map (owner rule).
+const RIFT_TILES = { normal: 10, greater: 12, season: 5 };
 
 function makeRiftZone(riftKind = 'greater') {
   const theme = pick(ZONES);
