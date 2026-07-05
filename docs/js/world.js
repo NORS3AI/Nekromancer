@@ -26,9 +26,9 @@ const World = {
   portal: null,         // {x, y} exit portal once the bounty is done
   pattern: null,
   patternFill: null,
-  // Flip to true ONCE the ground-tile PNGs are uploaded to docs/art/tiles/
-  // (snow/marsh/desert/dungeon/cave.png). Left false so no 404s fire art-free.
-  TILES_READY: false,
+  // Ground-tile PNGs are uploaded (docs/art/tiles/{Snow,Marsh,Desert,Dungeon,
+  // Cave}.png) — biome/theme floors now use them (procedural fallback remains).
+  TILES_READY: true,
 
   // ------------------------------------------------------------- generation
 
@@ -497,7 +497,7 @@ const World = {
   loadTiles() {
     if (this.tileImages) return;
     this.tileImages = {};
-    const files = { snow: 'snow.png', marsh: 'marsh.png', desert: 'desert.png', dungeon: 'dungeon.png', cave: 'cave.png' };
+    const files = { snow: 'Snow.png', marsh: 'Marsh.png', desert: 'Desert.png', dungeon: 'Dungeon.png', cave: 'Cave.png' };
     for (const [k, f] of Object.entries(files)) {
       const rec = { img: new Image(), ready: false };
       rec.img.onload = () => { rec.ready = true; };

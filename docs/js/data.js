@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.4.3-alpha';
+const GAME_VERSION = 'v1.4.4-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.4.4-alpha', date: 'July 2026',
+    notes: [
+      'BIOME GROUND TEXTURES are now LIVE — Snow, Marsh, Desert, Dungeon and Cave maps tile the floor with their own hand-made art (the procedural ground stays as a fallback)'
+    ]
+  },
   {
     v: 'v1.4.3-alpha', date: 'July 2026',
     notes: [
