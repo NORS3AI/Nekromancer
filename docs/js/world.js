@@ -46,6 +46,33 @@ const World = {
     else this.genOpen(zone);
     this.explored = new Uint8Array(this.cols * this.rows);
     this.stamp = (this.stamp || 0) + 1;   // bumps so the world-fog buffer rebuilds
+    // Map-chaining: an ENTRANCE (where you arrived, leads back the way you came)
+    // and an EXIT (walk onward to a fresh linked map). Both stay open until this
+    // map's boss falls. `zone.noLinks` (cave / story) suppresses the exit.
+    this.entrance = { x: this.spawn.x, y: this.spawn.y };
+    this.exit = zone.noLinks ? null : this.pickFarSpot(700, 320);
+    this.linksClosed = false;
+    // A super-rare cave mouth — a real entrance to a hidden cave map (3%).
+    this.cave = (!zone.noLinks && !zone.rift && Math.random() < 0.03) ? this.pickFarSpot(600, 260) : null;
+  },
+
+  // A floor point at least `minSp` from the entrance and `minBs` from the boss.
+  pickFarSpot(minSp, minBs) {
+    let x, y, t = 0;
+    do { x = rand(160, this.W - 160); y = rand(160, this.H - 160); t++; }
+    while ((dist(x, y, this.spawn.x, this.spawn.y) < minSp || dist(x, y, this.bossPos.x, this.bossPos.y) < minBs || !this.isFloorAt(x, y)) && t < 40);
+    return { x, y };
+  },
+
+  // Snapshot / restore ALL data fields (not methods) so a map can be parked on
+  // the map-stack and returned to later with its exact live world intact.
+  snapshot() {
+    const s = {};
+    for (const k of Object.keys(this)) if (typeof this[k] !== 'function') s[k] = this[k];
+    return s;
+  },
+  restore(s) {
+    for (const k of Object.keys(s)) this[k] = s[k];
   },
 
   genOpen(zone) {
@@ -940,7 +967,68 @@ const World = {
     if (this.townPortal) {
       out.push({ y: this.townPortal.y, draw: ctx => this.drawTownPortal(ctx) });
     }
+    // Map-chaining links, open until the boss falls.
+    if (!this.linksClosed) {
+      if (this.exit) out.push({ y: this.exit.y, draw: ctx => this.drawLinkPortal(ctx, this.exit, '#8fd0ff', '#4aa3e0', 'ONWARD') });
+      if (this.cave) out.push({ y: this.cave.y, draw: ctx => this.drawCave(ctx, this.cave) });
+      // The entrance is only "live" (steppable) when there's a map to return to;
+      // Game gates that. Draw it whenever there's a stack so it reads as the way back.
+      if (this.entrance && Game.mapStack && Game.mapStack.length) {
+        out.push({ y: this.entrance.y, draw: ctx => this.drawLinkPortal(ctx, this.entrance, '#6ff7c3', '#3a7a6a', 'BACK') });
+      }
+    }
     return out;
+  },
+
+  // A walkable link portal (exit = blue "onward", entrance = green "back").
+  drawLinkPortal(ctx, pt, c1, c2, label) {
+    const t = Game.time;
+    ctx.save();
+    ctx.translate(pt.x, pt.y);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath(); ctx.ellipse(0, 4, 22, 9, 0, 0, TAU); ctx.fill();
+    for (let i = 0; i < 2; i++) {
+      ctx.strokeStyle = i ? c1 : c2;
+      ctx.lineWidth = 2.5 - i;
+      ctx.globalAlpha = 0.7;
+      ctx.beginPath();
+      for (let a = 0; a <= Math.PI * 2.4; a += 0.3) {
+        const rr2 = 5 + a * 3;
+        const x = Math.cos(a + t * (i ? -1.4 : 1.6)) * rr2;
+        const y = -14 + Math.sin(a + t * (i ? -1.4 : 1.6)) * rr2 * 0.7;
+        a === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = c1;
+    ctx.font = 'bold 9px Georgia'; ctx.textAlign = 'center';
+    ctx.fillText(label, 0, -36);
+    ctx.restore();
+  },
+
+  // A dark cave mouth cut into rock — a real entrance to a hidden cave map.
+  drawCave(ctx, pt) {
+    const t = Game.time;
+    ctx.save();
+    ctx.translate(pt.x, pt.y);
+    // Rocky arch.
+    ctx.fillStyle = '#2a2530';
+    ctx.beginPath(); ctx.moveTo(-26, 12); ctx.quadraticCurveTo(-30, -26, 0, -30);
+    ctx.quadraticCurveTo(30, -26, 26, 12); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#181420'; ctx.lineWidth = 2; ctx.stroke();
+    // Black maw.
+    ctx.fillStyle = '#050308';
+    ctx.beginPath(); ctx.ellipse(0, 2, 16, 20, 0, 0, TAU); ctx.fill();
+    // Purple glow of Rathma stirring within.
+    const g = ctx.createRadialGradient(0, 2, 0, 0, 2, 16);
+    g.addColorStop(0, `rgba(176,106,223,${0.25 + 0.12 * Math.sin(t * 3)})`);
+    g.addColorStop(1, 'rgba(176,106,223,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 2, 16, 20, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#b06adf';
+    ctx.font = 'bold 9px Georgia'; ctx.textAlign = 'center';
+    ctx.fillText('CAVE', 0, -34);
+    ctx.restore();
   },
 
   drawObject(ctx, o) {

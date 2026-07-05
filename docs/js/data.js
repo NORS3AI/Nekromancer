@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.2.5-alpha';
+const GAME_VERSION = 'v1.3.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.3.0-alpha', date: 'July 2026',
+    notes: [
+      'MAP CHAINING: every map now has a walkable ENTRANCE and EXIT (plus the odd rare CAVE mouth). Step through an exit to roam onward into a fresh linked map — chain as far as you like — and walk back through an entrance to return to the EXACT map you left, with every enemy, corpse and pickup right where you left it (true saved-state backtracking)',
+      'The links stay open until a map\'s boss falls; killing the boss seals them and opens the usual portal (which, on a linked sub-map, walks you back to the parent map)',
+      'Rathma\'s Chosen now lurks inside the rare CAVE — a real hidden dungeon you enter, not an abstract spawn'
+    ]
+  },
   {
     v: 'v1.2.5-alpha', date: 'July 2026',
     notes: [

@@ -639,6 +639,12 @@ const UI = {
         this.star(ctx, x0 + pk.x / World.W * S, y0 + pk.y / World.H * S, col, 4 + Math.sin(Game.time * 6) * 1.2);
       }
     }
+    // Map-chaining links (open until the boss falls).
+    if (!World.linksClosed) {
+      if (World.exit) dot(World.exit.x, World.exit.y, '#8fd0ff', 3);
+      if (World.cave) dot(World.cave.x, World.cave.y, '#b06adf', 3);
+      if (World.entrance && Game.mapStack && Game.mapStack.length) dot(World.entrance.x, World.entrance.y, '#6ff7c3', 3);
+    }
     if (Game.bossDead && World.portal) dot(World.portal.x, World.portal.y, '#b06adf', 3.5);
     else if (!Game.riftMode || Game.guardianUp) dot(World.bossPos.x, World.bossPos.y, '#e04a5a', 3);
     dot(Game.player.x, Game.player.y, '#e8e0cc', 3);

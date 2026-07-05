@@ -26,6 +26,8 @@ const Game = {
   portalCast: null,       // {t, x, y} — 7s channel to open a town portal
   portalCd: 0,            // cooldown (s) after a portal closes before a new one can be cast
   townPortalNear: false,  // debounce so standing on the portal doesn't loop the menu
+  mapStack: [],           // parked map snapshots you can walk BACK into (true backtracking)
+  linkDebounce: false,    // step-off-then-on gate for entrance/exit/cave portals
   // Multi-area journeys: a bounty/adventure run spans several linked maps.
   stage: 1,
   stageCount: 1,
@@ -261,6 +263,9 @@ const Game = {
     this.portalCast = null;
     this.portalCd = 0;
     this.townPortalNear = false;
+    this.mapStack = [];        // a new area starts a fresh backtrack chain
+    this.linkDebounce = false;
+    this.linkedMap = false;    // base journey map (not reached via an exit/cave)
     this.riftProgress = 0;
     this.riftGoal = zone.riftGoal || 250;
     this.guardianUp = false;
@@ -338,10 +343,8 @@ const Game = {
       const pos = placeAway(700, 320);
       this.enemies.push(new Enemy(rb, pos.x, pos.y, { name: MONSTERS[rb].name }));
     }
-    if (!(this.zone && this.zone.storyFinal) && Math.random() < 0.03) {
-      const pos = placeAway(600, 260);
-      this.enemies.push(new Enemy('rathma', pos.x, pos.y, { rare: true, name: MONSTERS.rathma.name }));
-    }
+    // (Rathma's Chosen now lives inside the rare CAVE — a real linked map — not
+    // loose on the surface; see World.cave + Game.enterCave.)
     // Act III: the Horadric's Cube has a 10% chance to be half-buried on any
     // (non-final) map. If the player reaches the Sand Wyrm without finding it,
     // the Wyrm drops it for certain (see onBossDead). Only spawns if unowned.
@@ -461,6 +464,7 @@ const Game = {
   onBossDead(boss) {
     this.bossDead = true;
     World.portal = { x: boss.x, y: boss.y };
+    World.linksClosed = true;   // the map's boss falls → its entrance/exit/cave seal
     if (this.riftMode) {
       const kind = this.zone.riftKind || 'normal';
       const mLvl = this.monsterLevel();
@@ -791,7 +795,11 @@ const Game = {
     // Shrine 'fortune' doubles gold find while active.
     // (applied via goldFind at pickup time)
     if (World.portal && this.bossDead && dist(p.x, p.y, World.portal.x, World.portal.y) < 40) {
-      if (this.descend) this.nextStage();
+      // On a LINKED sub-map the boss portal simply walks you back to the parent
+      // map (its objective/journey lives one level up); base maps keep the
+      // normal descent / bounty / completion flow.
+      if (this.linkedMap && this.mapStack.length) this.goBack();
+      else if (this.descend) this.nextStage();
       else if (this.nextBountyPart) this.startBountyPart(this.bountyPart + 1);
       else this.completeZone();
     }
@@ -804,6 +812,18 @@ const Game = {
         UI.townMode = true;
         UI.open('town');
         AudioSys.sfx('portal');
+      }
+    }
+    // Entrance / exit / cave links — walkable portals into OTHER maps, open until
+    // this map's boss dies. Step off then back on to travel (linkDebounce gate).
+    if (!World.linksClosed && !UI.screen) {
+      const near = pt => pt && dist(p.x, p.y, pt.x, pt.y) < 40;
+      const onExit = near(World.exit), onCave = near(World.cave), onEntr = near(World.entrance) && this.mapStack.length > 0;
+      if (!(onExit || onCave || onEntr)) this.linkDebounce = false;
+      else if (!this.linkDebounce) {
+        if (onCave) this.enterCave();
+        else if (onExit) this.goDeeper(false);
+        else if (onEntr) this.goBack();
       }
     }
   },
@@ -843,6 +863,125 @@ const Game = {
       this.townPortalNear = false;
       UI.toast('Town portal closed — 30s until you can open another', '#8fd0ff');
     }
+  },
+
+  // ------------------------------------------------------ map-chaining links
+  // Every map has an ENTRANCE (leads back the way you came) and an EXIT (walk
+  // onward to a fresh linked map) — plus the odd CAVE mouth. They stay open
+  // until the map's boss dies, so you can roam a long chain of maps and walk
+  // BACK into each one exactly as you left it (true saved-state backtracking).
+
+  // Park the whole live map so it can be re-entered later, byte-for-byte.
+  snapshotMap(returnPos) {
+    return {
+      world: World.snapshot(),
+      enemies: this.enemies, projectiles: this.projectiles,
+      corpses: this.corpses, pickups: this.pickups, telegraphs: this.telegraphs,
+      fogBuf: this.fogBuf, fogStamp: this.fogStamp,
+      bossDead: this.bossDead, linkedMap: this.linkedMap,
+      returnX: returnPos.x, returnY: returnPos.y
+    };
+  },
+
+  restoreMap(s) {
+    World.restore(s.world);
+    this.enemies = s.enemies; this.projectiles = s.projectiles;
+    this.corpses = s.corpses; this.pickups = s.pickups; this.telegraphs = s.telegraphs;
+    this.fogBuf = s.fogBuf; this.fogStamp = s.fogStamp;
+    this.bossDead = s.bossDead; this.linkedMap = s.linkedMap;
+    this.player.x = s.returnX; this.player.y = s.returnY;
+    World.collide(this.player);
+    this.repositionMinions();
+    this.camera.x = this.player.x - this.W / 2;
+    this.camera.y = this.player.y - this.H / 2;
+  },
+
+  // Your minions follow you between maps — cluster them at your new position.
+  repositionMinions() {
+    for (const m of this.minions) {
+      if (m.dead) continue;
+      const a = rand(TAU), d = rand(30, 70);
+      m.x = this.player.x + Math.cos(a) * d;
+      m.y = this.player.y + Math.sin(a) * d;
+    }
+  },
+
+  // Build a fresh linked map from the current land's character (same monsters /
+  // level), or a dank dungeon CAVE that harbours Rathma's Chosen.
+  linkedZone() {
+    const z = this.zone;
+    return { name: z.name, kind: z.kind, mLvl: z.mLvl, monsters: z.monsters,
+             biome: z.biome, weather: z.weather, tiles: z.tiles, rift: false };
+  },
+  caveZone() {
+    return { name: 'Hidden Cave', kind: 'dungeon', mLvl: this.zone.mLvl,
+             monsters: this.zone.monsters, noLinks: true, cave: true, tiles: 7 };
+  },
+
+  // Generate + populate a linked map, dropping the hero at its entrance. Keeps
+  // the persistent hero (HP/essence carry) and their minions.
+  loadLinkedMap(zone, cave) {
+    World.generate(zone);
+    this.zone = zone;
+    this.enemies = []; this.projectiles = []; this.corpses = [];
+    this.pickups = []; this.telegraphs = [];
+    this.fogBuf = null; this.bossDead = false; this.descend = false;
+    this.linkedMap = true;   // reached via an exit/cave — its boss portal returns to parent
+    const boost = 1 + (Hero.cheats.spawn || 0);
+    const em = DIFFICULTIES[Hero.difficulty].enemyMult || 1;
+    const packSize = () => clamp(Math.round(randInt(3, 5) * em * boost), 3, Math.round(14 * boost));
+    const spawnPack = (x, y, ec) => {
+      const eLead = Math.random() < ec, rLead = eLead && Math.random() < 0.3, n = packSize();
+      for (let i = 0; i < n; i++) {
+        const a = rand(TAU), d = rand(0, 70);
+        const e = new Enemy(pick(zone.monsters), x + Math.cos(a) * d, y + Math.sin(a) * d, {
+          elite: eLead && i === 0, rare: rLead && i === 0,
+          name: eLead && i === 0 ? (rLead ? 'Rare ' : '') + pick(ELITE_PREFIX) + pick(ELITE_SUFFIX) : undefined
+        });
+        World.collide(e); this.enemies.push(e);
+      }
+    };
+    for (const pk of World.packs) spawnPack(pk.x, pk.y, 0.18);
+    if (cave) {
+      // The cave's dweller: Rathma's Chosen, a stealthing rare-elite assassin.
+      this.enemies.push(new Enemy('rathma', World.bossPos.x, World.bossPos.y, { rare: true, name: MONSTERS.rathma.name }));
+    } else {
+      const nm = pick(ELITE_PREFIX) + pick(ELITE_SUFFIX) + ' the ' + pick(['Warden', 'Gatekeeper', 'Deepwalker', 'Threshold']);
+      this.enemies.push(new Enemy('brute', World.bossPos.x, World.bossPos.y, { unique: true, name: nm }));
+      if (Math.random() < 0.18) {
+        const rb = Math.random() < 0.5 ? 'wyrm' : 'glutton';
+        const pos = World.pickFarSpot(700, 320);
+        this.enemies.push(new Enemy(rb, pos.x, pos.y, { name: MONSTERS[rb].name }));
+      }
+    }
+    this.player.x = World.entrance.x; this.player.y = World.entrance.y;
+    World.collide(this.player);
+    this.repositionMinions();
+    this.camera.x = this.player.x - this.W / 2;
+    this.camera.y = this.player.y - this.H / 2;
+    this.linkDebounce = true;   // you arrive ON the entrance — step off to re-arm
+  },
+
+  goDeeper(cave) {
+    const from = cave ? World.cave : World.exit;
+    if (!from) return;
+    this.mapStack.push(this.snapshotMap({ x: from.x, y: from.y }));
+    this.loadLinkedMap(cave ? this.caveZone() : this.linkedZone(), cave);
+    Particles.ring(this.player.x, this.player.y, 90, cave ? '#b06adf' : '#8fd0ff', 6, 0.5);
+    AudioSys.sfx('portal');
+    this.showBanner(cave ? 'INTO THE CAVE' : 'DEEPER STILL',
+      cave ? 'Something ancient stirs in the dark' : 'A fresh expanse unfolds — the way back stays open', 2.4);
+  },
+
+  enterCave() { this.goDeeper(true); },
+
+  goBack() {
+    if (!this.mapStack.length) return;
+    this.restoreMap(this.mapStack.pop());
+    this.linkDebounce = true;   // you arrive ON the exit you left — step off to re-arm
+    Particles.ring(this.player.x, this.player.y, 90, '#6ff7c3', 6, 0.5);
+    AudioSys.sfx('portal');
+    this.showBanner('BACK THE WAY YOU CAME', '', 1.8);
   },
 
   // Advance the town-portal channel; complete it at 7s, cancel it if the hero
