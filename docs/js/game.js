@@ -34,6 +34,7 @@ const Game = {
   mapStack: [],           // parked map snapshots you can walk BACK into (true backtracking)
   linkDebounce: false,    // step-off-then-on gate for entrance/exit/cave portals
   linkDepth: 0,           // how many "ONWARD" dives deep — each dive is 1.2× deadlier (cap MAX_LINK_DEPTH)
+  onwardSealed: false,    // once a boss is slain in ANY deeper map, no more diving ONWARD until you're back on the original map
   // Multi-area journeys: a bounty/adventure run spans several linked maps.
   stage: 1,
   stageCount: 1,
@@ -296,6 +297,7 @@ const Game = {
     this.townPortalNear = false;
     this.mapStack = [];        // a new area starts a fresh backtrack chain
     this.linkDepth = 0;        // …at surface difficulty (ONWARD dives raise it)
+    this.onwardSealed = false; // …with diving re-enabled (fresh original map)
     this.linkDebounce = false;
     this.linkedMap = false;    // base journey map (not reached via an exit/cave)
     this.riftProgress = 0;
@@ -501,10 +503,13 @@ const Game = {
     // On a LINKED sub-map (a cave or an ONWARD floor), the boss falling just opens
     // the way BACK to the parent map — skip the descend/bounty/completion flow.
     if (this.linkedMap && this.mapStack.length && !this.riftMode) {
+      // Slaying a deeper boss seals the ONWARD path: no diving deeper anywhere
+      // until you climb all the way back to the original map (only BACK stays open).
+      this.onwardSealed = true;
       fxNova(boss.x, boss.y, 220);
       AudioSys.sfx('portal');
       Particles.shake(8);
-      this.showBanner('THE WAY OUT OPENS', boss.name + ' falls — step through the portal to climb back', 3.0);
+      this.showBanner('THE WAY OUT OPENS', boss.name + ' falls — climb back; the way deeper is sealed', 3.0);
       return;
     }
     if (this.riftMode) {
@@ -868,7 +873,11 @@ const Game = {
     // this map's boss dies. Step off then back on to travel (linkDebounce gate).
     if (!World.linksClosed && !UI.screen) {
       const near = pt => pt && dist(p.x, p.y, pt.x, pt.y) < 40;
-      const onExit = near(World.exit), onCave = near(World.cave), onEntr = near(World.entrance) && this.mapStack.length > 0;
+      // Diving ONWARD (exit / cave) is disabled while a deeper boss's seal is in
+      // effect — only the BACK entrance works until you reach the original map.
+      const onExit = near(World.exit) && !this.onwardSealed;
+      const onCave = near(World.cave) && !this.onwardSealed;
+      const onEntr = near(World.entrance) && this.mapStack.length > 0;
       if (!(onExit || onCave || onEntr)) this.linkDebounce = false;
       else if (!this.linkDebounce) {
         if (onCave) this.enterCave();
@@ -1059,11 +1068,15 @@ const Game = {
     const s = this.mapStack.pop();
     this.restoreMap(s);
     this.linkDepth = s.depth || 0;   // difficulty reverts to the map you step back into
+    // Reaching the original map (no longer a linked sub-map) re-opens diving ONWARD.
+    if (!this.linkedMap) this.onwardSealed = false;
     this.linkDebounce = true;   // you arrive ON the exit you left — step off to re-arm
     Particles.ring(this.player.x, this.player.y, 90, '#6ff7c3', 6, 0.5);
     AudioSys.sfx('portal');
-    this.showBanner('BACK THE WAY YOU CAME',
-      this.linkDepth > 0 ? 'Depth ' + this.linkDepth + ' — the air lightens as you climb' : 'You surface at the main map', 1.8);
+    const backSub = !this.linkedMap ? 'You surface at the original map — the way deeper reopens'
+      : this.onwardSealed ? 'Depth ' + this.linkDepth + ' — climb on; the way deeper stays sealed'
+      : 'Depth ' + this.linkDepth + ' — the air lightens as you climb';
+    this.showBanner('BACK THE WAY YOU CAME', backSub, 1.8);
   },
 
   // Advance the town-portal channel; complete it at 7s, cancel it if the hero

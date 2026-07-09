@@ -574,12 +574,14 @@ const UI = {
       ctx.textAlign = 'left';
       ctx.font = 'bold 11px Georgia';
       ctx.fillStyle = Game.bossDead ? '#b06adf' : '#ffb43a';
-      ctx.fillText(Game.bossDead ? '◈ Enter the portal' : '☠ ' + Game.zone.boss, 14 + s.left, 86 + st);
+      ctx.fillText((Game.bossDead ? '◈ Enter the portal' : '☠ ' + Game.zone.boss)
+        + (Game.linkDepth > 0 ? '   ⬇' + Game.linkDepth : ''), 14 + s.left, 86 + st);
     } else {
       ctx.textAlign = 'center';
       ctx.font = 'bold 13px Georgia';
       ctx.fillStyle = '#c9bfa8';
-      ctx.fillText(Game.zone.name + '  ·  ' + DIFFICULTIES[Hero.difficulty].name, W / 2, 16 + st);
+      const depthTag = Game.linkDepth > 0 ? '   ·   ⬇ Depth ' + Game.linkDepth + '/' + MAX_LINK_DEPTH : '';
+      ctx.fillText(Game.zone.name + '  ·  ' + DIFFICULTIES[Hero.difficulty].name + depthTag, W / 2, 16 + st);
       ctx.font = '12px Georgia';
       ctx.fillStyle = Game.bossDead ? '#b06adf' : '#ffb43a';
       ctx.fillText(Game.bossDead ? 'Enter the portal' : 'Bounty: slay ' + Game.zone.boss, W / 2, 33 + st);

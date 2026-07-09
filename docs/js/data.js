@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.9-alpha';
+const GAME_VERSION = 'v1.6.10-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.10-alpha', date: 'July 2026',
+    notes: [
+      'Slaying a boss in ANY deeper/ONWARD map now SEALS the descent — you can no longer dive deeper anywhere; only the BACK portals stay open until you climb all the way to the original map (where diving reopens)',
+      'The ONWARD and cave portals vanish while the descent is sealed, so the only way is back',
+      'A depth tally now rides at the top of the HUD (⬇ Depth N / 12) so you always know how deep you are'
+    ]
+  },
   {
     v: 'v1.6.9-alpha', date: 'July 2026',
     notes: [

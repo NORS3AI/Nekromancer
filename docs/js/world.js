@@ -1014,8 +1014,11 @@ const World = {
     }
     // Map-chaining links, open until the boss falls.
     if (!this.linksClosed) {
-      if (this.exit) out.push({ y: this.exit.y, draw: ctx => this.drawLinkPortal(ctx, this.exit, '#8fd0ff', '#4aa3e0', 'ONWARD') });
-      if (this.cave) out.push({ y: this.cave.y, draw: ctx => this.drawCave(ctx, this.cave) });
+      // ONWARD / cave vanish once a deeper boss seals the descent (Game.onwardSealed) —
+      // only the BACK entrance remains until the hero returns to the original map.
+      const sealed = Game.onwardSealed;
+      if (this.exit && !sealed) out.push({ y: this.exit.y, draw: ctx => this.drawLinkPortal(ctx, this.exit, '#8fd0ff', '#4aa3e0', 'ONWARD') });
+      if (this.cave && !sealed) out.push({ y: this.cave.y, draw: ctx => this.drawCave(ctx, this.cave) });
       // The entrance is only "live" (steppable) when there's a map to return to;
       // Game gates that. Draw it whenever there's a stack so it reads as the way back.
       if (this.entrance && Game.mapStack && Game.mapStack.length) {
