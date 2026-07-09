@@ -7,6 +7,40 @@
 
 const SAVE_KEY = 'nekromancer_hero_v1';
 const SAVES_KEY = 'nekromancer_saves_v1';
+
+// Resilient localStorage write. Browsers cap localStorage (~5 MB on iPhone
+// Safari); once it's full EVERY setItem throws QuotaExceededError, which used to
+// be swallowed silently — so the game just stopped saving with no warning. Now:
+// on a full store we drop the OLDEST manual save (progress matters more than an
+// old snapshot) and retry once; a hard failure is surfaced ONCE so the player
+// knows to free space. Returns true on success.
+let _storageWarned = false;
+function lsSet(key, value) {
+  try { localStorage.setItem(key, value); _storageWarned = false; return true; }
+  catch (e) {
+    // Free room by pruning the oldest manual save, then retry (never for the
+    // saves key itself — that would just rewrite the value we're pruning).
+    if (key !== SAVES_KEY) {
+      try {
+        const raw = localStorage.getItem(SAVES_KEY);
+        const saves = raw ? JSON.parse(raw) : [];
+        if (saves && saves.length) {
+          saves.shift();
+          localStorage.setItem(SAVES_KEY, JSON.stringify(saves));
+          localStorage.setItem(key, value);
+          if (typeof UI !== 'undefined') UI.toast('Storage was full — dropped the oldest manual save so your progress keeps saving', '#ffb43a');
+          return true;
+        }
+      } catch (e2) { /* still out of room */ }
+    }
+    if (!_storageWarned && typeof UI !== 'undefined') {
+      _storageWarned = true;
+      UI.toast('⚠ Save failed — browser storage is full. Delete manual saves or salvage/sell items to free space.', '#e04a5a');
+      if (typeof AudioSys !== 'undefined') AudioSys.sfx('denied');
+    }
+    return false;
+  }
+}
 // Up to 3 concurrent character profiles (Diablo-style roster). The active
 // character mirrors to SAVE_KEY for backward compatibility.
 const PROFILES_KEY = 'nekromancer_profiles_v1';
@@ -27,7 +61,7 @@ const Saves = {
   },
 
   persist(arr) {
-    try { localStorage.setItem(SAVES_KEY, JSON.stringify(arr)); return true; } catch (e) { return false; }
+    return lsSet(SAVES_KEY, JSON.stringify(arr));
   },
 
   add(name) {
@@ -48,6 +82,9 @@ const Saves = {
     if (this.persist(arr)) {
       UI.toast('Saved: ' + arr[arr.length - 1].name, '#6ff7c3');
       AudioSys.sfx('level');
+    } else {
+      UI.toast('⚠ Save failed — storage is full. Delete a manual save or salvage/sell items to free space.', '#e04a5a');
+      AudioSys.sfx('denied');
     }
   },
 
@@ -279,9 +316,7 @@ const Hero = {
   },
 
   save() {
-    try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(this.snapshot()));
-    } catch (e) { /* storage unavailable */ }
+    try { lsSet(SAVE_KEY, JSON.stringify(this.snapshot())); } catch (e) { /* serialization guard */ }
     this.saveStash();
     // Mirror into the active roster slot so profiles stay current.
     if (typeof Profiles !== 'undefined') Profiles.saveActive();
@@ -318,10 +353,8 @@ const Hero = {
 
   // Persist the shared vault to its own key (never inside a save slot).
   saveStash() {
-    try {
-      localStorage.setItem(STASH_KEY, JSON.stringify(this.stash || []));
-      localStorage.setItem(STASH_TIER_KEY, String(this.stashTier || 0));
-    } catch (e) { /* storage unavailable */ }
+    try { lsSet(STASH_KEY, JSON.stringify(this.stash || [])); } catch (e) { /* serialization guard */ }
+    lsSet(STASH_TIER_KEY, String(this.stashTier || 0));
   },
 
   // Load the shared vault. On first run after the shared-stash update, seed it
@@ -565,7 +598,7 @@ const Profiles = {
   },
 
   persist() {
-    try { localStorage.setItem(PROFILES_KEY, JSON.stringify({ slots: this.slots, active: this.active })); } catch (e) { /* ignore */ }
+    lsSet(PROFILES_KEY, JSON.stringify({ slots: this.slots, active: this.active }));
   },
 
   count() { return this.slots.filter(Boolean).length; },

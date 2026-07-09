@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.5.5-alpha';
+const GAME_VERSION = 'v1.5.6-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.5.6-alpha', date: 'July 2026',
+    notes: [
+      'FIXED saving: the browser\'s storage had filled up and saves were failing SILENTLY (no warning). Saving is now resilient — when storage is full it frees the oldest manual save so your progress keeps saving, and if it still can\'t save it tells you clearly instead of failing in silence',
+      'Tip: browser storage is limited (~5 MB on iPhone). Salvage/sell items and delete old manual saves to free space if you see the storage warning'
+    ]
+  },
   {
     v: 'v1.5.5-alpha', date: 'July 2026',
     notes: [
