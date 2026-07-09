@@ -425,6 +425,7 @@ class Enemy {
     this.rare = !!opts.rare;     // rare elite (purple, tougher, better loot)
     if (this.rare) this.elite = true;
     this.unique = !!opts.unique;
+    this.mapBoss = !!opts.mapBoss;   // a linked sub-map's boss (e.g. cave dweller): death opens the exit
     this.goblin = !!opts.goblin || !!t.goblin;   // Treasure Goblin: flees, no attacks
     this.name = opts.name || t.name;
     const mLvl = Game.monsterLevel();
@@ -1112,7 +1113,7 @@ class Enemy {
         Game.pickups.push(pu);
       }
     }
-    if (this.unique) Game.onBossDead(this);
+    if (this.unique || this.mapBoss) Game.onBossDead(this);
   }
 
   draw(ctx) {

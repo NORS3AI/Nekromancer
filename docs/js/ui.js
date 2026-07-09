@@ -165,7 +165,10 @@ const UI = {
     if (this.screen === 'skillChooser') return () => this.open('skills');
     if (this.screen === 'storyacts') return () => this.open('wilds');
     if (this.townMode) {
-      if (this.screen === 'town') return () => { this.townMode = false; this.close(); };
+      // Closing the town menu (✕/Escape) leaves through the portal exactly like the
+      // "Back to the Wilds" button — collapse the portal and start its cooldown so
+      // the player can't step back through it once they've returned.
+      if (this.screen === 'town') return () => { this.townMode = false; this.close(); Game.returnFromTownPortal(); };
       if (['smith', 'jeweler', 'mystic', 'merchant', 'stash', 'torches', 'radial', 'cube'].includes(this.screen)) return () => this.open('town');
     }
     return () => this.close();
@@ -770,7 +773,7 @@ const UI = {
   drawBossBar(ctx, W, H) {
     let boss = null;
     for (const e of Game.enemies) {
-      if ((e.unique || (e.def && e.def.roamBoss)) && !e.dead && !e.sleep) boss = e;
+      if ((e.unique || e.mapBoss || (e.def && e.def.roamBoss)) && !e.dead && !e.sleep) boss = e;
     }
     if (!boss) return;
     const w = Math.min(360, W * 0.5);

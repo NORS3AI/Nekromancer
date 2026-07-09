@@ -498,6 +498,15 @@ const Game = {
     this.bossDead = true;
     World.portal = { x: boss.x, y: boss.y };
     World.linksClosed = true;   // the map's boss falls → its entrance/exit/cave seal
+    // On a LINKED sub-map (a cave or an ONWARD floor), the boss falling just opens
+    // the way BACK to the parent map — skip the descend/bounty/completion flow.
+    if (this.linkedMap && this.mapStack.length && !this.riftMode) {
+      fxNova(boss.x, boss.y, 220);
+      AudioSys.sfx('portal');
+      Particles.shake(8);
+      this.showBanner('THE WAY OUT OPENS', boss.name + ' falls — step through the portal to climb back', 3.0);
+      return;
+    }
     if (this.riftMode) {
       const kind = this.zone.riftKind || 'normal';
       const mLvl = this.monsterLevel();
@@ -962,8 +971,13 @@ const Game = {
              boss: z.boss, packs: z.packs, rift: z.rift, riftKind: z.riftKind, riftGoal: z.riftGoal };
   },
   caveZone() {
+    // A Hidden Cave crawls with foes — TWICE the pack sites the land defines, so
+    // it's genuinely full of enemies (they sleep until you're near, D3-style).
+    const basePacks = this.zone.packs || 12;
     return { name: 'Hidden Cave', kind: 'dungeon', mLvl: this.zone.mLvl,
-             monsters: this.zone.monsters, noLinks: true, cave: true, tiles: 7 };
+             monsters: this.zone.monsters, noLinks: true, cave: true, tiles: 7,
+             packs: basePacks * 2,
+             boss: MONSTERS.rathma.name };   // the cave's dweller — objective reads this
   },
 
   // Generate + populate a linked map, dropping the hero at its entrance. Keeps
@@ -992,10 +1006,11 @@ const Game = {
         World.collide(e); this.enemies.push(e);
       }
     };
-    for (const pk of World.packs) spawnPack(pk.x, pk.y, zone.rift ? 0.5 : 0.18);
+    for (const pk of World.packs) spawnPack(pk.x, pk.y, zone.rift ? 0.5 : cave ? 0.3 : 0.18);
     if (cave) {
-      // The cave's dweller: Rathma's Chosen, a stealthing rare-elite assassin.
-      this.enemies.push(new Enemy('rathma', World.bossPos.x, World.bossPos.y, { rare: true, name: MONSTERS.rathma.name }));
+      // The cave's dweller: Rathma's Chosen — the cave's boss (its death opens the
+      // way out). mapBoss makes its death fire onBossDead + shows the boss bar.
+      this.enemies.push(new Enemy('rathma', World.bossPos.x, World.bossPos.y, { rare: true, mapBoss: true, name: MONSTERS.rathma.name }));
     } else if (zone.rift) {
       // Rift/season linked maps carry NO fixed boss — you fill the orb bar across
       // the chain and the Guardian rises wherever the bar completes.

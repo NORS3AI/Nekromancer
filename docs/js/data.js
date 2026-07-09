@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.8-alpha';
+const GAME_VERSION = 'v1.6.9-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.9-alpha', date: 'July 2026',
+    notes: [
+      'Hidden Cave is now genuinely full of enemies — twice the pack sites the land defines (it previously spawned almost none)',
+      'Fixed the Hidden Cave objective reading "Bounty: slay undefined" — it now names its dweller, Rathma\'s Chosen',
+      'Slaying Rathma\'s Chosen in the Hidden Cave now opens the portal out (and shows a proper boss bar) — before, killing it left you trapped',
+      'Town Portal: closing the town menu with ✕/Escape now collapses the portal and starts its 30s cooldown just like "Back to the Wilds", so you can\'t step back through it after returning'
+    ]
+  },
   {
     v: 'v1.6.8-alpha', date: 'July 2026',
     notes: [
