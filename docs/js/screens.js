@@ -1539,6 +1539,36 @@ const Screens = {
           ctx.beginPath(); ctx.arc(bx + chipR * 0.68 - gi * 6, by - chipR * 0.68, 3.5, 0, TAU); ctx.fill();
         });
       }
+      // Empty-socket hint: a diamond on the BOTTOM of the chip when the equipped
+      // item still has an open gem slot — a quick "socket me". It fades out once
+      // every socket is filled (eased toward 0 over a few frames).
+      {
+        const emptyN = it ? (it.sockets || 0) - ((it.gems && it.gems.length) || 0) : 0;
+        this._gemHint = this._gemHint || {};
+        const tgt = emptyN > 0 ? 1 : 0;
+        let ga = this._gemHint[slot];
+        if (ga === undefined) ga = tgt;              // first sight: appear at once
+        ga += (tgt - ga) * 0.16;                       // ease toward target each frame
+        if (ga < 0.02) ga = 0;
+        this._gemHint[slot] = ga;
+        if (ga > 0.015) {
+          const pulse = 0.82 + 0.18 * Math.sin(Game.time * 4 + i);
+          const s = (narrow ? 4.2 : 5.2) * pulse;
+          ctx.save();
+          ctx.globalAlpha = ga;
+          ctx.translate(bx, by + chipR);              // centered on the chip's bottom edge
+          ctx.beginPath();
+          ctx.moveTo(0, -s); ctx.lineTo(s * 0.72, 0); ctx.lineTo(0, s); ctx.lineTo(-s * 0.72, 0);
+          ctx.closePath();
+          ctx.fillStyle = '#bfeaff';
+          ctx.fill();
+          ctx.lineWidth = 1.3; ctx.strokeStyle = '#0b1a24';
+          ctx.stroke();
+          ctx.fillStyle = 'rgba(255,255,255,0.9)';
+          ctx.beginPath(); ctx.arc(-s * 0.16, -s * 0.16, 0.9, 0, TAU); ctx.fill();
+          ctx.restore();
+        }
+      }
       // Red "!" badge: a better item for this slot is waiting in the bag.
       if (Items.slotHasUpgrade(slot)) {
         const ex = bx - chipR * 0.72, ey = by - chipR * 0.72;
@@ -1824,9 +1854,11 @@ const Screens = {
       ctx.fillText(Hero.gems.length ? 'No gems match this filter.' : 'No gems in your pouch — monsters, chests and rifts drop them.', px + 16, y + 14);
       y += 36;
     } else {
-      ctx.font = '10px Georgia';
-      ctx.fillStyle = '#9a9080';
-      ctx.fillText('TAP A GEM TO INSPECT' + (groups.length > 12 ? '  (+' + (groups.length - 12) + ' more)' : ''), px + 16, y);
+      if (groups.length > 12) {
+        ctx.font = '10px Georgia';
+        ctx.fillStyle = '#9a9080';
+        ctx.fillText('+' + (groups.length - 12) + ' more', px + 16, y);
+      }
       y += 10;
       const cw = (pw - 32) / GEM_COLS;
       shown.forEach((grp, k) => {

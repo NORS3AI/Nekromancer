@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.5.3-alpha';
+const GAME_VERSION = 'v1.5.4-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.5.4-alpha', date: 'July 2026',
+    notes: [
+      'Inventory: a glinting diamond now sits on the bottom of an equipment slot (weapon, helm, etc.) whenever the equipped item has an EMPTY gem socket — an at-a-glance "socket me". It fades away the moment you fill the last socket',
+      'Removed the "Tap a gem to inspect" line from the socket popup'
+    ]
+  },
   {
     v: 'v1.5.3-alpha', date: 'July 2026',
     notes: [
