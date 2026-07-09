@@ -833,7 +833,7 @@ const Screens = {
       ['⚒   BLACKSMITH', () => UI.open('smith'), '#ffb43a', '#8a6f4a'],
       ['◆   JEWELER', () => UI.open('jeweler'), '#4ecbe0', '#2a6a7a'],
       ['✦   MYSTIC', () => UI.open('mystic'), '#b06adf', '#7a4a8f'],
-      ['🪙   MERCHANT', () => { UI.open('merchant'); UI.sel.shopTab = 'buy'; }, '#ffd76a', '#8a6f4a'],
+      ['◉   MERCHANT', () => { UI.open('merchant'); UI.sel.shopTab = 'buy'; }, '#ffd76a', '#8a6f4a'],
       ['▤   STASH', () => UI.open('stash'), '#8fb0e8', '#5f7ab0']
     ];
     // Once found, the Horadric's Cube sits just before the Blacksmith.
@@ -1166,7 +1166,6 @@ const Screens = {
       ['BLACKSMITH', () => UI.open('smith'), '#ffb43a'],
       ['JEWELER', () => UI.open('jeweler'), '#b06adf'],
       ['MYSTIC', () => UI.open('mystic'), '#4ecbe0'],
-      ['🪙 MERCHANT', () => { UI.open('merchant'); UI.sel.shopTab = 'buy'; }, '#ffd76a'],
       ['SETTINGS', () => UI.open('settings'), '#9a9080']
     ];
     // The Horadric's Cube joins the hub (before the Blacksmith) once found.
@@ -4277,9 +4276,12 @@ const Screens = {
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, 'PATCH NOTES');
 
-    if (UI.sel.scroll === undefined) UI.sel.scroll = 0;
+    if (UI.sel.scrollY === undefined) UI.sel.scrollY = 0;
     const top = py + 48;
     const viewH = ph - 60;
+    // Scroll by MOUSE WHEEL (desktop) or DRAG (touch) — no arrow buttons. Wiring
+    // comes free from the shared scroll system (UI.wheelScroll / UI.moveDragScroll).
+    UI.sel.scrollRegion = { x: px + 4, y: top, w: pw - 8, h: viewH };
 
     // Clip the scrolling content to the panel.
     ctx.save();
@@ -4287,7 +4289,7 @@ const Screens = {
     ctx.rect(px + 4, top, pw - 8, viewH);
     ctx.clip();
 
-    let y = top + 8 - UI.sel.scroll;
+    let y = top + 8 - UI.sel.scrollY;
     for (const patch of PATCH_NOTES) {
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 14px Georgia';
@@ -4298,29 +4300,25 @@ const Screens = {
       for (const n of patch.notes) {
         ctx.fillStyle = '#b5ab94';
         // Generous line budget: never ellipsize a note.
-        y = wrapText(ctx, '• ' + n, px + 22, y, pw - 74, 14, 30) + 4;
+        y = wrapText(ctx, '• ' + n, px + 22, y, pw - 60, 14, 30) + 4;
       }
       y += 14;
     }
     ctx.restore();
 
-    // Scroll controls when the content is taller than the panel.
-    const contentH = (y + UI.sel.scroll) - (top + 8);
+    // Publish the scroll extent (clamp the wheel/drag position to it).
+    const contentH = (y + UI.sel.scrollY) - (top + 8);
     const maxScroll = Math.max(0, contentH - viewH + 16);
-    UI.sel.scroll = clamp(UI.sel.scroll, 0, maxScroll);
+    UI.sel.scrollMax = maxScroll;
+    UI.sel.scrollY = clamp(UI.sel.scrollY, 0, maxScroll);
     if (maxScroll > 0) {
-      UI.btn(ctx, px + pw - 44, top + 4, 34, 40, '▲',
-        UI.sel.scroll > 0 ? () => { UI.sel.scroll = Math.max(0, UI.sel.scroll - 130); } : null,
-        { size: 14, disabled: UI.sel.scroll <= 0 });
-      UI.btn(ctx, px + pw - 44, top + viewH - 44, 34, 40, '▼',
-        UI.sel.scroll < maxScroll ? () => { UI.sel.scroll = Math.min(maxScroll, UI.sel.scroll + 130); } : null,
-        { size: 14, disabled: UI.sel.scroll >= maxScroll });
-      // Scroll position hint.
+      // A slim scrollbar indicator (thumb tracks the scroll position).
       ctx.fillStyle = '#3a3448';
-      ctx.fillRect(px + pw - 29, top + 50, 4, viewH - 100);
+      ctx.fillRect(px + pw - 18, top + 6, 4, viewH - 12);
       ctx.fillStyle = '#57b894';
-      const kH = Math.max(20, (viewH / (contentH || 1)) * (viewH - 100));
-      ctx.fillRect(px + pw - 29, top + 50 + (UI.sel.scroll / maxScroll) * (viewH - 100 - kH), 4, kH);
+      const trackH = viewH - 12;
+      const kH = Math.max(20, (viewH / (contentH || 1)) * trackH);
+      ctx.fillRect(px + pw - 18, top + 6 + (UI.sel.scrollY / maxScroll) * (trackH - kH), 4, kH);
     }
   },
 

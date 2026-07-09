@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.10-alpha';
+const GAME_VERSION = 'v1.6.11-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.11-alpha', date: 'July 2026',
+    notes: [
+      'Patch notes now scroll with the mouse wheel (desktop) or a finger drag (tablet/mobile) — no more tapping arrows',
+      'Merchant button icon no longer shows as an empty square in the Town Portal menu',
+      'The Survivor\'s Camp hub no longer shows the Merchant (it belongs in the Wilds/Town Portal) and is otherwise icon-free apart from The Wilds'
+    ]
+  },
   {
     v: 'v1.6.10-alpha', date: 'July 2026',
     notes: [
