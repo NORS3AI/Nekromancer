@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.5.4-alpha';
+const GAME_VERSION = 'v1.5.5-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.5.5-alpha', date: 'July 2026',
+    notes: [
+      'Gem clarity: gems were always working, but the Inventory stat readout hid it. A Ruby grants FLAT damage (+9 per hit at Chipped), not a % multiplier — so the DMG line now shows it as "×2.03  +9" instead of looking unchanged',
+      'The readout now also lists a gem stat the moment you socket one: Crit Damage (Emerald), Life per Hit (Amethyst), Cooldown Reduction & All-Resist (Diamond), Resource Cost (Topaz) — so every gem visibly moves a number'
+    ]
+  },
   {
     v: 'v1.5.4-alpha', date: 'July 2026',
     notes: [

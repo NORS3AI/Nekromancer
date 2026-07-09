@@ -1495,14 +1495,25 @@ const Screens = {
     {
       const sf2 = UI.safe || { top: 0, left: 0 };
       const st = Items.computeStats();
+      // A Ruby grants FLAT damage per hit (not a % multiplier), so it folds into
+      // the DMG line as "×2.03  +9" — otherwise socketing a damage gem looked
+      // like it did nothing.
       const rows = [
-        ['DMG', '×' + st.dmgMult.toFixed(2), '#6ff7c3'],
+        ['DMG', '×' + st.dmgMult.toFixed(2) + (st.flatDmg > 0 ? '  +' + st.flatDmg : ''), '#6ff7c3'],
         ['CRIT', Math.round(st.critChance * 100) + '%', '#ffb43a'],
         ['GOLD', '+' + Math.round((st.goldFind - 1) * 100) + '%', '#ffd76a'],
         ['LIFE', '' + st.maxHp, '#e04a5a'],
         ['LIFE/s', st.hpRegen.toFixed(1), '#e0808a'],
         ['ESS/s', st.essenceRegen.toFixed(1), '#8fb0e8']
       ];
+      // Gem-driven stats appear only once a gem grants them, so EVERY gem type
+      // visibly moves the readout (Emerald crit dmg, Amethyst life/hit, Diamond
+      // cooldowns & resist, Topaz resource cost — gold already covers the rest).
+      if (st.critDamage > 0) rows.push(['CRIT DMG', '+' + Math.round(st.critDamage * 100) + '%', '#ffca6a']);
+      if (st.lifePerHit > 0) rows.push(['LIFE/HIT', '+' + st.lifePerHit, '#e0808a']);
+      if (st.cooldownReduction > 0) rows.push(['CDR', '-' + Math.round(st.cooldownReduction * 100) + '%', '#bfe8f4']);
+      if (st.resourceCostReduction > 0) rows.push(['ESS COST', '-' + Math.round(st.resourceCostReduction * 100) + '%', '#8fd0a0']);
+      if (st.resistAll > 0) rows.push(['RESIST', '' + st.resistAll, '#bfe8f4']);
       let sy = 50 + sf2.top;
       ctx.textBaseline = 'middle';
       for (const [lbl, val, col] of rows) {
@@ -1512,7 +1523,7 @@ const Screens = {
         ctx.fillText(lbl, 10 + sf2.left, sy);
         ctx.font = 'bold 11px Georgia';
         ctx.fillStyle = col;
-        ctx.fillText(val, 52 + sf2.left, sy);
+        ctx.fillText(val, 58 + sf2.left, sy);
         sy += 15;
       }
     }
