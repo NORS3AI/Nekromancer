@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.7-alpha';
+const GAME_VERSION = 'v1.6.8-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.8-alpha', date: 'July 2026',
+    notes: [
+      'Your minions now keep pace with the Nekromancer — they travel at least as fast as you (and speed up further with your move-speed gear), so they no longer trail behind as you run',
+      'Desktop: hovering the mouse over any button now shows a tooltip'
+    ]
+  },
   {
     v: 'v1.6.7-alpha', date: 'July 2026',
     notes: [

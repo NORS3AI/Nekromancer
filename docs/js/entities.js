@@ -1765,13 +1765,16 @@ class Minion {
       if (d < bestD) { tgt = e; bestD = d; }
     }
     const dmgMult = Game.player.power() * (this.frenzyT > 0 ? 1.5 : 1) * (this.dmgBuff || 1);
+    // Minions keep pace with the Nekromancer — never slower than the hero, so they
+    // don't lag behind as you run (owner rule). Move-speed gear speeds them up too.
+    const travel = Game.player ? Math.max(this.speed, Game.player.speed) : this.speed;
     if (tgt) {
       const a = angleTo(this.x, this.y, tgt.x, tgt.y);
       this.facing = lerpAngle(this.facing, a, Math.min(1, 10 * dt));
       if (this.cfg.ranged) {
         if (bestD > 300) {
-          this.x += Math.cos(a) * this.speed * dt;
-          this.y += Math.sin(a) * this.speed * dt;
+          this.x += Math.cos(a) * travel * dt;
+          this.y += Math.sin(a) * travel * dt;
         } else if (this.atkCd <= 0) {
           this.atkCd = this.cfg.atkCd * (this.archer ? 0.6 : 1);   // Skeleton Archer: faster
           Game.projectiles.push(new Projectile(this.x, this.y - 8, a, {
@@ -1780,8 +1783,8 @@ class Minion {
           AudioSys.sfx('bolt');
         }
       } else if (bestD > this.r + tgt.r + 6) {
-        this.x += Math.cos(a) * this.speed * (this.frenzyT > 0 ? 1.3 : 1) * dt;
-        this.y += Math.sin(a) * this.speed * (this.frenzyT > 0 ? 1.3 : 1) * dt;
+        this.x += Math.cos(a) * travel * (this.frenzyT > 0 ? 1.3 : 1) * dt;
+        this.y += Math.sin(a) * travel * (this.frenzyT > 0 ? 1.3 : 1) * dt;
       } else if (this.atkCd <= 0) {
         this.atkCd = this.cfg.atkCd;
         tgt.hurt(this.dmg * dmgMult, { knock: { a, f: this.kind === 'golem' ? 120 : 40 } });
@@ -1812,8 +1815,10 @@ class Minion {
       if (d > 22) {
         const a = angleTo(this.x, this.y, bx, by);
         this.facing = lerpAngle(this.facing, a, Math.min(1, 9 * dt));
-        this.x += Math.cos(a) * this.speed * dt;
-        this.y += Math.sin(a) * this.speed * dt;
+        // A touch quicker than the hero when catching up in formation, so the
+        // rank re-forms promptly instead of trailing forever.
+        this.x += Math.cos(a) * travel * 1.08 * dt;
+        this.y += Math.sin(a) * travel * 1.08 * dt;
       } else {
         // In position — face the same way as the hero, standing guard behind him.
         this.facing = lerpAngle(this.facing, p.facing, Math.min(1, 6 * dt));

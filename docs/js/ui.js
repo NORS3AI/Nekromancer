@@ -203,6 +203,9 @@ const UI = {
     if (!o.disabled && cb) {
       this.register(x, y, w, h, cb);
       this.hits[this.hits.length - 1].label = label; // findable in tests
+      // Desktop hover help: every button surfaces a tooltip — the FULL (un-fitted)
+      // label as the title, plus an optional o.tip description. No-op on touch.
+      if (o.tip !== false) this.tip(x, y, w, h, o.tipTitle || label, o.tip || '');
     }
   },
 
