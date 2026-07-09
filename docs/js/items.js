@@ -1091,6 +1091,19 @@ const Items = {
 
   // ------------------------------------------------------- derived stats
 
+  // Per-hit base damage of each primary, for the "raw damage" readout.
+  PRIMARY_HIT_BASE: { boneSpikes: 14, grimScythe: 11, siphonBlood: 6 },
+
+  // A concrete raw per-hit damage number: the equipped primary's base × your
+  // damage multiplier, plus flat gem damage (Ruby). This is the number that
+  // grows when you socket a Ruby — the weapon's % affix is a separate multiplier
+  // and (by design) a Ruby never changes it.
+  rawHit(s) {
+    s = s || this.computeStats();
+    const base = this.PRIMARY_HIT_BASE[Hero.loadout[0]] || 14;
+    return Math.round(base * s.dmgMult) + (s.flatDmg || 0);
+  },
+
   // Hero level + gear + gems + passives, as a plain stats object.
   // Works with no live Player (used by the character sheet in camp).
   computeStats() {

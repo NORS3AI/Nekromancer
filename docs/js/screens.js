@@ -1515,13 +1515,12 @@ const Screens = {
     {
       const sf2 = UI.safe || { top: 0, left: 0 };
       const st = Items.computeStats();
-      // Raw per-hit damage of the equipped primary (base × multiplier + flat gem
+      // Raw per-hit damage (equipped primary base × multiplier + flat gem
       // damage) so the player sees an actual number, not only the ×multiplier.
-      const PRIMARY_BASE = { boneSpikes: 14, grimScythe: 11, siphonBlood: 6 };
-      const rawHit = Math.round((PRIMARY_BASE[Hero.loadout[0]] || 14) * st.dmgMult) + (st.flatDmg || 0);
+      const rawHit = Items.rawHit(st);
       const rows = [
         ['DMG', '×' + st.dmgMult.toFixed(2), '#6ff7c3'],
-        ['HIT', rawHit.toLocaleString(), '#ff9a6a'],
+        ['DMG/HIT', rawHit.toLocaleString(), '#ff9a6a'],
         ['CRIT', Math.round(st.critChance * 100) + '%', '#ffb43a'],
         ['GOLD FIND', '+' + Math.round((st.goldFind - 1) * 100) + '%', '#ffd76a'],
         ['LIFE', '' + st.maxHp, '#e04a5a'],
@@ -3096,6 +3095,7 @@ const Screens = {
     // Combat stats.
     ly = header(lx, ly, '— COMBAT —', '#6ff7c3');
     ly = line(lx, ly, 'Damage', '×' + s.dmgMult.toFixed(2), '#6ff7c3');
+    ly = line(lx, ly, 'Damage per hit', Items.rawHit(s).toLocaleString(), '#ff9a6a');
     ly = line(lx, ly, 'Life', s.maxHp, '#e04a5a');
     ly = line(lx, ly, 'Crit chance', Math.round(s.critChance * 100) + '%  (×' + (1.8 + (s.critDamage || 0)).toFixed(2) + ')', '#ffb43a');
     if (s.critDamage > 0) ly = line(lx, ly, 'Crit damage', '+' + Math.round(s.critDamage * 100) + '%', '#4ade80');

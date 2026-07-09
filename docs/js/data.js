@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.5.9-alpha';
+const GAME_VERSION = 'v1.6.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.0-alpha', date: 'July 2026',
+    notes: [
+      'Raw damage now shows in BOTH the Inventory readout (DMG/HIT) and the Character sheet (Damage per hit), right under the damage ×multiplier',
+      'About Rubies: a Ruby adds FLAT damage per hit, not % damage — so a weapon\'s "30% damage" affix will NOT change when you socket a Ruby (that is by design). What DOES change is your "Damage per hit": e.g. socketing a Marquise Ruby jumps it by +750. Watch that number, not the weapon %'
+    ]
+  },
   {
     v: 'v1.5.9-alpha', date: 'July 2026',
     notes: [
