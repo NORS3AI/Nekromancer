@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.11-alpha';
+const GAME_VERSION = 'v1.6.12-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.12-alpha', date: 'July 2026',
+    notes: [
+      'Ruby damage rebalanced so upgrading is ALWAYS worth it: three of any tier are now worth less than one of the next tier up (3/10/32/98/300/930/2900… climbing ~3.1× per tier). Before, three Chipped rubies (27 dmg) beat one Flawless (12), so there was no reason to combine',
+      'Ruby XP now starts lower (3% / 5% / 6%) and keeps the old ladder from there (9%…30%)'
+    ]
+  },
   {
     v: 'v1.6.11-alpha', date: 'July 2026',
     notes: [
@@ -1330,7 +1337,10 @@ const GEM_TYPES = {
   diamond:  { name: 'Diamond',  color: '#bfe8f4', keys: ['resAll', 'cdr'] }
 };
 const GEM_STATS = {
-  ruby:     [[9, .05], [12, .06], [14, .07], [25, .09], [30, .10], [40, .12], [50, .15], [70, .16], [100, .17], [150, .20], [250, .22], [400, .25], [750, .30]],
+  // Ruby +Damage climbs at ~3.1× per tier so THREE of a tier always beat ONE of
+  // the next (combining 3→1 is a strict upgrade, never a loss). XP: 3/5/6 then
+  // the old ladder unchanged. (Owner-tuned; big late values are intentional.)
+  ruby:     [[3, .03], [10, .05], [32, .06], [98, .09], [300, .10], [930, .12], [2900, .15], [9000, .16], [28000, .17], [87000, .20], [270000, .22], [840000, .25], [2600000, .30]],
   emerald:  [[.20, .02], [.40, .03], [.60, .04], [.80, .06], [1.0, .09], [1.2, .12], [1.4, .15], [1.6, .18], [1.8, .21], [2.0, .25], [2.3, .28], [2.6, .31], [3.0, .35]],
   amethyst: [[35, 10], [60, 30], [160, 60], [260, 100], [500, 200], [750, 500], [1500, 700], [5000, 900], [10500, 1500], [17000, 3000], [28000, 7000], [40000, 15000], [75000, 30000]],
   topaz:    [[.01, .03], [.03, .05], [.05, .07], [.07, .10], [.09, .12], [.11, .15], [.13, .20], [.15, .25], [.17, .30], [.19, .50], [.21, .70], [.22, 1.0], [.22, 2.5]],
