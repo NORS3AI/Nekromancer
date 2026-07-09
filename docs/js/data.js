@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.5-alpha';
+const GAME_VERSION = 'v1.6.6-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.6-alpha', date: 'July 2026',
+    notes: [
+      'DIVING ONWARD now has teeth: every "ONWARD" portal you take makes the next map 1.2× deadlier (compounding) — monster health and damage climb with the depth',
+      'The abyss has a bottom: after 12 dives the deepest floor spawns with NO onward portal, forcing you to turn back toward the main map',
+      'The "DEEPER STILL" banner shows your current depth and how much harder foes hit (e.g. "Depth 4 — foes hit 2.1× harder"); climbing back out lightens the difficulty step by step',
+      'Tougher deep foes also grant proportionally more XP'
+    ]
+  },
   {
     v: 'v1.6.5-alpha', date: 'July 2026',
     notes: [

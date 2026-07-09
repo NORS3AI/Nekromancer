@@ -5,6 +5,11 @@
 // take the portal home) → camp. The Hero persists across everything.
 // ---------------------------------------------------------------------------
 
+// The "ONWARD" linked-map chain gets 1.2× deadlier per dive and bottoms out
+// after this many dives (the deepest floor has no further exit — turn back).
+const MAX_LINK_DEPTH = 12;
+const LINK_DEPTH_STEP = 1.2;
+
 const Game = {
   canvas: null,
   ctx: null,
@@ -28,6 +33,7 @@ const Game = {
   townPortalNear: false,  // debounce so standing on the portal doesn't loop the menu
   mapStack: [],           // parked map snapshots you can walk BACK into (true backtracking)
   linkDebounce: false,    // step-off-then-on gate for entrance/exit/cave portals
+  linkDepth: 0,           // how many "ONWARD" dives deep — each dive is 1.2× deadlier (cap MAX_LINK_DEPTH)
   // Multi-area journeys: a bounty/adventure run spans several linked maps.
   stage: 1,
   stageCount: 1,
@@ -162,6 +168,11 @@ const Game = {
     return (this.zone ? this.zone.mLvl : 1) + Hero.difficulty * 6;
   },
 
+  // Combat multiplier from diving "ONWARD" — 1.2× compounding per linked-map dive.
+  depthMul() {
+    return Math.pow(LINK_DEPTH_STEP, this.linkDepth || 0);
+  },
+
   showBanner(text, sub = '', dur = 2.6) {
     this.banner = { text, sub, t: dur, maxT: dur };
   },
@@ -284,6 +295,7 @@ const Game = {
     this.portalCd = 0;
     this.townPortalNear = false;
     this.mapStack = [];        // a new area starts a fresh backtrack chain
+    this.linkDepth = 0;        // …at surface difficulty (ONWARD dives raise it)
     this.linkDebounce = false;
     this.linkedMap = false;    // base journey map (not reached via an exit/cave)
     this.riftProgress = 0;
@@ -908,6 +920,7 @@ const Game = {
       corpses: this.corpses, pickups: this.pickups, telegraphs: this.telegraphs,
       fogBuf: this.fogBuf, fogStamp: this.fogStamp,
       bossDead: this.bossDead, linkedMap: this.linkedMap,
+      depth: this.linkDepth || 0,   // remember this map's ONWARD difficulty depth
       returnX: returnPos.x, returnY: returnPos.y
     };
   },
@@ -1007,22 +1020,35 @@ const Game = {
     const from = cave ? World.cave : World.exit;
     if (!from) return;
     this.mapStack.push(this.snapshotMap({ x: from.x, y: from.y }));
-    this.loadLinkedMap(cave ? this.caveZone() : this.linkedZone(), cave);
+    // Each ONWARD dive is one step deeper and 1.2× deadlier; the run bottoms out
+    // at MAX_LINK_DEPTH — the deepest floor spawns with NO onward exit (turn back).
+    const newDepth = (this.linkDepth || 0) + 1;
+    this.linkDepth = newDepth;
+    const atFloor = !cave && newDepth >= MAX_LINK_DEPTH;
+    const zone = cave ? this.caveZone() : this.linkedZone();
+    if (atFloor) zone.noLinks = true;
+    this.loadLinkedMap(zone, cave);
     Particles.ring(this.player.x, this.player.y, 90, cave ? '#b06adf' : '#8fd0ff', 6, 0.5);
     AudioSys.sfx('portal');
-    this.showBanner(cave ? 'INTO THE CAVE' : 'DEEPER STILL',
-      cave ? 'Something ancient stirs in the dark' : 'A fresh expanse unfolds — the way back stays open', 2.4);
+    const mul = this.depthMul();
+    const sub = cave ? 'Something ancient stirs in the dark'
+      : atFloor ? 'The abyss bottoms out — no path leads deeper. Turn back.'
+      : 'Depth ' + newDepth + ' — foes hit ' + mul.toFixed(1) + '× harder. The way back stays open.';
+    this.showBanner(cave ? 'INTO THE CAVE' : 'DEEPER STILL', sub, 2.6);
   },
 
   enterCave() { this.goDeeper(true); },
 
   goBack() {
     if (!this.mapStack.length) return;
-    this.restoreMap(this.mapStack.pop());
+    const s = this.mapStack.pop();
+    this.restoreMap(s);
+    this.linkDepth = s.depth || 0;   // difficulty reverts to the map you step back into
     this.linkDebounce = true;   // you arrive ON the exit you left — step off to re-arm
     Particles.ring(this.player.x, this.player.y, 90, '#6ff7c3', 6, 0.5);
     AudioSys.sfx('portal');
-    this.showBanner('BACK THE WAY YOU CAME', '', 1.8);
+    this.showBanner('BACK THE WAY YOU CAME',
+      this.linkDepth > 0 ? 'Depth ' + this.linkDepth + ' — the air lightens as you climb' : 'You surface at the main map', 1.8);
   },
 
   // Advance the town-portal channel; complete it at 7s, cancel it if the hero
