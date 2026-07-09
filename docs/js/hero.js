@@ -15,6 +15,13 @@ const SAVES_KEY = 'nekromancer_saves_v1';
 // old snapshot) and retry once; a hard failure is surfaced ONCE so the player
 // knows to free space. Returns true on success.
 let _storageWarned = false;
+// Is localStorage writable AT ALL? In iPhone Safari Private Browsing (and when
+// site storage is blocked) even a 1-byte write throws — that's "blocked", which
+// is different from "full". Used to give the player an accurate warning.
+function storageBlocked() {
+  try { localStorage.setItem('__nek_probe__', '1'); localStorage.removeItem('__nek_probe__'); return false; }
+  catch (e) { return true; }
+}
 function lsSet(key, value) {
   try { localStorage.setItem(key, value); _storageWarned = false; return true; }
   catch (e) {
@@ -35,7 +42,10 @@ function lsSet(key, value) {
     }
     if (!_storageWarned && typeof UI !== 'undefined') {
       _storageWarned = true;
-      UI.toast('⚠ Save failed — browser storage is full. Delete manual saves or salvage/sell items to free space.', '#e04a5a');
+      UI.toast(storageBlocked()
+        ? '⚠ Saving is blocked by your browser (Private Browsing?). Turn off Private Browsing to save.'
+        : '⚠ Storage is full. Sell/salvage items and delete old manual saves to free space.',
+        '#e04a5a');
       if (typeof AudioSys !== 'undefined') AudioSys.sfx('denied');
     }
     return false;
@@ -130,6 +140,7 @@ const Hero = {
   passives: [null, null, null, null, null],
   zonesCleared: 0,          // count of lands beaten (unlocks the next)
   actsCleared: 0,           // Story Mode acts finished (of 100 planned)
+  actUniques: {},           // acts whose signature legendary has dropped once (→ 50% after)
   difficulty: 0,
   bestZone: 0,
   totalKills: 0,
@@ -170,6 +181,7 @@ const Hero = {
     this.passives = [null, null, null, null, null];
     this.zonesCleared = 0;
     this.actsCleared = 0;
+    this.actUniques = {};
     this.difficulty = 0;
     this.bestZone = 0;
     this.totalKills = 0;
@@ -227,7 +239,7 @@ const Hero = {
       paragon: this.paragon, paragonXp: this.paragonXp, np: this.np, para: this.para,
       gems: this.gems, bag: this.bag, equipped: this.equipped,
       loadout: this.loadout, passives: this.passives,
-      zonesCleared: this.zonesCleared, actsCleared: this.actsCleared, difficulty: this.difficulty,
+      zonesCleared: this.zonesCleared, actsCleared: this.actsCleared, actUniques: this.actUniques, difficulty: this.difficulty,
       bestZone: this.bestZone, totalKills: this.totalKills,
       riftsCleared: this.riftsCleared, bountyProgress: this.bountyProgress,
       riftKeys: this.riftKeys, masterKeys: this.masterKeys, seasonUnlocked: this.seasonUnlocked,
@@ -285,7 +297,9 @@ const Hero = {
       gems: d.gems || [], bag: d.bag || [], equipped: d.equipped || {},
       loadout: d.loadout || ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null],
       passives: d.passives || [null, null, null, null, null],
-      zonesCleared: d.zonesCleared || 0, actsCleared: d.actsCleared || 0, difficulty: d.difficulty || 0,
+      zonesCleared: d.zonesCleared || 0, actsCleared: d.actsCleared || 0,
+      actUniques: (d.actUniques && typeof d.actUniques === 'object') ? Object.assign({}, d.actUniques) : {},
+      difficulty: d.difficulty || 0,
       bestZone: d.bestZone || 0, totalKills: d.totalKills || 0,
       riftsCleared: d.riftsCleared || 0, bountyProgress: d.bountyProgress || 0,
       riftKeys: d.riftKeys || 0, masterKeys: d.masterKeys || 0,

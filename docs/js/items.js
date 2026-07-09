@@ -726,9 +726,12 @@ const Items = {
     // Material requirement scales with the GEAR LEVEL the Blacksmith forges
     // (owner rule), keyed to the smith band's ceiling — cumulative:
     //   lvl 1–15  Parts · 16–30 +Crystals · 31–60 +Dust · 61–70 +Souls.
+    // Gold scales with the GEAR LEVEL forged (the smith band), NOT the hero's
+    // level — so a high-level hero can still afford to forge low-tier gear
+    // (owner rule: craftable even when your level exceeds the crafting level).
     const hi = this.smithRange()[1];
     const cost = {
-      gold: Math.round((250 + Hero.level * 40) * (master ? 3 : 1) * d),
+      gold: Math.round((250 + hi * 40) * (master ? 3 : 1) * d),
       parts: master ? 6 : 4
     };
     if (hi >= 16) cost.crystal = master ? 3 : 2;

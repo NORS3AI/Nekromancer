@@ -49,9 +49,29 @@ const Game = {
   fps: 60,
   dpsHits: [],        // rolling {t, d} log feeding the optional DPS meter
 
+  // Global UI font size (Settings ▸ Font size, 8–22). Every `ctx.font = 'Npx …'`
+  // has its px multiplied by fontSize/13 so ALL text scales together. Default 13
+  // → scale 1 (skipped for zero overhead); only a changed size pays the regex.
+  installFontScale(ctx) {
+    const desc = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, 'font');
+    if (!desc || !desc.set || !desc.get) return;
+    Object.defineProperty(ctx, 'font', {
+      configurable: true,
+      get() { return desc.get.call(this); },
+      set(v) {
+        const fs = (typeof Settings !== 'undefined' && Settings.g && Settings.g.fontSize) || 13;
+        if (fs === 13) { desc.set.call(this, v); return; }
+        const scale = fs / 13;
+        desc.set.call(this, String(v).replace(/(\d+(?:\.\d+)?)px/,
+          (m, n) => (Math.round(parseFloat(n) * scale * 10) / 10) + 'px'));
+      }
+    });
+  },
+
   init() {
     this.canvas = document.getElementById('game');
     this.ctx = this.canvas.getContext('2d');
+    this.installFontScale(this.ctx);
     window.addEventListener('resize', () => this.resize());
     this.resize();
     Settings.load();
@@ -532,13 +552,25 @@ const Game = {
     } else {
       this.descend = false;
       if (this.story) {
-        // The Skeleton King falls — a good chance at The Royal Grandeur.
-        this.showBanner('THE SKELETON KING FALLS', 'His grave is yours — step through the portal', 3.6);
-        if (Math.random() < 0.4) {
-          const rg = new Pickup(boss.x, boss.y, 'item');
-          rg.item = Items.generatePowerItem(this.monsterLevel(), 'royalGrandeur');
-          this.pickups.push(rg);
-          UI.toast('★ The Royal Grandeur!', '#ff8c2a');
+        // The Act's final boss falls — it drops that Act's signature legendary:
+        // GUARANTEED the first time you beat the Act, 50% on every kill after
+        // (owner rule). Act 1 → Royal Grandeur · 2 → Bloodtide Blade · 3 →
+        // Scythe of the Cycle.
+        const act = this.storyAct || 1;
+        const ACT_UNIQUE = { 1: 'royalGrandeur', 2: 'bloodtide', 3: 'cycleScythe' };
+        this.showBanner('THE ACT ' + act + ' BOSS FALLS', 'Its grave is yours — step through the portal', 3.6);
+        const ukey = ACT_UNIQUE[act];
+        if (ukey) {
+          Hero.actUniques = Hero.actUniques || {};
+          const first = !Hero.actUniques[act];
+          if (first || Math.random() < 0.5) {
+            const rg = new Pickup(boss.x, boss.y, 'item');
+            rg.item = Items.generatePowerItem(this.monsterLevel(), ukey);
+            this.pickups.push(rg);
+            UI.toast('★ ' + rg.item.name + (first ? '!' : '! (lucky drop)'), '#ff8c2a');
+            Hero.actUniques[act] = true;
+            Hero.save();
+          }
         }
       } else if (this.bountyPart && this.bountyPart < 3) {
         // Bounty parts 1 & 2: the portal carries you to the next hunt.

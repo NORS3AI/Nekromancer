@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.5.7-alpha';
+const GAME_VERSION = 'v1.5.8-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.5.8-alpha', date: 'July 2026',
+    notes: [
+      'Act bosses now drop their signature legendary — GUARANTEED the first time you beat the Act, 50% every time after: Act 1 → Ring of Royal Grandeur · Act 2 → Bloodtide Blade · Act 3 → Scythe of the Cycle',
+      'Blacksmith: you can now always craft gear the smith can forge, even when your level is far above it — the gold cost scales with the GEAR level made, not your character level',
+      'New Settings ▸ Font size (– / +, from 8 to 22) scales all on-screen text; the Horadric Cube leaflet and Character sheet are also auto-enlarged on tablet/desktop',
+      'Weather sound effects now start MUTED by default (turn them on in Settings ▸ Audio)'
+    ]
+  },
   {
     v: 'v1.5.7-alpha', date: 'July 2026',
     notes: [

@@ -919,9 +919,11 @@ const Screens = {
   // the Cube, pick up to 3 active) — with the Golden Mirror transmute at the end.
   recipes(ctx, W, H) {
     this.dim(ctx, W, H);
-    const pw = Math.min(460, W - 20);
+    // Tablet/desktop: scale the leaflet's text + row spacing up via k.
+    const big = W >= 760, k = big ? 1.32 : 1;
+    const pw = Math.min(big ? 600 : 460, W - 20);
     const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 24, 500);
+    const ph = Math.min(H - 24, big ? 580 : 500);
     const py = Math.max(12, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, 'INSTRUCTION LEAFLET');
     const rx = px + 16, rw = pw - 32;
@@ -937,111 +939,113 @@ const Screens = {
 
     // ---- Your extraction reagents, at the top ----
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold 10px Georgia';
-    if (vis(y, 14)) {
+    ctx.font = 'bold ' + (10 * k) + 'px Georgia';
+    if (vis(y, 14 * k)) {
       let mxx = rx;
-      for (const k of ['parts', 'dust', 'crystal', 'soul']) {
-        const txt = (Hero.mats[k] || 0) + ' ' + MATERIALS[k].name;
+      for (const mk of ['parts', 'dust', 'crystal', 'soul']) {
+        const txt = (Hero.mats[mk] || 0) + ' ' + MATERIALS[mk].name;
         const w = ctx.measureText(txt).width;
-        if (mxx > rx && mxx + w > rx + rw) { mxx = rx; y += 14; }
-        ctx.fillStyle = MATERIALS[k].color;
-        ctx.fillText(txt, mxx, y + 8); mxx += w + 12;
+        if (mxx > rx && mxx + w > rx + rw) { mxx = rx; y += 14 * k; }
+        ctx.fillStyle = MATERIALS[mk].color;
+        ctx.fillText(txt, mxx, y + 8 * k); mxx += w + 12;
       }
     }
-    y += 22;
+    y += 22 * k;
 
     // ---- Instruction of Rathma (extraction) ----
-    ctx.font = 'bold 14px Georgia'; ctx.fillStyle = '#ff5a4a';
-    if (vis(y, 20)) ctx.fillText('Instruction of Rathma', rx, y + 6);
-    y += 20;
-    ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
-    if (vis(y, 24)) y = wrapText(ctx, 'Rip the legendary power from a LOOSE item in your bag (not equipped, not stashed) into the Cube. The item is consumed.', rx, y + 8, rw, 13, 3) + 2;
-    else y += 26;
+    ctx.font = 'bold ' + (14 * k) + 'px Georgia'; ctx.fillStyle = '#ff5a4a';
+    if (vis(y, 20 * k)) ctx.fillText('Instruction of Rathma', rx, y + 6 * k);
+    y += 20 * k;
+    ctx.font = (10 * k) + 'px Georgia'; ctx.fillStyle = '#9a9080';
+    if (vis(y, 24 * k)) y = wrapText(ctx, 'Rip the legendary power from a LOOSE item in your bag (not equipped, not stashed) into the Cube. The item is consumed.', rx, y + 8 * k, rw, 13 * k, 3) + 2 * k;
+    else y += 26 * k;
     const c = Items.extractCost();
-    ctx.font = '10px Georgia';
-    if (vis(y, 14)) {
+    ctx.font = (10 * k) + 'px Georgia';
+    if (vis(y, 14 * k)) {
       let cxx = rx;
-      for (const [k, n] of Object.entries(c)) {
-        const have = (Hero.mats[k] || 0) >= n;
-        ctx.fillStyle = have ? MATERIALS[k].color : '#a05a5a';
-        const txt = n + ' ' + MATERIALS[k].name;
-        ctx.fillText(txt, cxx, y + 8); cxx += ctx.measureText(txt).width + 12;
+      for (const [mk, n] of Object.entries(c)) {
+        const have = (Hero.mats[mk] || 0) >= n;
+        ctx.fillStyle = have ? MATERIALS[mk].color : '#a05a5a';
+        const txt = n + ' ' + MATERIALS[mk].name;
+        ctx.fillText(txt, cxx, y + 8 * k); cxx += ctx.measureText(txt).width + 12;
       }
     }
-    y += 20;
+    y += 20 * k;
     const items = Items.extractable();
     if (!items.length) {
-      ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#6f6552';
-      if (vis(y, 16)) ctx.fillText('No loose legendary with an unclaimed power in your bag.', rx, y + 10);
-      y += 22;
+      ctx.font = 'italic ' + (11 * k) + 'px Georgia'; ctx.fillStyle = '#6f6552';
+      if (vis(y, 16 * k)) ctx.fillText('No loose legendary with an unclaimed power in your bag.', rx, y + 10 * k);
+      y += 22 * k;
     } else {
+      const rh = 38 * k;
       for (const it of items) {
-        if (vis(y, 40)) {
-          ctx.fillStyle = 'rgba(28,24,38,0.9)'; rr(ctx, rx, y, rw, 38, 6); ctx.fill();
-          ctx.strokeStyle = '#8a3f3a'; ctx.lineWidth = 1; rr(ctx, rx, y, rw, 38, 6); ctx.stroke();
-          ctx.textAlign = 'left'; ctx.font = 'bold 11px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
-          ctx.fillText(this.fitText(ctx, it.name, rw - 96), rx + 10, y + 15);
-          ctx.font = '9px Georgia'; ctx.fillStyle = '#b06adf';
-          ctx.fillText(this.fitText(ctx, LEGENDARY_POWERS[it.power].name, rw - 96), rx + 10, y + 29);
-          const can = Object.entries(c).every(([k, n]) => (Hero.mats[k] || 0) >= n);
-          UI.btn(ctx, rx + rw - 84, y + 5, 78, 28, can ? 'EXTRACT' : 'NEED MATS',
-            can ? () => Items.extractPower(it) : null, { size: 10, disabled: !can, border: '#c22843', color: '#ff5a4a' });
+        if (vis(y, rh)) {
+          ctx.fillStyle = 'rgba(28,24,38,0.9)'; rr(ctx, rx, y, rw, rh, 6); ctx.fill();
+          ctx.strokeStyle = '#8a3f3a'; ctx.lineWidth = 1; rr(ctx, rx, y, rw, rh, 6); ctx.stroke();
+          ctx.textAlign = 'left'; ctx.font = 'bold ' + (11 * k) + 'px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
+          ctx.fillText(this.fitText(ctx, it.name, rw - 96 * k), rx + 10, y + 15 * k);
+          ctx.font = (9 * k) + 'px Georgia'; ctx.fillStyle = '#b06adf';
+          ctx.fillText(this.fitText(ctx, LEGENDARY_POWERS[it.power].name, rw - 96 * k), rx + 10, y + 29 * k);
+          const can = Object.entries(c).every(([mk, n]) => (Hero.mats[mk] || 0) >= n);
+          UI.btn(ctx, rx + rw - 84 * k, y + 5 * k, 78 * k, 28 * k, can ? 'EXTRACT' : 'NEED MATS',
+            can ? () => Items.extractPower(it) : null, { size: 10 * k, disabled: !can, border: '#c22843', color: '#ff5a4a' });
         }
-        y += 42;
+        y += rh + 4 * k;
       }
     }
-    y += 10;
+    y += 10 * k;
 
     // ---- Powers in the Cube — toggle up to 4 active ----
-    ctx.textAlign = 'left'; ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#ff8c2a';
-    if (vis(y, 18)) ctx.fillText('Powers in the Cube (' + (Hero.cubeActive || []).length + '/4 active)', rx, y + 6);
-    y += 20;
+    ctx.textAlign = 'left'; ctx.font = 'bold ' + (13 * k) + 'px Georgia'; ctx.fillStyle = '#ff8c2a';
+    if (vis(y, 18 * k)) ctx.fillText('Powers in the Cube (' + (Hero.cubeActive || []).length + '/4 active)', rx, y + 6 * k);
+    y += 20 * k;
     const bank = Hero.cubePowers || [];
     if (!bank.length) {
-      ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#6f6552';
-      if (vis(y, 16)) ctx.fillText('Extract a power above to bank it here.', rx, y + 10);
-      y += 22;
+      ctx.font = 'italic ' + (11 * k) + 'px Georgia'; ctx.fillStyle = '#6f6552';
+      if (vis(y, 16 * k)) ctx.fillText('Extract a power above to bank it here.', rx, y + 10 * k);
+      y += 22 * k;
     } else {
-      for (const k of bank) {
-        const P = LEGENDARY_POWERS[k]; if (!P) continue;
-        const on = (Hero.cubeActive || []).includes(k);
-        if (vis(y, 46)) {
-          ctx.fillStyle = on ? 'rgba(70,44,26,0.95)' : 'rgba(24,20,30,0.9)'; rr(ctx, rx, y, rw, 44, 6); ctx.fill();
-          ctx.strokeStyle = on ? '#ff8c2a' : '#3a3448'; ctx.lineWidth = on ? 1.6 : 1; rr(ctx, rx, y, rw, 44, 6); ctx.stroke();
-          ctx.textAlign = 'left'; ctx.font = 'bold 11px Georgia'; ctx.fillStyle = on ? '#ffb86a' : '#c9bfa8';
-          ctx.fillText((on ? '◈ ' : '') + P.name, rx + 10, y + 14);
-          ctx.font = '9px Georgia'; ctx.fillStyle = '#9a9080';
-          this.fitText && wrapText(ctx, P.desc, rx + 10, y + 26, rw - 96, 11, 2);
-          UI.btn(ctx, rx + rw - 84, y + 8, 78, 28, on ? 'ACTIVE' : 'ACTIVATE',
-            () => Items.toggleCubePower(k), { size: 10, bg: on ? 'rgba(90,54,26,0.9)' : undefined, border: '#8a6f4a', color: on ? '#ffb86a' : '#c9bfa8' });
+      const rh = 44 * k;
+      for (const bk of bank) {
+        const P = LEGENDARY_POWERS[bk]; if (!P) continue;
+        const on = (Hero.cubeActive || []).includes(bk);
+        if (vis(y, rh)) {
+          ctx.fillStyle = on ? 'rgba(70,44,26,0.95)' : 'rgba(24,20,30,0.9)'; rr(ctx, rx, y, rw, rh, 6); ctx.fill();
+          ctx.strokeStyle = on ? '#ff8c2a' : '#3a3448'; ctx.lineWidth = on ? 1.6 : 1; rr(ctx, rx, y, rw, rh, 6); ctx.stroke();
+          ctx.textAlign = 'left'; ctx.font = 'bold ' + (11 * k) + 'px Georgia'; ctx.fillStyle = on ? '#ffb86a' : '#c9bfa8';
+          ctx.fillText((on ? '◈ ' : '') + P.name, rx + 10, y + 14 * k);
+          ctx.font = (9 * k) + 'px Georgia'; ctx.fillStyle = '#9a9080';
+          wrapText(ctx, P.desc, rx + 10, y + 26 * k, rw - 96 * k, 11 * k, 2);
+          UI.btn(ctx, rx + rw - 84 * k, y + 8 * k, 78 * k, 28 * k, on ? 'ACTIVE' : 'ACTIVATE',
+            () => Items.toggleCubePower(bk), { size: 10 * k, bg: on ? 'rgba(90,54,26,0.9)' : undefined, border: '#8a6f4a', color: on ? '#ffb86a' : '#c9bfa8' });
         }
-        y += 48;
+        y += rh + 4 * k;
       }
     }
-    y += 12;
+    y += 12 * k;
 
     // ---- Golden Mirror (moved to the END of the leaflet) ----
-    ctx.textAlign = 'left'; ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#ffd76a';
-    if (vis(y, 18)) ctx.fillText('Golden Mirror', rx, y + 6);
-    y += 18;
+    ctx.textAlign = 'left'; ctx.font = 'bold ' + (13 * k) + 'px Georgia'; ctx.fillStyle = '#ffd76a';
+    if (vis(y, 18 * k)) ctx.fillText('Golden Mirror', rx, y + 6 * k);
+    y += 18 * k;
     if (Hero.orbAutoPickup) {
-      ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
-      if (vis(y, 16)) y = wrapText(ctx, '✦ Transmuted — purple orbs (Rifts & Seasons) now collect instantly.', rx, y + 10, rw, 13, 2) + 4;
-      else y += 20;
+      ctx.font = (11 * k) + 'px Georgia'; ctx.fillStyle = '#9a9080';
+      if (vis(y, 16 * k)) y = wrapText(ctx, '✦ Transmuted — purple orbs (Rifts & Seasons) now collect instantly.', rx, y + 10 * k, rw, 13 * k, 2) + 4 * k;
+      else y += 20 * k;
     } else if (Hero.goldenMirror) {
-      ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
-      if (vis(y, 14)) ctx.fillText('Transmute to auto-collect every purple orb.', rx, y + 10);
-      y += 18;
-      if (vis(y, 28)) UI.btn(ctx, rx, y, rw, 26, 'TRANSMUTE GOLDEN MIRROR', () => {
+      ctx.font = (10 * k) + 'px Georgia'; ctx.fillStyle = '#9a9080';
+      if (vis(y, 14 * k)) ctx.fillText('Transmute to auto-collect every purple orb.', rx, y + 10 * k);
+      y += 18 * k;
+      if (vis(y, 28 * k)) UI.btn(ctx, rx, y, rw, 26 * k, 'TRANSMUTE GOLDEN MIRROR', () => {
         Hero.goldenMirror = false; Hero.orbAutoPickup = true; Hero.save();
         UI.toast('The Golden Mirror dissolves — purple orbs now come to you', '#ffd76a');
         AudioSys.sfx('level');
-      }, { size: 12, color: '#ffd76a', border: '#8a6f2a' });
-      y += 32;
+      }, { size: 12 * k, color: '#ffd76a', border: '#8a6f2a' });
+      y += 32 * k;
     } else {
-      ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#57503f';
-      if (vis(y, 14)) ctx.fillText('Not found — the Treasure Goblin sometimes carries it (10%).', rx, y + 10);
-      y += 18;
+      ctx.font = 'italic ' + (10 * k) + 'px Georgia'; ctx.fillStyle = '#57503f';
+      if (vis(y, 14 * k)) ctx.fillText('Not found — the Treasure Goblin sometimes carries it (10%).', rx, y + 10 * k);
+      y += 18 * k;
     }
 
     ctx.restore();
@@ -3043,10 +3047,12 @@ const Screens = {
     this.dim(ctx, W, H);
     // (red ✕ drawn globally by UI.draw, above all content)
     const s = Items.computeStats();
-    const pw = Math.min(560, W - 20);
+    // Tablet/desktop: scale the whole sheet up (fonts + row spacing) via k.
+    const big = W >= 760, k = big ? 1.35 : 1;
+    const pw = Math.min(big ? 680 : 560, W - 20);
     const px = W / 2 - pw / 2;
     const twoCol = pw >= 420;
-    const ph = Math.min(H - 16, twoCol ? 470 : 620);
+    const ph = Math.min(H - 16, twoCol ? (big ? 560 : 470) : 620);
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, this.fitText(ctx, Hero.name.toUpperCase() + '  ·  LVL ' + Hero.level + (Hero.paragon ? '  ·  P' + Hero.paragon : ''), pw - 60));
     const colW = twoCol ? (pw - 44) / 2 : pw - 32;
@@ -3068,21 +3074,21 @@ const Screens = {
 
     const line = (x, yv, label, value, color = '#e8e0cc') => {
       ctx.textAlign = 'left';
-      ctx.font = '12px Georgia';
+      ctx.font = (12 * k) + 'px Georgia';
       ctx.fillStyle = '#8a8070';
       ctx.fillText(label, x, yv);
       ctx.textAlign = 'right';
-      ctx.font = 'bold 12px Georgia';
+      ctx.font = 'bold ' + (12 * k) + 'px Georgia';
       ctx.fillStyle = color;
       ctx.fillText(value, x + colW, yv);
-      return yv + 19;
+      return yv + 19 * k;
     };
     const header = (x, yv, txt, color) => {
       ctx.textAlign = 'left';
-      ctx.font = 'bold 12px Georgia';
+      ctx.font = 'bold ' + (12 * k) + 'px Georgia';
       ctx.fillStyle = color;
       ctx.fillText(txt, x, yv);
-      return yv + 18;
+      return yv + 18 * k;
     };
 
     // Combat stats.
@@ -3103,7 +3109,7 @@ const Screens = {
     ly = line(lx, ly, 'Move speed', '+' + Math.round((s.moveSpeed || 0) * 100) + '%', '#6ff7c3');
     ly = line(lx, ly, 'Gold find', '+' + Math.round((s.goldFind - 1) * 100) + '%', '#ffd76a');
     if (s.xpBonus > 0) ly = line(lx, ly, 'Bonus XP', '+' + Math.round(s.xpBonus * 100) + '%', '#ffd76a');
-    ly += 6;
+    ly += 6 * k;
     ly = header(lx, ly, '— JOURNEY —', '#b06adf');
     ly = Hero.level >= MAX_LEVEL
       ? line(lx, ly, 'Paragon', 'P' + (Hero.paragon || 0) + '  (' + (Hero.np || 0) + ' NP)', '#ff8c2a')
@@ -3121,40 +3127,42 @@ const Screens = {
     }
     ry = line(rx, ry, 'Gems in pouch', Hero.gems.length, '#b06adf');
     ry = line(rx, ry, 'Bag', Hero.bagUsed() + ' / ' + Hero.BAG_SIZE);
-    ry += 6;
+    ry += 6 * k;
 
     // Active POWERS — equipped legendary powers, Cube-extracted powers and live
     // set bonuses, so the player sees exactly what's shaping their build.
     ry = header(rx, ry, '— ACTIVE POWERS —', '#ff8c2a');
-    ctx.textAlign = 'left'; ctx.font = '11px Georgia';
+    ctx.textAlign = 'left'; ctx.font = (11 * k) + 'px Georgia';
     const cubeSel = (Hero.cubeActive && Hero.cubeActive.slice()) || [];
     const powerKeys = Object.keys(s.powers || {});
     if (!powerKeys.length && !cubeSel.length && s.setCount < 2) {
       ctx.fillStyle = '#6f6552';
-      ry = wrapText(ctx, 'None yet — equip legendaries or extract powers in the Cube.', rx, ry, colW, 14, 2) + 3;
+      ry = wrapText(ctx, 'None yet — equip legendaries or extract powers in the Cube.', rx, ry, colW, 14 * k, 2) + 3 * k;
     } else {
-      for (const k of powerKeys) {
-        const P = LEGENDARY_POWERS[k]; if (!P) continue;
-        const cubed = cubeSel.includes(k);
+      for (const pk of powerKeys) {
+        const P = LEGENDARY_POWERS[pk]; if (!P) continue;
+        const cubed = cubeSel.includes(pk);
         ctx.fillStyle = cubed ? '#ff5a4a' : '#ffb86a';
-        ry = wrapText(ctx, (cubed ? '◈ ' : '★ ') + P.name + (cubed ? ' (Cube)' : ''), rx, ry, colW, 14, 2) + 2;
+        ctx.font = (11 * k) + 'px Georgia';
+        ry = wrapText(ctx, (cubed ? '◈ ' : '★ ') + P.name + (cubed ? ' (Cube)' : ''), rx, ry, colW, 14 * k, 2) + 2 * k;
       }
       if (s.setCount >= 2) {
         ctx.fillStyle = '#4ade80';
+        ctx.font = (11 * k) + 'px Georgia';
         for (const bonus of INARIUS_SET.bonuses) {
-          if (s.setCount >= bonus.pieces) ry = wrapText(ctx, '◈ Inarius ' + bonus.pieces + 'pc active', rx, ry, colW, 14, 1) + 2;
+          if (s.setCount >= bonus.pieces) ry = wrapText(ctx, '◈ Inarius ' + bonus.pieces + 'pc active', rx, ry, colW, 14 * k, 1) + 2 * k;
         }
       }
     }
-    ry += 6;
+    ry += 6 * k;
 
     // Analysis — every tip is drawn; the body scrolls if it overflows.
     ry = header(rx, ry, '— ANALYSIS —', '#e04a5a');
     ctx.textAlign = 'left';
-    ctx.font = '11px Georgia';
+    ctx.font = (11 * k) + 'px Georgia';
     ctx.fillStyle = '#b5ab94';
     for (const tip of this.analyze(s)) {
-      ry = wrapText(ctx, '• ' + tip, rx, ry, colW, 14, 3) + 3;
+      ry = wrapText(ctx, '• ' + tip, rx, ry, colW, 14 * k, 3) + 3 * k;
     }
     ctx.restore();
 
@@ -3760,6 +3768,21 @@ const Screens = {
       Settings.save();
       if (typeof Game !== 'undefined') Game.applyCursor();
     }, { size: 12, border: '#8a6f4a', color: '#ffd76a' });
+    gy += 30;
+
+    // Global UI font size — – / + between 8 and 22 (owner request). Scales ALL
+    // on-screen text live, so the change is visible immediately.
+    const fsz = clamp(Settings.g.fontSize || 13, 8, 22);
+    ctx.textAlign = 'left'; ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
+    ctx.fillText('Font size', gx, gy + 14);
+    UI.btn(ctx, gx + colW - 118, gy + 1, 34, 26, '–',
+      fsz > 8 ? () => { Settings.g.fontSize = clamp(fsz - 1, 8, 22); Settings.save(); } : null,
+      { size: 15, disabled: fsz <= 8, border: '#8a6f4a', color: '#ffd76a' });
+    ctx.textAlign = 'center'; ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#ffd76a';
+    ctx.fillText(String(fsz), gx + colW - 59, gy + 15);
+    UI.btn(ctx, gx + colW - 34, gy + 1, 34, 26, '+',
+      fsz < 22 ? () => { Settings.g.fontSize = clamp(fsz + 1, 8, 22); Settings.save(); } : null,
+      { size: 15, disabled: fsz >= 22, border: '#8a6f4a', color: '#ffd76a' });
     gy += 30;
 
     // Corpse limit — corpses linger until this many exist, then the oldest fade.

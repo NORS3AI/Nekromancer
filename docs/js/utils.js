@@ -68,6 +68,10 @@ function lerpAngle(a, b, t) {
 
 // Draw word-wrapped text; returns the y just below the last line.
 function wrapText(ctx, text, x, y, maxW, lineH, maxLines = 4) {
+  // Keep line spacing proportional to the global UI font size (Settings ▸ Font
+  // size); ctx.font px is already scaled by the same factor in game.js.
+  const _fs = (typeof Settings !== 'undefined' && Settings.g && Settings.g.fontSize) || 13;
+  if (_fs !== 13) lineH = lineH * (_fs / 13);
   const words = String(text).split(' ');
   let line = '', lines = 0;
   for (let i = 0; i < words.length; i++) {

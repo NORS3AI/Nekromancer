@@ -53,7 +53,7 @@ const Settings = {
     sfx:      { v: 0.8, mute: false },
     music:    { v: 0.55, mute: false },
     ambience: { v: 0.6, mute: false },
-    weather:  { v: 0.6, mute: false }
+    weather:  { v: 0.6, mute: true }
   },
   g: {
     electiveMode: false,  // allow more than one skill per category on the action bar
@@ -72,7 +72,8 @@ const Settings = {
     dpsX: null, dpsY: null, // custom DPS meter position (null = default)
     corpseCap: 100,       // corpses linger until this many exist (stress test)
     cursorScale: 1,       // bone-hand mouse cursor size: 1× / 2× / 3×
-    mono: false           // fold WebAudio output to one channel (single/mono speaker)
+    mono: false,          // fold WebAudio output to one channel (single/mono speaker)
+    fontSize: 13          // global UI font size (8–22); scales all text via ctx.font
   },
   keys: JSON.parse(JSON.stringify(KEY_DEFAULTS)),  // action -> [KeyboardEvent.code]
   _codeToAction: {},
