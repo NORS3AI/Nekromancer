@@ -3787,6 +3787,21 @@ const Screens = {
     UI.toast('★ ' + it.name + ' → Stash', '#ff8c2a'); AudioSys.sfx('setdrop');
   },
 
+  // Spawn ONE reagent boss near the hero (dev). Each boss has its own button.
+  spawnDevBoss(type, opts, label) {
+    if (Game.state !== 'playing' || !Game.player || Game.player.dead) {
+      UI.toast('Enter a zone first', '#9a9080'); AudioSys.sfx('denied'); return;
+    }
+    const p = Game.player;
+    const a = Math.random() * TAU;
+    const e = new Enemy(type, p.x + Math.cos(a) * 170, p.y + Math.sin(a) * 170,
+      Object.assign({ name: MONSTERS[type].name }, opts || {}));
+    e.sleep = false; e.spawnT = 0.3;
+    World.collide(e); Game.enemies.push(e);
+    UI.toast('Spawned ' + (label || MONSTERS[type].name), '#ff8c2a');
+    UI.close();
+  },
+
   cheats(ctx, W, H) {
     this.dim(ctx, W, H);
     // (red ✕ drawn globally by UI.draw, above all content)
@@ -3795,158 +3810,156 @@ const Screens = {
     const ph = Math.min(H - 16, 594);
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, '☠ DEV CHEATS ☠');
-    let y = py + 48;
 
-    // Toggles — kept per save.
-    UI.check(ctx, px + 16, y, Hero.cheats.god, () => {
-      Hero.cheats.god = !Hero.cheats.god;
-      Hero.save();
-    }, 'Immortality (god mode)');
-    y += 32;
-    UI.check(ctx, px + 16, y, Hero.cheats.essence, () => {
-      Hero.cheats.essence = !Hero.cheats.essence;
-      Hero.save();
-    }, 'Infinite essence (mana/rage/energy)');
-    y += 36;
+    // The list has grown past one screen, so the body DRAG-scrolls (touch/mouse/
+    // wheel) like the inventory/Mystic. Each cheat is its own full-width row,
+    // grouped under a category header. Rows outside the view are culled so their
+    // taps aren't registered.
+    const bodyTop = py + 42, bodyBot = py + ph - 10;
+    const viewH = bodyBot - bodyTop;
+    const sc = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
+    UI.sel.scrollY = sc;
+    UI.sel.scrollRegion = { x: px + 2, y: bodyTop, w: pw - 4, h: viewH };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(px + 2, bodyTop, pw - 4, viewH); ctx.clip();
 
-    // Enemy spawn boost — multiplies pack sizes & counts in ALL difficulties,
-    // +0% … +1000% (dev stress test). Applies to the next zone you enter.
-    ctx.textAlign = 'left'; ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
-    ctx.fillText('Enemy spawn boost', px + 16, y + 6);
-    ctx.textAlign = 'right'; ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#ffb43a';
-    ctx.fillText('+' + Math.round((Hero.cheats.spawn || 0) * 100) + '%', px + pw - 16, y + 6);
-    UI.slider(ctx, px + 16, y + 12, pw - 32, clamp((Hero.cheats.spawn || 0) / 10, 0, 1), v => {
-      Hero.cheats.spawn = Math.round(v * 100) / 10;   // 0..10 in 10% steps
-      Hero.save();
-    });
-    y += 40;
-
-    const row = (label, cb, color = '#e8e0cc') => {
-      UI.btn(ctx, px + 16, y, pw - 32, 30, label, cb, { size: 12, color });
-      y += 36;
+    const rowH = 30, gap = 6, rowW = pw - 32;
+    let y = 4;                                   // content-space cursor
+    const sy = () => bodyTop + y - sc;           // → screen y for the cursor
+    const vis = h => sy() + h > bodyTop && sy() < bodyBot;
+    const section = title => {
+      y += 12;
+      if (vis(18)) {
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#57b894';
+        ctx.fillText('— ' + title + ' —', px + 16, sy() + 9);
+      }
+      y += 24;
     };
+    const row = (label, cb, opts) => {
+      if (vis(rowH)) UI.btn(ctx, px + 16, sy(), rowW, rowH, label, cb, Object.assign({ size: 12 }, opts || {}));
+      y += rowH + gap;
+    };
+    const check = (label, checked, cb) => {
+      if (vis(24)) UI.check(ctx, px + 16, sy(), checked, cb, label);
+      y += 32;
+    };
+
+    // ---- TOGGLES ----
+    section('Toggles');
+    check('Immortality (god mode)', Hero.cheats.god, () => { Hero.cheats.god = !Hero.cheats.god; Hero.save(); });
+    check('Infinite essence (mana/rage/energy)', Hero.cheats.essence, () => { Hero.cheats.essence = !Hero.cheats.essence; Hero.save(); });
+    // Enemy spawn boost slider — multiplies pack sizes/counts, +0%…+1000%.
+    if (vis(30)) {
+      ctx.textAlign = 'left'; ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
+      ctx.fillText('Enemy spawn boost', px + 16, sy() + 6);
+      ctx.textAlign = 'right'; ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#ffb43a';
+      ctx.fillText('+' + Math.round((Hero.cheats.spawn || 0) * 100) + '%', px + pw - 16, sy() + 6);
+      UI.slider(ctx, px + 16, sy() + 12, pw - 32, clamp((Hero.cheats.spawn || 0) / 10, 0, 1), v => {
+        Hero.cheats.spawn = Math.round(v * 100) / 10; Hero.save();
+      });
+    }
+    y += 34;
+
+    // ---- CHARACTER ----
+    const paraOpt = { color: '#ffb86a', border: '#8a6f2a' };
+    section('Character');
+    row('+1 level', () => Hero.grantLevels(1));
+    row('+5 levels', () => Hero.grantLevels(5));
+    row('+10 levels', () => Hero.grantLevels(10));
+    row('Jump to level 70', () => Hero.grantLevels(70), paraOpt);
+    row('+25 Paragon levels', () => { Hero.paragon += 25; Hero.np += 25; Items.apply(); Hero.save(); UI.toast('+25 Paragon (' + Hero.np + ' NP)', '#ff8c2a'); }, paraOpt);
+    row('+200 Nekromancer Points', () => { Hero.np += 200; Hero.save(); UI.toast('+200 Nekromancer Points', '#ffd76a'); }, paraOpt);
+
+    // ---- RESOURCES ----
+    section('Resources');
     row('Add 100 of each crafting resource', () => {
       for (const k of Object.keys(MATERIALS)) Hero.mats[k] += 100;
-      UI.toast('+100 of every material', '#ffd76a');
-      Hero.save();
-    });
-    row('Add 6 Marquise of each gem type', () => {
-      for (const type of Object.keys(GEM_TYPES)) {
-        for (let i = 0; i < 6; i++) Hero.gems.push({ type, tier: GEM_MAX_TIER });
-      }
-      UI.toast('+6 Marquise of every gem', '#b06adf');
-      Hero.save();
-    });
+      UI.toast('+100 of every material', '#ffd76a'); Hero.save();
+    }, { color: '#ffd76a' });
+    row('+5 Lumber / Rivets / Heartstring', () => {
+      Hero.mats.lumber = (Hero.mats.lumber || 0) + 5; Hero.mats.rivets = (Hero.mats.rivets || 0) + 5; Hero.mats.heartstring = (Hero.mats.heartstring || 0) + 5;
+      Hero.save(); UI.toast('+5 Lumber, +5 Iron Rivets, +5 Heartstring', MATERIALS.lumber.color);
+    }, { color: MATERIALS.lumber.color, border: '#6a5a3a' });
+    row('+6 Marquise of each gem type', () => {
+      for (const type of Object.keys(GEM_TYPES)) { for (let i = 0; i < 6; i++) Hero.gems.push({ type, tier: GEM_MAX_TIER }); }
+      UI.toast('+6 Marquise of every gem', '#b06adf'); Hero.save();
+    }, { color: '#b06adf' });
     row('+5 gem slots on equipped weapon', () => {
       const w = Hero.equipped.weapon;
       if (!w) { UI.toast('No weapon equipped', '#9a9080'); AudioSys.sfx('denied'); return; }
       w.sockets = (w.sockets || 0) + 5;
-      w.maxSockets = Math.max(w.maxSockets || 0, w.sockets);   // let the Mystic keep pace
+      w.maxSockets = Math.max(w.maxSockets || 0, w.sockets);
       Items.apply();
       UI.toast(w.name + ' now has ' + w.sockets + ' socket' + (w.sockets > 1 ? 's' : ''), '#6ff7c3');
-      AudioSys.sfx('gem');
-      Hero.save();
-    }, '#6ff7c3');
-    row('Spawn reagent bosses near you (Wyrm/Glutton/Rathma)', () => {
-      if (Game.state !== 'playing' || !Game.player || Game.player.dead) { UI.toast('Enter a zone first', '#9a9080'); AudioSys.sfx('denied'); return; }
-      const p = Game.player;
-      for (const [t, opts] of [['wyrm', {}], ['glutton', {}], ['rathma', { rare: true }]]) {
-        const a = Math.random() * TAU;
-        const e = new Enemy(t, p.x + Math.cos(a) * 170, p.y + Math.sin(a) * 170, Object.assign({ name: MONSTERS[t].name }, opts));
-        e.sleep = false; e.spawnT = 0.3;
-        World.collide(e); Game.enemies.push(e);
-      }
-      UI.toast('Spawned Bonewyrm, Gluttonous Brain & Rathma\'s Chosen', '#ff8c2a');
-      UI.close();
-    }, '#ff8c2a');
-    row("✦ Haedrig's Gift — full Inarius set + legendaries to Stash", () => {
+      AudioSys.sfx('gem'); Hero.save();
+    }, { color: '#6ff7c3' });
+
+    // ---- GOLD ----
+    section('Gold');
+    [100, 1000, 10000, 100000, 1000000].forEach(g => {
+      row('+' + g.toLocaleString() + ' gold', () => { Hero.gold += g; UI.toast('+' + g.toLocaleString() + ' gold', '#ffd76a'); Hero.save(); }, { color: '#ffd76a' });
+    });
+
+    // ---- KEYS & STORAGE ----
+    section('Keys & Storage');
+    row('Max Stash upgrades', () => { Hero.stashTier = STASH_PER_SLOT.length - 1; Hero.saveStash(); Hero.save(); UI.toast('Stash maxed — ' + Hero.stashPerSlot().toLocaleString() + '/slot', '#8fb0e8'); }, { color: '#8fb0e8', border: '#5f7ab0' });
+    row('+100k inventory space', () => { Hero.bagBonus = (Hero.bagBonus || 0) + 100000; Hero.applyBagSize(); Hero.save(); UI.toast('Inventory expanded to ' + Hero.BAG_SIZE.toLocaleString() + ' slots', '#ffd76a'); }, { color: '#ffd76a', border: '#8a6f4a' });
+    row('+5 Master Keys', () => { Hero.masterKeys += 5; UI.toast('+5 Master Nephalem Rift Keys (' + Hero.masterKeys + ')', '#d8b4f0'); Hero.save(); }, { color: '#d8b4f0', border: '#5a3a7a' });
+    row('+5 Nephalem Keys', () => { Hero.riftKeys += 5; UI.toast('+5 Nephalem Rift Keys (' + Hero.riftKeys + ')', '#b06adf'); Hero.save(); }, { color: '#b06adf', border: '#5a3a7a' });
+
+    // ---- GEAR & LEGENDARIES ----
+    section('Gear & Legendaries');
+    row("✦ Haedrig's Gift — full Inarius set + legendaries → Stash", () => {
       const mLvl = Math.max(70, Hero.level);
       let n = 0;
       const give = it => { if (Hero.stash.length < Hero.STASH_SIZE) { Hero.stash.push(it); n++; } };
-      // The 6 Grace of Inarius set pieces...
       for (const slot of Object.keys(INARIUS_SET.pieces)) give(Items.generateSetPiece(mLvl, slot));
-      // ...plus the build's legendary "set items": rings, weapon, phylactery, chest.
       for (const key of ['coe', 'krysbin', 'funeraryPick', 'ironRose', 'aquila']) give(Items.generatePowerItem(mLvl, key));
-      Hero.saveStash();
-      Hero.save();
+      Hero.saveStash(); Hero.save();
       UI.toast("Haedrig's Gift: " + n + ' pieces sent to Stash' + (Hero.stash.length >= Hero.STASH_SIZE ? ' (Stash full)' : ''), '#4ade80');
       AudioSys.sfx('setdrop');
-    }, '#4ade80');
-    // Act-boss exclusive legendaries → Stash (their bosses drop these in-game).
-    const tw3 = (pw - 32 - 2 * 6) / 3;
-    UI.btn(ctx, px + 16, y, tw3, 30, '◈ Royal Grandeur (A1)',
-      () => Screens.grantLegendary('royalGrandeur'), { size: 10, color: '#ffd76a', border: '#8a6f4a' });
-    UI.btn(ctx, px + 16 + tw3 + 6, y, tw3, 30, '⚔ Bloodtide (A2)',
-      () => Screens.grantLegendary('bloodtide'), { size: 10, color: '#e04a5a', border: '#8a2635' });
-    UI.btn(ctx, px + 16 + 2 * (tw3 + 6), y, tw3, 30, '⚔ Cycle Scythe (A3)',
-      () => Screens.grantLegendary('cycleScythe'), { size: 10, color: '#b06adf', border: '#5a3a7a' });
-    y += 36;
-    // Gold row: five amounts.
-    const golds = [100, 1000, 10000, 100000, 1000000];
-    const gw = (pw - 32 - 4 * 6) / 5;
-    golds.forEach((g, i) => {
-      UI.btn(ctx, px + 16 + i * (gw + 6), y, gw, 30,
-        g >= 1000000 ? '1m g' : g >= 1000 ? (g / 1000) + 'k g' : g + ' g',
-        () => { Hero.gold += g; UI.toast('+' + g + ' gold', '#ffd76a'); Hero.save(); },
-        { size: 11, color: '#ffd76a' });
-    });
-    y += 36;
-    // Keys + inventory-space row (dev grants).
-    const kw = (pw - 32 - 2 * 6) / 3;
-    UI.btn(ctx, px + 16, y, kw, 30, 'Max Stash upgrades',
-      () => { Hero.stashTier = STASH_PER_SLOT.length - 1; Hero.saveStash(); Hero.save(); UI.toast('Stash maxed — ' + Hero.stashPerSlot().toLocaleString() + '/slot', '#8fb0e8'); },
-      { size: 10, color: '#8fb0e8', border: '#5f7ab0' });
-    UI.btn(ctx, px + 16 + kw + 6, y, kw, 30, '+5 Master Keys',
-      () => { Hero.masterKeys += 5; UI.toast('+5 Master Nephalem Rift Keys (' + Hero.masterKeys + ')', '#d8b4f0'); Hero.save(); },
-      { size: 10, color: '#d8b4f0', border: '#5a3a7a' });
-    UI.btn(ctx, px + 16 + 2 * (kw + 6), y, kw, 30, '+5 Nephalem Keys',
-      () => { Hero.riftKeys += 5; UI.toast('+5 Nephalem Rift Keys (' + Hero.riftKeys + ')', '#b06adf'); Hero.save(); },
-      { size: 10, color: '#b06adf', border: '#5a3a7a' });
-    y += 36;
-    // Level row.
-    const lvls = [1, 5, 10];
-    const lw = (pw - 32 - 2 * 6) / 3;
-    lvls.forEach((n, i) => {
-      UI.btn(ctx, px + 16 + i * (lw + 6), y, lw, 30, '+' + n + ' level' + (n > 1 ? 's' : ''),
-        () => Hero.grantLevels(n), { size: 11 });
-    });
-    y += 36;
-    // Paragon grants (dev): jump to 70 then bank Nekromancer Points.
-    const pw3 = (pw - 32 - 2 * 6) / 3;
-    [['Level 70', () => { Hero.grantLevels(70); }], ['+25 Paragon', () => { Hero.paragon += 25; Hero.np += 25; Items.apply(); Hero.save(); UI.toast('+25 Paragon (' + Hero.np + ' NP)', '#ff8c2a'); }], ['+200 NP', () => { Hero.np += 200; Hero.save(); UI.toast('+200 Nekromancer Points', '#ffd76a'); }]].forEach(([lbl, cb], i) => {
-      UI.btn(ctx, px + 16 + i * (pw3 + 6), y, pw3, 30, lbl, cb, { size: 10, color: '#ffb86a', border: '#8a6f2a' });
-    });
-    y += 36;
-    row('Max level Blacksmith (10)', () => {
-      Hero.artisans.smith = 10; UI.toast('Blacksmith mastered', '#ffb43a'); Hero.save();
-    }, '#ffb43a');
-    row('Max level Mystic (10)', () => {
-      Hero.artisans.mystic = 10; UI.toast('Mystic mastered', '#b06adf'); Hero.save();
-    }, '#b06adf');
-    row('Max level Jeweler (10)', () => {
-      Hero.artisans.jeweler = 10; UI.toast('Jeweler mastered', '#4ecbe0'); Hero.save();
-    }, '#4ecbe0');
-    // Horadric's Cube grant row: the Cube itself + the Golden Mirror.
-    const cw = (pw - 32 - 6) / 2;
-    UI.btn(ctx, px + 16, y, cw, 30, '◈ Grant Horadric\'s Cube',
-      () => { Hero.hasCube = true; Hero.save(); UI.toast('Horadric\'s Cube granted — see it in town', '#ff5a4a'); AudioSys.sfx('setdrop'); },
-      { size: 10, color: '#ff5a4a', border: '#a03a2a' });
-    UI.btn(ctx, px + 16 + cw + 6, y, cw, 30, '✦ Grant Golden Mirror',
-      () => { if (!Hero.orbAutoPickup) { Hero.goldenMirror = true; Hero.save(); UI.toast('Golden Mirror granted — transmute it in the Cube', '#ffd76a'); AudioSys.sfx('setdrop'); } else UI.toast('Already transmuted', '#9a9080'); },
-      { size: 10, color: '#ffd76a', border: '#8a6f2a' });
-    y += 36;
-    // Inventory space + torch reagents (dev grants).
-    UI.btn(ctx, px + 16, y, cw, 30, '+100k inventory space',
-      () => { Hero.bagBonus = (Hero.bagBonus || 0) + 100000; Hero.applyBagSize(); Hero.save(); UI.toast('Inventory expanded to ' + Hero.BAG_SIZE.toLocaleString() + ' slots', '#ffd76a'); },
-      { size: 10, color: '#ffd76a', border: '#8a6f4a' });
-    UI.btn(ctx, px + 16 + cw + 6, y, cw, 30, '+5 Lumber / Rivets / Heart',
-      () => { Hero.mats.lumber = (Hero.mats.lumber || 0) + 5; Hero.mats.rivets = (Hero.mats.rivets || 0) + 5; Hero.mats.heartstring = (Hero.mats.heartstring || 0) + 5; Hero.save(); UI.toast('+5 Lumber, +5 Iron Rivets, +5 Heartstring', MATERIALS.lumber.color); },
-      { size: 10, color: MATERIALS.lumber.color, border: '#6a5a3a' });
-    y += 36;
-    ctx.textAlign = 'center';
-    ctx.font = 'italic 10px Georgia';
-    ctx.fillStyle = '#6f6552';
-    ctx.fillText('Everything here is saved with the hero.', px + pw / 2, y + 8);
+    }, { color: '#4ade80', border: '#2e7a4a' });
+    row('◈ Royal Grandeur (Act 1) → Stash', () => Screens.grantLegendary('royalGrandeur'), { color: '#ffd76a', border: '#8a6f4a' });
+    row('⚔ Bloodtide Blade (Act 2) → Stash', () => Screens.grantLegendary('bloodtide'), { color: '#e04a5a', border: '#8a2635' });
+    row('⚔ Scythe of the Cycle (Act 3) → Stash', () => Screens.grantLegendary('cycleScythe'), { color: '#b06adf', border: '#5a3a7a' });
+
+    // ---- SPAWN REAGENT BOSSES (one button each) ----
+    section('Spawn Reagent Bosses');
+    row('☠ Spawn Bonewyrm', () => Screens.spawnDevBoss('wyrm', {}, 'Bonewyrm'), { color: '#ff8c2a', border: '#a0521a' });
+    row('☠ Spawn Gluttonous Brain', () => Screens.spawnDevBoss('glutton', {}, 'Gluttonous Brain'), { color: '#8fbf5a', border: '#5a7a2a' });
+    row("☠ Spawn Rathma's Chosen", () => Screens.spawnDevBoss('rathma', { rare: true }, "Rathma's Chosen"), { color: '#b06adf', border: '#5a3a7a' });
+
+    // ---- ARTISANS ----
+    section('Artisans');
+    row('Max level Blacksmith (10)', () => { Hero.artisans.smith = 10; UI.toast('Blacksmith mastered', '#ffb43a'); Hero.save(); }, { color: '#ffb43a' });
+    row('Max level Mystic (10)', () => { Hero.artisans.mystic = 10; UI.toast('Mystic mastered', '#b06adf'); Hero.save(); }, { color: '#b06adf' });
+    row('Max level Jeweler (10)', () => { Hero.artisans.jeweler = 10; UI.toast('Jeweler mastered', '#4ecbe0'); Hero.save(); }, { color: '#4ecbe0' });
+
+    // ---- HORADRIC'S CUBE ----
+    section("Horadric's Cube");
+    row('◈ Grant Horadric\'s Cube', () => { Hero.hasCube = true; Hero.save(); UI.toast('Horadric\'s Cube granted — see it in town', '#ff5a4a'); AudioSys.sfx('setdrop'); }, { color: '#ff5a4a', border: '#a03a2a' });
+    row('✦ Grant Golden Mirror', () => { if (!Hero.orbAutoPickup) { Hero.goldenMirror = true; Hero.save(); UI.toast('Golden Mirror granted — transmute it in the Cube', '#ffd76a'); AudioSys.sfx('setdrop'); } else UI.toast('Already transmuted', '#9a9080'); }, { color: '#ffd76a', border: '#8a6f2a' });
+
+    // Footer note (scrolls with the content).
+    y += 8;
+    if (vis(16)) {
+      ctx.textAlign = 'center'; ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText('Everything here is saved with the hero.', px + pw / 2, sy() + 8);
+    }
+    y += 18;
+
+    ctx.restore();
+
+    // Scroll bounds + a slim scrollbar when the list overflows.
+    UI.sel.scrollMax = Math.max(0, y - viewH);
+    if (UI.sel.scrollMax > 0) {
+      ctx.fillStyle = '#3a3448';
+      ctx.fillRect(px + pw - 9, bodyTop, 4, viewH);
+      const kH = Math.max(24, (viewH / y) * viewH);
+      ctx.fillStyle = '#57b894';
+      ctx.fillRect(px + pw - 9, bodyTop + (sc / UI.sel.scrollMax) * (viewH - kH), 4, kH);
+    }
   },
 
   // -------------------------------------------------------- patch notes

@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.5.2-alpha';
+const GAME_VERSION = 'v1.5.3-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.5.3-alpha', date: 'July 2026',
+    notes: [
+      'Dev panel reorganized: every cheat is now its own row, grouped under category headers (Toggles · Character · Resources · Gold · Keys & Storage · Gear & Legendaries · Spawn Reagent Bosses · Artisans · Horadric\'s Cube), and the whole panel drag-scrolls so nothing is cut off',
+      'Spawning reagent bosses is now three separate buttons — Bonewyrm, Gluttonous Brain and Rathma\'s Chosen summon individually instead of all at once'
+    ]
+  },
   {
     v: 'v1.5.2-alpha', date: 'July 2026',
     notes: [

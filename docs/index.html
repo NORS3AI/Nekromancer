@@ -16,7 +16,7 @@
   // Cache-bust every game script so a fresh deploy is NEVER served stale JS
   // (GitHub Pages caches assets ~10 min). Bump BUILD on every js/ change — it is
   // kept in step with GAME_VERSION in data.js. document.write keeps load order.
-  var BUILD = '1.5.2';
+  var BUILD = '1.5.3';
   ['utils','settings','audio','particles','data','hero','input','world',
    'entities','items','skills','ui','screens','game']
     .forEach(function (f) { document.write('<script src="js/' + f + '.js?v=' + BUILD + '"><\/script>'); });
