@@ -2880,26 +2880,45 @@ const Screens = {
       ctx.fillStyle = '#9a9080';
       ctx.fillText('Choose an item, then a property to reroll. Each reroll', px + 16, big ? 114 : 112);
       ctx.fillText('stays in that property\'s group — you see the exact odds.', px + 16, big ? 134 : 128);
-      let y = big ? 152 : 142;
-      for (const slot of Object.keys(ITEM_SLOTS)) {
+      // Scrollable list so ALL equip slots are reachable — both rings included —
+      // even on short screens (the list is 11 slots tall). Torch isn't enchantable.
+      const slots = Object.keys(ITEM_SLOTS).filter(s => !ITEM_SLOTS[s].torch);
+      const listTop = big ? 148 : 138;
+      const listBot = 46 + ph - 8;
+      const viewH = Math.max(60, listBot - listTop);
+      const contentH = slots.length * rowStep + 6;
+      const scrollMax = Math.max(0, contentH - viewH);
+      const scrollY = clamp(UI.sel.scrollY || 0, 0, scrollMax);
+      UI.sel.scrollY = scrollY;
+      UI.sel.scrollMax = scrollMax;
+      UI.sel.scrollRegion = { x: px + 2, y: listTop, w: pw - 4, h: viewH };
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(px + 2, listTop, pw - 4, viewH);
+      ctx.clip();
+      let y = listTop - scrollY;
+      for (const slot of slots) {
         const it = Hero.equipped[slot];
-        if (y > 46 + ph - 40) break;
-        UI.btn(ctx, px + 16, y, pw - 32, rowBoxH, '', it ? () => {
-          UI.sel.item = it;
-          UI.sel.affix = null;
-        } : null, { disabled: !it });
-        ctx.textAlign = 'left';
-        ctx.font = 'bold ' + rowF + 'px Georgia';
-        ctx.fillStyle = it ? RARITIES[it.rarity].color : '#453f52';
-        ctx.fillText(this.fitText(ctx, ITEM_SLOTS[slot].label + ':  ' + (it ? it.name : '—'), pw - 90), px + 26, y + rowBoxH / 2);
-        if (it && it.enchants) {
-          ctx.textAlign = 'right';
-          ctx.font = (big ? 12 : 10) + 'px Georgia';
-          ctx.fillStyle = '#b06adf';
-          ctx.fillText('✦ ' + it.enchants, px + pw - 26, y + rowBoxH / 2);
+        if (y + rowBoxH > listTop && y < listBot) {   // only draw visible rows
+          UI.btn(ctx, px + 16, y, pw - 32, rowBoxH, '', it ? () => {
+            UI.sel.item = it;
+            UI.sel.affix = null;
+            UI.sel.scrollY = 0;   // detail view starts at the top
+          } : null, { disabled: !it });
+          ctx.textAlign = 'left';
+          ctx.font = 'bold ' + rowF + 'px Georgia';
+          ctx.fillStyle = it ? RARITIES[it.rarity].color : '#453f52';
+          ctx.fillText(this.fitText(ctx, ITEM_SLOTS[slot].label + ':  ' + (it ? it.name : '—'), pw - 90), px + 26, y + rowBoxH / 2);
+          if (it && it.enchants) {
+            ctx.textAlign = 'right';
+            ctx.font = (big ? 12 : 10) + 'px Georgia';
+            ctx.fillStyle = '#b06adf';
+            ctx.fillText('✦ ' + it.enchants, px + pw - 26, y + rowBoxH / 2);
+          }
         }
         y += rowStep;
       }
+      ctx.restore();
       return;
     }
 
