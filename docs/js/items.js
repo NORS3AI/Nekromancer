@@ -721,17 +721,18 @@ const Items = {
     Hero.save();
   },
 
+  // Exact gold cost by SMITH LEVEL (owner spec), Standard and Masterwork.
+  SMITH_GOLD_STD: { 1: 200, 2: 400, 3: 600, 4: 800, 5: 1000, 6: 1400, 7: 1800, 8: 2500, 9: 4000, 10: 6000 },
+  SMITH_GOLD_MW: { 1: 500, 2: 900, 3: 1300, 4: 1700, 5: 2100, 6: 2900, 7: 3700, 8: 4500, 9: 5300, 10: 8000 },
+
   craftCost(master = false) {
-    const d = this.artisanDiscount('smith');
-    // Material requirement scales with the GEAR LEVEL the Blacksmith forges
-    // (owner rule), keyed to the smith band's ceiling — cumulative:
-    //   lvl 1–15  Parts · 16–30 +Crystals · 31–60 +Dust · 61–70 +Souls.
-    // Gold scales with the GEAR LEVEL forged (the smith band), NOT the hero's
-    // level — so a high-level hero can still afford to forge low-tier gear
-    // (owner rule: craftable even when your level exceeds the crafting level).
+    // Gold cost is a fixed table per smith level (owner spec). Material
+    // requirement still scales with the GEAR LEVEL forged (the band ceiling):
+    //   lvl 1–15 Parts · 16–30 +Crystals · 31–60 +Dust · 61–70 +Souls.
+    const lvl = clamp(Hero.artisans.smith || 1, 1, 10);
     const hi = this.smithRange()[1];
     const cost = {
-      gold: Math.round((250 + hi * 40) * (master ? 3 : 1) * d),
+      gold: (master ? this.SMITH_GOLD_MW : this.SMITH_GOLD_STD)[lvl],
       parts: master ? 6 : 4
     };
     if (hi >= 16) cost.crystal = master ? 3 : 2;
@@ -769,7 +770,7 @@ const Items = {
   townStock() {
     const mLvl = Math.max(1, (Hero.level || 1) + (Hero.difficulty || 0) * 6);
     const ARMOR = ['helm', 'shoulders', 'chest', 'gloves', 'legs', 'boots'];
-    const WEAPON = ['weapon', 'phylactery'];
+    const WEAPON = ['weapon', 'offhand'];   // offhand = Phylactery
     const JEWEL = ['ring1', 'amulet'];
     const stock = [];
     for (let i = 0; i < 5; i++) {
@@ -933,9 +934,12 @@ const Items = {
     if (!made) AudioSys.sfx('denied');
   },
 
+  // Cost to cut a random gem, by JEWELER LEVEL (owner spec).
+  GEM_CUT_GOLD: { 1: 500, 2: 1000, 3: 2000, 4: 3000, 5: 4000, 6: 5000, 7: 6000, 8: 7000, 9: 8000, 10: 9000 },
+
   // Jeweler trades in gold and gems only.
   gemPrice() {
-    return { gold: Math.round((600 + Hero.level * 25) * this.artisanDiscount('jeweler')) };
+    return { gold: this.GEM_CUT_GOLD[clamp(Hero.artisans.jeweler || 1, 1, 10)] };
   },
 
   buyGem() {

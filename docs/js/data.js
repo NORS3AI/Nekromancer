@@ -19,11 +19,23 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.4-alpha';
+const GAME_VERSION = 'v1.6.5-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.5-alpha', date: 'July 2026',
+    notes: [
+      'Shoulders and Legs now have their own inventory icons (they were showing the ring icon by mistake)',
+      'Selling to the Travelling Merchant now lists your gear highest sell-price first, cheapest last',
+      'The Merchant now has a 🪙 icon on its button in both Town Portal and Camp',
+      'Minions left more than a screen behind for over 5 seconds now teleport back to your side',
+      'Topaz reworked: resource-cost reduction now climbs +2% per tier — Chipped 1% → Flawless 3% → … capping at 22%',
+      'Jeweler gem-cutting cost now scales by Jeweler level (500g at L1 up to 9000g at L10)',
+      'Blacksmith gold cost now scales by Smith level — Standard 200g (L1) → 6000g (L10); Masterwork 500g (L1) → 8000g (L10)'
+    ]
+  },
   {
     v: 'v1.6.4-alpha', date: 'July 2026',
     notes: [
@@ -1273,7 +1285,7 @@ const GEM_STATS = {
   ruby:     [[9, .05], [12, .06], [14, .07], [25, .09], [30, .10], [40, .12], [50, .15], [70, .16], [100, .17], [150, .20], [250, .22], [400, .25], [750, .30]],
   emerald:  [[.20, .02], [.40, .03], [.60, .04], [.80, .06], [1.0, .09], [1.2, .12], [1.4, .15], [1.6, .18], [1.8, .21], [2.0, .25], [2.3, .28], [2.6, .31], [3.0, .35]],
   amethyst: [[35, 10], [60, 30], [160, 60], [260, 100], [500, 200], [750, 500], [1500, 700], [5000, 900], [10500, 1500], [17000, 3000], [28000, 7000], [40000, 15000], [75000, 30000]],
-  topaz:    [[.005, .03], [.01, .05], [.02, .07], [.03, .10], [.04, .12], [.05, .15], [.06, .20], [.07, .25], [.08, .30], [.09, .50], [.10, .70], [.11, 1.0], [.12, 2.5]],
+  topaz:    [[.01, .03], [.03, .05], [.05, .07], [.07, .10], [.09, .12], [.11, .15], [.13, .20], [.15, .25], [.17, .30], [.19, .50], [.21, .70], [.22, 1.0], [.22, 2.5]],
   diamond:  [[10, .012], [30, .016], [60, .02], [100, .035], [150, .05], [250, .07], [400, .09], [500, .11], [700, .13], [1000, .17], [1500, .19], [3000, .20], [5000, .25]]
 };
 

@@ -1166,7 +1166,7 @@ const Screens = {
       ['BLACKSMITH', () => UI.open('smith'), '#ffb43a'],
       ['JEWELER', () => UI.open('jeweler'), '#b06adf'],
       ['MYSTIC', () => UI.open('mystic'), '#4ecbe0'],
-      ['MERCHANT', () => { UI.open('merchant'); UI.sel.shopTab = 'buy'; }, '#ffd76a'],
+      ['🪙 MERCHANT', () => { UI.open('merchant'); UI.sel.shopTab = 'buy'; }, '#ffd76a'],
       ['SETTINGS', () => UI.open('settings'), '#9a9080']
     ];
     // The Horadric's Cube joins the hub (before the Blacksmith) once found.
@@ -1466,6 +1466,19 @@ const Screens = {
         ctx.closePath(); ctx.fill();
         break;
       }
+      case 'shoulders':
+        // Two pauldron humps over a yoke line.
+        ctx.beginPath(); ctx.arc(x - r * 0.28, y + r * 0.05, r * 0.3, Math.PI, TAU); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x + r * 0.28, y + r * 0.05, r * 0.3, Math.PI, TAU); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x - r * 0.5, y + r * 0.05); ctx.lineTo(x + r * 0.5, y + r * 0.05); ctx.stroke();
+        break;
+      case 'legs':
+        // Trousers: a waist bar splitting into two legs.
+        ctx.beginPath(); ctx.moveTo(x - r * 0.32, y - r * 0.4); ctx.lineTo(x + r * 0.32, y - r * 0.4); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x - r * 0.2, y - r * 0.4); ctx.lineTo(x - r * 0.22, y + r * 0.45); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x + r * 0.2, y - r * 0.4); ctx.lineTo(x + r * 0.22, y + r * 0.45); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, y - r * 0.4); ctx.lineTo(x, y + r * 0.05); ctx.stroke();
+        break;
       default: // rings
         ctx.beginPath(); ctx.arc(x, y + r * 0.05, r * 0.3, 0, TAU); ctx.stroke();
         ctx.beginPath();
@@ -3652,7 +3665,8 @@ const Screens = {
         UI.btn(ctx, px + 22 + bw2, dy, pw - 36 - bw2, 34, 'CANCEL', () => { UI.sel.pick = null; }, { size: 12 });
       }
     } else {
-      const items = Hero.bag.filter(it => it && !it.torch);
+      const items = Hero.bag.filter(it => it && !it.torch)
+        .sort((a, b) => Items.sellValue(b) - Items.sellValue(a));   // highest sell price on top
       if (!items.length) {
         ctx.textAlign = 'center'; ctx.font = 'italic ' + (big ? 14 : 12) + 'px Georgia'; ctx.fillStyle = '#544d44';
         ctx.fillText('Your bag has no gear to sell.', W / 2, bodyTop + 30);

@@ -1729,6 +1729,22 @@ class Minion {
     this.flash = Math.max(0, this.flash - dt * 6);
     this.atkCd = Math.max(0, this.atkCd - dt);
     this.frenzyT = Math.max(0, this.frenzyT - dt);
+    // Left behind? If a minion is far from the hero for more than 5s (stuck on
+    // terrain, lost after a portal), blink it back to his side.
+    {
+      const pl = Game.player;
+      if (pl) {
+        if (dist(this.x, this.y, pl.x, pl.y) > 460) {
+          this.behindT = (this.behindT || 0) + dt;
+          if (this.behindT > 5) {
+            this.behindT = 0;
+            const ta = rand(TAU);
+            this.x = pl.x + Math.cos(ta) * 56; this.y = pl.y + Math.sin(ta) * 56;
+            fxSummon(this.x, this.y);
+          }
+        } else this.behindT = 0;
+      }
+    }
     if (this.life !== Infinity) {
       this.life -= dt;
       if (this.life <= 0) {
