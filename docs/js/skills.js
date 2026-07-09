@@ -213,8 +213,19 @@ const SKILL_FX = {
   },
 
   skeletalMage(p, a) {
+    const rune = Hero.rune('skeletalMage');
+    if (rune === 'lifeSupport') { const hc = p.maxHp * 0.10; if (p.hp > hc + 1) p.hp -= hc; } // Life Support: 10% HP
     if (minionCount('mage') >= 4) cullOldest('mage');
     const m = new Minion(p.x + Math.cos(a + 0.8) * 36, p.y + Math.sin(a + 0.8) * 36, 'mage');
+    if (rune === 'giftOfDeath') m.giftCorpse = true;         // corpse when it expires/dies
+    if (rune === 'lifeSupport') m.life += 2;                 // lasts 2s longer
+    if (rune === 'contamination') m.blightAura = true;       // blight aura
+    if (rune === 'skeletonArcher') m.archer = true;          // faster fire
+    if (rune === 'singularity') {                            // consume all essence for damage
+      const cost = Skills.costFor(Skills.byId.skeletalMage);
+      m.dmgBuff = 1 + 0.03 * Math.max(0, p.essence - cost);
+      p.essence = cost;                                       // tryUse subtracts cost → 0 left
+    }
     Game.minions.push(m);
     AudioSys.sfx('summon');
     return true;
@@ -294,10 +305,14 @@ const SKILL_FX = {
   },
 
   boneSpirit(p, a) {
+    const rune = Hero.rune('boneSpirit');
     const tgt = strongestEnemy(p.x, p.y, 800) || nearestEnemy(p.x, p.y, 800);
-    Game.projectiles.push(new Projectile(p.x, p.y - 8, a, {
-      speed: 300, dmg: 160 * p.power(), r: 10, life: 4, type: 'spirit', homing: tgt
-    }));
+    const o = { speed: 300, dmg: 160 * p.power(), r: 10, life: 4, type: 'spirit', homing: tgt };
+    if (rune === 'astralProjection') { o.pierce = true; o.astralRamp = 0.15; } // +15% per enemy passed
+    if (rune === 'unfinishedBiz') { o.detonateR = 150; o.detonateMul = 0.31; }  // detonation on impact
+    if (rune === 'panicAttack') o.fearOnHit = 3;                                // terrify on impact
+    // (possession/mind-control needs a system the engine lacks — deferred.)
+    Game.projectiles.push(new Projectile(p.x, p.y - 8, a, o));
     AudioSys.sfx('spirit');
     return true;
   },
@@ -388,12 +403,18 @@ const SKILL_FX = {
         return false;
       }
     }
+    const rune = Hero.rune('corpseLance');
+    const dmgMul = rune === 'bloodLance' ? 1.7 : 1;   // Blood Lance: ~3000% vs 1750%
     for (const c of sources) {
+      if (rune === 'bloodLance') { const hc = p.maxHp * 0.02; if (p.hp > hc + 1) p.hp -= hc; }
       c.consume();
       const la = angleTo(c.x, c.y, tgt.x, tgt.y);
-      Game.projectiles.push(new Projectile(c.x, c.y - 6, la, {
-        speed: 640, dmg: 48 * p.power(), r: 7, life: 1.4, type: 'lance', homing: tgt
-      }));
+      const o = { speed: 640, dmg: 48 * dmgMul * p.power(), r: 7, life: 1.4, type: 'lance', homing: tgt };
+      if (rune === 'visceralImpact') o.stunOnHit = 3;         // stun 3s
+      if (rune === 'shreddingSplinters') o.slowOnHit = 2;     // slow move/attack
+      if (rune === 'brittleTouch') o.brittleOnHit = 5;        // +crit-taken 5s
+      if (rune === 'ricochet') o.ricochet = 0.2;              // 20% bounce
+      Game.projectiles.push(new Projectile(c.x, c.y - 6, la, o));
       fxBone(c.x, c.y, 5);
     }
     AudioSys.sfx('spear');
@@ -424,11 +445,26 @@ const SKILL_FX = {
   },
 
   commandSkeletons(p, a) {
+    const rune = Hero.rune('commandSkeletons');
     const have = minionCount('skeleton');
     if (have >= 7) {
-      // Recast: frenzy the warband.
+      // Recast: command the warband at the nearest foe.
+      const tgt = nearestEnemy(p.x, p.y, 700);
       for (const m of Game.minions) {
-        if (m.kind === 'skeleton') m.frenzyT = 6;
+        if (m.kind !== 'skeleton') continue;
+        if (rune === 'frenzy') m.frenzyT = 6;            // Frenzy: +attack speed
+        if (rune === 'darkMending') m.healOnHit = true;  // Dark Mending: heal on hit
+      }
+      if (tgt) {
+        if (rune === 'freezingGrasp' && !tgt.unique) tgt.root = Math.max(tgt.root || 0, 3);   // freeze
+        if (rune === 'killCommand') {                    // skeletons detonate at the target
+          fxExplosion(tgt.x, tgt.y, 150); World.smash(tgt.x, tgt.y, 150); Particles.shake(4);
+          for (const e of Game.enemies) {
+            if (e.dead || e.sleep) continue;
+            if (dist(tgt.x, tgt.y, e.x, e.y) < 150) e.hurt(60 * p.power(), { knock: { a: angleTo(tgt.x, tgt.y, e.x, e.y), f: 120 } });
+          }
+          AudioSys.sfx('explode');
+        }
       }
       Particles.text(p.x, p.y - 40, 'ATTACK!', { color: '#ff8c5a', size: 15 });
       AudioSys.sfx('summon');
@@ -451,33 +487,55 @@ const SKILL_FX = {
       AudioSys.sfx('summon');
       return true;
     }
-    // Recast: the golem slams.
-    fxExplosion(golem.x, golem.y, 150);
-    World.smash(golem.x, golem.y, 150);
+    // Recast: the golem's ACTIVE, which differs by rune.
+    const rune = Hero.rune('commandGolem');
+    const gx = golem.x, gy = golem.y;
+    fxExplosion(gx, gy, 150);
+    World.smash(gx, gy, 150);
     Particles.shake(5);
+    let slamMul = 1;
+    if (rune === 'decayGolem') {                 // eat corpses, +30% dmg each
+      const near = corpsesNear(gx, gy, 190, 20);
+      for (const c of near) c.consume();
+      slamMul = 1 + 0.30 * near.length;
+    }
     for (const e of Game.enemies) {
       if (e.dead || e.sleep) continue;
-      const d = dist(golem.x, golem.y, e.x, e.y);
+      const d = dist(gx, gy, e.x, e.y);
       if (d < 150 + e.r) {
-        e.hurt(50 * p.power(), { knock: { a: angleTo(golem.x, golem.y, e.x, e.y), f: 220 }, slow: 2 });
+        const o = { knock: { a: angleTo(gx, gy, e.x, e.y), f: 220 }, slow: 2 };
+        if (rune === 'boneGolem') { o.knock = { a: angleTo(e.x, e.y, gx, gy), f: 240 }; o.root = 2; } // drag in + stun
+        if (rune === 'iceGolem') { o.root = 3; e.brittleT = Math.max(e.brittleT || 0, 5); }            // freeze + crit
+        e.hurt(50 * slamMul * p.power(), o);
       }
     }
+    if (rune === 'fleshGolem') {                 // collapse into 8 corpses
+      for (let i = 0; i < 8; i++) Game.corpses.push(new Corpse(gx + rand(-40, 40), gy + rand(-40, 40), 'zombie'));
+      golem.dead = true;
+    }
+    if (rune === 'bloodGolem') { p.heal(p.maxHp * 0.25); golem.dead = true; }   // sacrifice → heal, reforms
     AudioSys.sfx('explode');
     Skills.cds.commandGolem = 12; // slam has its own shorter cooldown
     return 'cdSet';
   },
 
   armyOfTheDead(p, a) {
-    const pt = aimPoint(a, 260);
-    const R = 260;
-    fxArmy(pt.x, pt.y, R);
-    World.smash(pt.x, pt.y, R);
+    const rune = Hero.rune('armyOfTheDead');
+    const storm = rune === 'deadStorm';
+    const R = storm ? 300 : 260;
+    const cx = storm ? p.x : aimPoint(a, 260).x, cy = storm ? p.y : aimPoint(a, 260).y;   // Dead Storm circles you
+    fxArmy(cx, cy, R);
+    World.smash(cx, cy, R);
+    const mul = rune === 'unconventionalWar' ? 1.6 : rune === 'blightedGrasp' ? 1.3 : 1;   // heavier hits
     for (const e of Game.enemies) {
       if (e.dead || e.spawnT > 0) continue;
-      const d = dist(pt.x, pt.y, e.x, e.y);
+      const d = dist(cx, cy, e.x, e.y);
       if (d < R) {
         e.wake();
-        e.hurt(220 * p.power() * (1 - d / R * 0.4), { knock: { a: angleTo(pt.x, pt.y, e.x, e.y), f: 260 } });
+        const o = { knock: { a: angleTo(cx, cy, e.x, e.y), f: 260 } };
+        if (rune === 'frozenArmy') o.root = 3;                                        // Frozen Army: freeze
+        if (rune === 'deathValley') o.knock = { a: angleTo(e.x, e.y, cx, cy), f: 320 }; // Death Valley: pull to center
+        e.hurt(220 * mul * p.power() * (1 - d / R * 0.4), o);
       }
     }
     Particles.shake(9);
@@ -486,25 +544,40 @@ const SKILL_FX = {
   },
 
   revive(p) {
+    const rune = Hero.rune('revive');
     const corpses = Skills.lotd > 0
       ? [0, 1, 2].map(() => ({ x: p.x + rand(-60, 60), y: p.y + rand(-60, 60), consume() {} }))
-      : corpsesNear(p.x, p.y, 320, 5);
+      : corpsesNear(p.x, p.y, 320, 10);
     if (!corpses.length) {
       Particles.text(p.x, p.y - 40, 'No corpses!', { color: '#9aa0a8', size: 13 });
       AudioSys.sfx('denied');
       return false;
     }
     for (const c of corpses) {
+      if (rune === 'oblation') { const hc = p.maxHp * 0.03; if (p.hp > hc + 1) p.hp -= hc; }
       c.consume();
-      if (minionCount('revived') >= 8) cullOldest('revived');
-      Game.minions.push(new Minion(c.x, c.y, 'revived'));
+      if (minionCount('revived') >= 10) cullOldest('revived');
+      const m = new Minion(c.x, c.y, 'revived');
+      if (rune === 'oblation') m.dmgBuff = 1.20;               // +20% damage
+      if (rune === 'recklessness') { m.dmgBuff = 2.5; m.life = 6; } // +150% dmg, 6s life
+      if (rune === 'purgatory') m.giftCorpse = true;           // corpse on expiry
+      Game.minions.push(m);
+    }
+    if (rune === 'horrificReturn') {                           // enemies flee in fear
+      for (const e of Game.enemies) {
+        if (e.dead || e.sleep) continue;
+        if (dist(p.x, p.y, e.x, e.y) < 360) e.fearT = Math.max(e.fearT || 0, 3);
+      }
     }
     AudioSys.sfx('summon');
     return true;
   },
 
   landOfTheDead(p) {
-    Skills.lotd = 8;
+    Skills.lotd = 10;                              // desc: for 10s
+    Skills.lotdRune = Hero.rune('landOfTheDead');
+    Skills.lotdTick = 0;
+    if (Skills.lotdRune === 'landOfPlenty') p.hp = p.maxHp;  // instant full heal
     Particles.ring(p.x, p.y, 300, '#6ff7c3', 8, 0.8);
     Particles.text(p.x, p.y - 46, 'LAND OF THE DEAD', { color: '#6ff7c3', size: 18, life: 1.6 });
     Particles.shake(6);
@@ -552,6 +625,9 @@ const Skills = {
     this.cds = {};
     this.charges = {};
     this.lotd = 0;
+    this.lotdRune = null;
+    this.lotdTick = 0;
+    this.lotdKills = 0;
     this.ironRoseCd = 0;
     this.graveTick = 3;
   },
@@ -561,6 +637,7 @@ const Skills = {
   chargeMax(s) {
     if (!s.charges) return 0;
     if (s.metabolismCharges && Hero.rune(s.id) === 'metabolism') return s.metabolismCharges;
+    if (s.id === 'boneSpirit' && Hero.rune('boneSpirit') === 'poltergeist') return 4;  // Poltergeist: 4 charges
     return s.charges;
   },
 
@@ -584,7 +661,11 @@ const Skills = {
 
   costFor(s) {
     if (this.lotd > 0 && s.cat === 'corpse') return 0;
+    // Land of the Dead · Invigoration: ALL skills cost zero Essence while active.
+    if (this.lotd > 0 && this.lotdRune === 'invigoration') return 0;
     let cost = s.cost;
+    // Command Skeletons · Enforcer: −30% command Essence cost.
+    if (s.id === 'commandSkeletons' && Hero.rune('commandSkeletons') === 'enforcer') cost = Math.round(cost * 0.7);
     const p = Game.player;
     if (p && p.rcr) cost = Math.round(cost * (1 - p.rcr));   // Topaz resource cost reduction
     return cost;
@@ -626,6 +707,21 @@ const Skills = {
         c.maxT = 6;
         Game.corpses.push(c);
         fxSummon(c.x, c.y);
+      }
+      // Land of the Dead rune fields: Frozen Lands freezes; Plaguelands damages.
+      if (this.lotdRune === 'frozenLands' || this.lotdRune === 'plaguelands') {
+        this.lotdTick = (this.lotdTick || 0) - dt;
+        if (this.lotdTick <= 0) {
+          this.lotdTick = 1;
+          const p = Game.player;
+          for (const e of Game.enemies) {
+            if (e.dead || e.sleep) continue;
+            if (dist(p.x, p.y, e.x, e.y) < 320) {
+              if (this.lotdRune === 'frozenLands' && !e.unique) e.root = Math.max(e.root || 0, 1.2);
+              if (this.lotdRune === 'plaguelands') e.hurt(60 * p.power(), { noSplash: true });
+            }
+          }
+        }
       }
     }
 

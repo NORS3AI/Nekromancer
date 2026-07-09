@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.3-alpha';
+const GAME_VERSION = 'v1.6.4-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.4-alpha', date: 'July 2026',
+    notes: [
+      'RUNES — Batch 1: eight skills whose runes did NOTHING now work. Skeletal Mage (Gift of Death corpse · Life Support · Contamination blight aura · Skeleton Archer faster fire · Singularity essence→damage), Corpse Lance (Blood Lance · Visceral Impact stun · Shredding Splinters slow · Brittle Touch · Ricochet), Revive (Oblation · Personal Army damage-reduction · Purgatory · Recklessness · Horrific Return fear), Command Skeletons (Enforcer cheaper · Frenzy · Dark Mending heal · Freezing Grasp · Kill Command explosion), Command Golem (Flesh/Ice/Bone/Decay/Blood golem actives), Army of the Dead (Blighted/Frozen/Unconventional/Dead Storm/Death Valley), Land of the Dead (Frozen Lands · Plaguelands DoT · Shallow Graves · Invigoration free casts · Land of Plenty full heal), Bone Spirit (Panic Attack fear · Astral Projection pierce+ramp · Poltergeist 4 charges · Unfinished Business detonation)',
+      'New under-the-hood effects powering these: enemy FEAR (flee) and BRITTLE (takes more crits), plus projectile ricochet/detonation/stun-on-hit',
+      '(Bone Spirit\'s Possession / mind-control rune is still pending — it needs a new system.)'
+    ]
+  },
   {
     v: 'v1.6.3-alpha', date: 'July 2026',
     notes: [

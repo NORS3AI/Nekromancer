@@ -240,6 +240,12 @@ class Player {
     if (Hero.hasPassive('standAlone') && Game.minions.length === 0) dmg *= 0.75;
     if (this.shrine && this.shrine.buff === 'blessed') dmg *= 0.75;
     if (this.boneArmorT > 0 && this.boneArmorDR > 0) dmg *= 1 - this.boneArmorDR;
+    // Revive · Personal Army: -1% damage taken per active revived minion (cap 50%).
+    if (Hero.rune('revive') === 'personalArmy') {
+      let rev = 0;
+      for (const m of Game.minions) if (!m.dead && m.kind === 'revived') rev++;
+      if (rev) dmg *= 1 - Math.min(0.5, rev * 0.01);
+    }
     if (this.armorDR > 0) dmg *= 1 - this.armorDR;     // armor mitigation from gear
     if (this.resistDR > 0) dmg *= 1 - this.resistDR;   // all-element resist (Diamonds)
     // Aquila Cuirass: above 90% essence, all damage taken is halved.
@@ -505,6 +511,8 @@ class Enemy {
     this.root = Math.max(0, this.root - dt);
     this.vulnT = Math.max(0, this.vulnT - dt);
     this.stealthT = Math.max(0, this.stealthT - dt);
+    this.fearT = Math.max(0, (this.fearT || 0) - dt);       // feared → flees (rune effects)
+    this.brittleT = Math.max(0, (this.brittleT || 0) - dt); // brittle → takes more crits
     if (this.curse) {
       this.curse.t -= dt;
       if (this.curse.t <= 0) this.curse = null;
@@ -543,6 +551,22 @@ class Enemy {
     this.y += this.kby * dt;
     this.kbx *= 1 - Math.min(1, 8 * dt);
     this.kby *= 1 - Math.min(1, 8 * dt);
+
+    // Feared: flee from the hero and don't attack (Horrific Return, Panic Attack,
+    // Bone Golem/Army variants). Bosses & uniques are immune.
+    if (this.fearT > 0 && !this.unique && !this.def.boss) {
+      const p = Game.player;
+      if (p && !p.dead) {
+        const away = angleTo(p.x, p.y, this.x, this.y);
+        this.facing = lerpAngle(this.facing, away, Math.min(1, 10 * dt));
+        let spd = this.speed * 1.1;
+        if (this.slow > 0) spd *= 0.5;
+        if (this.root > 0) spd = 0;
+        if (spd > 0) { this.x += Math.cos(away) * spd * dt; this.y += Math.sin(away) * spd * dt; }
+        World.collide(this);
+        return;
+      }
+    }
 
     if ((this.unique || this.def.boss) && this.bossUpdate(dt)) {
       World.collide(this);
@@ -897,7 +921,10 @@ class Enemy {
     const p = Game.player;
     // Ruby flat damage adds to each primary hit (not to splash/DoT ticks).
     if (p && p.flatDmg && !opts.noSplash) dmg += p.flatDmg;
-    const crit = Math.random() < (p ? p.critChance : 0.1);
+    // Brittle (Corpse Lance · Brittle Touch, Ice Golem): the victim takes crits
+    // far more often while the debuff lasts.
+    const critChance = (p ? p.critChance : 0.1) + (this.brittleT > 0 ? 0.25 : 0);
+    const crit = Math.random() < critChance;
     if (crit) dmg *= 1.8 + (p ? (p.critDmg || 0) : 0);   // Emerald crit damage
     if (this.curse) {
       if (this.curse.type === 'frailty') dmg *= 1.15;
@@ -952,6 +979,11 @@ class Enemy {
     if (this.telegraph) this.telegraph.done = true;
     Game.kills++;
     Hero.totalKills++;
+    // Land of the Dead · Shallow Graves: every 10 kills during it extends it (max +2s).
+    if (Skills.lotd > 0 && Skills.lotdRune === 'shallowGraves') {
+      Skills.lotdKills = (Skills.lotdKills || 0) + 1;
+      if (Skills.lotdKills % 10 === 0) Skills.lotd = Math.min(Skills.lotd + 2, 30);
+    }
     // Rifts: a slain rare-elite pack scatters 1-3 purple orbs (10 pts each).
     // The dev spawn boost swells packs, so orbs scale with it too — a boosted
     // rift/season drops proportionally more orbs (owner rule).
@@ -1701,6 +1733,7 @@ class Minion {
       this.life -= dt;
       if (this.life <= 0) {
         this.dead = true;
+        if (this.giftCorpse) Game.corpses.push(new Corpse(this.x, this.y, 'zombie'));  // Gift of Death / Purgatory
         fxBone(this.x, this.y, 8);
         return;
       }
@@ -1713,7 +1746,7 @@ class Minion {
       const d = dist(this.x, this.y, e.x, e.y);
       if (d < bestD) { tgt = e; bestD = d; }
     }
-    const dmgMult = Game.player.power() * (this.frenzyT > 0 ? 1.5 : 1);
+    const dmgMult = Game.player.power() * (this.frenzyT > 0 ? 1.5 : 1) * (this.dmgBuff || 1);
     if (tgt) {
       const a = angleTo(this.x, this.y, tgt.x, tgt.y);
       this.facing = lerpAngle(this.facing, a, Math.min(1, 10 * dt));
@@ -1722,7 +1755,7 @@ class Minion {
           this.x += Math.cos(a) * this.speed * dt;
           this.y += Math.sin(a) * this.speed * dt;
         } else if (this.atkCd <= 0) {
-          this.atkCd = this.cfg.atkCd;
+          this.atkCd = this.cfg.atkCd * (this.archer ? 0.6 : 1);   // Skeleton Archer: faster
           Game.projectiles.push(new Projectile(this.x, this.y - 8, a, {
             speed: 480, dmg: this.dmg * dmgMult, r: 5, life: 1.4, type: 'deathbolt'
           }));
@@ -1734,6 +1767,20 @@ class Minion {
       } else if (this.atkCd <= 0) {
         this.atkCd = this.cfg.atkCd;
         tgt.hurt(this.dmg * dmgMult, { knock: { a, f: this.kind === 'golem' ? 120 : 40 } });
+        // Dark Mending: commanded skeletons heal the necromancer on each hit.
+        if (this.healOnHit && !Game.player.dead) Game.player.heal(Game.player.maxHp * 0.005);
+      }
+      // Contamination: a decaying mage channels a blight aura around itself.
+      if (this.blightAura) {
+        this.blightTick = (this.blightTick || 0) - dt;
+        if (this.blightTick <= 0) {
+          this.blightTick = 0.5;
+          for (const e of Game.enemies) {
+            if (e.dead || e.sleep) continue;
+            if (dist(this.x, this.y, e.x, e.y) < 120) e.hurt(this.dmg * dmgMult * 0.5, { noSplash: true });
+          }
+          Particles.spawn(this.x, this.y, { count: 2, color: ['#4ade80', '#2a7a3a'], minSpeed: 10, maxSpeed: 40, minLife: 0.3, maxLife: 0.6 });
+        }
       }
     } else {
       // Idle: fall in BEHIND the hero (opposite his facing) in a loose rank —
@@ -1763,6 +1810,7 @@ class Minion {
     this.flash = 1;
     if (this.hp <= 0) {
       this.dead = true;
+      if (this.giftCorpse) Game.corpses.push(new Corpse(this.x, this.y, 'zombie'));  // Gift of Death / Purgatory
       fxBone(this.x, this.y, 12);
     }
   }
@@ -2175,6 +2223,14 @@ class Projectile {
     this.homing = o.homing || null;   // target entity
     this.root = o.root || 0;
     this.slowOnHit = o.slowOnHit || 0;
+    // Rune-effect hooks (Corpse Lance / Bone Spirit runes).
+    this.stunOnHit = o.stunOnHit || 0;     // guaranteed stun/root on hit
+    this.brittleOnHit = o.brittleOnHit || 0;
+    this.ricochet = o.ricochet || 0;       // chance to bounce to a new target
+    this.astralRamp = o.astralRamp || 0;   // +dmg fraction per enemy pierced
+    this.detonateR = o.detonateR || 0;     // AoE detonation on impact
+    this.detonateMul = o.detonateMul || 1;
+    this.fearOnHit = o.fearOnHit || 0;
     this.type = o.type || 'shard';
     this.hits = this.pierce ? new Set() : null;
     this.dead = false;
@@ -2218,17 +2274,46 @@ class Projectile {
         if (dist(this.x, this.y, e.x, e.y) < e.r + this.r) {
           const opts = { knock: { a: this.a, f: this.type === 'spear' ? 130 : 45 } };
           if (this.root && Math.random() < 0.3) opts.root = this.root;
+          if (this.stunOnHit) opts.root = Math.max(opts.root || 0, this.stunOnHit);
           if (this.slowOnHit) opts.slow = this.slowOnHit;
           e.hurt(this.dmg, opts);
-          if (this.type === 'spirit') {
+          if (this.brittleOnHit) e.brittleT = Math.max(e.brittleT || 0, this.brittleOnHit);
+          if (this.fearOnHit) {
+            for (const e2 of Game.enemies) {
+              if (e2.dead || e2.sleep) continue;
+              if (dist(this.x, this.y, e2.x, e2.y) < 150) e2.fearT = Math.max(e2.fearT || 0, this.fearOnHit);
+            }
+          }
+          // Detonation (Bone Spirit · Unfinished Business): an AoE blast on impact.
+          if (this.detonateR) {
+            fxExplosion(this.x, this.y, this.detonateR);
+            for (const e2 of Game.enemies) {
+              if (e2 === e || e2.dead || e2.sleep) continue;
+              if (dist(this.x, this.y, e2.x, e2.y) < this.detonateR) e2.hurt(this.dmg * this.detonateMul);
+            }
+          }
+          if (this.type === 'spirit' && !this.detonateR) {
             fxExplosion(this.x, this.y, 90);
             for (const e2 of Game.enemies) {
               if (e2 === e || e2.dead || e2.sleep) continue;
               if (dist(this.x, this.y, e2.x, e2.y) < 90) e2.hurt(this.dmg * 0.4);
             }
           }
+          // Ricochet (Corpse Lance): a chance to leap to another nearby foe.
+          if (this.ricochet && Math.random() < this.ricochet) {
+            let next = null, bd = 300;
+            for (const e2 of Game.enemies) {
+              if (e2 === e || e2.dead || e2.sleep) continue;
+              const dd = dist(this.x, this.y, e2.x, e2.y);
+              if (dd < bd) { bd = dd; next = e2; }
+            }
+            if (next) Game.projectiles.push(new Projectile(this.x, this.y, angleTo(this.x, this.y, next.x, next.y), {
+              speed: this.speed, dmg: this.dmg * 0.7, r: this.r, life: 1.0, type: this.type, homing: next
+            }));
+          }
           if (this.pierce) {
             this.hits.add(e);
+            if (this.astralRamp) this.dmg *= 1 + this.astralRamp;  // ramps per enemy pierced
           } else {
             this.dead = true;
             fxBone(this.x, this.y, 4);
