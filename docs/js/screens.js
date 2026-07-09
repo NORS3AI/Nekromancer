@@ -2501,7 +2501,9 @@ const Screens = {
       : 'Standard: a quick roll for the slot.', pw - 32 - bandW), px + 16 + bandW, 220);
 
     // Torches are recipe-crafted, not random-forged — keep them off the roll grid.
-    const slots = Object.keys(ITEM_SLOTS).filter(s => !ITEM_SLOTS[s].torch);
+    // Both ring slots share the label "Ring", so show ONE forge button (a crafted
+    // ring goes to your bag/stash, not a fixed finger).
+    const slots = Object.keys(ITEM_SLOTS).filter(s => !ITEM_SLOTS[s].torch && s !== 'ring2');
     const cols = pw >= 480 ? 4 : 3;
     const bw = (pw - 32 - (cols - 1) * 8) / cols;
     slots.forEach((slot, i) => {

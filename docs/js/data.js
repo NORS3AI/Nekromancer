@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.5.8-alpha';
+const GAME_VERSION = 'v1.5.9-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.5.9-alpha', date: 'July 2026',
+    notes: [
+      'Blacksmith now shows a single Ring forge button instead of two (a crafted ring goes to your bag/stash, so one is all you need)'
+    ]
+  },
   {
     v: 'v1.5.8-alpha', date: 'July 2026',
     notes: [
