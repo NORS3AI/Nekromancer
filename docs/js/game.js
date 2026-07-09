@@ -552,26 +552,10 @@ const Game = {
     } else {
       this.descend = false;
       if (this.story) {
-        // The Act's final boss falls — it drops that Act's signature legendary:
-        // GUARANTEED the first time you beat the Act, 50% on every kill after
-        // (owner rule). Act 1 → Royal Grandeur · 2 → Bloodtide Blade · 3 →
-        // Scythe of the Cycle.
-        const act = this.storyAct || 1;
-        const ACT_UNIQUE = { 1: 'royalGrandeur', 2: 'bloodtide', 3: 'cycleScythe' };
-        this.showBanner('THE ACT ' + act + ' BOSS FALLS', 'Its grave is yours — step through the portal', 3.6);
-        const ukey = ACT_UNIQUE[act];
-        if (ukey) {
-          Hero.actUniques = Hero.actUniques || {};
-          const first = !Hero.actUniques[act];
-          if (first || Math.random() < 0.5) {
-            const rg = new Pickup(boss.x, boss.y, 'item');
-            rg.item = Items.generatePowerItem(this.monsterLevel(), ukey);
-            this.pickups.push(rg);
-            UI.toast('★ ' + rg.item.name + (first ? '!' : '! (lucky drop)'), '#ff8c2a');
-            Hero.actUniques[act] = true;
-            Hero.save();
-          }
-        }
+        // The Act's final boss falls. Its signature legendary is granted in the
+        // Act cache (see completeZone) so it shows on the ACT COMPLETE screen and
+        // can't be missed — step through the portal to claim it.
+        this.showBanner('THE ACT ' + (this.storyAct || 1) + ' BOSS FALLS', 'Its grave is yours — step through the portal', 3.6);
       } else if (this.bountyPart && this.bountyPart < 3) {
         // Bounty parts 1 & 2: the portal carries you to the next hunt.
         this.nextBountyPart = true;
@@ -646,6 +630,21 @@ const Game = {
       Items.stash(item);
       lines.push([item.name, RARITIES[item.rarity].color]);
       const act = this.storyAct || 1;
+      // The Act's signature legendary — GUARANTEED the first time you finish the
+      // Act, 50% every time after (owner rule): Act 1 → Ring of Royal Grandeur ·
+      // 2 → Bloodtide Blade · 3 → Scythe of the Cycle. Shown right in the cache.
+      const ACT_UNIQUE = { 1: 'royalGrandeur', 2: 'bloodtide', 3: 'cycleScythe' };
+      const ukey = ACT_UNIQUE[act];
+      if (ukey) {
+        Hero.actUniques = Hero.actUniques || {};
+        const first = !Hero.actUniques[act];
+        if (first || Math.random() < 0.5) {
+          const uni = Items.generatePowerItem(mLvl, ukey);
+          Items.stash(uni);
+          lines.push(['★ ' + uni.name + (first ? '' : '  (lucky!)'), RARITIES[uni.rarity].color]);
+          Hero.actUniques[act] = true;
+        }
+      }
       // Act III: if the player never found the Cube in the dunes, the Sand Wyrm
       // yields it here — a guaranteed drop (owner rule).
       if (act === 3 && !Hero.hasCube) {

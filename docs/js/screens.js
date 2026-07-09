@@ -3122,7 +3122,7 @@ const Screens = {
     if (!twoCol) ry = ly + 6; // stack columns on narrow screens
 
     // Reagents & holdings.
-    ry = header(rx, ry, '— HOLDINGS —', '#ffd76a');
+    ry = header(rx, ry, '— REAGENTS —', '#ffd76a');
     ry = line(rx, ry, 'Gold', Hero.gold, '#ffd76a');
     for (const [key, m] of Object.entries(MATERIALS)) {
       ry = line(rx, ry, m.name, Hero.mats[key], m.color);
