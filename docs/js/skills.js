@@ -530,22 +530,34 @@ const SKILL_FX = {
 
 const Skills = {
   cds: {},          // skill id -> seconds remaining
+  charges: {},      // charge-skill id -> charges remaining (Bone Spirit, Blood Rush)
   lotd: 0,          // Land of the Dead time remaining
   lotdSpawn: 0,
   ironRoseCd: 0,    // Iron Rose free-nova throttle
   graveTick: 3,     // Grave Caller passive corpse timer
   byId: {},
+  chargeSkills: [],
 
   init() {
     this.byId = {};
     for (const s of SKILL_DATA) this.byId[s.id] = s;
+    this.chargeSkills = SKILL_DATA.filter(s => s.charges);
   },
 
   reset() {
     this.cds = {};
+    this.charges = {};
     this.lotd = 0;
     this.ironRoseCd = 0;
     this.graveTick = 3;
+  },
+
+  // How many charges a charge-skill has right now. Blood Rush gets an extra
+  // charge with the Metabolism rune (so you dash twice before the cooldown).
+  chargeMax(s) {
+    if (!s.charges) return 0;
+    if (s.metabolismCharges && Hero.rune(s.id) === 'metabolism') return s.metabolismCharges;
+    return s.charges;
   },
 
   slotSkill(slot) {
@@ -577,6 +589,13 @@ const Skills = {
   update(dt) {
     for (const k of Object.keys(this.cds)) {
       this.cds[k] = Math.max(0, this.cds[k] - dt);
+    }
+    // Charge skills (Bone Spirit ×3, Blood Rush ×1/×2) refill to FULL once their
+    // cooldown lapses — the cd only starts after the LAST charge is spent.
+    for (const s of this.chargeSkills) {
+      if (this.charges[s.id] === 0 && (this.cds[s.id] || 0) <= 0) {
+        this.charges[s.id] = this.chargeMax(s);
+      }
     }
     this.ironRoseCd = Math.max(0, this.ironRoseCd - dt);
 
@@ -634,7 +653,16 @@ const Skills = {
     }
     if (result) {
       p.essence -= cost;
-      if (result !== 'cdSet') this.cds[s.id] = this.cdFor(s);
+      if (result === 'cdSet') {
+        // the skill set its own cooldown
+      } else if (s.charges) {
+        // Spend a charge; the real cooldown only begins once the LAST one is gone.
+        if (this.charges[s.id] === undefined) this.charges[s.id] = this.chargeMax(s);
+        this.charges[s.id] = Math.max(0, this.charges[s.id] - 1);
+        this.cds[s.id] = this.charges[s.id] > 0 ? 0.2 : this.cdFor(s);
+      } else {
+        this.cds[s.id] = this.cdFor(s);
+      }
     } else {
       this.cds[s.id] = 0.3;
     }

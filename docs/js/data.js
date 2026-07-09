@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.1-alpha';
+const GAME_VERSION = 'v1.6.2-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.2-alpha', date: 'July 2026',
+    notes: [
+      'Skill cooldowns retuned: Bone Spikes 2s · Bone Spear 2s · Death Nova 1s · Corpse Explosion 3s · Skeletal Mage 10s · Command Skeletons 25s · Command Golem 30s · Revive 60s · Army of the Dead 60s · Bone Armor 10s · Land of the Dead 120s · Simulacrum 120s',
+      'Bone Spirit now has 3 CHARGES — cast up to three times, then a 25s cooldown before all three return',
+      'Blood Rush cooldown is 8s; with the Metabolism rune it gains a 2nd charge (dash twice before the cooldown starts)',
+      'Multi-charge skills show their remaining charge count on the skill button'
+    ]
+  },
   {
     v: 'v1.6.1-alpha', date: 'July 2026',
     notes: [
@@ -1638,27 +1647,27 @@ const MAGIC_PREFIX = ['Sturdy', 'Sharp', 'Grim', 'Cold', 'Hungry', 'Pale'];
 // Behavior functions live in skills.js keyed by id.
 
 const SKILL_DATA = [
-  { id: 'boneSpikes',      name: 'Bone Spikes',       cat: 'primary',   lvl: 1,  cost: 0,  gain: 18, cd: 0.42 },
-  { id: 'boneSpear',       name: 'Bone Spear',        cat: 'secondary', lvl: 2,  cost: 20, cd: 0.5 },
+  { id: 'boneSpikes',      name: 'Bone Spikes',       cat: 'primary',   lvl: 1,  cost: 0,  gain: 18, cd: 2 },
+  { id: 'boneSpear',       name: 'Bone Spear',        cat: 'secondary', lvl: 2,  cost: 20, cd: 2 },
   { id: 'grimScythe',      name: 'Grim Scythe',       cat: 'primary',   lvl: 3,  cost: 0,  gain: 12, cd: 0.4 },
-  { id: 'corpseExplosion', name: 'Corpse Explosion',  cat: 'corpse',    lvl: 4,  cost: 8,  cd: 0.6 },
-  { id: 'skeletalMage',    name: 'Skeletal Mage',     cat: 'secondary', lvl: 19, cost: 40, cd: 0.8 },
+  { id: 'corpseExplosion', name: 'Corpse Explosion',  cat: 'corpse',    lvl: 4,  cost: 8,  cd: 3 },
+  { id: 'skeletalMage',    name: 'Skeletal Mage',     cat: 'secondary', lvl: 19, cost: 40, cd: 10 },
   { id: 'corpseLance',     name: 'Corpse Lance',      cat: 'corpse',    lvl: 28, cost: 15, cd: 0.5 },
-  { id: 'commandSkeletons',name: 'Command Skeletons', cat: 'reanim',    lvl: 9,  cost: 50, cd: 1.5 },
+  { id: 'commandSkeletons',name: 'Command Skeletons', cat: 'reanim',    lvl: 9,  cost: 50, cd: 25 },
   { id: 'siphonBlood',     name: 'Siphon Blood',      cat: 'primary',   lvl: 11, cost: 0,  gain: 4,  cd: 0.16, channel: true },
-  { id: 'deathNova',       name: 'Death Nova',        cat: 'secondary', lvl: 12, cost: 20, cd: 0.55 },
+  { id: 'deathNova',       name: 'Death Nova',        cat: 'secondary', lvl: 12, cost: 20, cd: 1 },
   { id: 'commandGolem',    name: 'Command Golem',     cat: 'reanim',    lvl: 13, cost: 0,  cd: 30 },
   { id: 'decrepify',       name: 'Decrepify',         cat: 'curse',     lvl: 14, cost: 10, cd: 1 },
   { id: 'devour',          name: 'Devour',            cat: 'corpse',    lvl: 16, cost: 0,  cd: 1.5 },
   { id: 'boneArmor',       name: 'Bone Armor',        cat: 'blood',     lvl: 17, cost: 10, cd: 10 },
   { id: 'leech',           name: 'Leech',             cat: 'curse',     lvl: 24, cost: 10, cd: 1 },
-  { id: 'armyOfTheDead',   name: 'Army of the Dead',  cat: 'reanim',    lvl: 22, cost: 0,  cd: 45 },
-  { id: 'revive',          name: 'Revive',            cat: 'corpse',    lvl: 22, cost: 25, cd: 2 },
-  { id: 'bloodRush',       name: 'Blood Rush',        cat: 'blood',     lvl: 27, cost: 0,  cd: 5 },
+  { id: 'armyOfTheDead',   name: 'Army of the Dead',  cat: 'reanim',    lvl: 22, cost: 0,  cd: 60 },
+  { id: 'revive',          name: 'Revive',            cat: 'corpse',    lvl: 22, cost: 25, cd: 60 },
+  { id: 'bloodRush',       name: 'Blood Rush',        cat: 'blood',     lvl: 27, cost: 0,  cd: 8,  charges: 1, metabolismCharges: 2 },
   { id: 'frailty',         name: 'Frailty',           cat: 'curse',     lvl: 30, cost: 10, cd: 1 },
-  { id: 'boneSpirit',      name: 'Bone Spirit',       cat: 'blood',     lvl: 34, cost: 0,  cd: 12 },
-  { id: 'landOfTheDead',   name: 'Land of the Dead',  cat: 'reanim',    lvl: 38, cost: 0,  cd: 60 },
-  { id: 'simulacrum',      name: 'Simulacrum',        cat: 'blood',     lvl: 61, cost: 0,  cd: 60 }
+  { id: 'boneSpirit',      name: 'Bone Spirit',       cat: 'blood',     lvl: 34, cost: 0,  cd: 25, charges: 3 },
+  { id: 'landOfTheDead',   name: 'Land of the Dead',  cat: 'reanim',    lvl: 38, cost: 0,  cd: 120 },
+  { id: 'simulacrum',      name: 'Simulacrum',        cat: 'blood',     lvl: 61, cost: 0,  cd: 120 }
 ];
 
 const SKILL_CATS = {

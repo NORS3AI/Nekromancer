@@ -917,6 +917,15 @@ const UI = {
         ctx.textAlign = 'center';
         ctx.fillText(cost, b.x, b.y + b.r * 0.66);
       }
+      // Remaining charges for multi-charge skills (Bone Spirit, Metabolism Blood Rush).
+      if (s.charges && Skills.chargeMax(s) > 1) {
+        const ch = Skills.charges[s.id];
+        const shown = ch === undefined ? Skills.chargeMax(s) : ch;
+        ctx.fillStyle = shown > 0 ? '#ffd76a' : '#6a5f45';
+        ctx.font = `bold ${Math.round(b.r * 0.5)}px Georgia`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(shown, b.x + b.r * 0.6, b.y - b.r * 0.6);
+      }
       this.tip(b.x - b.r, b.y - b.r, b.r * 2, b.r * 2, s.name, SKILL_DESCS[s.id]);
     }
     ctx.globalAlpha = 1;
