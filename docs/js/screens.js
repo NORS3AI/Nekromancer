@@ -31,6 +31,7 @@ const Screens = {
       case 'paragon': this.paragon(ctx, W, H); break;
       case 'stash': this.stash(ctx, W, H); break;
       case 'vendor': this.vendor(ctx, W, H); break;
+      case 'merchant': this.merchant(ctx, W, H); break;
       case 'settings': this.settings(ctx, W, H); break;
       case 'devconfirm': this.devconfirm(ctx, W, H); break;
       case 'cheats': this.cheats(ctx, W, H); break;
@@ -832,6 +833,7 @@ const Screens = {
       ['⚒   BLACKSMITH', () => UI.open('smith'), '#ffb43a', '#8a6f4a'],
       ['◆   JEWELER', () => UI.open('jeweler'), '#4ecbe0', '#2a6a7a'],
       ['✦   MYSTIC', () => UI.open('mystic'), '#b06adf', '#7a4a8f'],
+      ['🪙   MERCHANT', () => { UI.open('merchant'); UI.sel.shopTab = 'buy'; }, '#ffd76a', '#8a6f4a'],
       ['▤   STASH', () => UI.open('stash'), '#8fb0e8', '#5f7ab0']
     ];
     // Once found, the Horadric's Cube sits just before the Blacksmith.
@@ -1160,6 +1162,7 @@ const Screens = {
       ['BLACKSMITH', () => UI.open('smith'), '#ffb43a'],
       ['JEWELER', () => UI.open('jeweler'), '#b06adf'],
       ['MYSTIC', () => UI.open('mystic'), '#4ecbe0'],
+      ['MERCHANT', () => { UI.open('merchant'); UI.sel.shopTab = 'buy'; }, '#ffd76a'],
       ['SETTINGS', () => UI.open('settings'), '#9a9080']
     ];
     // The Horadric's Cube joins the hub (before the Blacksmith) once found.
@@ -1477,11 +1480,24 @@ const Screens = {
     // On narrow (portrait phone) screens the wheel shrinks hard so the
     // equipped card, bag list and EQUIP/SALVAGE/SOCKET actions all fit below.
     const narrow = W < 620;
-    // Nudge the wheel right on phones so the upper-left stat readout has room.
-    const cx = narrow ? W * 0.57 : W * 0.26;
+    // Tablet/desktop: the stat readout is drawn much bigger (owner request), so
+    // fit the wheel in the gutter between that left column and the right-hand
+    // detail panel — no overlap at any big-screen width.
+    const big = !narrow && W >= 760;
     const cy = narrow ? 116 : H * 0.5;
-    const R = narrow ? Math.min(78, W * 0.30) : Math.min(150, H * 0.32);
     const chipR = narrow ? 19 : 25;
+    let cx, R;
+    if (narrow) {
+      cx = W * 0.57;
+      R = Math.min(78, W * 0.30);
+    } else if (big) {
+      const readoutRight = 215, detailLeft = W * 0.48;
+      cx = (readoutRight + detailLeft) / 2;
+      R = Math.max(60, Math.min(H * 0.30, (detailLeft - readoutRight) / 2 - 30));
+    } else {
+      cx = W * 0.26;
+      R = Math.min(150, H * 0.32);
+    }
 
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'bold ' + (narrow ? 14 : 17) + 'px Georgia';
@@ -1495,13 +1511,15 @@ const Screens = {
     {
       const sf2 = UI.safe || { top: 0, left: 0 };
       const st = Items.computeStats();
-      // A Ruby grants FLAT damage per hit (not a % multiplier), so it folds into
-      // the DMG line as "×2.03  +9" — otherwise socketing a damage gem looked
-      // like it did nothing.
+      // Raw per-hit damage of the equipped primary (base × multiplier + flat gem
+      // damage) so the player sees an actual number, not only the ×multiplier.
+      const PRIMARY_BASE = { boneSpikes: 14, grimScythe: 11, siphonBlood: 6 };
+      const rawHit = Math.round((PRIMARY_BASE[Hero.loadout[0]] || 14) * st.dmgMult) + (st.flatDmg || 0);
       const rows = [
-        ['DMG', '×' + st.dmgMult.toFixed(2) + (st.flatDmg > 0 ? '  +' + st.flatDmg : ''), '#6ff7c3'],
+        ['DMG', '×' + st.dmgMult.toFixed(2), '#6ff7c3'],
+        ['HIT', rawHit.toLocaleString(), '#ff9a6a'],
         ['CRIT', Math.round(st.critChance * 100) + '%', '#ffb43a'],
-        ['GOLD', '+' + Math.round((st.goldFind - 1) * 100) + '%', '#ffd76a'],
+        ['GOLD FIND', '+' + Math.round((st.goldFind - 1) * 100) + '%', '#ffd76a'],
         ['LIFE', '' + st.maxHp, '#e04a5a'],
         ['LIFE/s', st.hpRegen.toFixed(1), '#e0808a'],
         ['ESS/s', st.essenceRegen.toFixed(1), '#8fb0e8']
@@ -1514,17 +1532,21 @@ const Screens = {
       if (st.cooldownReduction > 0) rows.push(['CDR', '-' + Math.round(st.cooldownReduction * 100) + '%', '#bfe8f4']);
       if (st.resourceCostReduction > 0) rows.push(['ESS COST', '-' + Math.round(st.resourceCostReduction * 100) + '%', '#8fd0a0']);
       if (st.resistAll > 0) rows.push(['RESIST', '' + st.resistAll, '#bfe8f4']);
-      let sy = 50 + sf2.top;
+      // The player's actual gold purse, pinned to the bottom of the readout.
+      rows.push(['GOLD', Hero.gold.toLocaleString(), '#ffe08a']);
+      // Tablet/desktop gets a much bigger, more spaced-out readout (owner request).
+      const labF = big ? 13 : 9, valF = big ? 18 : 11, step = big ? 23 : 15, valX = big ? 92 : 58;
+      let sy = (big ? 62 : 50) + sf2.top;
       ctx.textBaseline = 'middle';
       for (const [lbl, val, col] of rows) {
         ctx.textAlign = 'left';
-        ctx.font = '9px Georgia';
+        ctx.font = labF + 'px Georgia';
         ctx.fillStyle = '#8a8070';
         ctx.fillText(lbl, 10 + sf2.left, sy);
-        ctx.font = 'bold 11px Georgia';
+        ctx.font = 'bold ' + valF + 'px Georgia';
         ctx.fillStyle = col;
-        ctx.fillText(val, 58 + sf2.left, sy);
-        sy += 15;
+        ctx.fillText(val, valX + sf2.left, sy);
+        sy += step;
       }
     }
 
@@ -2609,26 +2631,30 @@ const Screens = {
   jeweler(ctx, W, H) {
     this.dim(ctx, W, H);
     // (red ✕ drawn globally by UI.draw, above all content)
-    const pw = Math.min(560, W - 20);
+    // Tablet/desktop: bigger fonts + more spaced-out rows (owner request).
+    const big = W >= 760;
+    const pw = Math.min(big ? 640 : 560, W - 20);
     const px = W / 2 - pw / 2;
-    UI.panel(ctx, px, 46, pw, Math.min(H - 56, 470), 'COVETOUS SHEN — JEWELER');
+    UI.panel(ctx, px, 46, pw, Math.min(H - 56, big ? 560 : 470), 'COVETOUS SHEN — JEWELER');
     this.artisanRow(ctx, px, pw, 88, 'jeweler', 'GEMCRAFT');
     ctx.textAlign = 'left';
-    ctx.font = 'bold 12px Georgia';
+    ctx.font = 'bold ' + (big ? 14 : 12) + 'px Georgia';
     ctx.fillStyle = '#ffd76a';
-    ctx.fillText(Hero.gold + ' gold', px + 16, 104);
-    ctx.font = '11px Georgia';
+    ctx.fillText(Hero.gold + ' gold', px + 16, big ? 106 : 104);
+    ctx.font = (big ? 13 : 11) + 'px Georgia';
     ctx.fillStyle = '#9a9080';
-    ctx.fillText(this.fitText(ctx, 'Combine 3 matching gems into a finer one. Socket via the Inventory wheel.', pw - 32), px + 16, 114);
+    ctx.fillText(this.fitText(ctx, 'Combine 3 matching gems into a finer one. Socket via the Inventory wheel.', pw - 32), px + 16, big ? 124 : 114);
     // Buy a freshly cut gem.
     const gemCost = Items.gemPrice();
-    UI.btn(ctx, px + 16, 122, pw - 32, 32,
+    const buyY = big ? 136 : 122, buyH = big ? 38 : 32;
+    UI.btn(ctx, px + 16, buyY, pw - 32, buyH,
       `CUT A RANDOM GEM — ${this.costLabel(gemCost)}`,
       Items.canAfford(gemCost) ? () => Items.buyGem() : null,
-      { size: 11, disabled: !Items.canAfford(gemCost), border: '#7a4a8f', color: '#b06adf' });
+      { size: big ? 13 : 11, disabled: !Items.canAfford(gemCost), border: '#7a4a8f', color: '#b06adf' });
 
     // Socketed gear: pull any gem back out, free of charge.
-    let y = 162;
+    let y = buyY + buyH + (big ? 12 : 8);
+    const socRowH = big ? 32 : 26, socStep = big ? 38 : 30;
     const socketedRows = [];
     for (const slot of Object.keys(ITEM_SLOTS)) {
       const it = Hero.equipped[slot];
@@ -2637,20 +2663,20 @@ const Screens = {
     for (const { it, gi, g } of socketedRows.slice(0, 3)) {
       const gm = GEM_TYPES[g.type];
       ctx.fillStyle = 'rgba(28,24,38,0.92)';
-      rr(ctx, px + 16, y, pw - 32, 26, 5); ctx.fill();
+      rr(ctx, px + 16, y, pw - 32, socRowH, 5); ctx.fill();
       ctx.fillStyle = gm.color;
       ctx.save();
-      ctx.translate(px + 30, y + 13);
+      ctx.translate(px + 30, y + socRowH / 2);
       ctx.rotate(Math.PI / 4);
       ctx.fillRect(-4, -4, 8, 8);
       ctx.restore();
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = '11px Georgia';
+      ctx.font = (big ? 13 : 11) + 'px Georgia';
       ctx.fillStyle = '#b5ab94';
-      ctx.fillText(this.fitText(ctx, gemName(g) + '  in  ' + it.name, pw - 200), px + 44, y + 13);
-      UI.btn(ctx, px + pw - 148, y + 1, 132, 24, 'UNSOCKET (free)', () => Items.unsocket(it, gi),
+      ctx.fillText(this.fitText(ctx, gemName(g) + '  in  ' + it.name, pw - 200), px + 44, y + socRowH / 2);
+      UI.btn(ctx, px + pw - 148, y + (socRowH - 24) / 2, 132, 24, 'UNSOCKET (free)', () => Items.unsocket(it, gi),
         { size: 10, border: '#7a4a8f', color: '#b06adf' });
-      y += 30;
+      y += socStep;
     }
     if (socketedRows.length) y += 4;
 
@@ -2667,16 +2693,16 @@ const Screens = {
       return (+tib) - (+tia);                     // then best tier first
     });
     if (!keys.length) {
-      ctx.font = 'italic 13px Georgia';
+      ctx.font = 'italic ' + (big ? 15 : 13) + 'px Georgia';
       ctx.fillStyle = '#544d44';
       ctx.textAlign = 'left';
       ctx.fillText('No gems in your pouch — monsters and chests drop them.', px + 16, y + 14);
       return;
     }
     // Scrollable stack list — DRAG to scroll (no arrow buttons, owner request).
-    const panelBot = 46 + Math.min(H - 56, 470);
-    const detailNeed = UI.sel.gemKey && groups[UI.sel.gemKey] ? 176 : 0;
-    const rowH = 40;
+    const panelBot = 46 + Math.min(H - 56, big ? 560 : 470);
+    const detailNeed = UI.sel.gemKey && groups[UI.sel.gemKey] ? (big ? 214 : 176) : 0;
+    const rowH = big ? 50 : 40;
     const listTop = y;
     const listBot = panelBot - 12 - detailNeed;
     const viewH = Math.max(rowH, listBot - listTop);
@@ -2696,20 +2722,21 @@ const Screens = {
       const n = groups[key];
       const gm = GEM_TYPES[type];
       const selected = UI.sel.gemKey === key;
-      UI.btn(ctx, px + 16, ry, pw - 32, 34, '', () => {
+      const cy2 = ry + rowH / 2;
+      UI.btn(ctx, px + 16, ry, pw - 32, rowH - 6, '', () => {
         UI.sel.gemKey = selected ? null : key;
       }, { bg: selected ? 'rgba(70,44,90,0.9)' : undefined, border: selected ? gm.color : undefined });
       // Gem chip.
-      drawGemIcon(ctx, type, tier, px + 34, ry + 17, 11);
+      drawGemIcon(ctx, type, tier, px + (big ? 38 : 34), cy2, big ? 14 : 11);
       ctx.textAlign = 'left';
-      ctx.font = 'bold 12px Georgia';
+      ctx.font = 'bold ' + (big ? 15 : 12) + 'px Georgia';
       ctx.fillStyle = gm.color;
       // Tier only — the chip color names the gem; inspecting reveals the rest.
-      ctx.fillText(`${GEM_TIERS[tier]}  ×${n}`, px + 50, ry + 17);
+      ctx.fillText(`${GEM_TIERS[tier]}  ×${n}`, px + (big ? 58 : 50), cy2);
       ctx.textAlign = 'right';
-      ctx.font = '10px Georgia';
+      ctx.font = (big ? 12 : 10) + 'px Georgia';
       ctx.fillStyle = '#8a8070';
-      ctx.fillText(selected ? '▾' : 'tap to inspect', px + pw - 26, ry + 17);
+      ctx.fillText(selected ? '▾' : 'tap to inspect', px + pw - 26, cy2);
     });
     ctx.restore();
     if (scrollMax > 0) {
@@ -2813,39 +2840,42 @@ const Screens = {
   mystic(ctx, W, H) {
     this.dim(ctx, W, H);
     // (red ✕ drawn globally by UI.draw, above all content)
-    const pw = Math.min(560, W - 20);
+    // Tablet/desktop: bigger fonts + more spaced-out rows (owner request).
+    const big = W >= 760;
+    const pw = Math.min(big ? 640 : 560, W - 20);
     const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 56, 480);
+    const ph = Math.min(H - 56, big ? 560 : 480);
     UI.panel(ctx, px, 46, pw, ph, 'MYRIAM — MYSTIC');
     this.artisanRow(ctx, px, pw, 88, 'mystic', 'ENCHANTING');
     UI.sel.scrollRegion = null;   // only the detail view (below) is scrollable
+    const rowStep = big ? 42 : 34, rowBoxH = big ? 38 : 30, rowF = big ? 15 : 12;
 
     // ---- pick an item ----
     if (!UI.sel.item) {
       ctx.textAlign = 'left';
-      ctx.font = '12px Georgia';
+      ctx.font = (big ? 14 : 12) + 'px Georgia';
       ctx.fillStyle = '#9a9080';
-      ctx.fillText('Choose an item, then a property to reroll. Each reroll', px + 16, 112);
-      ctx.fillText('stays in that property\'s group — you see the exact odds.', px + 16, 128);
-      let y = 142;
+      ctx.fillText('Choose an item, then a property to reroll. Each reroll', px + 16, big ? 114 : 112);
+      ctx.fillText('stays in that property\'s group — you see the exact odds.', px + 16, big ? 134 : 128);
+      let y = big ? 152 : 142;
       for (const slot of Object.keys(ITEM_SLOTS)) {
         const it = Hero.equipped[slot];
         if (y > 46 + ph - 40) break;
-        UI.btn(ctx, px + 16, y, pw - 32, 30, '', it ? () => {
+        UI.btn(ctx, px + 16, y, pw - 32, rowBoxH, '', it ? () => {
           UI.sel.item = it;
           UI.sel.affix = null;
         } : null, { disabled: !it });
         ctx.textAlign = 'left';
-        ctx.font = 'bold 12px Georgia';
+        ctx.font = 'bold ' + rowF + 'px Georgia';
         ctx.fillStyle = it ? RARITIES[it.rarity].color : '#453f52';
-        ctx.fillText(this.fitText(ctx, ITEM_SLOTS[slot].label + ':  ' + (it ? it.name : '—'), pw - 90), px + 26, y + 15);
+        ctx.fillText(this.fitText(ctx, ITEM_SLOTS[slot].label + ':  ' + (it ? it.name : '—'), pw - 90), px + 26, y + rowBoxH / 2);
         if (it && it.enchants) {
           ctx.textAlign = 'right';
-          ctx.font = '10px Georgia';
+          ctx.font = (big ? 12 : 10) + 'px Georgia';
           ctx.fillStyle = '#b06adf';
-          ctx.fillText('✦ ' + it.enchants, px + pw - 26, y + 15);
+          ctx.fillText('✦ ' + it.enchants, px + pw - 26, y + rowBoxH / 2);
         }
-        y += 34;
+        y += rowStep;
       }
       return;
     }
@@ -2897,20 +2927,20 @@ const Screens = {
       const rng = grp ? Items.affixRange(it, key) : null;
       const maxed = rng && v >= rng.max - Math.max(1e-6, rng.max * 0.001);
       const yy = c - scrollY;
-      if (vis(c, 30)) {
-        UI.btn(ctx, px + 16, yy, pw - 32, 30, '', grp ? () => {
+      if (vis(c, rowBoxH)) {
+        UI.btn(ctx, px + 16, yy, pw - 32, rowBoxH, '', grp ? () => {
           UI.sel.affix = selected ? null : key;
         } : null, { bg: selected ? 'rgba(70,44,90,0.95)' : undefined, border: selected ? '#b06adf' : maxed ? '#8a6f2a' : undefined, disabled: !grp });
         ctx.textAlign = 'left';
-        ctx.font = 'bold 12px Georgia';
+        ctx.font = 'bold ' + rowF + 'px Georgia';
         ctx.fillStyle = !grp ? '#6f6552' : maxed ? '#ffd76a' : selected ? '#d8b4f0' : '#b5ab94';
-        ctx.fillText(AFFIX_ROLLS[key].label(v), px + 28, yy + 15);
+        ctx.fillText(AFFIX_ROLLS[key].label(v), px + 28, yy + rowBoxH / 2);
         ctx.textAlign = 'right';
-        ctx.font = '11px Georgia';
+        ctx.font = (big ? 13 : 11) + 'px Georgia';
         ctx.fillStyle = !grp ? '#544d44' : selected ? '#b06adf' : maxed ? '#ffd76a' : '#6a8a5a';
-        ctx.fillText(!grp ? 'signature' : selected ? 'will be rerolled ✦' : maxed ? 'maxed ✓' : AFFIX_GROUP_NAME[grp], px + pw - 28, yy + 15);
+        ctx.fillText(!grp ? 'signature' : selected ? 'will be rerolled ✦' : maxed ? 'maxed ✓' : AFFIX_GROUP_NAME[grp], px + pw - 28, yy + rowBoxH / 2);
       }
-      c += 34;
+      c += rowStep;
     }
 
     // Reroll odds AND the value range of each outcome, so the player sees how
@@ -3474,6 +3504,117 @@ const Screens = {
       UI.btn(ctx, px + 22 + bw2, y, pw - 36 - bw2, 36, 'CANCEL', () => { UI.sel.buy = null; }, { size: 12 });
     } else {
       UI.btn(ctx, px + 14, y + 2, pw - 28, 32, 'LEAVE', () => UI.close(), { size: 12 });
+    }
+  },
+
+  // -------------------------------------------------- town merchant (buy/sell)
+  // A permanent shop reachable from the Town Portal menu and the camp. BUY tab:
+  // a rotating 5-item stock scaled to the hero. SELL tab: turn bag gear into
+  // gold (an alternative to salvaging it at the Blacksmith for materials).
+  merchant(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const big = W >= 760;
+    const pw = Math.min(big ? 640 : 560, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 20, big ? 600 : 540);
+    const py = Math.max(10, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, 'TRAVELLING MERCHANT');
+
+    if (!UI.sel.shopTab) UI.sel.shopTab = 'buy';
+    const buying = UI.sel.shopTab === 'buy';
+    const tw = (pw - 44) / 2;
+    UI.btn(ctx, px + 16, py + 40, tw, 32, 'BUY',
+      () => { UI.sel.shopTab = 'buy'; UI.sel.pick = null; UI.sel.scrollY = 0; },
+      { size: 13, bg: buying ? 'rgba(70,54,30,0.95)' : undefined, border: buying ? '#ffd76a' : undefined, color: '#ffd76a' });
+    UI.btn(ctx, px + 28 + tw, py + 40, tw, 32, 'SELL',
+      () => { UI.sel.shopTab = 'sell'; UI.sel.pick = null; UI.sel.scrollY = 0; },
+      { size: 13, bg: !buying ? 'rgba(70,54,30,0.95)' : undefined, border: !buying ? '#ffd76a' : undefined, color: '#ffd76a' });
+
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = 'italic ' + (big ? 12 : 11) + 'px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.fillText(buying ? '"Finest wares in the land — mostly."' : '"Coin for your cast-offs. Fair enough."', px + 16, py + 88);
+    ctx.textAlign = 'right'; ctx.font = 'bold ' + (big ? 15 : 12) + 'px Georgia'; ctx.fillStyle = '#ffd76a';
+    ctx.fillText(Hero.gold.toLocaleString() + ' g', px + pw - 16, py + 88);
+
+    const rowH = big ? 46 : 40, nameF = big ? 14 : 12, subF = big ? 11 : 10;
+    const detailH = (buying && UI.sel.pick && !UI.sel.pick.sold) ? (big ? 200 : 176) : 0;
+    const bodyTop = py + 102, bodyBot = py + ph - 12 - detailH;
+    const viewH = Math.max(rowH, bodyBot - bodyTop);
+
+    if (buying) {
+      if (!UI.sel.shopStock) UI.sel.shopStock = Items.townStock();
+      const stock = UI.sel.shopStock;
+      const scrollMax = Math.max(0, stock.length * rowH - viewH);
+      const scrollY = clamp(UI.sel.scrollY || 0, 0, scrollMax);
+      UI.sel.scrollY = scrollY; UI.sel.scrollMax = scrollMax;
+      UI.sel.scrollRegion = { x: px + 14, y: bodyTop, w: pw - 28, h: viewH };
+      ctx.save(); ctx.beginPath(); ctx.rect(px + 14, bodyTop, pw - 28, viewH); ctx.clip();
+      stock.forEach((entry, i) => {
+        const y = bodyTop + i * rowH - scrollY;
+        if (y + rowH - 6 < bodyTop || y > bodyBot) return;
+        const it = entry.item, sel = UI.sel.pick === entry;
+        UI.btn(ctx, px + 16, y, pw - 32, rowH - 6, '', entry.sold ? null : () => { UI.sel.pick = sel ? null : entry; },
+          { disabled: entry.sold, bg: sel ? 'rgba(70,54,44,0.95)' : undefined, border: sel ? '#ffd76a' : undefined });
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.font = 'bold ' + nameF + 'px Georgia';
+        ctx.fillStyle = entry.sold ? '#544d44' : RARITIES[it.rarity].color;
+        ctx.fillText(this.fitText(ctx, it.name, pw - 160), px + 28, y + rowH / 2 - 7);
+        ctx.font = subF + 'px Georgia'; ctx.fillStyle = entry.sold ? '#453f52' : '#8a8070';
+        ctx.fillText(ITEM_SLOTS[it.slot].label + ' · ' + RARITIES[it.rarity].name, px + 28, y + rowH / 2 + 8);
+        ctx.textAlign = 'right'; ctx.font = 'bold ' + nameF + 'px Georgia';
+        ctx.fillStyle = entry.sold ? '#453f52' : (Hero.gold >= entry.price ? '#ffd76a' : '#8a5a5a');
+        ctx.fillText(entry.sold ? 'SOLD' : entry.price + ' g', px + pw - 30, y + rowH / 2);
+      });
+      ctx.restore();
+      if (detailH) {
+        const entry = UI.sel.pick;
+        let dy = bodyBot + 6;
+        dy = this.itemCard(ctx, px + 14, dy, pw - 28, entry.item, Hero.equipped[entry.item.slot], true);
+        const afford = Hero.gold >= entry.price;
+        const arrows = Items.compareArrows(entry.item, Hero.equipped[entry.item.slot]);
+        const hint = arrows > 0 ? '▲ upgrade' : arrows < 0 ? '▼ worse' : '— sidegrade';
+        const bw2 = (pw - 36) * 0.62;
+        UI.btn(ctx, px + 14, dy, bw2, 34, afford ? `BUY — ${entry.price}g  (${hint})` : `NEED ${entry.price}g`,
+          afford ? () => {
+            Hero.gold -= entry.price; entry.sold = true; Items.stash(entry.item);
+            UI.toast('Bought: ' + entry.item.name, RARITIES[entry.item.rarity].color); AudioSys.sfx('gold'); Hero.save(); UI.sel.pick = null;
+          } : null, { size: 12, disabled: !afford, border: '#8a6f4a', color: '#ffd76a' });
+        UI.btn(ctx, px + 22 + bw2, dy, pw - 36 - bw2, 34, 'CANCEL', () => { UI.sel.pick = null; }, { size: 12 });
+      }
+    } else {
+      const items = Hero.bag.filter(it => it && !it.torch);
+      if (!items.length) {
+        ctx.textAlign = 'center'; ctx.font = 'italic ' + (big ? 14 : 12) + 'px Georgia'; ctx.fillStyle = '#544d44';
+        ctx.fillText('Your bag has no gear to sell.', W / 2, bodyTop + 30);
+      } else {
+        const scrollMax = Math.max(0, items.length * rowH - viewH);
+        const scrollY = clamp(UI.sel.scrollY || 0, 0, scrollMax);
+        UI.sel.scrollY = scrollY; UI.sel.scrollMax = scrollMax;
+        UI.sel.scrollRegion = { x: px + 14, y: bodyTop, w: pw - 28, h: viewH };
+        ctx.save(); ctx.beginPath(); ctx.rect(px + 14, bodyTop, pw - 28, viewH); ctx.clip();
+        items.forEach((it, i) => {
+          const y = bodyTop + i * rowH - scrollY;
+          if (y + rowH - 6 < bodyTop || y > bodyBot) return;
+          const val = Items.sellValue(it);
+          ctx.fillStyle = 'rgba(28,24,38,0.92)';
+          rr(ctx, px + 16, y, pw - 32, rowH - 6, 6); ctx.fill();
+          ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+          ctx.font = 'bold ' + nameF + 'px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
+          ctx.fillText(this.fitText(ctx, it.name, pw - 200), px + 28, y + rowH / 2 - 7);
+          ctx.font = subF + 'px Georgia'; ctx.fillStyle = '#8a8070';
+          ctx.fillText(ITEM_SLOTS[it.slot].label + (it.stars ? '  ' + '★'.repeat(it.stars) : ''), px + 28, y + rowH / 2 + 8);
+          UI.btn(ctx, px + pw - 158, y + (rowH - 6 - 28) / 2, 136, 28, 'SELL  ' + val + 'g',
+            () => {
+              const k = Hero.bag.indexOf(it);
+              if (k >= 0) { Hero.bag.splice(k, 1); Hero.gold += val; UI.toast('Sold ' + it.name + '  +' + val + 'g', '#ffd76a'); AudioSys.sfx('gold'); Hero.save(); }
+            }, { size: big ? 12 : 11, border: '#8a6f4a', color: '#ffd76a' });
+        });
+        ctx.restore();
+      }
+    }
+    if ((UI.sel.scrollMax || 0) > 0 && !detailH) {
+      ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText('▼ drag for more ▼', W / 2, bodyBot - 2);
     }
   },
 

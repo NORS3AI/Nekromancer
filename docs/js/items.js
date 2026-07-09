@@ -723,14 +723,39 @@ const Items = {
 
   craftCost(master = false) {
     const d = this.artisanDiscount('smith');
-    if (master) {
-      return {
-        gold: Math.round((250 + Hero.level * 40) * 3 * d),
-        parts: 6, dust: 4, crystal: 3,
-        soul: Hero.level >= 30 ? 1 : 0
-      };
+    // Material requirement scales with the GEAR LEVEL the Blacksmith forges
+    // (owner rule), keyed to the smith band's ceiling — cumulative:
+    //   lvl 1–15  Parts · 16–30 +Crystals · 31–60 +Dust · 61–70 +Souls.
+    const hi = this.smithRange()[1];
+    const cost = {
+      gold: Math.round((250 + Hero.level * 40) * (master ? 3 : 1) * d),
+      parts: master ? 6 : 4
+    };
+    if (hi >= 16) cost.crystal = master ? 3 : 2;
+    if (hi >= 31) cost.dust = master ? 4 : 2;
+    if (hi >= 61) cost.soul = master ? 2 : 1;
+    return cost;
+  },
+
+  // Gold the town merchant pays for the player's gear. Kept well below salvage's
+  // material value so salvaging still matters, but a real gold path (owner req).
+  sellValue(item) {
+    if (!item || item.torch) return 0;
+    const s = this.score(item) || 0;
+    return Math.max(5, Math.round((18 + s * 0.6) * (1 + (item.rarity || 0) * 0.5)));
+  },
+
+  // A fresh 5-item stock for the town merchant, scaled to the hero (works with no
+  // live zone, since the town menu can open from camp). First slot leans good.
+  townStock() {
+    const mLvl = Math.max(1, (Hero.level || 1) + (Hero.difficulty || 0) * 6);
+    const stock = [];
+    for (let i = 0; i < 5; i++) {
+      const boost = i === 0 ? 0.35 : (i >= 3 ? -0.2 : 0.05);
+      const item = this.generate(mLvl + (i === 0 ? 2 : 0), boost);
+      stock.push({ item, price: Math.round((40 + this.score(item) * 1.4) * (1 + item.rarity * 0.9)), sold: false });
     }
-    return { gold: Math.round((250 + Hero.level * 40) * d), parts: 4, dust: 2, crystal: Hero.level >= 20 ? 1 : 0 };
+    return stock;
   },
 
   canAfford(cost) {

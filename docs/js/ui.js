@@ -166,7 +166,7 @@ const UI = {
     if (this.screen === 'storyacts') return () => this.open('wilds');
     if (this.townMode) {
       if (this.screen === 'town') return () => { this.townMode = false; this.close(); };
-      if (['smith', 'jeweler', 'mystic', 'stash', 'torches', 'radial', 'cube'].includes(this.screen)) return () => this.open('town');
+      if (['smith', 'jeweler', 'mystic', 'merchant', 'stash', 'torches', 'radial', 'cube'].includes(this.screen)) return () => this.open('town');
     }
     return () => this.close();
   },

@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.5.6-alpha';
+const GAME_VERSION = 'v1.5.7-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.5.7-alpha', date: 'July 2026',
+    notes: [
+      'NEW Travelling Merchant — reachable from the Town Portal menu and the camp. BUY a rotating 5-item stock, or SELL your bag gear for gold (an alternative to salvaging it for materials)',
+      'Inventory stats now show your RAW per-hit damage (HIT) beside the ×multiplier, plus your current GOLD at the bottom — and on tablet/desktop the whole stat readout is much bigger and easier to read',
+      'Blacksmith crafting costs now scale with the gear level forged: lvl 1–15 need only Parts · 16–30 add Crystals · 31–60 add Dust · 61–70 add Souls',
+      'Jeweler and Mystic use bigger fonts and more spaced-out rows on tablet/desktop'
+    ]
+  },
   {
     v: 'v1.5.6-alpha', date: 'July 2026',
     notes: [
