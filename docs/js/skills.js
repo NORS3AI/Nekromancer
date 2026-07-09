@@ -248,7 +248,11 @@ const SKILL_FX = {
       if (d < R) {
         e.hurt(34 * mult * p.power() * (1 - d / R * 0.3), { knock: { a: angleTo(p.x, p.y, e.x, e.y), f: 200 } });
         if (rune === 'tendrilNova') p.heal(p.maxHp * 0.01);  // Tendril Nova: lifesteal
-        if (rune === 'blight') e.slow = Math.max(e.slow, 3);  // Blight: slow cloud
+        if (rune === 'blight') {                              // Blight: slow AND weaken
+          e.slow = Math.max(e.slow, 3);
+          // A decrepify curse cuts the victim's damage — the "-30% damage" part.
+          if (!e.curse || e.curse.type !== 'decrepify') e.curse = { type: 'decrepify', t: 4 };
+        }
       }
     }
     AudioSys.sfx('nova');

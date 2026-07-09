@@ -168,9 +168,14 @@ class Player {
     if (this.auraFrailty()) {
       for (const e of Game.enemies) {
         if (e.dead || e.sleep || e.spawnT > 0 || e.unique) continue;
-        if (e.hp <= e.maxHp * 0.10 && dist(this.x, this.y, e.x, e.y) < 240) {
-          Particles.text(e.x, e.y - 20, 'FRAIL', { color: '#b06adf', size: 12, life: 0.6 });
-          e.hurt(e.hp + 1);
+        if (dist(this.x, this.y, e.x, e.y) < 240) {
+          // Aura of Frailty AUTO-CURSES nearby foes (frailty), then executes any
+          // already low enough — matching the rune's "auto-curse and execute".
+          if (!e.curse) e.curse = { type: 'frailty', t: 6 };
+          if (e.hp <= e.maxHp * 0.10) {
+            Particles.text(e.x, e.y - 20, 'FRAIL', { color: '#b06adf', size: 12, life: 0.6 });
+            e.hurt(e.hp + 1);
+          }
         }
       }
     }
@@ -357,12 +362,23 @@ class Player {
     ctx.beginPath(); ctx.arc(2.6, -8.5, 1.4, 0, TAU); ctx.fill();
     ctx.shadowBlur = 0;
 
+    // Staff shaft.
     ctx.strokeStyle = '#4a3c2c';
     ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(12, 8); ctx.lineTo(15, -16); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, 10); ctx.lineTo(16, -22); ctx.stroke();
+    // Bone claw cradling the crystal at the staff head.
     ctx.strokeStyle = '#d8cfb8';
     ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.arc(9, -17, 7, -0.4, 1.5); ctx.stroke();
+    ctx.beginPath(); ctx.arc(12, -22, 6, -0.2, 2.0); ctx.stroke();
+    // Staff crystal — glows in the hero's chosen eye colour.
+    const staffPulse = 0.7 + 0.3 * Math.sin(Game.time * 3);
+    ctx.fillStyle = eye;
+    ctx.shadowColor = eye;
+    ctx.shadowBlur = 9 + 5 * staffPulse;
+    ctx.beginPath(); ctx.arc(15, -24, 3.4, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath(); ctx.arc(14, -25, 1.2, 0, TAU); ctx.fill();
+    ctx.shadowBlur = 0;
 
     ctx.restore();
 
@@ -1670,6 +1686,9 @@ class Minion {
     this.flash = 0;
     this.frenzyT = 0;
     this.dead = false;
+    // Idle formation: a stable lateral slot so idle minions line up BEHIND the
+    // hero instead of orbiting him. -1..1 spreads them left→right.
+    this.formOffset = rand(-1, 1);
     fxSummon(x, y);
   }
 
@@ -1717,14 +1736,22 @@ class Minion {
         tgt.hurt(this.dmg * dmgMult, { knock: { a, f: this.kind === 'golem' ? 120 : 40 } });
       }
     } else {
+      // Idle: fall in BEHIND the hero (opposite his facing) in a loose rank —
+      // no more orbiting. Each minion holds a stable lateral slot (formOffset).
       const p = Game.player;
-      const hx = p.x + Math.cos(this.anim * 0.13) * 52;
-      const hy = p.y + Math.sin(this.anim * 0.13) * 52;
-      if (dist(this.x, this.y, hx, hy) > 30) {
-        const a = angleTo(this.x, this.y, hx, hy);
-        this.facing = lerpAngle(this.facing, a, Math.min(1, 10 * dt));
+      const back = p.facing + Math.PI;
+      const depth = this.kind === 'golem' ? 58 : 46;
+      const bx = p.x + Math.cos(back) * depth + Math.cos(back + Math.PI / 2) * this.formOffset * 42;
+      const by = p.y + Math.sin(back) * depth + Math.sin(back + Math.PI / 2) * this.formOffset * 42;
+      const d = dist(this.x, this.y, bx, by);
+      if (d > 22) {
+        const a = angleTo(this.x, this.y, bx, by);
+        this.facing = lerpAngle(this.facing, a, Math.min(1, 9 * dt));
         this.x += Math.cos(a) * this.speed * dt;
         this.y += Math.sin(a) * this.speed * dt;
+      } else {
+        // In position — face the same way as the hero, standing guard behind him.
+        this.facing = lerpAngle(this.facing, p.facing, Math.min(1, 6 * dt));
       }
     }
     World.collide(this);
@@ -1823,6 +1850,12 @@ class Minion {
       for (let i = 0; i < 3; i++) {
         ctx.beginPath(); ctx.moveTo(-5, -2 + i * 3.5); ctx.lineTo(5, -2 + i * 3.5); ctx.stroke();
       }
+      // Two legs — a walking gait (the legs swing in opposite phase).
+      ctx.lineWidth = 2.5;
+      const legSw = Math.sin(this.anim * 1.8) * 3.2;
+      ctx.beginPath(); ctx.moveTo(-1.8, 7); ctx.lineTo(-4, 15 + legSw); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(1.8, 7); ctx.lineTo(4, 15 - legSw); ctx.stroke();
+      ctx.lineWidth = 2.5;
       const sw = Math.sin(this.anim * 1.8) * 4;
       ctx.beginPath(); ctx.moveTo(-5, -2); ctx.lineTo(-10, -8 - sw); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(5, -2); ctx.lineTo(10, -8 + sw); ctx.stroke();
@@ -1838,6 +1871,22 @@ class Minion {
       ctx.shadowBlur = 0;
     }
     ctx.restore();
+
+    // Name tag floating over the head — "<Hero>'s Minion" (the blood clone is
+    // the hero himself, so it gets none). Drawn upright in world space.
+    if (this.kind !== 'sim') {
+      const label = (Hero.name || 'The Nekromancer') + "'s Minion";
+      ctx.save();
+      ctx.globalAlpha = fade * 0.62;
+      ctx.font = '8px Georgia';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      const ty = this.y - this.r - 8;
+      ctx.fillStyle = 'rgba(6,6,10,0.9)';
+      ctx.fillText(label, this.x + 0.6, ty + 0.6);
+      ctx.fillStyle = '#cdeee0';
+      ctx.fillText(label, this.x, ty);
+      ctx.restore();
+    }
   }
 }
 

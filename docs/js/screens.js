@@ -1588,20 +1588,25 @@ const Screens = {
         if (ga < 0.02) ga = 0;
         this._gemHint[slot] = ga;
         if (ga > 0.015) {
-          const pulse = 0.82 + 0.18 * Math.sin(Game.time * 4 + i);
-          const s = (narrow ? 4.2 : 5.2) * pulse;
+          const pulse = 0.85 + 0.15 * Math.sin(Game.time * 4 + i);
+          const s = (narrow ? 8.5 : 10.5) * pulse;   // much bigger, easy to spot
           ctx.save();
           ctx.globalAlpha = ga;
-          ctx.translate(bx, by + chipR);              // centered on the chip's bottom edge
+          ctx.translate(bx, by + chipR + s * 0.35);  // hangs below the chip
+          ctx.shadowColor = '#7fd8ff'; ctx.shadowBlur = 9;
           ctx.beginPath();
           ctx.moveTo(0, -s); ctx.lineTo(s * 0.72, 0); ctx.lineTo(0, s); ctx.lineTo(-s * 0.72, 0);
           ctx.closePath();
           ctx.fillStyle = '#bfeaff';
           ctx.fill();
-          ctx.lineWidth = 1.3; ctx.strokeStyle = '#0b1a24';
+          ctx.shadowBlur = 0;
+          ctx.lineWidth = 1.8; ctx.strokeStyle = '#0b1a24';
           ctx.stroke();
-          ctx.fillStyle = 'rgba(255,255,255,0.9)';
-          ctx.beginPath(); ctx.arc(-s * 0.16, -s * 0.16, 0.9, 0, TAU); ctx.fill();
+          // facets + sparkle
+          ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(-s * 0.72, 0); ctx.lineTo(s * 0.72, 0); ctx.moveTo(0, -s); ctx.lineTo(0, s); ctx.stroke();
+          ctx.fillStyle = 'rgba(255,255,255,0.95)';
+          ctx.beginPath(); ctx.arc(-s * 0.22, -s * 0.28, 1.6, 0, TAU); ctx.fill();
           ctx.restore();
         }
       }
@@ -3526,8 +3531,8 @@ const Screens = {
     const big = W >= 760;
     const pw = Math.min(big ? 640 : 560, W - 20);
     const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 20, big ? 600 : 540);
-    const py = Math.max(10, H / 2 - ph / 2);
+    const ph = Math.min(H - 20, big ? 620 : 560);
+    const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, 'TRAVELLING MERCHANT');
 
     if (!UI.sel.shopTab) UI.sel.shopTab = 'buy';
@@ -3540,20 +3545,56 @@ const Screens = {
       () => { UI.sel.shopTab = 'sell'; UI.sel.pick = null; UI.sel.scrollY = 0; },
       { size: 13, bg: !buying ? 'rgba(70,54,30,0.95)' : undefined, border: !buying ? '#ffd76a' : undefined, color: '#ffd76a' });
 
-    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.font = 'italic ' + (big ? 12 : 11) + 'px Georgia'; ctx.fillStyle = '#9a9080';
-    ctx.fillText(buying ? '"Finest wares in the land — mostly."' : '"Coin for your cast-offs. Fair enough."', px + 16, py + 88);
-    ctx.textAlign = 'right'; ctx.font = 'bold ' + (big ? 15 : 12) + 'px Georgia'; ctx.fillStyle = '#ffd76a';
+    // Stock restocks every 10 minutes of play; kept on Game so the countdown is
+    // meaningful across open/close (it regenerates on reload, which is fine).
+    const REST = 600;
+    if (!Game.merchantStock || (Game.time || 0) >= (Game.merchantRestockAt || 0)) {
+      Game.merchantStock = Items.townStock();
+      Game.merchantRestockAt = (Game.time || 0) + REST;
+      UI.sel.pick = null;
+    }
+    const remain = Math.max(0, (Game.merchantRestockAt || 0) - (Game.time || 0));
+    const cd = Math.floor(remain / 60) + ':' + String(Math.floor(remain % 60)).padStart(2, '0');
+
+    ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'bold ' + (big ? 15 : 13) + 'px Georgia'; ctx.fillStyle = '#ffd76a';
     ctx.fillText(Hero.gold.toLocaleString() + ' g', px + pw - 16, py + 88);
 
-    const rowH = big ? 46 : 40, nameF = big ? 14 : 12, subF = big ? 11 : 10;
-    const detailH = (buying && UI.sel.pick && !UI.sel.pick.sold) ? (big ? 200 : 176) : 0;
-    const bodyTop = py + 102, bodyBot = py + ph - 12 - detailH;
+    // Merchant flavour — the BUY greeting carries the live restock countdown.
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'italic ' + (big ? 12 : 11) + 'px Georgia'; ctx.fillStyle = '#b5ab94';
+    let fBot;
+    if (buying) {
+      const flavor = 'Good to see you! I will have new items for ya in ' + cd + '. Why don\'t you look at what I\'ve got to sell ya, eh?';
+      fBot = wrapText(ctx, flavor, px + 16, py + 82, pw - 96, big ? 17 : 15, 4);
+    } else {
+      ctx.fillText('"Coin for your cast-offs. Fair enough — one man\'s junk, eh?"', px + 16, py + 82);
+      fBot = py + 92;
+    }
+
+    // Animated upgrade arrows (matches the inventory): 1/2/3 up = better, down =
+    // worse, ▲▲▲ bobs + pulses green. No words — just the arrows (owner request).
+    const drawArrows = (ax, ay, arrows) => {
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      if (arrows === 3) {
+        const phz = (Game.time || 0) * 4.2, bob = Math.sin(phz) * 2, pul = 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(phz));
+        ctx.font = 'bold ' + (big ? 14 : 12) + 'px Georgia';
+        ctx.fillStyle = `rgba(74,222,128,${pul.toFixed(3)})`;
+        ctx.fillText('▲▲▲', ax, ay + bob);
+      } else {
+        ctx.font = 'bold ' + (big ? 13 : 11) + 'px Georgia';
+        ctx.fillStyle = arrows > 0 ? '#4ade80' : arrows < 0 ? '#e04a5a' : '#9a9080';
+        ctx.fillText(arrows > 0 ? '▲'.repeat(arrows) : arrows < 0 ? '▼'.repeat(-arrows) : '—', ax, ay);
+      }
+    };
+
+    const rowH = big ? 48 : 42, nameF = big ? 14 : 12, subF = big ? 11 : 10;
+    const detailH = (buying && UI.sel.pick && !UI.sel.pick.sold && UI.sel.pick.kind === 'gear') ? (big ? 200 : 176) : 0;
+    const bodyTop = Math.max(fBot + 12, py + 104), bodyBot = py + ph - 12 - detailH;
     const viewH = Math.max(rowH, bodyBot - bodyTop);
 
     if (buying) {
-      if (!UI.sel.shopStock) UI.sel.shopStock = Items.townStock();
-      const stock = UI.sel.shopStock;
+      const stock = Game.merchantStock;
       const scrollMax = Math.max(0, stock.length * rowH - viewH);
       const scrollY = clamp(UI.sel.scrollY || 0, 0, scrollMax);
       UI.sel.scrollY = scrollY; UI.sel.scrollMax = scrollMax;
@@ -3562,29 +3603,48 @@ const Screens = {
       stock.forEach((entry, i) => {
         const y = bodyTop + i * rowH - scrollY;
         if (y + rowH - 6 < bodyTop || y > bodyBot) return;
+        if (entry.kind === 'reagent') {
+          const afford = Hero.gold >= entry.price;
+          const mm = MATERIALS[entry.mat];
+          UI.btn(ctx, px + 16, y, pw - 32, rowH - 6, '', entry.sold ? null : () => {
+            if (Hero.gold < entry.price) { AudioSys.sfx('denied'); return; }
+            Hero.gold -= entry.price; Hero.mats[entry.mat] = (Hero.mats[entry.mat] || 0) + entry.qty; entry.sold = true;
+            UI.toast('Bought ' + entry.qty + ' ' + mm.name, mm.color); AudioSys.sfx('gold'); Hero.save();
+          }, { disabled: entry.sold });
+          ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+          ctx.font = 'bold ' + nameF + 'px Georgia';
+          ctx.fillStyle = entry.sold ? '#544d44' : mm.color;
+          ctx.fillText(mm.name + '  ×' + entry.qty, px + 28, y + rowH / 2 - 7);
+          ctx.font = subF + 'px Georgia'; ctx.fillStyle = entry.sold ? '#453f52' : '#8a8070';
+          ctx.fillText('Reagent  ·  ' + Math.round(entry.price / entry.qty) + 'g each', px + 28, y + rowH / 2 + 8);
+          ctx.textAlign = 'right'; ctx.font = 'bold ' + nameF + 'px Georgia';
+          ctx.fillStyle = entry.sold ? '#453f52' : (afford ? '#ffd76a' : '#8a5a5a');
+          ctx.fillText(entry.sold ? 'SOLD' : entry.price + ' g', px + pw - 30, y + rowH / 2);
+          return;
+        }
         const it = entry.item, sel = UI.sel.pick === entry;
         UI.btn(ctx, px + 16, y, pw - 32, rowH - 6, '', entry.sold ? null : () => { UI.sel.pick = sel ? null : entry; },
           { disabled: entry.sold, bg: sel ? 'rgba(70,54,44,0.95)' : undefined, border: sel ? '#ffd76a' : undefined });
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
         ctx.font = 'bold ' + nameF + 'px Georgia';
         ctx.fillStyle = entry.sold ? '#544d44' : RARITIES[it.rarity].color;
-        ctx.fillText(this.fitText(ctx, it.name, pw - 160), px + 28, y + rowH / 2 - 7);
+        ctx.fillText(this.fitText(ctx, it.name, pw - 170), px + 28, y + rowH / 2 - 7);
         ctx.font = subF + 'px Georgia'; ctx.fillStyle = entry.sold ? '#453f52' : '#8a8070';
         ctx.fillText(ITEM_SLOTS[it.slot].label + ' · ' + RARITIES[it.rarity].name, px + 28, y + rowH / 2 + 8);
         ctx.textAlign = 'right'; ctx.font = 'bold ' + nameF + 'px Georgia';
         ctx.fillStyle = entry.sold ? '#453f52' : (Hero.gold >= entry.price ? '#ffd76a' : '#8a5a5a');
-        ctx.fillText(entry.sold ? 'SOLD' : entry.price + ' g', px + pw - 30, y + rowH / 2);
+        ctx.fillText(entry.sold ? 'SOLD' : entry.price + ' g', px + pw - 30, y + rowH / 2 - 7);
+        if (!entry.sold) drawArrows(px + pw - 30, y + rowH / 2 + 9, Items.compareArrows(it, Hero.equipped[it.slot]));
       });
       ctx.restore();
       if (detailH) {
         const entry = UI.sel.pick;
         let dy = bodyBot + 6;
-        dy = this.itemCard(ctx, px + 14, dy, pw - 28, entry.item, Hero.equipped[entry.item.slot], true);
+        // No comparison arrows in the stats card — the row already shows them.
+        dy = this.itemCard(ctx, px + 14, dy, pw - 28, entry.item, null, true);
         const afford = Hero.gold >= entry.price;
-        const arrows = Items.compareArrows(entry.item, Hero.equipped[entry.item.slot]);
-        const hint = arrows > 0 ? '▲ upgrade' : arrows < 0 ? '▼ worse' : '— sidegrade';
         const bw2 = (pw - 36) * 0.62;
-        UI.btn(ctx, px + 14, dy, bw2, 34, afford ? `BUY — ${entry.price}g  (${hint})` : `NEED ${entry.price}g`,
+        UI.btn(ctx, px + 14, dy, bw2, 34, afford ? `BUY — ${entry.price}g` : `NEED ${entry.price}g`,
           afford ? () => {
             Hero.gold -= entry.price; entry.sold = true; Items.stash(entry.item);
             UI.toast('Bought: ' + entry.item.name, RARITIES[entry.item.rarity].color); AudioSys.sfx('gold'); Hero.save(); UI.sel.pick = null;

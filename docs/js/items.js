@@ -748,15 +748,44 @@ const Items = {
     return Math.max(5, Math.round((18 + s * 0.6) * (1 + (item.rarity || 0) * 0.5)));
   },
 
-  // A fresh 5-item stock for the town merchant, scaled to the hero (works with no
-  // live zone, since the town menu can open from camp). First slot leans good.
+  buyPrice(it) {
+    return Math.round((40 + this.score(it) * 1.4) * (1 + it.rarity * 0.9));
+  },
+
+  // Reagents the merchant sometimes stocks, with per-unit gold prices and the
+  // bundle size sold (owner spec).
+  MERCHANT_REAGENTS: [
+    { mat: 'parts',   unit: 10,   qty: 10 },
+    { mat: 'dust',    unit: 50,   qty: 5 },
+    { mat: 'crystal', unit: 200,  qty: 3 },
+    { mat: 'soul',    unit: 1000, qty: 1 },
+    { mat: 'lumber',  unit: 25,   qty: 5 },
+    { mat: 'rivets',  unit: 50,   qty: 5 }
+  ],
+
+  // A fresh 5-item stock for the town merchant, scaled to the hero. Each slot
+  // rolls a CATEGORY by owner weights: 50% armor · 35% weapon/off-weapon · 10%
+  // ring/amulet · 5% reagents.
   townStock() {
     const mLvl = Math.max(1, (Hero.level || 1) + (Hero.difficulty || 0) * 6);
+    const ARMOR = ['helm', 'shoulders', 'chest', 'gloves', 'legs', 'boots'];
+    const WEAPON = ['weapon', 'phylactery'];
+    const JEWEL = ['ring1', 'amulet'];
     const stock = [];
     for (let i = 0; i < 5; i++) {
-      const boost = i === 0 ? 0.35 : (i >= 3 ? -0.2 : 0.05);
-      const item = this.generate(mLvl + (i === 0 ? 2 : 0), boost);
-      stock.push({ item, price: Math.round((40 + this.score(item) * 1.4) * (1 + item.rarity * 0.9)), sold: false });
+      const roll = Math.random();
+      if (roll < 0.05) {
+        const r = pick(this.MERCHANT_REAGENTS);
+        stock.push({ kind: 'reagent', mat: r.mat, qty: r.qty, price: r.unit * r.qty, sold: false });
+        continue;
+      }
+      let slot;
+      if (roll < 0.55) slot = pick(ARMOR);           // 50%
+      else if (roll < 0.90) slot = pick(WEAPON);      // 35%
+      else slot = pick(JEWEL);                         // 10%
+      const boost = i === 0 ? 0.3 : 0.05;
+      const item = this.generate(mLvl + (i === 0 ? 2 : 0), boost, slot);
+      stock.push({ kind: 'gear', item, price: this.buyPrice(item), sold: false });
     }
     return stock;
   },

@@ -19,11 +19,22 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.2-alpha';
+const GAME_VERSION = 'v1.6.3-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.3-alpha', date: 'July 2026',
+    notes: [
+      'The Nekromancer now wields a staff topped with a glowing crystal in your chosen eye colour',
+      'Your minions carry a floating "<Name>\'s Minion" tag; skeletons walk on two legs, and idle minions (and the golem) now fall in BEHIND you in a rank instead of orbiting',
+      'Travelling Merchant: a greeting with a live restock countdown ("new items in 9:59…"); stock now rolls by category (50% armour · 35% weapon/off-hand · 10% rings & amulets · 5% reagents you can buy with gold)',
+      'Merchant upgrade/downgrade now shows as animated arrows only (1/2/3 up = better, down = worse, ▲▲▲ pulses green) — no words — and the arrows are hidden inside the item stats card since the row already shows them',
+      'The empty-socket diamond on equipment is now much bigger and glows, so you can actually see it',
+      'Rune fixes: Death Nova (Blight) now also weakens enemies\' damage, and the Aura of Frailty now auto-curses nearby foes as its description says'
+    ]
+  },
   {
     v: 'v1.6.2-alpha', date: 'July 2026',
     notes: [
