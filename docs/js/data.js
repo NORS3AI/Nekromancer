@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.13-alpha';
+const GAME_VERSION = 'v1.6.14-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.14-alpha', date: 'July 2026',
+    notes: [
+      'Gem values de-inflated: instead of tripling per tier (which ballooned into the millions), each gem\'s key stat now steps down 33.3% per tier from its original Marquise value (Ruby back to +750 dmg, Emerald +300% crit dmg, Amethyst +75000 life/hit, Diamond +5000 resist, Topaz +250% gold)',
+      'Combining is still worth it — each new tier is a little better than one gem of the tier below (it no longer has to beat all three), so numbers stay sane',
+      'Bonus: Diamond All-Resist no longer instantly maxes the 80% cap, so those upgrades matter all the way up'
+    ]
+  },
   {
     v: 'v1.6.13-alpha', date: 'July 2026',
     notes: [
@@ -1344,20 +1352,19 @@ const GEM_TYPES = {
   diamond:  { name: 'Diamond',  color: '#bfe8f4', keys: ['resAll', 'cdr'] }
 };
 const GEM_STATS = {
-  // Ruby +Damage climbs at ~3.1× per tier so THREE of a tier always beat ONE of
-  // the next (combining 3→1 is a strict upgrade, never a loss). XP: 3/5/6 then
-  // the old ladder unchanged. (Owner-tuned; big late values are intentional.)
-  ruby:     [[3, .03], [10, .05], [32, .06], [98, .09], [300, .10], [930, .12], [2900, .15], [9000, .16], [28000, .17], [87000, .20], [270000, .22], [840000, .25], [2600000, .30]],
-  // Every gem's "combine-worthy" stat climbs ~3.1× per tier so THREE of a tier
-  // are always worth less than ONE of the next (upgrading is never a loss),
-  // mirroring Ruby. The tripled stat is the one that ISN'T balance-capped:
-  //   Emerald → Crit Damage · Amethyst → Life-per-Hit · Diamond → All-Resist ·
-  //   Topaz → Gold (its Resource-Cost primary caps at 60%, so it can't triple).
+  // Each gem's "combine-worthy" stat is anchored at its ORIGINAL Marquise value
+  // and steps DOWN 33.3% per tier (= ×1.5 per tier going up). So every tier is a
+  // little better than the one below — combining 3→1 gives a gem better than a
+  // single lower gem (it need not beat all three). Values stay sane, no huge
+  // numbers. The tripled stat is the one that ISN'T balance-capped:
+  //   Ruby → Damage · Emerald → Crit Damage · Amethyst → Life-per-Hit ·
+  //   Diamond → All-Resist · Topaz → Gold (its Resource-Cost primary caps at 60%).
   // The other stat on each gem stays on its gentle ladder.
-  emerald:  [[.10, .02], [.32, .03], [1.0, .04], [3.2, .06], [10, .09], [32, .12], [100, .15], [320, .18], [1000, .21], [3200, .25], [10000, .28], [32000, .31], [100000, .35]],
-  amethyst: [[20, 10], [65, 30], [200, 60], [640, 100], [2000, 200], [6400, 500], [20000, 700], [64000, 900], [200000, 1500], [640000, 3000], [2000000, 7000], [6400000, 15000], [20000000, 30000]],
-  topaz:    [[.01, .03], [.03, .10], [.05, .31], [.07, 1.0], [.09, 3.1], [.11, 10], [.13, 31], [.15, 100], [.17, 310], [.19, 1000], [.21, 3100], [.22, 10000], [.22, 31000]],
-  diamond:  [[10, .012], [32, .016], [100, .02], [320, .035], [1000, .05], [3200, .07], [10000, .09], [32000, .11], [100000, .13], [320000, .17], [1000000, .19], [3200000, .20], [10000000, .25]]
+  ruby:     [[6, .03], [9, .05], [13, .06], [20, .09], [29, .10], [44, .12], [66, .15], [99, .16], [148, .17], [222, .20], [333, .22], [500, .25], [750, .30]],
+  emerald:  [[.023, .02], [.035, .03], [.052, .04], [.078, .06], [.117, .09], [.176, .12], [.263, .15], [.395, .18], [.593, .21], [.889, .25], [1.333, .28], [2.0, .31], [3.0, .35]],
+  amethyst: [[578, 10], [867, 30], [1301, 60], [1951, 100], [2926, 200], [4390, 500], [6584, 700], [9877, 900], [14815, 1500], [22222, 3000], [33333, 7000], [50000, 15000], [75000, 30000]],
+  topaz:    [[.01, .019], [.03, .029], [.05, .043], [.07, .065], [.09, .098], [.11, .146], [.13, .219], [.15, .329], [.17, .494], [.19, .741], [.21, 1.111], [.22, 1.667], [.22, 2.5]],
+  diamond:  [[39, .012], [58, .016], [87, .02], [130, .035], [195, .05], [293, .07], [439, .09], [658, .11], [988, .13], [1481, .17], [2222, .19], [3333, .20], [5000, .25]]
 };
 
 // Most gem slots an item can hold, by rarity (Mystic enchants can uncover them):
