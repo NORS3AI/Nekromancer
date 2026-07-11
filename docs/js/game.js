@@ -173,28 +173,38 @@ const Game = {
   },
 
   // ---- Fullscreen (hide the mobile address bar / browser chrome) ----
-  // The Fullscreen API works on Android Chrome/Firefox and desktop browsers.
-  // iOS Safari does NOT support element fullscreen — there the only route is
-  // Share → "Add to Home Screen" (the app's apple-mobile-web-app meta launches
-  // it chrome-free). requestFullscreen must be called from a user gesture.
+  // Works on Android Chrome/Firefox and desktop, AND on iOS browsers that expose
+  // the Fullscreen API — notably Orion and Blink/Chromium builds (plain iOS/iPad
+  // Safari does not, so the toggle stays hidden there). Some iOS WebKit browsers
+  // only allow ELEMENT-level fullscreen, so we fall back to the game canvas when
+  // the documentElement can't. requestFullscreen must run inside a user gesture.
+  _fsRequest(el) {
+    if (!el) return null;
+    const fn = el.requestFullscreen || el.webkitRequestFullscreen;
+    return fn ? fn.bind(el) : null;
+  },
   fullscreenEl() {
     return document.fullscreenElement || document.webkitFullscreenElement || null;
   },
   fullscreenSupported() {
-    const el = document.documentElement;
-    return !!(el.requestFullscreen || el.webkitRequestFullscreen);
+    // documentElement first, then the canvas (element-only iOS WebKit browsers).
+    return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled ||
+              this._fsRequest(document.documentElement) || this._fsRequest(this.canvas));
   },
   toggleFullscreen() {
-    const el = document.documentElement;
     try {
       if (!this.fullscreenEl()) {
-        const req = el.requestFullscreen || el.webkitRequestFullscreen;
-        if (!req) {
-          UI.toast('Full screen isn\'t available in this browser — on iPhone, tap Share → Add to Home Screen', '#ffd76a');
+        // Prefer the whole page; fall back to the canvas for element-only iOS WebKit.
+        const el = (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
+          ? document.documentElement : this.canvas;
+        let r;
+        if (el && el.requestFullscreen) r = el.requestFullscreen({ navigationUI: 'hide' });
+        else if (el && el.webkitRequestFullscreen) r = el.webkitRequestFullscreen();
+        else {
+          UI.toast('Full screen isn\'t available in this browser — on iPhone use Orion or a Chromium browser, or Add to Home Screen', '#ffd76a');
           AudioSys.sfx('denied');
           return;
         }
-        const r = req.call(el);
         if (r && r.catch) r.catch(() => {});
       } else {
         const exit = document.exitFullscreen || document.webkitExitFullscreen;

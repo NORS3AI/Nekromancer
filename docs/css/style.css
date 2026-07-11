@@ -28,3 +28,18 @@ html, body {
   height: 100%;
   cursor: crosshair;
 }
+
+/* When the canvas itself is the fullscreen element (element-only iOS WebKit
+   browsers like Orion), make it fill the screen with no letterboxing. */
+#game:fullscreen,
+#game:-webkit-full-screen {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  background: #0a070c;
+}
+:-webkit-full-screen,
+:fullscreen {
+  background: #0a070c;
+}

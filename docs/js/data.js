@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.18-alpha';
+const GAME_VERSION = 'v1.6.19-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.19-alpha', date: 'July 2026',
+    notes: [
+      'Full screen now works on iOS browsers that support it — Orion and Chromium/Blink builds — not just Android/desktop. (Plain iPhone Safari still can\'t, so the toggle stays hidden there; use Add to Home Screen.)',
+      'Detection is broader (checks the page and the game canvas) and falls back to fullscreen-ing the canvas for browsers that only allow element-level fullscreen'
+    ]
+  },
   {
     v: 'v1.6.18-alpha', date: 'July 2026',
     notes: [
