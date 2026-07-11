@@ -80,6 +80,9 @@ const Game = {
     this.ctx = this.canvas.getContext('2d');
     this.installFontScale(this.ctx);
     window.addEventListener('resize', () => this.resize());
+    // Entering/leaving fullscreen changes the viewport → re-fit the canvas.
+    document.addEventListener('fullscreenchange', () => this.resize());
+    document.addEventListener('webkitfullscreenchange', () => this.resize());
     this.resize();
     Settings.load();
     this.applyCursor();
@@ -167,6 +170,37 @@ const Game = {
 
   monsterLevel() {
     return (this.zone ? this.zone.mLvl : 1) + Hero.difficulty * 6;
+  },
+
+  // ---- Fullscreen (hide the mobile address bar / browser chrome) ----
+  // The Fullscreen API works on Android Chrome/Firefox and desktop browsers.
+  // iOS Safari does NOT support element fullscreen — there the only route is
+  // Share → "Add to Home Screen" (the app's apple-mobile-web-app meta launches
+  // it chrome-free). requestFullscreen must be called from a user gesture.
+  fullscreenEl() {
+    return document.fullscreenElement || document.webkitFullscreenElement || null;
+  },
+  fullscreenSupported() {
+    const el = document.documentElement;
+    return !!(el.requestFullscreen || el.webkitRequestFullscreen);
+  },
+  toggleFullscreen() {
+    const el = document.documentElement;
+    try {
+      if (!this.fullscreenEl()) {
+        const req = el.requestFullscreen || el.webkitRequestFullscreen;
+        if (!req) {
+          UI.toast('Full screen isn\'t available in this browser — on iPhone, tap Share → Add to Home Screen', '#ffd76a');
+          AudioSys.sfx('denied');
+          return;
+        }
+        const r = req.call(el);
+        if (r && r.catch) r.catch(() => {});
+      } else {
+        const exit = document.exitFullscreen || document.webkitExitFullscreen;
+        if (exit) exit.call(document);
+      }
+    } catch (e) { /* browser refused — ignore */ }
   },
 
   // Combat multiplier from diving "ONWARD" — 1.2× compounding per linked-map dive.

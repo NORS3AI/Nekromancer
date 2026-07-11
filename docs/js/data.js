@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.15-alpha';
+const GAME_VERSION = 'v1.6.16-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.16-alpha', date: 'July 2026',
+    notes: [
+      'New Settings → Gameplay toggle: "Full screen (hide address bar)" — hides the browser chrome on Android/desktop for a bigger play area',
+      'On iPhone/iPad the browser blocks true full screen, so the toggle points you to Share → "Add to Home Screen", which launches the game chrome-free'
+    ]
+  },
   {
     v: 'v1.6.15-alpha', date: 'July 2026',
     notes: [
