@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.17-alpha';
+const GAME_VERSION = 'v1.6.18-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.18-alpha', date: 'July 2026',
+    notes: [
+      'Bone Spikes is now instant — no cooldown',
+      'Long skill, rune and passive names no longer get cut off with "…" — they wrap onto two (or three) lines instead, so you can always read the full name',
+      'The chooser\'s Assigned Skill card is a touch taller so the full rune/skill description fits without being clipped'
+    ]
+  },
   {
     v: 'v1.6.17-alpha', date: 'July 2026',
     notes: [
@@ -1776,7 +1784,7 @@ const MAGIC_PREFIX = ['Sturdy', 'Sharp', 'Grim', 'Cold', 'Hungry', 'Pale'];
 // Behavior functions live in skills.js keyed by id.
 
 const SKILL_DATA = [
-  { id: 'boneSpikes',      name: 'Bone Spikes',       cat: 'primary',   lvl: 1,  cost: 0,  gain: 18, cd: 2 },
+  { id: 'boneSpikes',      name: 'Bone Spikes',       cat: 'primary',   lvl: 1,  cost: 0,  gain: 18, cd: 0 },
   { id: 'boneSpear',       name: 'Bone Spear',        cat: 'secondary', lvl: 2,  cost: 20, cd: 2 },
   { id: 'grimScythe',      name: 'Grim Scythe',       cat: 'primary',   lvl: 3,  cost: 0,  gain: 12, cd: 0.4 },
   { id: 'corpseExplosion', name: 'Corpse Explosion',  cat: 'corpse',    lvl: 4,  cost: 8,  cd: 3 },

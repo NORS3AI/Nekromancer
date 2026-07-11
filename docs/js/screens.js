@@ -16,6 +16,29 @@ const Screens = {
     return t + '…';
   },
 
+  // Draw a short label at (x, baseY), wrapping onto up to maxLines lines when it's
+  // too wide — NEVER truncated with "…" (owner rule: names read as 2–3 lines). The
+  // block is centred vertically on baseY so it barely disturbs the layout around
+  // it. Respects the current textAlign (centre for grid labels, left for rows).
+  // Used for skill / rune / passive names so long ones wrap instead of clipping.
+  wrapLabel(ctx, text, x, baseY, maxW, maxLines = 2, lh = 9) {
+    const words = String(text).split(' ');
+    const lines = [];
+    let line = '';
+    for (const w of words) {
+      const test = line ? line + ' ' + w : w;
+      if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; }
+      else line = test;
+    }
+    if (line) lines.push(line);
+    // Fold any overflow beyond maxLines into the last line (no ellipsis).
+    if (lines.length > maxLines) { lines[maxLines - 1] = lines.slice(maxLines - 1).join(' '); lines.length = maxLines; }
+    const _fs = (typeof Settings !== 'undefined' && Settings.g && Settings.g.fontSize) || 13;
+    const lineH = _fs !== 13 ? lh * (_fs / 13) : lh;
+    const startY = baseY - (lines.length - 1) * lineH / 2;
+    for (let i = 0; i < lines.length; i++) ctx.fillText(lines[i], x, startY + i * lineH);
+  },
+
   draw(ctx, W, H) {
     switch (UI.screen) {
       case 'radial': this.radial(ctx, W, H); break;
@@ -2219,7 +2242,7 @@ const Screens = {
       }
       ctx.fillStyle = locked ? '#6f6552' : sel ? '#ffd76a' : '#b5ab94';
       ctx.font = (sel ? 'bold ' : '') + '9px Georgia'; ctx.textAlign = 'center';
-      ctx.fillText(this.fitText(ctx, s.name, sCell - 4), sx, y + sR * 2 + 12);
+      this.wrapLabel(ctx, s.name, sx, y + sR * 2 + 12, sCell - 4, 2, 9);
       // Selecting a locked skill is allowed (to READ it); ACCEPT stays disabled
       // until you reach the unlock level.
       UI.register(sx - sR - 2, y - 12, sR * 2 + 4, sR * 2 + 28, () => {
@@ -2257,7 +2280,7 @@ const Screens = {
       ctx.globalAlpha = 1;
       ctx.fillStyle = locked ? '#6f6552' : sel ? '#6ff7c3' : '#b5ab94';
       ctx.font = (sel ? 'bold ' : '') + '8px Georgia'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-      ctx.fillText(this.fitText(ctx, ri === 0 ? 'No Rune' : rune.name, rCell - 2), rx, y + rR * 2 + 10);
+      this.wrapLabel(ctx, ri === 0 ? 'No Rune' : rune.name, rx, y + rR * 2 + 10, rCell - 2, 2, 8);
       // Unlock-level badge drawn ON TOP (a dark chip) so the rune art never clips it.
       if (locked && rune.lvl) {
         const bx = rx, byy = y - 1;
@@ -2281,15 +2304,16 @@ const Screens = {
     y += 20;
     const chSkill = SKILL_DATA.find(x => x.id === UI.sel.chSkill);
     const chRune = runes.find(r => r.id === UI.sel.chRune) || runes[0];
-    const cardH = 54;
+    const cardH = 68;
     UI.panel(ctx, px + 16, y, pw - 32, cardH);
     drawSkillIcon(ctx, UI.sel.chSkill, px + 16 + 28, y + cardH / 2, 20);
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 14px Georgia'; ctx.fillStyle = catDef.color;
-    ctx.fillText(chSkill ? chSkill.name : '', px + 64, y + 18);
+    ctx.fillText(chSkill ? chSkill.name : '', px + 64, y + 16);
     ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
-    ctx.fillText(this.fitText(ctx, (chRune && chRune.id !== 'base' ? '◈ ' + chRune.name + ' — ' : '') +
-      (chRune ? chRune.desc : ''), pw - 96), px + 64, y + 37);
+    // Wrap the rune name + description onto up to THREE lines instead of clipping.
+    wrapText(ctx, (chRune && chRune.id !== 'base' ? '◈ ' + chRune.name + ' — ' : '') +
+      (chRune ? chRune.desc : ''), px + 64, y + 32, pw - 84, 13, 3);
     y += cardH + 12;
 
     // ---- accept / cancel ----
@@ -2410,7 +2434,8 @@ const Screens = {
       ctx.font = 'bold ' + (UI.desktop ? 14 : 12) + 'px Georgia';
       ctx.fillStyle = locked ? '#5c5569' : (active ? '#d8b4f0' : '#c9bfa8');
       const name = s.name + (locked ? '  (lvl ' + s.lvl + ')' : '');
-      ctx.fillText(this.fitText(ctx, name, colW2 - 30), cx2 + 10, y + (rh - 4) / 2);
+      // Wrap long passive names to 2 lines rather than clipping with "…".
+      this.wrapLabel(ctx, name, cx2 + 10, y + (rh - 4) / 2, colW2 - 30, 2, UI.desktop ? 14 : 12);
       const nameW = ctx.measureText(name).width;
       ctx.textAlign = 'right';
       ctx.font = '10px Georgia';
