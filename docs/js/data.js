@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.12-alpha';
+const GAME_VERSION = 'v1.6.13-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.13-alpha', date: 'July 2026',
+    notes: [
+      'All gems now follow the same rule as Ruby — three of a tier are always worth less than one of the next, so combining is never a waste. The climbing stat is the one that isn\'t balance-capped: Emerald = Crit Damage, Amethyst = Life-per-Hit, Diamond = All-Resist, Topaz = Gold Find (its Resource-Cost reduction caps at 60%, so Gold carries the upgrade instead)',
+      'Note: Diamond All-Resist still caps at 80% damage reduction and Topaz Resource-Cost at 60%, so those particular effects plateau at the top tiers even as the numbers keep climbing'
+    ]
+  },
   {
     v: 'v1.6.12-alpha', date: 'July 2026',
     notes: [
@@ -1341,10 +1348,16 @@ const GEM_STATS = {
   // the next (combining 3→1 is a strict upgrade, never a loss). XP: 3/5/6 then
   // the old ladder unchanged. (Owner-tuned; big late values are intentional.)
   ruby:     [[3, .03], [10, .05], [32, .06], [98, .09], [300, .10], [930, .12], [2900, .15], [9000, .16], [28000, .17], [87000, .20], [270000, .22], [840000, .25], [2600000, .30]],
-  emerald:  [[.20, .02], [.40, .03], [.60, .04], [.80, .06], [1.0, .09], [1.2, .12], [1.4, .15], [1.6, .18], [1.8, .21], [2.0, .25], [2.3, .28], [2.6, .31], [3.0, .35]],
-  amethyst: [[35, 10], [60, 30], [160, 60], [260, 100], [500, 200], [750, 500], [1500, 700], [5000, 900], [10500, 1500], [17000, 3000], [28000, 7000], [40000, 15000], [75000, 30000]],
-  topaz:    [[.01, .03], [.03, .05], [.05, .07], [.07, .10], [.09, .12], [.11, .15], [.13, .20], [.15, .25], [.17, .30], [.19, .50], [.21, .70], [.22, 1.0], [.22, 2.5]],
-  diamond:  [[10, .012], [30, .016], [60, .02], [100, .035], [150, .05], [250, .07], [400, .09], [500, .11], [700, .13], [1000, .17], [1500, .19], [3000, .20], [5000, .25]]
+  // Every gem's "combine-worthy" stat climbs ~3.1× per tier so THREE of a tier
+  // are always worth less than ONE of the next (upgrading is never a loss),
+  // mirroring Ruby. The tripled stat is the one that ISN'T balance-capped:
+  //   Emerald → Crit Damage · Amethyst → Life-per-Hit · Diamond → All-Resist ·
+  //   Topaz → Gold (its Resource-Cost primary caps at 60%, so it can't triple).
+  // The other stat on each gem stays on its gentle ladder.
+  emerald:  [[.10, .02], [.32, .03], [1.0, .04], [3.2, .06], [10, .09], [32, .12], [100, .15], [320, .18], [1000, .21], [3200, .25], [10000, .28], [32000, .31], [100000, .35]],
+  amethyst: [[20, 10], [65, 30], [200, 60], [640, 100], [2000, 200], [6400, 500], [20000, 700], [64000, 900], [200000, 1500], [640000, 3000], [2000000, 7000], [6400000, 15000], [20000000, 30000]],
+  topaz:    [[.01, .03], [.03, .10], [.05, .31], [.07, 1.0], [.09, 3.1], [.11, 10], [.13, 31], [.15, 100], [.17, 310], [.19, 1000], [.21, 3100], [.22, 10000], [.22, 31000]],
+  diamond:  [[10, .012], [32, .016], [100, .02], [320, .035], [1000, .05], [3200, .07], [10000, .09], [32000, .11], [100000, .13], [320000, .17], [1000000, .19], [3200000, .20], [10000000, .25]]
 };
 
 // Most gem slots an item can hold, by rarity (Mystic enchants can uncover them):
