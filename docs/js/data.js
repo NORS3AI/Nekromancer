@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.19-alpha';
+const GAME_VERSION = 'v1.6.20-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.20-alpha', date: 'July 2026',
+    notes: [
+      'The Full screen toggle now appears on all phones/tablets (it wasn\'t showing in Orion because that browser doesn\'t advertise the fullscreen API up front). Tapping it enters full screen where the browser allows it, or points you to Add to Home Screen if it doesn\'t'
+    ]
+  },
   {
     v: 'v1.6.19-alpha', date: 'July 2026',
     notes: [

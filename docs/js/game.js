@@ -187,9 +187,14 @@ const Game = {
     return document.fullscreenElement || document.webkitFullscreenElement || null;
   },
   fullscreenSupported() {
-    // documentElement first, then the canvas (element-only iOS WebKit browsers).
-    return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled ||
-              this._fsRequest(document.documentElement) || this._fsRequest(this.canvas));
+    // 1) The API is advertised (Android/desktop, iPad Safari, Blink on iOS)…
+    if (document.fullscreenEnabled || document.webkitFullscreenEnabled ||
+        this._fsRequest(document.documentElement) || this._fsRequest(this.canvas)) return true;
+    // 2) …or it's a touch device (phone/tablet). Some iOS browsers — Orion in
+    // particular — support fullscreen without advertising the API on the elements
+    // we probe, so we still SHOW the toggle on any touch device and let the tap
+    // attempt it (toggleFullscreen explains gracefully if the browser refuses).
+    return (navigator.maxTouchPoints || 0) > 0 || ('ontouchstart' in window);
   },
   toggleFullscreen() {
     try {
@@ -201,7 +206,7 @@ const Game = {
         if (el && el.requestFullscreen) r = el.requestFullscreen({ navigationUI: 'hide' });
         else if (el && el.webkitRequestFullscreen) r = el.webkitRequestFullscreen();
         else {
-          UI.toast('Full screen isn\'t available in this browser — on iPhone use Orion or a Chromium browser, or Add to Home Screen', '#ffd76a');
+          UI.toast('This browser blocks full screen for web pages — Add to Home Screen for a chrome-free launch', '#ffd76a');
           AudioSys.sfx('denied');
           return;
         }
