@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.20-alpha';
+const GAME_VERSION = 'v1.6.21-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.21-alpha', date: 'July 2026',
+    notes: [
+      'Toast messages now wrap onto multiple lines instead of running off the edges of the screen — long notifications (like the full-screen guidance) are fully readable',
+      'Confirmed: Orion on iOS doesn\'t let web pages trigger full screen, so the toggle points you to Add to Home Screen (which launches the game chrome-free)'
+    ]
+  },
   {
     v: 'v1.6.20-alpha', date: 'July 2026',
     notes: [

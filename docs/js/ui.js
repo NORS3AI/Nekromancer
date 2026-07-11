@@ -792,6 +792,22 @@ const UI = {
 
   // A feed of loot / salvage / forge / enchant messages, pinned to the BOTTOM
   // of the screen and drawn above menus so it's visible inside the artisans.
+  // Greedy word-wrap for a toast so a long message never runs off-screen (no
+  // ellipsis — owner rule).
+  _wrapToast(ctx, text, maxW) {
+    if (ctx.measureText(text).width <= maxW) return [text];
+    const words = String(text).split(' ');
+    const lines = [];
+    let line = '';
+    for (const w of words) {
+      const test = line ? line + ' ' + w : w;
+      if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; }
+      else line = test;
+    }
+    if (line) lines.push(line);
+    return lines;
+  },
+
   drawToasts(ctx, W) {
     for (let i = this.toasts.length - 1; i >= 0; i--) {
       if (this.toasts[i].until < Game.time) this.toasts.splice(i, 1);
@@ -803,6 +819,8 @@ const UI = {
     const st = (this.safe || { top: 0 }).top || 0;
     const n = this.toasts.length;
     const H = Game.H || 700;
+    const maxW = Math.min(W - 28, 440);   // keep pills on-screen; wrap past this
+    const lineH = 16;
     // Anchor position (owner setting): top / middle / bottom.
     const pos = Settings.g.lootPos || 'bottom';
     const anchorY = pos === 'top' ? 96 + st
@@ -810,25 +828,38 @@ const UI = {
       : H - (this.desktop ? 116 : 30) - sb;
     const dir = pos === 'top' ? 1 : -1;   // stack away from the anchored edge
     const arc = Settings.g.lootStyle === 'arc';
+    // Pre-wrap each toast so we can stack them without overlap (taller pills push
+    // their neighbours further from the anchor edge; newest stays nearest it).
+    const wrapped = this.toasts.map(t => this._wrapToast(ctx, t.text, maxW));
+    const offs = [];
+    let acc = 0;
+    for (let i = n - 1; i >= 0; i--) {
+      const bh = wrapped[i].length * lineH + 8;
+      offs[i] = acc + bh / 2;
+      acc += bh + 6;
+    }
     this.toasts.forEach((t, i) => {
       const left = t.until - Game.time;
       ctx.globalAlpha = clamp(left / 0.5, 0, 1);
+      const lines = wrapped[i];
+      const boxH = lines.length * lineH + 8;
       let x = W / 2, y;
       if (arc) {
-        // Fan the messages along a shallow arc that bows off the anchor edge.
         const rel = i - (n - 1) / 2;
         x = W / 2 + rel * Math.min(140, W * 0.2);
         y = anchorY + dir * (rel * rel) * 9;
       } else {
-        y = anchorY + dir * (n - 1 - i) * 24;   // straight column
+        y = anchorY + dir * offs[i];   // straight column, spaced by real height
       }
-      const tw = ctx.measureText(t.text).width;
+      let tw = 0;
+      for (const ln of lines) tw = Math.max(tw, ctx.measureText(ln).width);
       ctx.fillStyle = 'rgba(6,4,10,0.85)';
-      rr(ctx, x - tw / 2 - 12, y - 11, tw + 24, 22, 7); ctx.fill();
+      rr(ctx, x - tw / 2 - 12, y - boxH / 2, tw + 24, boxH, 7); ctx.fill();
       ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 1;
-      rr(ctx, x - tw / 2 - 12, y - 11, tw + 24, 22, 7); ctx.stroke();
+      rr(ctx, x - tw / 2 - 12, y - boxH / 2, tw + 24, boxH, 7); ctx.stroke();
       ctx.fillStyle = t.color;
-      ctx.fillText(t.text, x, y);
+      const startY = y - (lines.length - 1) * lineH / 2;
+      for (let li = 0; li < lines.length; li++) ctx.fillText(lines[li], x, startY + li * lineH);
     });
     ctx.globalAlpha = 1;
   },
