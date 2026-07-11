@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.14-alpha';
+const GAME_VERSION = 'v1.6.15-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.15-alpha', date: 'July 2026',
+    notes: [
+      'Diamond All-Resist now starts at 10 (Chipped) and climbs smoothly to 5000 (Marquise)',
+      'Amethyst Life-per-Hit now starts at 10 (Chipped) and grows gradually up to 75000 (Marquise)'
+    ]
+  },
   {
     v: 'v1.6.14-alpha', date: 'July 2026',
     notes: [
@@ -1362,9 +1369,9 @@ const GEM_STATS = {
   // The other stat on each gem stays on its gentle ladder.
   ruby:     [[6, .03], [9, .05], [13, .06], [20, .09], [29, .10], [44, .12], [66, .15], [99, .16], [148, .17], [222, .20], [333, .22], [500, .25], [750, .30]],
   emerald:  [[.023, .02], [.035, .03], [.052, .04], [.078, .06], [.117, .09], [.176, .12], [.263, .15], [.395, .18], [.593, .21], [.889, .25], [1.333, .28], [2.0, .31], [3.0, .35]],
-  amethyst: [[578, 10], [867, 30], [1301, 60], [1951, 100], [2926, 200], [4390, 500], [6584, 700], [9877, 900], [14815, 1500], [22222, 3000], [33333, 7000], [50000, 15000], [75000, 30000]],
+  amethyst: [[10, 10], [21, 30], [44, 60], [93, 100], [196, 200], [412, 500], [866, 700], [1822, 900], [3832, 1500], [8059, 3000], [16952, 7000], [35657, 15000], [75000, 30000]],
   topaz:    [[.01, .019], [.03, .029], [.05, .043], [.07, .065], [.09, .098], [.11, .146], [.13, .219], [.15, .329], [.17, .494], [.19, .741], [.21, 1.111], [.22, 1.667], [.22, 2.5]],
-  diamond:  [[39, .012], [58, .016], [87, .02], [130, .035], [195, .05], [293, .07], [439, .09], [658, .11], [988, .13], [1481, .17], [2222, .19], [3333, .20], [5000, .25]]
+  diamond:  [[10, .012], [17, .016], [28, .02], [47, .035], [79, .05], [133, .07], [224, .09], [375, .11], [630, .13], [1057, .17], [1775, .19], [2979, .20], [5000, .25]]
 };
 
 // Most gem slots an item can hold, by rarity (Mystic enchants can uncover them):
