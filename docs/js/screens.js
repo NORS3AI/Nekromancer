@@ -3817,13 +3817,16 @@ const Screens = {
       UI.toast(Settings.g.electiveMode ? 'Elective Mode ON — any skill in any slot' : 'Elective Mode OFF — one skill per category', '#6ff7c3');
     }, 'Elective Mode (multiple skills per category)');
     gy += rowStep;
-    // Full screen — hide the mobile browser's address bar / chrome. This is a
-    // live browser state (not a saved toggle); the checkbox mirrors it. On iOS,
-    // where the Fullscreen API is unsupported, tapping guides to Add to Home Screen.
-    UI.check(ctx, gx, gy, !!Game.fullscreenEl(), () => {
-      Game.toggleFullscreen();
-    }, 'Full screen (hide address bar)');
-    gy += rowStep;
+    // Full screen — hide the browser's address bar / chrome (live browser state,
+    // not a saved toggle; the checkbox mirrors it). ONLY shown where the
+    // Fullscreen API works (Android/desktop); iOS Safari can't do it, so the
+    // toggle is hidden there (Add to Home Screen is the iOS route instead).
+    if (Game.fullscreenSupported()) {
+      UI.check(ctx, gx, gy, !!Game.fullscreenEl(), () => {
+        Game.toggleFullscreen();
+      }, 'Full screen (hide address bar)');
+      gy += rowStep;
+    }
     const toggles = [
       ['dmgNumbers', 'Damage numbers (red/yellow/green)'],
       ['dpsMeter', 'DPS meter (drag to move · lock)'],

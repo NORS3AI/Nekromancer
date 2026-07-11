@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.16-alpha';
+const GAME_VERSION = 'v1.6.17-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.17-alpha', date: 'July 2026',
+    notes: [
+      'The "Full screen" toggle now only appears in browsers that actually support it (Android/desktop); it\'s hidden on iOS where the browser blocks it (use Add to Home Screen there)'
+    ]
+  },
   {
     v: 'v1.6.16-alpha', date: 'July 2026',
     notes: [
