@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.26-alpha';
+const GAME_VERSION = 'v1.6.27-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.27-alpha', date: 'July 2026',
+    notes: [
+      'Diving ONWARD is now MUCH harder — new per-depth difficulty: Depth 1 = 2×, 2 = 3×, 3 = 4×, 4 = 6×, 5 = 8×, 6 = 10×, 7 = 13×, 8 = 16×, 9 = 19×, 10 = 25×, 11 = 30×, 12 = 40× the surface (HP, damage and XP), on top of your Torment tier',
+      'Slaying a boss on a deeper floor now drops a DEPTH CACHE that scales with how deep you are — the deepest floor (Depth 12) pays out 6× a Horadric cache: piles of gold, Forgotten Souls, gems, and guaranteed named legendaries'
+    ]
+  },
   {
     v: 'v1.6.26-alpha', date: 'July 2026',
     notes: [

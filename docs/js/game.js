@@ -8,7 +8,10 @@
 // The "ONWARD" linked-map chain gets 1.2× deadlier per dive and bottoms out
 // after this many dives (the deepest floor has no further exit — turn back).
 const MAX_LINK_DEPTH = 12;
-const LINK_DEPTH_STEP = 1.2;
+// Per-depth combat multiplier for "ONWARD" dives (owner-tuned). Index = depth;
+// applied to monster HP, damage and XP on top of the difficulty tier. Depth 12
+// is a brutal 40× the surface.
+const DEPTH_MULT = [1, 2, 3, 4, 6, 8, 10, 13, 16, 19, 25, 30, 40];
 
 // Camera view modes. BIRD'S EYE is the classic straight-down view (zoom 1, no
 // tilt). TOP DOWN is a closer, Diablo-3-style angle: zoomed in for a more
@@ -40,7 +43,7 @@ const Game = {
   townPortalNear: false,  // debounce so standing on the portal doesn't loop the menu
   mapStack: [],           // parked map snapshots you can walk BACK into (true backtracking)
   linkDebounce: false,    // step-off-then-on gate for entrance/exit/cave portals
-  linkDepth: 0,           // how many "ONWARD" dives deep — each dive is 1.2× deadlier (cap MAX_LINK_DEPTH)
+  linkDepth: 0,           // how many "ONWARD" dives deep — difficulty per DEPTH_MULT (cap MAX_LINK_DEPTH)
   onwardSealed: false,    // once a boss is slain in ANY deeper map, no more diving ONWARD until you're back on the original map
   // Multi-area journeys: a bounty/adventure run spans several linked maps.
   stage: 1,
@@ -227,7 +230,7 @@ const Game = {
 
   // Combat multiplier from diving "ONWARD" — 1.2× compounding per linked-map dive.
   depthMul() {
-    return Math.pow(LINK_DEPTH_STEP, this.linkDepth || 0);
+    return DEPTH_MULT[clamp(this.linkDepth || 0, 0, MAX_LINK_DEPTH)];
   },
 
   // ---- Camera view mode (Bird's Eye vs Top Down) ----
@@ -592,6 +595,7 @@ const Game = {
       // Slaying a deeper boss seals the ONWARD path: no diving deeper anywhere
       // until you climb all the way back to the original map (only BACK stays open).
       this.onwardSealed = true;
+      this.grantDepthCache(boss);   // depth-scaled loot (Depth 12 = 6× a Horadric cache)
       fxNova(boss.x, boss.y, 220);
       AudioSys.sfx('portal');
       Particles.shake(8);
@@ -689,6 +693,45 @@ const Game = {
     fxNova(boss.x, boss.y, 220);
     AudioSys.sfx('portal');
     Particles.shake(8);
+  },
+
+  // Loot for slaying a boss on a deeper ONWARD floor — scales with depth so that
+  // the DEEPEST floor (depth 12) is worth 6× a Horadric cache (owner rule). One
+  // "cache unit" ≈ the Horadric Stash: gold + 3 Forgotten Souls + 2 gems. The
+  // multiplier is depth/2 → 0.5× at depth 1 up to 6× at depth 12.
+  grantDepthCache(boss) {
+    const depth = this.linkDepth || 0;
+    if (depth < 1) return;
+    const diff = DIFFICULTIES[Hero.difficulty];
+    const mLvl = this.monsterLevel();
+    const cacheMul = depth / 2;                       // depth 12 → 6×
+    const unitGold = Math.round((500 + mLvl * 70) * diff.reward);
+    const totalGold = Math.round(unitGold * cacheMul);
+    const souls = Math.round(3 * cacheMul);
+    const gems = Math.round(2 * cacheMul);
+    // Scatter the gold in piles around the boss.
+    const piles = clamp(Math.round(cacheMul * 2), 2, 16);
+    for (let i = 0; i < piles; i++) {
+      const g = new Pickup(boss.x + rand(-46, 46), boss.y + rand(-46, 46), 'gold');
+      g.amount = Math.max(1, Math.round(totalGold / piles));
+      this.pickups.push(g);
+    }
+    // Souls + gems straight to the hero.
+    Hero.mats.soul += souls;
+    for (let i = 0; i < gems; i++) Hero.gems.push(Items.dropGem());
+    // Gear: more, and better, the deeper you are — guaranteed named legendaries deep.
+    const items = clamp(Math.round(cacheMul), 1, 6);
+    for (let i = 0; i < items; i++) {
+      const pu = new Pickup(boss.x + rand(-34, 34), boss.y + rand(-34, 34), 'item');
+      pu.item = (depth >= 8 || Math.random() < depth / 14)
+        ? Items.generatePowerItem(mLvl, null, true)
+        : Items.generate(mLvl + 1, 0.4);
+      this.pickups.push(pu);
+    }
+    Hero.save();
+    const mulLabel = (cacheMul % 1 ? cacheMul.toFixed(1) : cacheMul) + '×';
+    UI.toast('◈ Depth ' + depth + ' cache — ' + mulLabel + ' Horadric  ·  ' + souls + ' souls · ' + gems + ' gems', '#8fb0e8');
+    AudioSys.sfx('setdrop');
   },
 
   completeZone() {
@@ -1142,8 +1185,8 @@ const Game = {
     AudioSys.sfx('portal');
     const mul = this.depthMul();
     const sub = cave ? 'Something ancient stirs in the dark'
-      : atFloor ? 'The abyss bottoms out — no path leads deeper. Turn back.'
-      : 'Depth ' + newDepth + ' — foes hit ' + mul.toFixed(1) + '× harder. The way back stays open.';
+      : atFloor ? 'DEPTH 12 — the abyss bottoms out. Foes hit 40× harder; no path leads deeper. Turn back.'
+      : 'Depth ' + newDepth + ' — foes hit ' + mul + '× harder. The way back stays open.';
     this.showBanner(cave ? 'INTO THE CAVE' : 'DEEPER STILL', sub, 2.6);
   },
 
