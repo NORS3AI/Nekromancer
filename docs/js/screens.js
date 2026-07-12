@@ -4295,8 +4295,8 @@ const Screens = {
       AudioSys.sfx('setdrop');
     }, { color: '#4ade80', border: '#2e7a4a' });
     row('◈ Royal Grandeur (Act 1) → Stash', () => Screens.grantLegendary('royalGrandeur'), { color: '#ffd76a', border: '#8a6f4a' });
-    row('⚔ Bloodtide Blade (Act 2) → Stash', () => Screens.grantLegendary('bloodtide'), { color: '#e04a5a', border: '#8a2635' });
-    row('⚔ Scythe of the Cycle (Act 3) → Stash', () => Screens.grantLegendary('cycleScythe'), { color: '#b06adf', border: '#5a3a7a' });
+    row('⚔ Bloodtide Blade (Act 5) → Stash', () => Screens.grantLegendary('bloodtide'), { color: '#e04a5a', border: '#8a2635' });
+    row('⚔ Scythe of the Cycle (Act 10) → Stash', () => Screens.grantLegendary('cycleScythe'), { color: '#b06adf', border: '#5a3a7a' });
 
     // ---- SPAWN REAGENT BOSSES (one button each) ----
     section('Spawn Reagent Bosses');

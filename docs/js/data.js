@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.34-alpha';
+const GAME_VERSION = 'v1.6.35-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.35-alpha', date: 'July 2026',
+    notes: [
+      'Act uniques moved DEEPER: the Bloodtide Blade now drops from the ACT 5 boss and the Scythe of the Cycle from the ACT 10 boss (guaranteed the first clear, 50% after) — the Ring of Royal Grandeur stays on Act 1',
+      'FOUR more D3 stats now roll on gear as real affixes (previously gem-only): Crit Damage, Cooldown Reduction, Resource Cost Reduction and Life per Hit. They stack on top of any gem sources and show on the Character Sheet',
+      'Mystic groups: Crit Damage & Cooldown Reduction reroll within Offense, Life per Hit within Defense, Resource Cost Reduction within Utility'
+    ]
+  },
   {
     v: 'v1.6.34-alpha', date: 'July 2026',
     notes: [
@@ -1853,6 +1861,12 @@ const AFFIX_ROLLS = {
   vit:   { base: 12,   label: v => `+${Math.round(v)} Vitality` },
   // Attack Speed — % faster Primary/Secondary attacks (shorter cooldowns).
   atkSpeed: { base: 0.04, label: v => `+${(v * 100).toFixed(1)}% attack speed` },
+  // Combat stats that used to come ONLY from gems, now rollable on gear too. They
+  // share the SAME player fields as the gems (they simply add on top).
+  critDmg: { base: 0.05,  label: v => `+${Math.round(v * 100)}% crit damage` },
+  cdr:     { base: 0.015, label: v => `+${Math.round(v * 100)}% cooldown reduction` },
+  rcr:     { base: 0.015, label: v => `+${Math.round(v * 100)}% resource cost reduction` },
+  lph:     { base: 60,    label: v => `+${Math.round(v)} life per hit` },
   // Movement speed rolls ONLY on boots (1%–25%), handled specially in generation.
   move:  { base: 0.06, label: v => `+${Math.round(v * 100)}% movement speed` },
   // Special affixes — never roll on random gear; placed on set/legendary items only.
@@ -1867,9 +1881,9 @@ const RESTRICTED_AFFIXES = new Set(['move', 'dnova', 'area']);
 // odds — enchanting is a targeted choice, not a slot machine. `dnova`/`area`
 // are signature legendary affixes and belong to no group (never rerollable).
 const AFFIX_GROUPS = {
-  offense: ['dmg', 'crit', 'ess', 'int', 'atkSpeed'],   // damage, crit, essence/s, Intelligence, attack speed
-  defense: ['hp', 'armor', 'reg', 'vit'],               // life, armor, life/s, Vitality
-  utility: ['gold', 'move']                             // gold find, movement (move is boots-only)
+  offense: ['dmg', 'crit', 'ess', 'int', 'atkSpeed', 'critDmg', 'cdr'],  // + crit damage, cooldown reduction
+  defense: ['hp', 'armor', 'reg', 'vit', 'lph'],                        // + life per hit
+  utility: ['gold', 'move', 'rcr']                                      // + resource cost reduction
 };
 const AFFIX_GROUP_NAME = { offense: 'Offense', defense: 'Defense', utility: 'Utility' };
 function affixGroup(key) {
@@ -1894,6 +1908,10 @@ const AFFIX_CAP = {
   // no ceiling and keep scaling with item level/rarity/★ (absent from this table
   // → affixCap() returns Infinity, so nothing clamps them).
   atkSpeed: 0.75, // 75% attack speed (kept: uncapped would zero out cooldowns)
+  critDmg: 5.0,   // +500% crit damage
+  cdr: 0.20,      // +20% cooldown reduction per item (total capped 60% in computeStats)
+  rcr: 0.20,      // +20% resource cost reduction per item (total capped 60%)
+  lph: 60000,     // 60000 life per hit
   dnova: 6.0, area: 1.5   // signature affixes — generous
 };
 // Fraction of the Artifact-5★ ceiling a given rarity/star tier can reach (so a

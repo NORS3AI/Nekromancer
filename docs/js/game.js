@@ -849,8 +849,8 @@ const Game = {
       const act = this.storyAct || 1;
       // The Act's signature legendary — GUARANTEED the first time you finish the
       // Act, 50% every time after (owner rule): Act 1 → Ring of Royal Grandeur ·
-      // 2 → Bloodtide Blade · 3 → Scythe of the Cycle. Shown right in the cache.
-      const ACT_UNIQUE = { 1: 'royalGrandeur', 2: 'bloodtide', 3: 'cycleScythe' };
+      // Act 5 → Bloodtide Blade · Act 10 → Scythe of the Cycle. Shown in the cache.
+      const ACT_UNIQUE = { 1: 'royalGrandeur', 5: 'bloodtide', 10: 'cycleScythe' };
       const ukey = ACT_UNIQUE[act];
       if (ukey) {
         Hero.actUniques = Hero.actUniques || {};
