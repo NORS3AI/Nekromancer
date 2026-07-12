@@ -3999,22 +3999,57 @@ const Screens = {
 
   // ------------------------------------------------------- manual saves
 
+  // Copy the current hero's save code to the clipboard and show it (canvas game
+  // has no text field, so a native prompt lets the player select/copy manually).
+  exportSave() {
+    const code = Saves.exportCode();
+    if (!code) { UI.toast('Export failed', '#e04a5a'); AudioSys.sfx('denied'); return; }
+    let copied = false;
+    try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(code); copied = true; } } catch (e) { /* ignore */ }
+    try { window.prompt(copied ? 'Copied to clipboard! Or copy your save code here:' : 'Copy your save code:', code); } catch (e) { /* prompt blocked */ }
+    UI.toast(copied ? 'Save code copied to clipboard' : 'Save code shown — copy it to back up', '#ffd76a');
+    AudioSys.sfx('gem');
+  },
+
+  // Paste a save code to REPLACE the current hero.
+  importSave() {
+    let str = null;
+    try { str = window.prompt('Paste a save code to REPLACE your current hero:'); } catch (e) { UI.toast('Paste is unavailable in this browser', '#e04a5a'); return; }
+    if (str == null || str.trim() === '') return;
+    if (Saves.importCode(str)) {
+      UI.toast('Save imported — welcome back, ' + Hero.name, '#6ff7c3');
+      AudioSys.sfx('level');
+      UI.close();
+      Game.toCamp();
+    } else {
+      UI.toast('That doesn\'t look like a valid save code', '#e04a5a');
+      AudioSys.sfx('denied');
+    }
+  },
+
   savesTab(ctx, W, H, px, py, pw, ph) {
     const saves = Saves.list();
-    UI.btn(ctx, px + 16, py + 84, pw - 32, 38,
+    UI.btn(ctx, px + 16, py + 76, pw - 32, 34,
       saves.length >= Saves.MAX ? 'ALL 20 SLOTS FULL' : '＋ SAVE CURRENT HERO  (' + saves.length + ' / ' + Saves.MAX + ')',
       saves.length >= Saves.MAX ? null : () => Saves.add(),
       { size: 13, disabled: saves.length >= Saves.MAX, border: '#57b894', color: '#6ff7c3' });
+
+    // Portable export / import — move a hero between browsers or devices.
+    const halfW = (pw - 40) / 2;
+    UI.btn(ctx, px + 16, py + 114, halfW, 30, '⬆ EXPORT CODE', () => this.exportSave(),
+      { size: 11, border: '#8a6f4a', color: '#ffd76a' });
+    UI.btn(ctx, px + 24 + halfW, py + 114, halfW, 30, '⬇ IMPORT CODE', () => this.importSave(),
+      { size: 11, border: '#5a7fb0', color: '#8fb0e8' });
 
     if (!saves.length) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = 'italic 12px Georgia';
       ctx.fillStyle = '#544d44';
-      ctx.fillText('No manual saves yet. The game still autosaves constantly.', W / 2, py + 150);
+      ctx.fillText('No manual saves yet. The game still autosaves constantly.', W / 2, py + 174);
       return;
     }
-    let y = py + 132;
-    const rowH = Math.min(30, (ph - 150) / Math.max(1, saves.length));
+    let y = py + 156;
+    const rowH = Math.min(30, (ph - 176) / Math.max(1, saves.length));
     saves.forEach((s, i) => {
       if (y > py + ph - 26) return;
       ctx.fillStyle = 'rgba(28,24,38,0.92)';

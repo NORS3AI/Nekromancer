@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.38-alpha';
+const GAME_VERSION = 'v1.6.39-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.39-alpha', date: 'July 2026',
+    notes: [
+      'SAVE EXPORT / IMPORT — back up a hero or move it to another browser or device. Settings ▸ SAVES now has EXPORT CODE (copies a save code to your clipboard) and IMPORT CODE (paste one in to restore that hero). The code is a compact text string; importing REPLACES your current hero'
+    ]
+  },
   {
     v: 'v1.6.38-alpha', date: 'July 2026',
     notes: [

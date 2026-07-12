@@ -115,6 +115,32 @@ const Saves = {
       this.persist(arr);
       UI.toast('Deleted save: ' + s.name, '#9a9080');
     }
+  },
+
+  // ------- portable export / import (move a hero between browsers/devices) -----
+  // A save code is "NEKRO1:" + base64(JSON snapshot). Unicode-safe (hero names).
+  exportCode() {
+    try {
+      const json = JSON.stringify(Hero.snapshot());
+      return 'NEKRO1:' + btoa(unescape(encodeURIComponent(json)));
+    } catch (e) { return null; }
+  },
+
+  // Parse a save code and REPLACE the current hero. Returns true on success.
+  importCode(str) {
+    if (!str) return false;
+    let code = String(str).trim();
+    const tag = code.indexOf('NEKRO1:');
+    if (tag >= 0) code = code.slice(tag + 7);
+    code = code.replace(/\s+/g, '');
+    if (!code) return false;
+    let data;
+    try { data = JSON.parse(decodeURIComponent(escape(atob(code)))); }
+    catch (e) { return false; }
+    if (!data || typeof data !== 'object' || typeof data.level !== 'number' || !data.name) return false;
+    Hero.applySnapshot(data);
+    Hero.save();
+    return true;
   }
 };
 
