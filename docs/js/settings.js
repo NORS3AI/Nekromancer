@@ -73,7 +73,8 @@ const Settings = {
     corpseCap: 100,       // corpses linger until this many exist (stress test)
     cursorScale: 1,       // bone-hand mouse cursor size: 1× / 2× / 3×
     mono: false,          // fold WebAudio output to one channel (single/mono speaker)
-    fontSize: 13          // global UI font size (8–22); scales all text via ctx.font
+    fontSize: 13,         // global UI font size (8–22); scales all text via ctx.font
+    viewMode: 'birdseye'  // camera: 'birdseye' (straight down) | 'topdown' (D3-style tilt + zoom)
   },
   keys: JSON.parse(JSON.stringify(KEY_DEFAULTS)),  // action -> [KeyboardEvent.code]
   _codeToAction: {},

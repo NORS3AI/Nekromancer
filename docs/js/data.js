@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.21-alpha';
+const GAME_VERSION = 'v1.6.22-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.22-alpha', date: 'July 2026',
+    notes: [
+      'NEW — Camera view toggle (Settings ▸ Gameplay): choose BIRD\'S EYE (the classic straight-down view) or TOP DOWN — a closer, Diablo-3-style tilted-down angle that\'s more personal with the monsters, bosses and environment',
+      'Top Down zooms in and adds a gentle vertical tilt; aiming, the torch light, fog-of-war and the objective chevron all stay accurate under the new angle'
+    ]
+  },
   {
     v: 'v1.6.21-alpha', date: 'July 2026',
     notes: [

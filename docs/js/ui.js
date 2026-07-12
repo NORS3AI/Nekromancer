@@ -597,11 +597,14 @@ const UI = {
     const d = dist(p.x, p.y, tgt.x, tgt.y);
     if (d < 320) return;
     const a = angleTo(p.x, p.y, tgt.x, tgt.y);
-    const sx = p.x - Game.camera.x + Math.cos(a) * 74;
-    const sy = p.y - Game.camera.y + Math.sin(a) * 74;
+    // World angle → on-screen angle (tilt squashes the vertical component).
+    const as = Math.atan2(Math.sin(a) * Game.viewTilt(), Math.cos(a));
+    const hs = Game.worldToScreen(p.x, p.y);
+    const sx = hs.x + Math.cos(as) * 74;
+    const sy = hs.y + Math.sin(as) * 74;
     ctx.save();
     ctx.translate(sx, sy);
-    ctx.rotate(a);
+    ctx.rotate(as);
     ctx.globalAlpha = 0.55 + 0.25 * Math.sin(Game.time * 5);
     ctx.strokeStyle = Game.bossDead ? '#b06adf' : '#ffb43a';
     ctx.lineWidth = 3.5;

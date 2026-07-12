@@ -175,9 +175,8 @@ const Input = {
   mouseAngle() {
     const p = Game.player;
     if (!p) return null;
-    return Math.atan2(
-      this.mousePos.y - (p.y - Game.camera.y),
-      this.mousePos.x - (p.x - Game.camera.x));
+    const hs = Game.worldToScreen(p.x, p.y);   // hero's on-screen position (zoom/tilt aware)
+    return Game.aimWorldAngle(this.mousePos.x - hs.x, this.mousePos.y - hs.y);
   },
 
   fixedAnchor() {
@@ -260,7 +259,7 @@ const Input = {
         const dy = t.clientY - bt.sy;
         if (Math.hypot(dx, dy) > 16) {
           bt.aiming = true;
-          bt.angle = Math.atan2(dy, dx);
+          bt.angle = Game.aimWorldAngle(dx, dy);
         }
       }
     }

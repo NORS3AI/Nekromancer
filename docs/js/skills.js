@@ -28,11 +28,10 @@ function strongestEnemy(x, y, maxDist = 750) {
 function resolveAim(explicit) {
   const p = Game.player;
   if (explicit !== null && explicit !== undefined) return explicit;
-  if (Input.aim.active) return Math.atan2(Input.aim.y, Input.aim.x);
+  if (Input.aim.active) return Game.aimWorldAngle(Input.aim.x, Input.aim.y);
   if (Input.mousePrimary || Input.mouseSecondary) {
-    return Math.atan2(
-      Input.mousePos.y - (p.y - Game.camera.y),
-      Input.mousePos.x - (p.x - Game.camera.x));
+    const hs = Game.worldToScreen(p.x, p.y);
+    return Game.aimWorldAngle(Input.mousePos.x - hs.x, Input.mousePos.y - hs.y);
   }
   const e = nearestEnemy(p.x, p.y);
   if (e) return angleTo(p.x, p.y, e.x, e.y);

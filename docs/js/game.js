@@ -10,6 +10,13 @@
 const MAX_LINK_DEPTH = 12;
 const LINK_DEPTH_STEP = 1.2;
 
+// Camera view modes. BIRD'S EYE is the classic straight-down view (zoom 1, no
+// tilt). TOP DOWN is a closer, Diablo-3-style angle: zoomed in for a more
+// personal feel with the monsters/bosses, plus a gentle vertical foreshorten
+// that fakes a tilted-down camera. Tunable.
+const TOPDOWN_ZOOM = 1.45;
+const TOPDOWN_TILT = 0.85;
+
 const Game = {
   canvas: null,
   ctx: null,
@@ -221,6 +228,35 @@ const Game = {
   // Combat multiplier from diving "ONWARD" — 1.2× compounding per linked-map dive.
   depthMul() {
     return Math.pow(LINK_DEPTH_STEP, this.linkDepth || 0);
+  },
+
+  // ---- Camera view mode (Bird's Eye vs Top Down) ----
+  topDown() {
+    return typeof Settings !== 'undefined' && Settings.g && Settings.g.viewMode === 'topdown';
+  },
+  viewZoom() { return this.topDown() ? TOPDOWN_ZOOM : 1; },
+  viewTilt() { return this.topDown() ? TOPDOWN_TILT : 1; },
+  // Set up the world-space transform (zoom + vertical tilt about the screen
+  // centre). Bird's Eye reduces to the plain camera translate.
+  applyWorldTransform(ctx, cam) {
+    const Z = this.viewZoom(), TY = this.viewTilt();
+    if (Z === 1 && TY === 1) { ctx.translate(-cam.x, -cam.y); return; }
+    ctx.translate(this.W / 2, this.H / 2);
+    ctx.scale(Z, Z * TY);
+    ctx.translate(-(cam.x + this.W / 2), -(cam.y + this.H / 2));
+  },
+  // World → screen for HUD-layer overlays (torch light, fog, objective chevron).
+  worldToScreen(wx, wy) {
+    const Z = this.viewZoom(), TY = this.viewTilt(), c = this.camera;
+    if (Z === 1 && TY === 1) return { x: wx - c.x, y: wy - c.y };
+    const cx = c.x + this.W / 2, cy = c.y + this.H / 2;
+    return { x: (wx - cx) * Z + this.W / 2, y: (wy - cy) * Z * TY + this.H / 2 };
+  },
+  // Convert a SCREEN-space aim direction (dx,dy) into a WORLD-space angle. Uniform
+  // zoom cancels out; only the tilt un-squashes the vertical component so shots go
+  // where the player points. Bird's Eye → plain atan2(dy,dx).
+  aimWorldAngle(dx, dy) {
+    return Math.atan2(dy / this.viewTilt(), dx);
   },
 
   showBanner(text, sub = '', dur = 2.6) {
@@ -1459,7 +1495,7 @@ const Game = {
     const cam = { x: this.camera.x + sx, y: this.camera.y + sy };
 
     ctx.save();
-    ctx.translate(-cam.x, -cam.y);
+    this.applyWorldTransform(ctx, cam);
 
     World.drawGround(ctx, cam, this.W, this.H);
     this.drawTelegraphs(ctx);
@@ -1520,12 +1556,13 @@ const Game = {
     if (!p) return;
     const torch = Hero.equipped.torch;
     const T = torch ? (TORCH_TYPES[torch.torch] || TORCH_TYPES.wood) : null;
-    const sx = p.x - this.camera.x, sy = p.y - this.camera.y;
+    const ps = this.worldToScreen(p.x, p.y);
+    const sx = ps.x, sy = ps.y;
     if (!isFinite(sx) || !isFinite(sy)) return;   // never let a bad coord crash the frame
     // Crypts are the true dark; open daylit lands stay bright (the torch just
     // adds a cozy glow there) so the wilds never read as "too dark".
     const dark = this.zone && this.zone.kind === 'dungeon';
-    const R = this.lightRadius();                 // lit radius
+    const R = this.lightRadius() * this.viewZoom(); // lit radius (screen px; zoom-scaled)
     const edge = dark ? (T ? 0.52 : 0.9) : (T ? 0.16 : 0.28); // darkness at the far edge
     const outer = Math.max(R + 60, Math.hypot(this.W, this.H) * 0.62);
     const g = ctx.createRadialGradient(sx, sy, R * 0.4, sx, sy, outer);
@@ -1585,7 +1622,10 @@ const Game = {
     }
     ctx.save();
     ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(this.fogBuf, -cam.x, -cam.y, w * F, h * F);
+    // Draw the world-sized fog buffer through the SAME view transform as the
+    // world, so it lines up under zoom / tilt (Bird's Eye = plain -cam translate).
+    this.applyWorldTransform(ctx, cam);
+    ctx.drawImage(this.fogBuf, 0, 0, w * F, h * F);
     ctx.restore();
   }
 };
