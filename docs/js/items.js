@@ -1243,7 +1243,8 @@ const Items = {
     const s = this.computeStats();
     const oldMax = p.maxHp || s.maxHp;
     p.dmgMult = s.dmgMult;
-    p.maxHp = s.maxHp;
+    p.baseMaxHp = s.maxHp;   // pre-buff base (Satiated rune rescales p.maxHp off this)
+    p.maxHp = Math.round(s.maxHp * (1 + 0.02 * (p.satiatedStacks || 0)));
     if (p.hp === undefined) p.hp = p.maxHp;
     else if (p.maxHp > oldMax) p.hp += p.maxHp - oldMax;
     p.hp = Math.min(p.hp, p.maxHp);

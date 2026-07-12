@@ -19,11 +19,21 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.30-alpha';
+const GAME_VERSION = 'v1.6.31-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.31-alpha', date: 'July 2026',
+    notes: [
+      'RUNES — Batch 3: the runes that needed brand-new stat plumbing now work, headlined by a real ATTACK-SPEED system. Grim Scythe · Frost Scythe and Bone Spear · Crystallization stack Haste (your primary/secondary fire faster); Crystallization also drags DOWN the foe\'s attack speed on hit',
+      'Devour runes: Satiated (each corpse eaten adds +2% max Life for a while) and Voracious (each corpse cuts Essence costs), plus Ruthless (eating a summoned minion refunds Essence)',
+      'Bone Armor runs: Thy Flesh Is Weak (+10% Life regen per stack), Harvest of Anguish, and Limited Immunity (brief crowd-control immunity so you can\'t be chain-stunned)',
+      'Curse upgrades: Decrepify · Wither (+40% damage reduction while it lingers) and Opportunist (move faster near cursed foes); Leech · Osmosis (regen per cursed foe), Cursed Ground (a lingering pool that heals you 1%/s for every enemy standing in it), and Blood Flask (a cursed enemy\'s death shaves 1s off your potion cooldown); Frailty · Scent of Blood (your minions hit cursed targets +15% harder)',
+      'Blood Rush · Potency now grants a brief 25% damage-reduction bubble after you dash'
+    ]
+  },
   {
     v: 'v1.6.30-alpha', date: 'July 2026',
     notes: [

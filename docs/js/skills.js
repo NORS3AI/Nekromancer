@@ -149,6 +149,7 @@ const SKILL_FX = {
       // Dual Scythes pulls enemies inward instead of knocking them back.
       e.hurt(11 * p.power(), { knock: { a: rune === 'dualScythes' ? ea + Math.PI : ea, f: 60 } });
       if (rune === 'bloodScythe') p.heal(p.maxHp * 0.01);
+      if (rune === 'frostScythe') { p.hasteStacks = Math.min(15, p.hasteStacks + 1); p.hasteT = 5; }  // +1% attack speed/hit
       if (rune === 'cursedScythe' && !e.curse && Math.random() < 0.15) {
         e.curse = { type: pick(['decrepify', 'frailty', 'leech']), t: 30 };
       }
@@ -239,6 +240,10 @@ const SKILL_FX = {
     };
     if (rune === 'shatter') { opts.pierce = false; opts.detonateR = 150; opts.detonateMul = 1.0; }  // burst on the first foe
     if (rune === 'blightedMarrow') opts.astralRamp = 0.15;   // +15% damage per foe pierced
+    if (rune === 'crystallization') {   // lower foes' attack speed & raise yours (max 10)
+      opts.atkSlowOnHit = 3;
+      p.hasteStacks = Math.min(10, p.hasteStacks + 1); p.hasteT = 5;
+    }
     Game.projectiles.push(new Projectile(p.x + Math.cos(a) * 16, p.y + Math.sin(a) * 16, a, opts));
     p.facing = a;
     Particles.shake(2);
@@ -338,6 +343,10 @@ const SKILL_FX = {
     p.boneArmorT = 15;
     const stacks = hits + (kalan ? 5 : 0);
     p.boneArmorDR = (set >= 4 || kalan) ? Math.min(kalan ? 0.75 : 0.6, stacks * 0.03) : 0;
+    // Batch-3 Bone Armor runes.
+    if (baRune === 'thyFlesh') { p.thyFleshStacks = Math.min(10, hits + 3); p.thyFleshT = 15; }        // +10% regen/stack
+    if (baRune === 'harvestAnguish') { p.harvestStacks = Math.min(25, (p.harvestStacks || 0) + hits); p.harvestT = 5; } // +1% move/hit
+    if (baRune === 'limitedImmunity') p.ccImmuneT = 5;   // immune to control effects 5s
     if (set >= 6) {
       Particles.ring(p.x, p.y, 150, '#4ade80', 5, 0.6);
       AudioSys.sfx('tornado');
@@ -377,6 +386,7 @@ const SKILL_FX = {
         if (!e.dead && !e.sleep && distToSeg(e.x, e.y, ox, oy, pt.x, pt.y) < 40) p.heal(p.maxHp * 0.02);
       }
     }
+    if (rune === 'potency') p.potencyT = 2;   // Potency: hardened armor for 2s after teleporting
     p.dash = { t: 0, maxT: 0.16, fx: p.x, fy: p.y, tx: pt.x, ty: pt.y };
     p.facing = a;
     AudioSys.sfx('rush');
@@ -385,6 +395,7 @@ const SKILL_FX = {
 
   decrepify(p, a) {
     const pt = aimPoint(a);
+    if (Hero.rune('decrepify') === 'wither') p.witherT = 6;   // Wither: +40% DR while it lingers
     return applyCurse('decrepify', pt.x, pt.y);
   },
 
@@ -395,6 +406,10 @@ const SKILL_FX = {
 
   leech(p, a) {
     const pt = aimPoint(a);
+    // Cursed Ground: leaves a lingering pool that heals you 1%/s per foe in it.
+    if (Hero.rune('leech') === 'cursedGround') {
+      Skills.cursedZones.push({ x: pt.x, y: pt.y, r: 150, t: 8 });
+    }
     return applyCurse('leech', pt.x, pt.y);
   },
 
@@ -483,10 +498,20 @@ const SKILL_FX = {
       c.consume();
       p.gainEssence(10);
       p.heal(p.maxHp * (rune === 'cannibalize' ? 0.045 : 0.015));   // Cannibalize: +3% health/corpse
+      if (rune === 'satiated') { p.satiatedStacks = Math.min(25, p.satiatedStacks + 1); p.satiatedT = 20; }  // +2% max life/corpse
+      if (rune === 'voracious') { p.voraciousStacks = Math.min(25, p.voraciousStacks + 1); p.voraciousT = 5; } // -2% cost/corpse
       Particles.spawn(c.x, c.y, {
         count: 6, color: ['#6ff7c3', '#3ee6a0'], minSpeed: 60, maxSpeed: 160,
         minLife: 0.25, maxLife: 0.5, glow: true
       });
+    }
+    // Ruthless: also devour your TEMPORARY minions (mages/revived) for 10 Essence
+    // each — the permanent skeletons/golem are spared (and auto-resummon anyway).
+    if (rune === 'ruthless') {
+      for (const m of Game.minions) {
+        if (m.dead || (m.kind !== 'mage' && m.kind !== 'revived')) continue;
+        if (dist(p.x, p.y, m.x, m.y) < 320) { m.dead = true; p.gainEssence(10); fxBone(m.x, m.y, 6); }
+      }
     }
     fxHeal(p.x, p.y);
     AudioSys.sfx('devour');
@@ -652,6 +677,7 @@ const Skills = {
   ironRoseCd: 0,    // Iron Rose free-nova throttle
   graveTick: 3,     // Grave Caller passive corpse timer
   pendingCE: [],    // scheduled Corpse-Explosion detonations (implode→burst chain)
+  cursedZones: [],  // Leech · Cursed Ground healing pools
   byId: {},
   chargeSkills: [],
 
@@ -671,6 +697,7 @@ const Skills = {
     this.ironRoseCd = 0;
     this.graveTick = 3;
     this.pendingCE = [];
+    this.cursedZones = [];
   },
 
   // How many charges a charge-skill has right now. Blood Rush gets an extra
@@ -703,6 +730,8 @@ const Skills = {
       for (const e of Game.enemies) if (!e.dead && e.curse) cursed++;
       if (cursed) cd *= 1 - 0.01 * Math.min(20, cursed);
     }
+    // Attack speed (Frost Scythe / Crystallization) makes your attacks fire faster.
+    if (p && p.hasteT > 0 && (s.cat === 'primary' || s.cat === 'secondary')) cd /= 1 + 0.01 * p.hasteStacks;
     return cd;
   },
 
@@ -715,6 +744,7 @@ const Skills = {
     if (s.id === 'commandSkeletons' && Hero.rune('commandSkeletons') === 'enforcer') cost = Math.round(cost * 0.7);
     const p = Game.player;
     if (p && p.rcr) cost = Math.round(cost * (1 - p.rcr));   // Topaz resource cost reduction
+    if (p && p.voraciousT > 0) cost = Math.round(cost * (1 - 0.02 * p.voraciousStacks));  // Devour · Voracious
     return cost;
   },
 
@@ -764,6 +794,23 @@ const Skills = {
         }
         this.pendingCE.splice(i, 1);
       }
+    }
+
+    // Leech · Cursed Ground: lingering pools heal you 1%/s for each foe inside.
+    for (let i = this.cursedZones.length - 1; i >= 0; i--) {
+      const z = this.cursedZones[i];
+      z.t -= dt;
+      const p = Game.player;
+      if (p && !p.dead) {
+        let inside = 0;
+        for (const e of Game.enemies) {
+          if (e.dead || e.sleep) continue;
+          if (dist(z.x, z.y, e.x, e.y) < z.r) inside++;
+        }
+        if (inside) p.heal(p.maxHp * 0.01 * inside * dt);
+        Particles.ring(z.x, z.y, z.r, '#4ade80', 2, 0.18);
+      }
+      if (z.t <= 0) this.cursedZones.splice(i, 1);
     }
 
     // Grave Caller passive: a fresh corpse rises at the hero's feet every 3s.

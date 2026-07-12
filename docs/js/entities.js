@@ -62,6 +62,16 @@ class Player {
     this.boneArmorDR = 0;    // 4pc damage reduction
     this.secondaryBoost = false;  // Scythe of the Cycle: transient +400% on a secondary cast
     this.tornadoTick = 0;    // 6pc bone tornado
+    // Batch-3 rune buffs (timed; decayed in update, folded into the relevant stat).
+    this.hasteStacks = 0;   this.hasteT = 0;      // attack speed (Frost Scythe / Crystallization)
+    this.satiatedStacks = 0; this.satiatedT = 0;  // +max life per corpse (Devour · Satiated)
+    this.voraciousStacks = 0; this.voraciousT = 0;// -essence cost per corpse (Devour · Voracious)
+    this.thyFleshStacks = 0; this.thyFleshT = 0;  // +life regen (Bone Armor · Thy Flesh)
+    this.harvestStacks = 0; this.harvestT = 0;    // +move speed (Bone Armor · Harvest)
+    this.ccImmuneT = 0;      // control-impairing immunity (Bone Armor · Limited Immunity)
+    this.witherT = 0;        // +40% DR (Decrepify · Wither)
+    this.potencyT = 0;       // +100% armor after Blood Rush (Potency)
+    this.baseMaxHp = 0;      // pre-buff max life, captured by Items.apply()
   }
 
   // Effective damage multiplier including auras and shrines.
@@ -97,6 +107,20 @@ class Player {
     if (this.funeraryT <= 0) this.funeraryStacks = 0;
     this.powerShiftT = Math.max(0, this.powerShiftT - dt);
     if (this.powerShiftT <= 0) this.powerShiftStacks = 0;
+    // Batch-3 buff timers.
+    this.hasteT = Math.max(0, this.hasteT - dt);        if (this.hasteT <= 0) this.hasteStacks = 0;
+    this.voraciousT = Math.max(0, this.voraciousT - dt); if (this.voraciousT <= 0) this.voraciousStacks = 0;
+    this.thyFleshT = Math.max(0, this.thyFleshT - dt);   if (this.thyFleshT <= 0) this.thyFleshStacks = 0;
+    this.harvestT = Math.max(0, this.harvestT - dt);     if (this.harvestT <= 0) this.harvestStacks = 0;
+    this.ccImmuneT = Math.max(0, this.ccImmuneT - dt);
+    this.witherT = Math.max(0, this.witherT - dt);
+    this.potencyT = Math.max(0, this.potencyT - dt);
+    this.satiatedT = Math.max(0, this.satiatedT - dt);   if (this.satiatedT <= 0) this.satiatedStacks = 0;
+    // Satiated (Devour): +2%/stack max life. Rescale maxHp off the gear base.
+    if (this.baseMaxHp > 0) {
+      const want = Math.round(this.baseMaxHp * (1 + 0.02 * this.satiatedStacks));
+      if (want !== this.maxHp) { this.maxHp = want; if (this.hp > this.maxHp) this.hp = this.maxHp; }
+    }
     if (this.shrine) {
       this.shrine.t -= dt;
       if (this.shrine.t <= 0) this.shrine = null;
@@ -119,7 +143,13 @@ class Player {
     } else {
       const mx = Input.move.x, my = Input.move.y;
       this.moving = (mx !== 0 || my !== 0) && this.stun <= 0;   // chained = rooted in place
-      const spd = this.speed * (this.speedBuffT > 0 ? 1.2 : 1);
+      let moveMul = (this.speedBuffT > 0 ? 1.2 : 1);
+      if (this.harvestT > 0) moveMul += 0.01 * this.harvestStacks;   // Bone Armor · Harvest
+      if (Hero.rune('decrepify') === 'opportunist') {                 // +3% move per cursed foe
+        let cursed = 0; for (const e of Game.enemies) if (!e.dead && e.curse) cursed++;
+        moveMul += 0.03 * Math.min(15, cursed);
+      }
+      const spd = this.speed * moveMul;
       if (this.moving) {
         this.x += mx * spd * dt;
         this.y += my * spd * dt;
@@ -137,6 +167,11 @@ class Player {
       let near = 0;
       for (const e of Game.enemies) if (!e.dead && !e.sleep && dist(this.x, this.y, e.x, e.y) < 260) near++;
       regen += 1.5 * Math.min(8, near);
+    }
+    if (this.thyFleshT > 0) regen *= 1 + 0.10 * this.thyFleshStacks;   // Bone Armor · Thy Flesh
+    if (Hero.rune('leech') === 'osmosis') {                             // Leech · Osmosis
+      let cursed = 0; for (const e of Game.enemies) if (!e.dead && e.curse) cursed++;
+      if (cursed) regen += 0.6 * Math.min(20, cursed);
     }
     if (regen > 0) this.heal(regen * dt);
     // Haunted Visions: the eternal Simulacrum feeds on your life.
@@ -245,6 +280,8 @@ class Player {
     if (Hero.hasPassive('standAlone') && Game.minions.length === 0) dmg *= 0.75;
     if (this.shrine && this.shrine.buff === 'blessed') dmg *= 0.75;
     if (this.boneArmorT > 0 && this.boneArmorDR > 0) dmg *= 1 - this.boneArmorDR;
+    if (this.witherT > 0) dmg *= 0.60;    // Decrepify · Wither: +40% damage reduction
+    if (this.potencyT > 0) dmg *= 0.75;   // Blood Rush · Potency: hardened armor after a teleport
     // Revive · Personal Army: -1% damage taken per active revived minion (cap 50%).
     if (Hero.rune('revive') === 'personalArmy') {
       let rev = 0;
@@ -636,7 +673,7 @@ class Enemy {
     }
     this.anim += dt * 6;
     this.flash = Math.max(0, this.flash - dt * 6);
-    this.atkCd = Math.max(0, this.atkCd - dt);
+    this.atkCd = Math.max(0, this.atkCd - dt * (this.atkSlowT > 0 ? 0.55 : 1));  // Crystallization slows attacks
     this.lungeCd = Math.max(0, this.lungeCd - dt);
     this.slow = Math.max(0, this.slow - dt);
     this.root = Math.max(0, this.root - dt);
@@ -644,7 +681,9 @@ class Enemy {
     this.stealthT = Math.max(0, this.stealthT - dt);
     this.fearT = Math.max(0, (this.fearT || 0) - dt);       // feared → flees (rune effects)
     this.brittleT = Math.max(0, (this.brittleT || 0) - dt); // brittle → takes more crits
+    this.atkSlowT = Math.max(0, (this.atkSlowT || 0) - dt); // attacks slowed (Crystallization)
     if (this.curse) {
+      this.curse.age = (this.curse.age || 0) + dt;          // for Enfeeblement's ramp
       this.curse.t -= dt;
       if (this.curse.t <= 0) this.curse = null;
     }
@@ -747,7 +786,14 @@ class Enemy {
     const a = angleTo(this.x, this.y, tgt.x, tgt.y);
     this.facing = lerpAngle(this.facing, a, Math.min(1, 8 * dt));
     let spd = this.speed;
-    if (this.curse && this.curse.type === 'decrepify') spd *= 0.4;
+    if (this.curse && this.curse.type === 'decrepify') {
+      // Enfeeblement ramps the slow from 60% to a full 100% root over 5s; Wither
+      // removes the slow entirely (its trade for the +40% player DR).
+      const dr = Hero.rune('decrepify');
+      if (dr === 'wither') { /* no slow */ }
+      else if (dr === 'enfeeblement') spd *= Math.max(0, 0.4 * (1 - (this.curse.age || 0) / 5));
+      else spd *= 0.4;
+    }
     if (this.slow > 0) spd *= 0.5;
     if (this.root > 0) spd = 0;
 
@@ -959,7 +1005,7 @@ class Enemy {
           if (pp && !pp.dead) {
             const dd = dist(this.x, this.y, pp.x, pp.y);
             const rel = Math.abs(((angleTo(this.x, this.y, pp.x, pp.y) - this.chainA + Math.PI * 3) % TAU) - Math.PI);
-            if (dd < 520 && rel < 0.55) {
+            if (dd < 520 && rel < 0.55 && (pp.ccImmuneT || 0) <= 0) {   // Limited Immunity blocks the chain-stun
               const stopA = angleTo(this.x, this.y, pp.x, pp.y);
               pp.x = this.x + Math.cos(stopA) * (this.r + pp.r + 16);
               pp.y = this.y + Math.sin(stopA) * (this.r + pp.r + 16);
@@ -1133,6 +1179,7 @@ class Enemy {
       }
       if (this.curse.type === 'leech') {
         if (pl && !pl.dead && Hero.rune('leech') === 'sanguineEnd') pl.heal(pl.maxHp * 0.05);  // Sanguine End
+        if (pl && Hero.rune('leech') === 'bloodFlask') pl.potionCd = Math.max(0, pl.potionCd - 1);  // Blood Flask: cursed deaths cut potion cd
         if (Hero.rune('leech') === 'transmittable') {                                          // spread on death
           let best = null, bd = 220;
           for (const e of Game.enemies) {
@@ -1953,6 +2000,8 @@ class Minion {
     if (tgt) {
       const a = angleTo(this.x, this.y, tgt.x, tgt.y);
       this.facing = lerpAngle(this.facing, a, Math.min(1, 10 * dt));
+      // Frailty · Scent of Blood: minions hit cursed foes 15% harder.
+      const scent = (tgt.curse && Hero.rune('frailty') === 'scentOfBlood') ? 1.15 : 1;
       if (this.cfg.ranged) {
         if (bestD > 300) {
           this.x += Math.cos(a) * travel * dt;
@@ -1960,7 +2009,7 @@ class Minion {
         } else if (this.atkCd <= 0) {
           this.atkCd = this.cfg.atkCd * (this.archer ? 0.6 : 1);   // Skeleton Archer: faster
           Game.projectiles.push(new Projectile(this.x, this.y - 8, a, {
-            speed: 480, dmg: this.dmg * dmgMult, r: 5, life: 1.4, type: 'deathbolt'
+            speed: 480, dmg: this.dmg * dmgMult * scent, r: 5, life: 1.4, type: 'deathbolt'
           }));
           AudioSys.sfx('bolt');
         }
@@ -1969,7 +2018,7 @@ class Minion {
         this.y += Math.sin(a) * travel * (this.frenzyT > 0 ? 1.3 : 1) * dt;
       } else if (this.atkCd <= 0) {
         this.atkCd = this.cfg.atkCd;
-        tgt.hurt(this.dmg * dmgMult, { knock: { a, f: this.kind === 'golem' ? 120 : 40 } });
+        tgt.hurt(this.dmg * dmgMult * scent, { knock: { a, f: this.kind === 'golem' ? 120 : 40 } });
         // Dark Mending: commanded skeletons heal the necromancer on each hit.
         if (this.healOnHit && !Game.player.dead) Game.player.heal(Game.player.maxHp * 0.005);
       }
@@ -2431,6 +2480,7 @@ class Projectile {
     // Rune-effect hooks (Corpse Lance / Bone Spirit runes).
     this.stunOnHit = o.stunOnHit || 0;     // guaranteed stun/root on hit
     this.brittleOnHit = o.brittleOnHit || 0;
+    this.atkSlowOnHit = o.atkSlowOnHit || 0;  // slows the victim's attacks (Crystallization)
     this.ricochet = o.ricochet || 0;       // chance to bounce to a new target
     this.astralRamp = o.astralRamp || 0;   // +dmg fraction per enemy pierced
     this.detonateR = o.detonateR || 0;     // AoE detonation on impact
@@ -2483,6 +2533,7 @@ class Projectile {
           if (this.slowOnHit) opts.slow = this.slowOnHit;
           e.hurt(this.dmg, opts);
           if (this.brittleOnHit) e.brittleT = Math.max(e.brittleT || 0, this.brittleOnHit);
+          if (this.atkSlowOnHit) e.atkSlowT = Math.max(e.atkSlowT || 0, this.atkSlowOnHit);
           if (this.fearOnHit) {
             for (const e2 of Game.enemies) {
               if (e2.dead || e2.sleep) continue;
