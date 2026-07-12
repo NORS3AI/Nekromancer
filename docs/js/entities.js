@@ -45,6 +45,7 @@ class Player {
     this.resistDR = 0;        // derived damage reduction from resistAll
     this.cdr = 0;             // Diamond: cooldown reduction (fraction)
     this.rcr = 0;             // Topaz: resource cost reduction (fraction)
+    this.atkSpeed = 0;        // Attack Speed affix: faster primary/secondary attacks
     this.lifePerHit = 0;      // Amethyst: life restored per hit dealt
     this.xpBonus = 0;
     this.essenceRegen = 2;

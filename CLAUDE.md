@@ -248,14 +248,18 @@ Script lives in the session scratchpad (intentionally not committed).
   to open each one. Flesh out: town map/layout, NPC placement + interaction radius,
   how it replaces (or wraps) the current `Screens.camp` hub, and camp↔town↔zone flow.
 - **⭐ OWNER TODO (requested 2026-07-03): create the MASTER LIST of primary +
-  secondary stats and affixes for items.** The engine currently models only:
+  secondary stats and affixes for items.** The engine now models:
   `dmg` (%), `hp`, `crit` (chance), `ess` (essence/s), `reg` (life/s), `gold`,
-  `armor`, `move` (boots), `dnova` (Death Nova %), `area` (Area Damage). D3 items
-  reference stats we DON'T have yet — **Attack Speed, Life per Hit, Intelligence,
-  Crit Damage, Vitality, resource cost reduction, cooldown reduction** — so items
-  like The Royal Grandeur are placed with in-engine stand-in affixes. Define the
-  full stat/affix taxonomy (which are primary vs secondary, roll ranges by ilvl,
-  which slots) before adding more authentic D3 items.
+  `armor`, `move` (boots), `dnova` (Death Nova %), `area` (Area Damage) as item
+  affixes; `critDmg`/`lph`/`rcr`/`cdr`/`resAll`/`flatDmg`/`xp` via GEMS; and — added
+  v1.6.33 — **`int` (Intelligence, +0.1%dmg/pt, cap 3000), `vit` (Vitality, +5
+  Life/pt, cap 4000) and `atkSpeed` (Attack Speed, faster primary/secondary
+  cooldowns, cap 75%)** as real rollable affixes (in `AFFIX_ROLLS`/`AFFIX_CAP`/
+  `AFFIX_GROUPS`; folded in `computeStats`/`apply`; `atkSpeed` hooks `Skills.cdFor`).
+  Still not modelled: **Life per Hit, Crit Damage, resource cost reduction,
+  cooldown reduction** as ITEM affixes (they exist only through gems), and
+  elemental-damage types. Define the full stat/affix taxonomy (primary vs
+  secondary, roll ranges by ilvl, which slots) before adding more authentic D3 items.
 - Skill runes (D3 has 5 per skill), set items with set bonuses
 - Kanai's Cube (extract legendary powers), legendary gems
 - More bounty types (Clear / Event), Nephalem/Greater Rifts as endgame

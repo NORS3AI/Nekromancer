@@ -1565,6 +1565,9 @@ const Screens = {
       // Gem-driven stats appear only once a gem grants them, so EVERY gem type
       // visibly moves the readout (Emerald crit dmg, Amethyst life/hit, Diamond
       // cooldowns & resist, Topaz resource cost — gold already covers the rest).
+      if (st.attackSpeed > 0) rows.push(['ATK SPD', '+' + (st.attackSpeed * 100).toFixed(1) + '%', '#ffd76a']);
+      if (st.intelligence > 0) rows.push(['INT', '+' + st.intelligence.toLocaleString(), '#8fd3ff']);
+      if (st.vitality > 0) rows.push(['VIT', '+' + st.vitality.toLocaleString(), '#e0808a']);
       if (st.critDamage > 0) rows.push(['CRIT DMG', '+' + Math.round(st.critDamage * 100) + '%', '#ffca6a']);
       if (st.lifePerHit > 0) rows.push(['LIFE/HIT', '+' + st.lifePerHit, '#e0808a']);
       if (st.cooldownReduction > 0) rows.push(['CDR', '-' + Math.round(st.cooldownReduction * 100) + '%', '#bfe8f4']);
@@ -3157,7 +3160,10 @@ const Screens = {
     ly = header(lx, ly, '— COMBAT —', '#6ff7c3');
     ly = line(lx, ly, 'Damage', '×' + s.dmgMult.toFixed(2), '#6ff7c3');
     ly = line(lx, ly, 'Damage per hit', Items.rawHit(s).toLocaleString(), '#ff9a6a');
+    if (s.intelligence > 0) ly = line(lx, ly, 'Intelligence', '+' + s.intelligence.toLocaleString(), '#8fd3ff');
+    if (s.attackSpeed > 0) ly = line(lx, ly, 'Attack speed', '+' + (s.attackSpeed * 100).toFixed(1) + '%', '#ffd76a');
     ly = line(lx, ly, 'Life', s.maxHp, '#e04a5a');
+    if (s.vitality > 0) ly = line(lx, ly, 'Vitality', '+' + s.vitality.toLocaleString(), '#e0808a');
     ly = line(lx, ly, 'Crit chance', Math.round(s.critChance * 100) + '%  (×' + (1.8 + (s.critDamage || 0)).toFixed(2) + ')', '#ffb43a');
     if (s.critDamage > 0) ly = line(lx, ly, 'Crit damage', '+' + Math.round(s.critDamage * 100) + '%', '#4ade80');
     if (s.flatDmg > 0) ly = line(lx, ly, 'Bonus damage', '+' + s.flatDmg + ' per hit', '#e04a5a');

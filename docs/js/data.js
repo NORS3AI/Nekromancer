@@ -19,11 +19,21 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.32-alpha';
+const GAME_VERSION = 'v1.6.33-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.33-alpha', date: 'July 2026',
+    notes: [
+      'THREE NEW ITEM STATS — the queued D3 systems are in: ATTACK SPEED, INTELLIGENCE and VITALITY now roll on gear as real affixes',
+      'Attack Speed — makes your Primary & Secondary attacks fire faster (shortens their cooldowns); stacks with the Frost Scythe / Crystallization Haste runes. Caps at +75%',
+      'Intelligence — the Nekromancer\'s MAIN stat: every point adds +0.1% damage (up to +300% at the artifact-5★ ceiling of 3000 INT), folded straight into your damage multiplier',
+      'Vitality — every point adds +5 Life (up to +20,000 at the 4000 VIT ceiling)',
+      'All three obey the same affix caps by rarity/★, roll from the normal loot pool, and can be Mystic-rerolled within their group (INT & Attack Speed = Offense, Vitality = Defense). The Character Sheet and the equipment-wheel readout now list them'
+    ]
+  },
   {
     v: 'v1.6.32-alpha', date: 'July 2026',
     notes: [
@@ -1827,6 +1837,13 @@ const AFFIX_ROLLS = {
   reg:   { base: 1.2,  label: v => `+${v.toFixed(1)} life/s` },
   gold:  { base: 0.12, label: v => `+${Math.round(v * 100)}% gold find` },
   armor: { base: 20,   label: v => `+${Math.round(v)} armor` },
+  // Core D3 attributes + Attack Speed (owner-queued stat systems).
+  // Intelligence — the Necromancer's MAIN stat: each point adds a little damage.
+  int:   { base: 14,   label: v => `+${Math.round(v)} Intelligence` },
+  // Vitality — each point adds flat Life.
+  vit:   { base: 12,   label: v => `+${Math.round(v)} Vitality` },
+  // Attack Speed — % faster Primary/Secondary attacks (shorter cooldowns).
+  atkSpeed: { base: 0.04, label: v => `+${(v * 100).toFixed(1)}% attack speed` },
   // Movement speed rolls ONLY on boots (1%–25%), handled specially in generation.
   move:  { base: 0.06, label: v => `+${Math.round(v * 100)}% movement speed` },
   // Special affixes — never roll on random gear; placed on set/legendary items only.
@@ -1841,9 +1858,9 @@ const RESTRICTED_AFFIXES = new Set(['move', 'dnova', 'area']);
 // odds — enchanting is a targeted choice, not a slot machine. `dnova`/`area`
 // are signature legendary affixes and belong to no group (never rerollable).
 const AFFIX_GROUPS = {
-  offense: ['dmg', 'crit', 'ess'],   // damage, crit chance, essence/s
-  defense: ['hp', 'armor', 'reg'],   // life, armor, life/s
-  utility: ['gold', 'move']          // gold find, movement (move is boots-only)
+  offense: ['dmg', 'crit', 'ess', 'int', 'atkSpeed'],   // damage, crit, essence/s, Intelligence, attack speed
+  defense: ['hp', 'armor', 'reg', 'vit'],               // life, armor, life/s, Vitality
+  utility: ['gold', 'move']                             // gold find, movement (move is boots-only)
 };
 const AFFIX_GROUP_NAME = { offense: 'Offense', defense: 'Defense', utility: 'Utility' };
 function affixGroup(key) {
@@ -1864,6 +1881,9 @@ const AFFIX_CAP = {
   ess: 200,       // 200 essence/s
   armor: 10000,   // 10000 armor
   move: 0.25,     // 25% movement (boots)
+  int: 3000,      // 3000 Intelligence  (→ up to +300% damage at 0.1%/pt)
+  vit: 4000,      // 4000 Vitality      (→ up to +20000 Life at 5/pt)
+  atkSpeed: 0.75, // 75% attack speed
   dnova: 6.0, area: 1.5   // signature affixes — generous
 };
 // Fraction of the Artifact-5★ ceiling a given rarity/star tier can reach (so a

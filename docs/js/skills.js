@@ -730,8 +730,12 @@ const Skills = {
       for (const e of Game.enemies) if (!e.dead && e.curse) cursed++;
       if (cursed) cd *= 1 - 0.01 * Math.min(20, cursed);
     }
-    // Attack speed (Frost Scythe / Crystallization) makes your attacks fire faster.
-    if (p && p.hasteT > 0 && (s.cat === 'primary' || s.cat === 'secondary')) cd /= 1 + 0.01 * p.hasteStacks;
+    // Attack Speed makes Primary/Secondary attacks fire faster — from gear
+    // (permanent p.atkSpeed) and from the Frost Scythe / Crystallization Haste buff.
+    if (p && (s.cat === 'primary' || s.cat === 'secondary')) {
+      if (p.atkSpeed) cd /= 1 + p.atkSpeed;
+      if (p.hasteT > 0) cd /= 1 + 0.01 * p.hasteStacks;
+    }
     return cd;
   },
 

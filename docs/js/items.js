@@ -299,7 +299,7 @@ const Items = {
     // Every affix the engine can roll needs a weight here — a missing one used
     // to multiply by undefined and poison the whole score (and any vendor price
     // built from it) with NaN. The `|| 0` guard makes that impossible.
-    const W = { dmg: 320, hp: 1, crit: 400, ess: 18, reg: 14, gold: 40, armor: 0.8, move: 700, dnova: 200, area: 200 };
+    const W = { dmg: 320, hp: 1, crit: 400, ess: 18, reg: 14, gold: 40, armor: 0.8, move: 700, dnova: 200, area: 200, int: 0.32, vit: 5, atkSpeed: 620 };
     let s = 0;
     for (const [k, v] of Object.entries(item.stats)) {
       s += (v || 0) * (W[k] || 0);
@@ -419,8 +419,8 @@ const Items = {
   // compare fairly within a tier.
   // dmg is the headline offense stat: +100% damage is worth MORE than +100%
   // crit chance, so dmg outweighs crit per point (they used to be reversed).
-  STAT_TIER: { dmg: 0, crit: 0, dnova: 0, area: 0, hp: 1, reg: 1, armor: 2, gold: 2, ess: 2, move: 2 },
-  STAT_VAL:  { dmg: 1600, crit: 1000, dnova: 700, area: 500, hp: 2.4, reg: 34, armor: 0.7, gold: 110, ess: 16, move: 210 },
+  STAT_TIER: { dmg: 0, crit: 0, dnova: 0, area: 0, int: 0, atkSpeed: 0, hp: 1, reg: 1, vit: 1, armor: 2, gold: 2, ess: 2, move: 2 },
+  STAT_VAL:  { dmg: 1600, crit: 1000, dnova: 700, area: 500, int: 1.6, atkSpeed: 900, hp: 2.4, reg: 34, vit: 12, armor: 0.7, gold: 110, ess: 16, move: 210 },
 
   // [offense, survival, utility] sub-scores. Sockets/gems credit offense (a
   // Perfect gem is +20% damage); a legendary power or set piece lifts the whole
@@ -1141,6 +1141,8 @@ const Items = {
   // Works with no live Player (used by the character sheet in camp).
   computeStats() {
     let dmg = 0, hp = 0, crit = 0, ess = 0, reg = 0, gold = 0, armor = 0, move = 0, xpBonus = 0, dnova = 0, area = 0;
+    // Core D3 attributes + attack speed (owner-queued stat systems).
+    let intel = 0, vit = 0, atkSpeed = 0;
     // New gem stats (each gem grants two; see GEM_STATS in data.js).
     let resAll = 0, cdr = 0, critDmg = 0, rcr = 0, lph = 0, flatDmg = 0;
     const at70 = Hero.level >= MAX_LEVEL;
@@ -1154,6 +1156,9 @@ const Items = {
       gold += it.stats.gold || 0;
       armor += it.stats.armor || 0;
       move += it.stats.move || 0;
+      intel += it.stats.int || 0;
+      vit += it.stats.vit || 0;
+      atkSpeed += it.stats.atkSpeed || 0;
       dnova += it.stats.dnova || 0;
       area += it.stats.area || 0;
       for (const g of it.gems || []) {
@@ -1206,10 +1211,17 @@ const Items = {
     const powers = this.equippedPowers();
     const rawSet = this.setCount();
     const setCountEff = (powers.royalGrandeur && rawSet >= 2) ? Math.min(6, rawSet + 1) : rawSet;
+    // Intelligence (the Necromancer's MAIN stat) adds 0.1% damage per point;
+    // Vitality adds 5 Life per point — both fold in alongside the % affixes.
+    const intDmg = intel * 0.001;
+    const vitHp = vit * 5;
     return {
-      dmgMult: (1 + (lvl - 1) * 0.09) * (1 + dmg) * paraDmgMul,
+      dmgMult: (1 + (lvl - 1) * 0.09) * (1 + dmg + intDmg) * paraDmgMul,
       gearDmg: dmg,
-      maxHp: Math.round((110 + (lvl - 1) * 14 + hp) * paraHpMul),
+      intelligence: Math.round(intel),
+      vitality: Math.round(vit),
+      attackSpeed: clamp(atkSpeed, 0, 0.75),   // % faster primary/secondary attacks
+      maxHp: Math.round((110 + (lvl - 1) * 14 + hp + vitHp) * paraHpMul),
       critChance: 0.10 + crit,
       essenceRegen: 2 + ess,
       hpRegen: reg,
@@ -1260,6 +1272,7 @@ const Items = {
     p.cdr = s.cooldownReduction;
     p.critDmg = s.critDamage;
     p.rcr = s.resourceCostReduction;
+    p.atkSpeed = s.attackSpeed;   // Attack Speed → shorter Primary/Secondary cooldowns
     p.lifePerHit = s.lifePerHit;
     p.flatDmg = s.flatDmg;
     p.xpBonus = s.xpBonus;
