@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.35-alpha';
+const GAME_VERSION = 'v1.6.36-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.36-alpha', date: 'July 2026',
+    notes: [
+      'Zone/boss banners no longer run off the screen on phones — a long land name or subtitle now shrinks and then WRAPS to a second line, always staying inside the margins'
+    ]
+  },
   {
     v: 'v1.6.35-alpha', date: 'July 2026',
     notes: [

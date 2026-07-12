@@ -1090,23 +1090,66 @@ const UI = {
     ctx.globalAlpha = a;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const maxW = W - 32;
-    // Auto-shrink both lines so long land names never run off a phone screen.
-    let ts = 32;
-    ctx.font = 'bold ' + ts + 'px Georgia';
-    while (ts > 15 && ctx.measureText(Game.banner.text).width > maxW) { ts -= 1; ctx.font = 'bold ' + ts + 'px Georgia'; }
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = 'rgba(0,0,0,0.8)';
-    ctx.strokeText(Game.banner.text, W / 2, H * 0.30);
-    ctx.fillStyle = '#c22843';
-    ctx.fillText(Game.banner.text, W / 2, H * 0.30);
+
+    // Greedily split `text` into ≤maxLines lines that each fit maxW at the current
+    // font (last line ellipsized if even a single word won't fit) — so a long boss
+    // name or subtitle wraps instead of bleeding off a phone screen.
+    const wrap = (text, maxLines) => {
+      const words = String(text).split(' ');
+      const lines = [];
+      let line = '';
+      for (let i = 0; i < words.length; i++) {
+        const test = line ? line + ' ' + words[i] : words[i];
+        // Break to a new line only while we still have line budget; on the final
+        // allowed line we keep accumulating (it gets ellipsized below if needed).
+        if (ctx.measureText(test).width > maxW && line && lines.length < maxLines - 1) {
+          lines.push(line); line = words[i];
+        } else line = test;
+      }
+      // `line` holds the final (possibly overflowing) line — trim it to fit.
+      if (ctx.measureText(line).width > maxW) {
+        while (line.length > 1 && ctx.measureText(line + '…').width > maxW) line = line.slice(0, -1);
+        line += '…';
+      }
+      lines.push(line);
+      return lines.length ? lines : [String(text)];
+    };
+    // Shrink the font first; only wrap once we hit the floor and it STILL overflows.
+    const fit = (text, maxFont, minFont, maxLines, bold) => {
+      let s = maxFont;
+      for (; s > minFont; s--) {
+        ctx.font = (bold ? 'bold ' : '') + s + 'px Georgia';
+        if (ctx.measureText(text).width <= maxW) return { size: s, lines: [text] };
+      }
+      ctx.font = (bold ? 'bold ' : '') + minFont + 'px Georgia';
+      return { size: minFont, lines: wrap(text, maxLines) };
+    };
+
+    const cx = W / 2, anchor = H * 0.30;
+    const title = fit(Game.banner.text, 32, 15, 2, true);
+    const tLineH = title.size * 1.14;
+    // Centre the (possibly multi-line) title block on the anchor.
+    let ty = anchor - (title.lines.length - 1) * tLineH / 2;
+    ctx.font = 'bold ' + title.size + 'px Georgia';
+    ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+    for (const ln of title.lines) {
+      ctx.strokeText(ln, cx, ty);
+      ctx.fillStyle = '#c22843';
+      ctx.fillText(ln, cx, ty);
+      ty += tLineH;
+    }
     if (Game.banner.sub) {
-      let ss = 15;
-      ctx.font = ss + 'px Georgia';
-      while (ss > 10 && ctx.measureText(Game.banner.sub).width > maxW) { ss -= 1; ctx.font = ss + 'px Georgia'; }
-      ctx.lineWidth = 4;
-      ctx.strokeText(Game.banner.sub, W / 2, H * 0.30 + 30);
-      ctx.fillStyle = '#c9bfa8';
-      ctx.fillText(Game.banner.sub, W / 2, H * 0.30 + 30);
+      const sub = fit(Game.banner.sub, 15, 10, 2, false);
+      const sLineH = sub.size * 1.2;
+      let sy = anchor + (title.lines.length - 1) * tLineH / 2 + 30;
+      ctx.font = sub.size + 'px Georgia';
+      ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+      for (const ln of sub.lines) {
+        ctx.strokeText(ln, cx, sy);
+        ctx.fillStyle = '#c9bfa8';
+        ctx.fillText(ln, cx, sy);
+        sy += sLineH;
+      }
     }
     ctx.globalAlpha = 1;
   }
