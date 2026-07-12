@@ -1019,6 +1019,10 @@ class Enemy {
       if (this.curse.type === 'frailty') dmg *= 1.15;
       if (this.curse.type === 'leech' && p && !p.dead) p.heal(p.maxHp * 0.012);
       if (p && p.powers && p.powers.corrodedFang) dmg *= 1.6; // Trag'Oul's Corroded Fang
+      // Dizzying Curse (Decrepify rune): a chance to stun the cursed foe when struck.
+      if (this.curse.type === 'decrepify' && !this.unique && Hero.rune('decrepify') === 'dizzyingCurse' && Math.random() < 0.10) {
+        this.root = Math.max(this.root, 1.5);
+      }
     }
     // Krysbin's Sentence: +100% vs slowed, TRIPLE vs stunned/rooted.
     if (p && p.powers && p.powers.krysbin) {
@@ -1057,8 +1061,11 @@ class Enemy {
     if (opts.slow) this.slow = Math.max(this.slow, opts.slow);
     if (opts.root && !this.unique) this.root = Math.max(this.root, opts.root);
     AudioSys.sfx('hit');
-    // Frailty: cursed enemies die early.
-    if (this.curse && this.curse.type === 'frailty' && this.hp > 0 && this.hp < this.maxHp * 0.10) this.hp = 0;
+    // Frailty: cursed enemies die early (Early Grave raises the threshold to 18%).
+    if (this.curse && this.curse.type === 'frailty' && this.hp > 0) {
+      const thresh = Hero.rune('frailty') === 'earlyGrave' ? 0.18 : 0.10;
+      if (this.hp < this.maxHp * thresh) this.hp = 0;
+    }
     if (this.hp <= 0) this.die();
   }
 
@@ -1068,6 +1075,33 @@ class Enemy {
     if (this.telegraph) this.telegraph.done = true;
     Game.kills++;
     Hero.totalKills++;
+    // Curse-rune death effects (Frailty / Leech runes).
+    if (this.curse) {
+      const pl = Game.player;
+      if (this.curse.type === 'frailty') {
+        if (pl && Hero.rune('frailty') === 'harvestEssence') pl.gainEssence(2);   // Harvest Essence
+        if (Hero.rune('frailty') === 'volatileDeath') {                            // Volatile Death: explode
+          fxExplosion(this.x, this.y, 120); World.smash(this.x, this.y, 120);
+          const vd = 40 * (pl ? pl.power() : 1);
+          for (const e of Game.enemies) {
+            if (e === this || e.dead || e.sleep || e.spawnT > 0) continue;
+            if (dist(this.x, this.y, e.x, e.y) < 120) e.hurt(vd, { noSplash: true });
+          }
+        }
+      }
+      if (this.curse.type === 'leech') {
+        if (pl && !pl.dead && Hero.rune('leech') === 'sanguineEnd') pl.heal(pl.maxHp * 0.05);  // Sanguine End
+        if (Hero.rune('leech') === 'transmittable') {                                          // spread on death
+          let best = null, bd = 220;
+          for (const e of Game.enemies) {
+            if (e === this || e.dead || e.sleep || e.curse) continue;
+            const d = dist(this.x, this.y, e.x, e.y);
+            if (d < bd) { bd = d; best = e; }
+          }
+          if (best) best.curse = { type: 'leech', t: 30 };
+        }
+      }
+    }
     // Land of the Dead · Shallow Graves: every 10 kills during it extends it (max +2s).
     if (Skills.lotd > 0 && Skills.lotdRune === 'shallowGraves') {
       Skills.lotdKills = (Skills.lotdKills || 0) + 1;

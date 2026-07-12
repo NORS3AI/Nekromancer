@@ -103,13 +103,22 @@ const SKILL_FX = {
   boneSpikes(p, a) {
     const rune = Hero.rune('boneSpikes');
     const pt = aimPoint(a, 150);
+    const line = rune === 'pathOfBones';   // strike a LINE, +100% to distant foes
     fxSpikes(pt.x, pt.y);
+    if (line) fxSpikes((p.x + pt.x) / 2, (p.y + pt.y) / 2);
     World.smash(pt.x, pt.y, 60);
-    const dmg = 14 * (rune === 'bonePillars' ? 1.5 : 1) * p.power(); // Bone Pillars: 225%
+    const baseDmg = 14 * (rune === 'bonePillars' ? 1.5 : 1) * p.power(); // Bone Pillars: 225%
     let hit = 0;
     for (const e of Game.enemies) {
       if (e.dead || e.sleep || e.spawnT > 0) continue;
-      if (dist(pt.x, pt.y, e.x, e.y) < 60 + e.r) {
+      let inRange, dmg = baseDmg;
+      if (line) {
+        inRange = distToSeg(e.x, e.y, p.x, p.y, pt.x, pt.y) < 46 + e.r;
+        if (inRange) dmg *= 1 + Math.min(1, dist(p.x, p.y, e.x, e.y) / 150);   // up to ×2 at reach
+      } else {
+        inRange = dist(pt.x, pt.y, e.x, e.y) < 60 + e.r;
+      }
+      if (inRange) {
         const o = boneOpts(angleTo(p.x, p.y, e.x, e.y), rune === 'bonePillars' ? 90 : 20);
         if (rune === 'suddenImpact') o.root = Math.max(o.root || 0, 1);  // stun
         if (rune === 'frostSpikes') o.slow = Math.max(o.slow || 0, 2);
@@ -164,13 +173,27 @@ const SKILL_FX = {
     }
     if (!inRange.length) return false;
     inRange.sort((u, v) => u[0] - v[0]);
+    const sbRune = Hero.rune('siphonBlood');
     const drained = inRange.slice(0, maxTargets).map(t => t[1]);
     for (const e of drained) {
       e.hurt(6 * p.power());
-      p.heal(p.maxHp * 0.008);
+      p.heal(p.maxHp * (sbRune === 'drainLife' ? 0.06 : 0.008));  // Drain Life: big heal
+      if (sbRune === 'suppress') e.slow = Math.max(e.slow || 0, 1);  // Suppress: -75% (slow)
       fxSiphon(p, e);
     }
-    p.gainEssence(Skills.gainFor('siphonBlood'));
+    // Blood Sucker: yank nearby health globes toward you while channeling.
+    if (sbRune === 'bloodSucker') {
+      for (const pk of Game.pickups) {
+        if (pk.kind === 'orb' && dist(p.x, p.y, pk.x, pk.y) < 360) {
+          const pa = angleTo(pk.x, pk.y, p.x, p.y);
+          pk.x += Math.cos(pa) * 14; pk.y += Math.sin(pa) * 14;
+        }
+      }
+    }
+    // Essence: Drain Life gives none; Purity of Essence pours 15 at full health.
+    if (sbRune === 'drainLife') { /* no essence */ }
+    else if (sbRune === 'purityOfEssence' && p.hp >= p.maxHp - 1) p.gainEssence(15);
+    else p.gainEssence(Skills.gainFor('siphonBlood'));
     p.facing = angleTo(p.x, p.y, drained[0].x, drained[0].y);
     // Funerary Pick: +20% damage per target being drained, 3s.
     if (pick) { p.funeraryStacks = drained.length; p.funeraryT = 3; }
@@ -189,21 +212,34 @@ const SKILL_FX = {
   },
 
   boneSpear(p, a) {
+    const rune = Hero.rune('boneSpear');
     // Blood Spear rune: +40% damage paid for in blood.
-    const blood = Hero.rune('boneSpear') === 'bloodSpear';
+    const blood = rune === 'bloodSpear';
     if (blood) {
       const lifeCost = p.maxHp * 0.02;
       if (p.hp <= lifeCost + 1) return false;
       p.hp -= lifeCost;
     }
     const o = boneOpts(a, 130);
-    Game.projectiles.push(new Projectile(
-      p.x + Math.cos(a) * 16, p.y + Math.sin(a) * 16, a,
-      {
-        speed: 720, dmg: (blood ? 56 : 40) * p.power(), r: 9, life: 1.15, pierce: true, type: 'spear',
-        root: o.root ? 2 : 0, slowOnHit: o.slow || 0
+    // Teeth: a fan of 5 bone shards instead of one spear.
+    if (rune === 'teeth') {
+      for (let i = 0; i < 5; i++) {
+        const sa = a + (i - 2) * 0.16;
+        Game.projectiles.push(new Projectile(p.x + Math.cos(sa) * 16, p.y + Math.sin(sa) * 16, sa, {
+          speed: 700, dmg: 24 * p.power(), r: 7, life: 0.85, type: 'spear',
+          root: o.root ? 2 : 0, slowOnHit: o.slow || 0
+        }));
       }
-    ));
+      p.facing = a; Particles.shake(2); AudioSys.sfx('spear'); Skills.mirror('boneSpear', a);
+      return true;
+    }
+    const opts = {
+      speed: 720, dmg: (blood ? 56 : 40) * p.power(), r: 9, life: 1.15, pierce: true, type: 'spear',
+      root: o.root ? 2 : 0, slowOnHit: o.slow || 0
+    };
+    if (rune === 'shatter') { opts.pierce = false; opts.detonateR = 150; opts.detonateMul = 1.0; }  // burst on the first foe
+    if (rune === 'blightedMarrow') opts.astralRamp = 0.15;   // +15% damage per foe pierced
+    Game.projectiles.push(new Projectile(p.x + Math.cos(a) * 16, p.y + Math.sin(a) * 16, a, opts));
     p.facing = a;
     Particles.shake(2);
     AudioSys.sfx('spear');
@@ -239,7 +275,14 @@ const SKILL_FX = {
       if (p.hp <= lifeCost + 1) return false;
       p.hp -= lifeCost;
     }
-    const R = rune === 'boneNova' ? 130 : 190;   // Bone Nova: tighter, harder
+    // Unstable Compound: each cast in quick succession grows the nova (max 2 steps).
+    let growStacks = 0;
+    if (rune === 'unstableCompound') {
+      if ((p.novaT || 0) < Game.time) p.novaStacks = 0;   // reset if you stopped casting
+      growStacks = Math.min(2, p.novaStacks || 0);
+    }
+    const R = (rune === 'boneNova' ? 130 : 190) * (1 + 0.18 * growStacks);   // Bone Nova: tighter, harder
+    if (rune === 'unstableCompound') { p.novaStacks = Math.min(2, (p.novaStacks || 0) + 1); p.novaT = Game.time + 3; }
     fxNova(p.x, p.y, R);
     World.smash(p.x, p.y, R);
     // Bloodtide Blade: +400% Death Nova damage per enemy within 25 yards (max 10).
@@ -273,7 +316,9 @@ const SKILL_FX = {
   boneArmor(p) {
     const set = p.setCount || 0;
     const kalan = p.powers && p.powers.wisdomOfKalan; // 5 extra stacks, 75% DR cap, bigger shield
-    const stun = Hero.rune('boneArmor') === 'dislocation';
+    const baRune = Hero.rune('boneArmor');
+    const stun = baRune === 'dislocation';
+    const dmgMul = baRune === 'vengefulArms' ? 1.45 : 1;   // Vengeful Arms: 145% damage
     World.smash(p.x, p.y, 150);
     let hits = 0;
     for (const e of Game.enemies) {
@@ -282,7 +327,7 @@ const SKILL_FX = {
         const o = boneOpts(angleTo(p.x, p.y, e.x, e.y), 80);
         if (stun) o.root = Math.max(o.root || 0, 2); // Dislocation: stunned
         // Inarius 2pc: Bone Armor damage +1000% (x11).
-        e.hurt(12 * (set >= 2 ? 11 : 1) * p.power(), o);
+        e.hurt(12 * (set >= 2 ? 11 : 1) * dmgMul * p.power(), o);
         hits++;
       }
     }
@@ -379,7 +424,13 @@ const SKILL_FX = {
     const baseDmg = 36 * 1.02 * ceMult * p.power();   // +2% damage
     corpses.forEach((c, i) => {
       c.consume();
-      Skills.pendingCE.push({ x: c.x, y: c.y, r: BLAST, dmg: baseDmg, rune: ceRune, t: 0.14 + i * 0.09, imp: false });
+      let bx = c.x, by = c.y;
+      // Final Embrace: the corpse crawls to the nearest foe before it blows.
+      if (ceRune === 'finalEmbrace') {
+        const tgt = nearestEnemy(c.x, c.y, 300);
+        if (tgt) { bx = tgt.x; by = tgt.y; }
+      }
+      Skills.pendingCE.push({ x: bx, y: by, r: BLAST, dmg: baseDmg, rune: ceRune, t: 0.14 + i * 0.09, imp: false });
     });
     AudioSys.sfx('spirit');   // a soft gathering whoosh as the pile draws inward
     return true;
@@ -419,6 +470,7 @@ const SKILL_FX = {
   },
 
   devour(p) {
+    const rune = Hero.rune('devour');
     const corpses = Skills.lotd > 0
       ? [{ x: p.x, y: p.y, consume() {} }, { x: p.x, y: p.y, consume() {} }, { x: p.x, y: p.y, consume() {} }]
       : corpsesNear(p.x, p.y, 340, 12);
@@ -430,7 +482,7 @@ const SKILL_FX = {
     for (const c of corpses) {
       c.consume();
       p.gainEssence(10);
-      p.heal(p.maxHp * 0.015);
+      p.heal(p.maxHp * (rune === 'cannibalize' ? 0.045 : 0.015));   // Cannibalize: +3% health/corpse
       Particles.spawn(c.x, c.y, {
         count: 6, color: ['#6ff7c3', '#3ee6a0'], minSpeed: 60, maxSpeed: 160,
         minLife: 0.25, maxLife: 0.5, glow: true
@@ -645,6 +697,12 @@ const Skills = {
     if (s.cat === 'primary' && Hero.hasPassive('quickening')) cd *= 0.85;
     const p = Game.player;
     if (p && p.cdr) cd *= 1 - p.cdr;            // Diamond cooldown reduction
+    // Borrowed Time (Decrepify rune): +1% cooldown reduction per cursed enemy (max 20%).
+    if (Hero.rune('decrepify') === 'borrowedTime' && Game.enemies) {
+      let cursed = 0;
+      for (const e of Game.enemies) if (!e.dead && e.curse) cursed++;
+      if (cursed) cd *= 1 - 0.01 * Math.min(20, cursed);
+    }
     return cd;
   },
 
@@ -692,6 +750,16 @@ const Skills = {
             const o = { knock: { a: angleTo(c.x, c.y, e.x, e.y), f: 160 } };
             if (c.rune === 'deadCold') o.root = 3;   // Dead Cold: freeze
             e.hurt(c.dmg * (1 - d / c.r * 0.4), o);
+          }
+        }
+        // Shrapnel: bone debris sprays out in a cone away from the hero.
+        if (c.rune === 'shrapnel') {
+          const base = Game.player ? angleTo(Game.player.x, Game.player.y, c.x, c.y) : 0;
+          for (let k = 0; k < 5; k++) {
+            const sa = base + (k - 2) * 0.22;
+            Game.projectiles.push(new Projectile(c.x, c.y, sa, {
+              speed: 620, dmg: c.dmg * 0.5, r: 6, life: 0.5, type: 'spear'
+            }));
           }
         }
         this.pendingCE.splice(i, 1);

@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.28-alpha';
+const GAME_VERSION = 'v1.6.29-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.29-alpha', date: 'July 2026',
+    notes: [
+      'RUNES — Batch 2: 20 more runes now actually work. Bone Spikes (Path of Bones line strike), Bone Spear (Teeth 5-shard fan · Shatter burst · Blighted Marrow ramp), Siphon Blood (Suppress slow · Drain Life big heal · Purity of Essence · Blood Sucker globe-pull), Death Nova (Unstable Compound growing nova), Corpse Explosion (Shrapnel debris cone · Final Embrace crawl-to-foe), Devour (Cannibalize heal), Bone Armor (Vengeful Arms 145%), Decrepify (Dizzying Curse stun · Borrowed Time cooldown-per-curse), Frailty (Harvest Essence · Volatile Death corpse-bomb · Early Grave 18% execute), Leech (Sanguine End heal-on-death · Transmittable curse-spread)',
+      'Still pending: a handful of runes that need systems the engine doesn\'t have yet (Attack Speed for Crystallization & Frost Scythe) or new stacking buffs — coming in a later batch'
+    ]
+  },
   {
     v: 'v1.6.28-alpha', date: 'July 2026',
     notes: [
