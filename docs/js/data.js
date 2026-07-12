@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.24-alpha';
+const GAME_VERSION = 'v1.6.25-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.25-alpha', date: 'July 2026',
+    notes: [
+      'Top Down: the Nekromancer is now drawn as a proper upright figure facing the camera — hooded head with glowing eyes ON THE FACE (no more eyes on top of the skull), a robe shaded with gradients for real depth, bone shoulder pauldrons, and the eye-coloured staff crystal. Bird\'s Eye keeps its original straight-down sprite'
+    ]
+  },
   {
     v: 'v1.6.24-alpha', date: 'July 2026',
     notes: [

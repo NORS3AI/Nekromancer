@@ -339,52 +339,60 @@ class Player {
     }
 
     if (this.dash) ctx.globalAlpha = 0.55;
-    ctx.rotate(this.facing + Math.PI / 2);
-    ctx.translate(0, -bob);
 
-    const flare = Math.sin(this.anim * 0.7) * 1.5;
-    ctx.fillStyle = this.flash > 0.4 ? '#8fe8c8' : '#2a4440';
-    ctx.beginPath();
-    ctx.moveTo(0, -15);
-    ctx.quadraticCurveTo(13, -6, 11 + flare, 14);
-    ctx.lineTo(6, 11); ctx.lineTo(2, 15); ctx.lineTo(-3, 11); ctx.lineTo(-7, 14);
-    ctx.quadraticCurveTo(-13, -6, 0, -15);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(111,247,195,0.35)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    if (typeof Game !== 'undefined' && Game.topDown && Game.topDown()) {
+      // Diablo-style upright figure (face forward, shaded for depth).
+      this.drawUpright(ctx, bob);
+    } else {
+      // Classic Bird's-Eye sprite (rotates to face movement; eyes read as the
+      // top of the head, correct for a straight-down view).
+      ctx.rotate(this.facing + Math.PI / 2);
+      ctx.translate(0, -bob);
 
-    ctx.fillStyle = '#d8cfb8';
-    ctx.beginPath(); ctx.arc(-8, -5, 4.5, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(8, -5, 4.5, 0, TAU); ctx.fill();
+      const flare = Math.sin(this.anim * 0.7) * 1.5;
+      ctx.fillStyle = this.flash > 0.4 ? '#8fe8c8' : '#2a4440';
+      ctx.beginPath();
+      ctx.moveTo(0, -15);
+      ctx.quadraticCurveTo(13, -6, 11 + flare, 14);
+      ctx.lineTo(6, 11); ctx.lineTo(2, 15); ctx.lineTo(-3, 11); ctx.lineTo(-7, 14);
+      ctx.quadraticCurveTo(-13, -6, 0, -15);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(111,247,195,0.35)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
 
-    ctx.fillStyle = this.flash > 0.4 ? '#b8f4de' : '#1c2e2c';
-    ctx.beginPath(); ctx.arc(0, -6, 7.5, 0, TAU); ctx.fill();
-    const eye = (typeof Hero !== 'undefined' && Hero.eyeColor) || '#6ff7c3';
-    ctx.fillStyle = eye;
-    ctx.shadowColor = eye;
-    ctx.shadowBlur = 7;
-    ctx.beginPath(); ctx.arc(-2.6, -8.5, 1.4, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(2.6, -8.5, 1.4, 0, TAU); ctx.fill();
-    ctx.shadowBlur = 0;
+      ctx.fillStyle = '#d8cfb8';
+      ctx.beginPath(); ctx.arc(-8, -5, 4.5, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(8, -5, 4.5, 0, TAU); ctx.fill();
 
-    // Staff shaft.
-    ctx.strokeStyle = '#4a3c2c';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(12, 10); ctx.lineTo(16, -22); ctx.stroke();
-    // Bone claw cradling the crystal at the staff head.
-    ctx.strokeStyle = '#d8cfb8';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.arc(12, -22, 6, -0.2, 2.0); ctx.stroke();
-    // Staff crystal — glows in the hero's chosen eye colour.
-    const staffPulse = 0.7 + 0.3 * Math.sin(Game.time * 3);
-    ctx.fillStyle = eye;
-    ctx.shadowColor = eye;
-    ctx.shadowBlur = 9 + 5 * staffPulse;
-    ctx.beginPath(); ctx.arc(15, -24, 3.4, 0, TAU); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.beginPath(); ctx.arc(14, -25, 1.2, 0, TAU); ctx.fill();
-    ctx.shadowBlur = 0;
+      ctx.fillStyle = this.flash > 0.4 ? '#b8f4de' : '#1c2e2c';
+      ctx.beginPath(); ctx.arc(0, -6, 7.5, 0, TAU); ctx.fill();
+      const eye = (typeof Hero !== 'undefined' && Hero.eyeColor) || '#6ff7c3';
+      ctx.fillStyle = eye;
+      ctx.shadowColor = eye;
+      ctx.shadowBlur = 7;
+      ctx.beginPath(); ctx.arc(-2.6, -8.5, 1.4, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(2.6, -8.5, 1.4, 0, TAU); ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Staff shaft.
+      ctx.strokeStyle = '#4a3c2c';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(12, 10); ctx.lineTo(16, -22); ctx.stroke();
+      // Bone claw cradling the crystal at the staff head.
+      ctx.strokeStyle = '#d8cfb8';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(12, -22, 6, -0.2, 2.0); ctx.stroke();
+      // Staff crystal — glows in the hero's chosen eye colour.
+      const staffPulse = 0.7 + 0.3 * Math.sin(Game.time * 3);
+      ctx.fillStyle = eye;
+      ctx.shadowColor = eye;
+      ctx.shadowBlur = 9 + 5 * staffPulse;
+      ctx.beginPath(); ctx.arc(15, -24, 3.4, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.beginPath(); ctx.arc(14, -25, 1.2, 0, TAU); ctx.fill();
+      ctx.shadowBlur = 0;
+    }
 
     ctx.restore();
 
@@ -411,6 +419,84 @@ class Player {
       ctx.fillStyle = cols[this.shrine.buff];
       ctx.beginPath(); ctx.arc(this.x, this.y - 34, 3, 0, TAU); ctx.fill();
     }
+  }
+
+  // Top-Down (Diablo-style) hero: an UPRIGHT robed figure that faces the camera,
+  // shaded with gradients so the flat 2D sprite reads with real volume — a hooded
+  // head with glowing eyes ON THE FACE (not the top of the skull), a mantled robe
+  // with a lit front and shadowed sides, and the eye-coloured staff crystal. It
+  // mirrors left/right with movement so it still feels responsive. Feet sit at the
+  // origin so it stands on the tilted floor. (Called only in Top Down view.)
+  drawUpright(ctx, bob) {
+    const flash = this.flash > 0.4;
+    const eye = (typeof Hero !== 'undefined' && Hero.eyeColor) || '#6ff7c3';
+    const flip = Math.cos(this.facing) < 0 ? -1 : 1;   // face/lean toward travel
+    ctx.save();
+    ctx.translate(0, -bob);
+    ctx.scale(flip, 1);
+
+    // ---- staff behind the body (shaft + bone claw) ----
+    ctx.strokeStyle = '#4a3c2c'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(12, 2); ctx.lineTo(14, -48); ctx.stroke();
+    ctx.strokeStyle = flash ? '#eef8f2' : '#d0c7ae'; ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.arc(14, -48, 5.2, -0.3, 2.4); ctx.stroke();
+
+    // ---- robe body (feet at ~y0, shoulders ~y-34) with a vertical gradient ----
+    ctx.beginPath();
+    ctx.moveTo(-7, -33);
+    ctx.quadraticCurveTo(-15, -13, -12, -1);
+    ctx.quadraticCurveTo(-8, 3, -3, 1.5);
+    ctx.lineTo(-1.5, -6); ctx.lineTo(1.5, -6); ctx.lineTo(3, 1.5);   // centre hem split
+    ctx.quadraticCurveTo(8, 3, 12, -1);
+    ctx.quadraticCurveTo(15, -13, 7, -33);
+    ctx.closePath();
+    const rg = ctx.createLinearGradient(0, -34, 0, 3);
+    if (flash) { rg.addColorStop(0, '#a6ecd3'); rg.addColorStop(1, '#4c6f66'); }
+    else { rg.addColorStop(0, '#37564f'); rg.addColorStop(0.55, '#243c37'); rg.addColorStop(1, '#141f1b'); }
+    ctx.fillStyle = rg; ctx.fill();
+    // Front highlight down the middle (form/volume).
+    const hg = ctx.createLinearGradient(-6, 0, 6, 0);
+    hg.addColorStop(0, 'rgba(130,210,185,0)');
+    hg.addColorStop(0.5, flash ? 'rgba(220,255,245,0.22)' : 'rgba(130,210,185,0.16)');
+    hg.addColorStop(1, 'rgba(130,210,185,0)');
+    ctx.fillStyle = hg; ctx.fill();
+    ctx.strokeStyle = 'rgba(111,247,195,0.30)'; ctx.lineWidth = 1.1; ctx.stroke();
+
+    // ---- bone shoulder mantle (two pauldrons) ----
+    ctx.fillStyle = flash ? '#eef8f2' : '#cfc6ad';
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.ellipse(-8.5, -32, 5.5, 3.6, -0.35, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(8.5, -32, 5.5, 3.6, 0.35, 0, TAU); ctx.fill(); ctx.stroke();
+
+    // ---- hooded head ----
+    ctx.beginPath();
+    ctx.moveTo(-7.5, -33);
+    ctx.quadraticCurveTo(-9, -49, 0, -50);
+    ctx.quadraticCurveTo(9, -49, 7.5, -33);
+    ctx.quadraticCurveTo(0, -30, -7.5, -33);
+    ctx.closePath();
+    const hd = ctx.createLinearGradient(0, -50, 0, -30);
+    if (flash) { hd.addColorStop(0, '#9fe6cd'); hd.addColorStop(1, '#4a6a62'); }
+    else { hd.addColorStop(0, '#2f4c45'); hd.addColorStop(1, '#1a2c28'); }
+    ctx.fillStyle = hd; ctx.fill();
+    ctx.strokeStyle = 'rgba(111,247,195,0.30)'; ctx.lineWidth = 1; ctx.stroke();
+    // Face cavity (dark) then glowing eyes ON THE FACE.
+    ctx.fillStyle = '#0b1310';
+    ctx.beginPath(); ctx.ellipse(0, -39, 4.6, 5.6, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = eye; ctx.shadowColor = eye; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(-2.1, -39, 1.5, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(2.1, -39, 1.5, 0, TAU); ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // ---- staff crystal (in front), glowing in the eye colour ----
+    const pulse = 0.7 + 0.3 * Math.sin(Game.time * 3);
+    ctx.fillStyle = eye; ctx.shadowColor = eye; ctx.shadowBlur = 9 + 5 * pulse;
+    ctx.beginPath(); ctx.arc(14, -51, 3.4, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath(); ctx.arc(13, -52, 1.2, 0, TAU); ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.restore();
   }
 }
 
