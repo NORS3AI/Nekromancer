@@ -1761,7 +1761,8 @@ const Screens = {
         ctx.textAlign = 'left';
         ctx.font = 'bold 12px Georgia';
         ctx.fillStyle = RARITIES[it.rarity].color;
-        ctx.fillText(this.fitText(ctx, it.name, dw - 70), dx + 10, yy + 15);
+        const bagNm = it.name + (it.torch && (it.count || 1) > 1 ? '  ×' + it.count : '');
+        ctx.fillText(this.fitText(ctx, bagNm, dw - 70), dx + 10, yy + 15);
         ctx.textAlign = 'right';
         ctx.font = 'bold 13px Georgia';
         if (arrows === 3) {
@@ -2023,7 +2024,8 @@ const Screens = {
     ctx.textAlign = 'left';
     ctx.font = 'bold 13px Georgia';
     ctx.fillStyle = rareCol;
-    ctx.fillText(this.fitText(ctx, item.name, w - 116), x + 12, y + 15);
+    const cardNm = item.name + (item.torch && (item.count || 1) > 1 ? '  ×' + item.count : '');
+    ctx.fillText(this.fitText(ctx, cardNm, w - 116), x + 12, y + 15);
     ctx.textAlign = 'right';
     ctx.font = '10px Georgia';
     ctx.fillStyle = '#6f6552';

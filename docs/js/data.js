@@ -19,11 +19,17 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.36-alpha';
+const GAME_VERSION = 'v1.6.37-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.37-alpha', date: 'July 2026',
+    notes: [
+      'Torches now STACK in your inventory — forging several of the same type shows one "Wood Torch ×3" entry instead of a row each. Equipping one peels a single torch off the pile; a torch you\'ve already lit (partly burnt) keeps its own entry so its fuel is tracked separately'
+    ]
+  },
   {
     v: 'v1.6.36-alpha', date: 'July 2026',
     notes: [

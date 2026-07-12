@@ -271,6 +271,22 @@ const Items = {
     return true;
   },
 
+  // Add a torch to the bag, STACKING it onto an existing full pile of the same
+  // type — freshly-forged torches are all full, so a dozen Wood Torches read as
+  // one "Wood Torch ×12" entry instead of a dozen rows. A partially-burnt torch
+  // (one that's been lit) never merges; it stays its own item so its fuel is
+  // tracked separately. Returns the bag entry the torch ended up in.
+  addTorchToBag(torch) {
+    const full = torch.burnT >= (torch.burnMax || 0);
+    if (full) {
+      const stack = Hero.bag.find(it => it && it !== torch && it.torch === torch.torch
+        && it.burnT >= (it.burnMax || 0));
+      if (stack) { stack.count = (stack.count || 1) + (torch.count || 1); return stack; }
+    }
+    Hero.bag.push(torch);
+    return torch;
+  },
+
   // Craft a torch at the Blacksmith — consumes reagents, sends it to the bag
   // (torches persist in the bag WITHOUT taking a slot; see Hero.bagUsed()).
   craftTorch(type) {
@@ -283,7 +299,7 @@ const Items = {
         return;
       }
     }
-    Hero.bag.push(this.makeTorch(type));
+    this.addTorchToBag(this.makeTorch(type));
     for (const [k, n] of Object.entries(T.recipe)) Hero.mats[k] -= n;
     Hero.save();
     UI.toast('Forged a ' + T.name + ' → your inventory', T.color);
@@ -560,16 +576,24 @@ const Items = {
       AudioSys.sfx('denied');
       return;
     }
-    Hero.bag.splice(idx, 1);
+    // Equipping from a torch STACK peels off a SINGLE torch and leaves the pile.
+    let toEquip = item;
+    if (item.torch && (item.count || 1) > 1) {
+      item.count -= 1;
+      toEquip = Object.assign({}, item, { count: 1 });
+    } else {
+      Hero.bag.splice(idx, 1);
+    }
     const cur = Hero.equipped[slot];
-    item.slot = slot;              // rebrand a ring to the chosen ring slot
-    Hero.equipped[slot] = item;
-    if (cur) Hero.bag.push(cur);
+    toEquip.slot = slot;           // rebrand a ring to the chosen ring slot
+    Hero.equipped[slot] = toEquip;
+    // The piece coming off goes back to the bag — a full torch re-stacks.
+    if (cur) { if (cur.torch) this.addTorchToBag(cur); else Hero.bag.push(cur); }
     // Remember the piece we just took off so the inventory can offer a one-tap
     // "re-wear" (owner request) — no digging through the bag to change your mind.
     Game.lastSwap = cur ? { slot, item: cur } : null;
     this.apply();
-    UI.toast('Equipped: ' + item.name, RARITIES[item.rarity].color);
+    UI.toast('Equipped: ' + toEquip.name, RARITIES[toEquip.rarity].color);
     AudioSys.sfx('level');
     Hero.save();
   },
