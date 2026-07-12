@@ -127,6 +127,7 @@ const Hero = {
   paragonXp: 0,     // XP banked toward the next paragon level
   np: 0,            // unspent Nekromancer Points
   para: {},         // allocated paragon points, keyed by PARAGON_STATS id
+  paraOrder: [],    // spend history (keys, in order) for rotation + single-undo
   gold: 0,
   mats: { parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0, wyrmscale: 0, brain: 0, rathmasoul: 0 },
   gems: [],                 // [{type, tier}]
@@ -168,7 +169,7 @@ const Hero = {
     if (!this.name) this.name = 'The Nekromancer';
     if (!this.eyeColor) this.eyeColor = '#6ff7c3';
     this.level = 1; this.xp = 0; this.gold = 0;
-    this.paragon = 0; this.paragonXp = 0; this.np = 0; this.para = {};
+    this.paragon = 0; this.paragonXp = 0; this.np = 0; this.para = {}; this.paraOrder = [];
     this.mats = { parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0, wyrmscale: 0, brain: 0, rathmasoul: 0 };
     this.gems = [];
     this.bag = [];
@@ -236,7 +237,7 @@ const Hero = {
       v: this.SAVE_VERSION,
       name: this.name, eyeColor: this.eyeColor,
       level: this.level, xp: this.xp, gold: this.gold, mats: this.mats,
-      paragon: this.paragon, paragonXp: this.paragonXp, np: this.np, para: this.para,
+      paragon: this.paragon, paragonXp: this.paragonXp, np: this.np, para: this.para, paraOrder: this.paraOrder,
       gems: this.gems, bag: this.bag, equipped: this.equipped,
       loadout: this.loadout, passives: this.passives,
       zonesCleared: this.zonesCleared, actsCleared: this.actsCleared, actUniques: this.actUniques, difficulty: this.difficulty,
@@ -293,6 +294,7 @@ const Hero = {
       level: d.level || 1, xp: d.xp || 0, gold: d.gold || 0,
       paragon: d.paragon || 0, paragonXp: d.paragonXp || 0, np: d.np || 0,
       para: (d.para && typeof d.para === 'object') ? Object.assign({}, d.para) : {},
+      paraOrder: Array.isArray(d.paraOrder) ? d.paraOrder.slice() : [],
       mats: Object.assign({ parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0, wyrmscale: 0, brain: 0, rathmasoul: 0 }, d.mats),
       gems: d.gems || [], bag: d.bag || [], equipped: d.equipped || {},
       loadout: d.loadout || ['boneSpikes', 'boneSpear', 'corpseExplosion', null, null, null],
@@ -481,22 +483,103 @@ const Hero = {
     return st ? (this.para[key] || 0) * st.per : 0;
   },
 
-  // Spend (delta>0) or refund (delta<0) paragon points on a stat, respecting the
-  // NP pool and the per-stat cap.
-  spendParagon(key, delta) {
+  // Total paragon points allocated across every stat.
+  paragonSpent() {
+    let n = 0;
+    for (const k in this.para) n += this.para[k] || 0;
+    return n;
+  },
+
+  // Is every stat in `cat` already at its cap? (Core/Defense hold uncapped stats,
+  // so they're never full; Offense/Utility could theoretically fill at very high
+  // paragon — then the rotation skips past them.)
+  categoryFull(cat) {
+    for (const k in PARAGON_STATS) {
+      const st = PARAGON_STATS[k];
+      if (st.cat !== cat) continue;
+      if (!st.max || (this.para[k] || 0) < st.max) return false;
+    }
+    return true;
+  },
+
+  // Keep paraOrder (the spend history, for single-point undo) in step with the
+  // per-stat totals — rebuilding it canonically for old saves that predate the
+  // rotation rule (free-spend distributions get grandfathered into rotation order).
+  syncParaOrder() {
+    if (!Array.isArray(this.paraOrder)) this.paraOrder = [];
+    const total = this.paragonSpent();
+    if (this.paraOrder.length === total) return;
+    const remaining = Object.assign({}, this.para);
+    const order = [];
+    for (let i = 0; i < total; i++) {
+      const cat = PARAGON_ROTATION[i % PARAGON_ROTATION.length];
+      let k = Object.keys(PARAGON_STATS).find(kk => PARAGON_STATS[kk].cat === cat && (remaining[kk] || 0) > 0);
+      if (!k) k = Object.keys(remaining).find(kk => (remaining[kk] || 0) > 0);  // old free-spend leftover
+      if (!k) break;
+      remaining[k]--; order.push(k);
+    }
+    this.paraOrder = order;
+  },
+
+  // The category the NEXT point must go into — the rotation slot for the current
+  // spend count, skipping any category that's completely capped.
+  paragonCat() {
+    this.syncParaOrder();
+    const base = this.paraOrder.length % PARAGON_ROTATION.length;
+    for (let n = 0; n < PARAGON_ROTATION.length; n++) {
+      const cat = PARAGON_ROTATION[(base + n) % PARAGON_ROTATION.length];
+      if (!this.categoryFull(cat)) return cat;
+    }
+    return PARAGON_ROTATION[base];
+  },
+
+  // Spend ONE Nekromancer Point on `key` — only allowed if that stat sits in the
+  // currently-unlocked rotation category (owner rule: one point at a time, cycling
+  // Core → Defense → Offense → Utility). Intelligence & Vitality are uncapped.
+  spendParagon(key) {
     const st = PARAGON_STATS[key];
     if (!st) return;
-    const cur = this.para[key] || 0;
-    if (delta > 0) {
-      const room = st.max ? st.max - cur : Infinity;
-      const spend = Math.min(delta, this.np, room);
-      if (spend <= 0) { AudioSys.sfx('denied'); return; }
-      this.para[key] = cur + spend; this.np -= spend;
-    } else {
-      const back = Math.min(-delta, cur);
-      if (back <= 0) { AudioSys.sfx('denied'); return; }
-      this.para[key] = cur - back; this.np += back;
+    if ((this.np || 0) <= 0) { AudioSys.sfx('denied'); return; }
+    const cat = this.paragonCat();
+    if (st.cat !== cat) {
+      if (typeof UI !== 'undefined') UI.toast('Spend your point in ' + cat + ' first', '#9a9080');
+      AudioSys.sfx('denied');
+      return;
     }
+    const cur = this.para[key] || 0;
+    if (st.max && cur >= st.max) { AudioSys.sfx('denied'); return; }
+    this.para[key] = cur + 1;
+    this.syncParaOrder();
+    this.paraOrder.push(key);
+    this.np--;
+    if (typeof UI !== 'undefined' && UI.sel) UI.sel.paraCat = this.paragonCat();   // advance the view
+    if (typeof Items !== 'undefined') Items.apply();
+    AudioSys.sfx('gem');
+    this.save();
+  },
+
+  // Undo the most recently spent point (returns it to the NP pool).
+  refundLastParagon() {
+    this.syncParaOrder();
+    const key = this.paraOrder.pop();
+    if (!key) { AudioSys.sfx('denied'); return; }
+    this.para[key] = Math.max(0, (this.para[key] || 0) - 1);
+    if (this.para[key] === 0) delete this.para[key];
+    this.np++;
+    if (typeof UI !== 'undefined' && UI.sel) UI.sel.paraCat = this.paragonCat();
+    if (typeof Items !== 'undefined') Items.apply();
+    AudioSys.sfx('gem');
+    this.save();
+  },
+
+  // Refund EVERY spent point back to the NP pool (a clean respec).
+  resetParagon() {
+    const spent = this.paragonSpent();
+    if (spent <= 0) { AudioSys.sfx('denied'); return; }
+    this.np += spent;
+    this.para = {};
+    this.paraOrder = [];
+    if (typeof UI !== 'undefined' && UI.sel) UI.sel.paraCat = this.paragonCat();
     if (typeof Items !== 'undefined') Items.apply();
     AudioSys.sfx('gem');
     this.save();

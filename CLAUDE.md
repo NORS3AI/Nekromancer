@@ -116,7 +116,7 @@ loot at the artisans. The hero is persistent (localStorage).
 - Potion button sits ON the skill-cluster arc past slot 1 (angle π·0.98, radius R+54·scale)
   — verified non-overlapping at 390×750 / 844×390 / 900×500 / 1280×720.
 - XP: `60·lvl^1.5`, cap 70. Level-up = full heal + toasts for new unlocks.
-- **PARAGON (past 70)**: XP overflow feeds `Hero.paragon` (near-infinite); each paragon level = 1 NP (`Hero.np`). Spend via `Hero.spendParagon(key,±)` across `PARAGON_STATS` (16 stats in 4 trees: Core/Offense/Defense/Utility; `per`=per-point, `max`=cap, 0=infinite). `Hero.paragonBonus(key)`→fraction, folded into `computeStats` (`paraHpMul`/`paraDmgMul`/`paraManaMul`, additive to crit/cdr/rcr/area/move/resistDR, ×armor/regen/lph, +pickupRadius). `Screens.paragon` (opened from the Character Sheet footer) is the spend UI; `PARAGON_XP(p)` is the per-level cost.
+- **PARAGON (past 70)**: XP overflow feeds `Hero.paragon` (near-infinite); each paragon level = 1 NP (`Hero.np`). **D3-style ROTATION spend (owner rule)**: points go in ONE AT A TIME, and each must land in the currently-unlocked category, cycling **Core → Defense → Offense → Utility** (`PARAGON_ROTATION`=`PARAGON_CATS`). `Hero.paragonCat()` returns the unlocked category from `paraOrder.length % 4` (skipping any fully-capped category); `Hero.spendParagon(key)` spends 1 point iff `key`'s cat matches (records it in `Hero.paraOrder`); `refundLastParagon()` undoes the last point (LIFO via `paraOrder`), `resetParagon()` refunds all. `syncParaOrder()` rebuilds `paraOrder` for old free-spend saves. `PARAGON_STATS` (16 stats; `per`=per-point, `max`=cap, **0=infinite — Vitality/Intelligence/Life% never cap**). `Hero.paragonBonus(key)`→fraction, folded into `computeStats` (`paraHpMul`/`paraDmgMul`/`paraManaMul`, additive to crit/cdr/rcr/area/move/resistDR, ×armor/regen/lph, +pickupRadius). `Screens.paragon` (opened from the Character Sheet footer) shows the "▶ Now spending" banner, rotation-locked ✦ tab, per-row single `+`, and Undo/Reset footer; `PARAGON_XP(p)` is the per-level cost.
 - Difficulty unlocks: up to Master until all 5 lands cleared, then Torment I–III.
 - **Artisan resource lanes (owner rule)**: Blacksmith = gold/parts/dust/crystals;
   Mystic = gold + Forgotten Souls ONLY; Jeweler = gold + gems ONLY (and BUYS gems
@@ -252,10 +252,12 @@ Script lives in the session scratchpad (intentionally not committed).
   `dmg` (%), `hp`, `crit` (chance), `ess` (essence/s), `reg` (life/s), `gold`,
   `armor`, `move` (boots), `dnova` (Death Nova %), `area` (Area Damage) as item
   affixes; `critDmg`/`lph`/`rcr`/`cdr`/`resAll`/`flatDmg`/`xp` via GEMS; and — added
-  v1.6.33 — **`int` (Intelligence, +0.1%dmg/pt, cap 3000), `vit` (Vitality, +5
-  Life/pt, cap 4000) and `atkSpeed` (Attack Speed, faster primary/secondary
-  cooldowns, cap 75%)** as real rollable affixes (in `AFFIX_ROLLS`/`AFFIX_CAP`/
-  `AFFIX_GROUPS`; folded in `computeStats`/`apply`; `atkSpeed` hooks `Skills.cdFor`).
+  v1.6.33 — **`int` (Intelligence, +0.1%dmg/pt), `vit` (Vitality, +5 Life/pt) —
+  both UNCAPPED like Paragon (absent from `AFFIX_CAP` → `affixCap()` returns
+  Infinity, still tier-scaled via rarity/★) — and `atkSpeed` (Attack Speed, faster
+  primary/secondary cooldowns, cap 75%)** as real rollable affixes (in
+  `AFFIX_ROLLS`/`AFFIX_GROUPS`; folded in `computeStats`/`apply`; `atkSpeed` hooks
+  `Skills.cdFor`).
   Still not modelled: **Life per Hit, Crit Damage, resource cost reduction,
   cooldown reduction** as ITEM affixes (they exist only through gems), and
   elemental-damage types. Define the full stat/affix taxonomy (primary vs

@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.33-alpha';
+const GAME_VERSION = 'v1.6.34-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.34-alpha', date: 'July 2026',
+    notes: [
+      'Intelligence & Vitality are now UNCAPPED on items — just like Paragon, they have no ceiling and keep climbing with item level, rarity and ★ (the old 3000 INT / 4000 VIT caps are gone)',
+      'PARAGON REBUILT, D3-style: points are now spent ONE AT A TIME, and each must go into the currently-unlocked category, cycling Core → Defense → Offense → Utility → Core… You choose which stat inside that category, then the rotation advances to the next one',
+      'The Paragon screen shows a "▶ Now spending in: <category>" banner and marks the unlocked category tab with ✦; the + button only lights up on the unlocked category. New "↶ Undo last" (take back your most recent point) and "Reset all" (full respec) buttons replace the old ± / +10 controls',
+      'Vitality, Intelligence and Life % still scale infinitely in the Paragon trees; existing characters keep every point — old free-spend builds are grandfathered into the rotation automatically'
+    ]
+  },
   {
     v: 'v1.6.33-alpha', date: 'July 2026',
     notes: [
@@ -1881,9 +1890,10 @@ const AFFIX_CAP = {
   ess: 200,       // 200 essence/s
   armor: 10000,   // 10000 armor
   move: 0.25,     // 25% movement (boots)
-  int: 3000,      // 3000 Intelligence  (→ up to +300% damage at 0.1%/pt)
-  vit: 4000,      // 4000 Vitality      (→ up to +20000 Life at 5/pt)
-  atkSpeed: 0.75, // 75% attack speed
+  // Intelligence & Vitality are UNCAPPED (owner rule) — like Paragon, they have
+  // no ceiling and keep scaling with item level/rarity/★ (absent from this table
+  // → affixCap() returns Infinity, so nothing clamps them).
+  atkSpeed: 0.75, // 75% attack speed (kept: uncapped would zero out cooldowns)
   dnova: 6.0, area: 1.5   // signature affixes — generous
 };
 // Fraction of the Artifact-5★ ceiling a given rarity/star tier can reach (so a
@@ -2168,7 +2178,11 @@ const MAX_LEVEL = 70;
 // Past level 70 the hero earns PARAGON levels (near-infinite); each grants one
 // Nekromancer Point (NP) to spend across four trees. `per` = bonus per point,
 // `max` = point cap (0 = infinite). Percentages are stored as fractions.
-const PARAGON_CATS = ['Core', 'Offense', 'Defense', 'Utility'];
+// D3-style rotation: each Nekromancer Point must be spent in the CURRENT
+// category, one at a time, cycling Core → Defense → Offense → Utility → Core…
+// (owner rule). PARAGON_CATS doubles as both the tab order and the rotation.
+const PARAGON_CATS = ['Core', 'Defense', 'Offense', 'Utility'];
+const PARAGON_ROTATION = PARAGON_CATS;
 const PARAGON_STATS = {
   // Core
   vitality:     { cat: 'Core',    label: 'Vitality',           per: 0.02,  max: 0,   fmt: 'pct', note: 'Life' },

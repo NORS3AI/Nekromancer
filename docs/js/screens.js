@@ -3282,18 +3282,39 @@ const Screens = {
     ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#8a8070';
     ctx.fillText(Math.floor(Hero.paragonXp || 0).toLocaleString() + ' / ' + need.toLocaleString() + ' XP to next', W / 2, py + 90);
 
-    // Category tabs.
-    if (!UI.sel.paraCat) UI.sel.paraCat = 'Core';
+    // The category the next point MUST go into (D3-style rotation lock).
+    const activeCat = Hero.paragonCat();
+    if (!UI.sel.paraCat) UI.sel.paraCat = activeCat;
+
+    // "Now spending" banner — makes the rotation lock obvious.
+    ctx.textAlign = 'center'; ctx.font = 'bold 11px Georgia';
+    ctx.fillStyle = (Hero.np || 0) > 0 ? '#6ff7c3' : '#6f6552';
+    ctx.fillText((Hero.np || 0) > 0 ? '▶ Now spending in:  ' + activeCat.toUpperCase()
+      : 'No points to spend — earn Paragon levels', W / 2, py + 112);
+
+    // Category tabs (rotation order). The UNLOCKED category glows even when you're
+    // viewing another; the viewed one is filled.
     const tabW = (pw - 32) / PARAGON_CATS.length;
     PARAGON_CATS.forEach((cat, i) => {
       const on = UI.sel.paraCat === cat;
-      UI.btn(ctx, px + 16 + i * tabW, py + 98, tabW - 4, 26, cat, () => { UI.sel.paraCat = cat; },
-        { size: 11, bg: on ? 'rgba(90,54,26,0.95)' : undefined, color: on ? '#ffd76a' : '#c9bfa8', border: on ? '#ff8c2a' : undefined });
+      const isActive = cat === activeCat;
+      UI.btn(ctx, px + 16 + i * tabW, py + 120, tabW - 4, 26, (isActive ? '✦ ' : '') + cat, () => { UI.sel.paraCat = cat; },
+        { size: 10, bg: on ? 'rgba(90,54,26,0.95)' : undefined,
+          color: on ? '#ffd76a' : (isActive ? '#6ff7c3' : '#c9bfa8'),
+          border: on ? '#ff8c2a' : (isActive ? '#4ea88a' : undefined) });
     });
 
-    // Stat rows for the active category (drag-scroll in case of short screens).
+    // Footer (undo / reset), pinned above the bottom edge.
+    const footY = py + ph - 40;
+    const spent = Hero.paragonSpent();
+    UI.btn(ctx, px + 16, footY, (pw - 40) / 2, 28, '↶ Undo last', spent > 0 ? () => Hero.refundLastParagon() : null,
+      { size: 11, disabled: spent <= 0, border: '#6b5f80', color: '#c9bfa8' });
+    UI.btn(ctx, px + 24 + (pw - 40) / 2, footY, (pw - 40) / 2, 28, 'Reset all', spent > 0 ? () => Hero.resetParagon() : null,
+      { size: 11, disabled: spent <= 0, border: '#7a4a4a', color: '#e0a0a0' });
+
+    // Stat rows for the VIEWED category (drag-scroll in case of short screens).
     const keys = Object.keys(PARAGON_STATS).filter(k => PARAGON_STATS[k].cat === UI.sel.paraCat);
-    const listTop = py + 132, listBot = py + ph - 14;
+    const listTop = py + 154, listBot = footY - 10;
     const viewH = listBot - listTop;
     const rowH = 62;
     const scrollMax = Math.max(0, keys.length * rowH - viewH);
@@ -3302,6 +3323,7 @@ const Screens = {
     UI.sel.scrollRegion = { x: px + 14, y: listTop, w: pw - 28, h: viewH };
     ctx.save();
     ctx.beginPath(); ctx.rect(px + 14, listTop, pw - 28, viewH); ctx.clip();
+    const viewingActive = UI.sel.paraCat === activeCat;
     keys.forEach((k, i) => {
       const y = listTop + i * rowH - scrollY;
       if (y + rowH - 8 < listTop || y > listBot) return;
@@ -3314,24 +3336,23 @@ const Screens = {
       ctx.fillText(st.label, px + 28, y + 18);
       ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
       const bonus = (Hero.paragonBonus(k) * 100);
-      const bTxt = '+' + (bonus % 1 ? bonus.toFixed(1) : bonus) + '% ' + st.note;
+      const bTxt = '+' + (bonus % 1 ? bonus.toFixed(1) : bonus) + '% ' + st.note + (st.max ? '' : '  (∞)');
       ctx.fillText(bTxt, px + 28, y + 34);
       ctx.font = '9px Georgia'; ctx.fillStyle = capped ? '#e0a24a' : '#6f6552';
       ctx.fillText(pts + (st.max ? ' / ' + st.max + ' pts' : ' pts'), px + 28, y + 47);
-      // − / + controls.
-      const bw = 30, by = y + (rowH - 8) / 2 - 13;
-      UI.btn(ctx, px + pw - 32 - bw, by, bw, 26, '−', pts > 0 ? () => Hero.spendParagon(k, -1) : null,
-        { size: 15, disabled: pts <= 0, border: '#6b5f80', color: '#c9bfa8' });
-      const canAdd = (Hero.np || 0) > 0 && !capped;
-      UI.btn(ctx, px + pw - 30 - bw * 2 - 6, by, bw, 26, '+', canAdd ? () => Hero.spendParagon(k, +1) : null,
-        { size: 15, disabled: !canAdd, border: '#8a6f2a', color: '#ffd76a' });
-      UI.btn(ctx, px + pw - 28 - bw * 3 - 12, by, bw + 4, 26, '+10', canAdd ? () => Hero.spendParagon(k, +10) : null,
-        { size: 10, disabled: !canAdd, border: '#8a6f2a', color: '#ffd76a' });
+      // A single "+" — enabled ONLY while viewing the unlocked category (rotation).
+      const bw = 34, by = y + (rowH - 8) / 2 - 14;
+      const canAdd = viewingActive && (Hero.np || 0) > 0 && !capped;
+      UI.btn(ctx, px + pw - 30 - bw, by, bw, 28, '+', canAdd ? () => Hero.spendParagon(k) : null,
+        { size: 17, disabled: !canAdd, border: '#8a6f2a', color: '#ffd76a' });
     });
     ctx.restore();
-    if (scrollMax > 0) {
+    if (!viewingActive && (Hero.np || 0) > 0) {
       ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
-      if (scrollY < scrollMax - 1) ctx.fillText('▼ drag for more ▼', W / 2, listBot - 1);
+      ctx.fillText('Locked — your next point goes in ' + activeCat, W / 2, listBot + 1);
+    } else if (scrollMax > 0 && scrollY < scrollMax - 1) {
+      ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText('▼ drag for more ▼', W / 2, listBot + 1);
     }
   },
 
