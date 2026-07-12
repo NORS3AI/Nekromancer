@@ -369,21 +369,19 @@ const SKILL_FX = {
         return false;
       }
     }
-    for (const c of corpses) {
+    // Chain reaction: consume all corpses now, then detonate them one after
+    // another from the MIDDLE outward — each sucks inward then bursts (owner
+    // request: "inward then outward" · +2% damage). Processed in Skills.update.
+    let cx = 0, cy = 0;
+    for (const c of corpses) { cx += c.x; cy += c.y; }
+    cx /= corpses.length; cy /= corpses.length;
+    corpses.sort((A, B) => dist(A.x, A.y, cx, cy) - dist(B.x, B.y, cx, cy));
+    const baseDmg = 36 * 1.02 * ceMult * p.power();   // +2% damage
+    corpses.forEach((c, i) => {
       c.consume();
-      fxExplosion(c.x, c.y, BLAST);
-      World.smash(c.x, c.y, BLAST);
-      for (const e of Game.enemies) {
-        if (e.dead || e.sleep) continue;
-        const d = dist(c.x, c.y, e.x, e.y);
-        if (d < BLAST) {
-          const o = { knock: { a: angleTo(c.x, c.y, e.x, e.y), f: 160 } };
-          if (ceRune === 'deadCold') o.root = 3;  // Dead Cold: freeze
-          e.hurt(36 * ceMult * p.power() * (1 - d / BLAST * 0.4), o);
-        }
-      }
-    }
-    AudioSys.sfx('explode');
+      Skills.pendingCE.push({ x: c.x, y: c.y, r: BLAST, dmg: baseDmg, rune: ceRune, t: 0.14 + i * 0.09, imp: false });
+    });
+    AudioSys.sfx('spirit');   // a soft gathering whoosh as the pile draws inward
     return true;
   },
 
@@ -611,6 +609,7 @@ const Skills = {
   lotdSpawn: 0,
   ironRoseCd: 0,    // Iron Rose free-nova throttle
   graveTick: 3,     // Grave Caller passive corpse timer
+  pendingCE: [],    // scheduled Corpse-Explosion detonations (implode→burst chain)
   byId: {},
   chargeSkills: [],
 
@@ -629,6 +628,7 @@ const Skills = {
     this.lotdKills = 0;
     this.ironRoseCd = 0;
     this.graveTick = 3;
+    this.pendingCE = [];
   },
 
   // How many charges a charge-skill has right now. Blood Rush gets an extra
@@ -682,6 +682,31 @@ const Skills = {
       }
     }
     this.ironRoseCd = Math.max(0, this.ironRoseCd - dt);
+
+    // Corpse Explosion chain: each scheduled corpse SUCKS inward, then a beat
+    // later BURSTS outward and deals its damage — rippling out from the middle
+    // so a pile of corpses pops like a chain reaction.
+    for (let i = this.pendingCE.length - 1; i >= 0; i--) {
+      const c = this.pendingCE[i];
+      if (!c.imp && c.t <= 0.16) { fxImplode(c.x, c.y, c.r * 0.85); c.imp = true; }
+      c.t -= dt;
+      if (c.t <= 0) {
+        fxExplosion(c.x, c.y, c.r);
+        World.smash(c.x, c.y, c.r);
+        Particles.shake(3);
+        AudioSys.sfx('explode');
+        for (const e of Game.enemies) {
+          if (e.dead || e.sleep) continue;
+          const d = dist(c.x, c.y, e.x, e.y);
+          if (d < c.r) {
+            const o = { knock: { a: angleTo(c.x, c.y, e.x, e.y), f: 160 } };
+            if (c.rune === 'deadCold') o.root = 3;   // Dead Cold: freeze
+            e.hurt(c.dmg * (1 - d / c.r * 0.4), o);
+          }
+        }
+        this.pendingCE.splice(i, 1);
+      }
+    }
 
     // Grave Caller passive: a fresh corpse rises at the hero's feet every 3s.
     if (Hero.hasPassive('graveCaller')) {

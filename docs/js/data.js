@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.25-alpha';
+const GAME_VERSION = 'v1.6.26-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.26-alpha', date: 'July 2026',
+    notes: [
+      'Corpse Explosion is now a proper chain reaction: each corpse gets SUCKED inward then BURSTS outward, detonating one after another from the middle of the pile outward — pure ASMR',
+      'Corpse Explosion damage increased by 2%'
+    ]
+  },
   {
     v: 'v1.6.25-alpha', date: 'July 2026',
     notes: [

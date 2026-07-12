@@ -172,6 +172,28 @@ function fxBone(x, y, n = 8) {
   });
 }
 
+// An INWARD suck: particles gather from a ring toward the centre + a contracting
+// ring. Pair it with fxExplosion a beat later for a satisfying implode→burst pop.
+function fxImplode(x, y, r, color) {
+  const cols = color || ['#ff8c2a', '#ffd76a', '#c22843', '#e8e0cc'];
+  let n = 18;
+  if (typeof Settings !== 'undefined' && Settings.g.lowFx) n = Math.ceil(n / 2);
+  for (let i = 0; i < n; i++) {
+    if (Particles.list.length >= Particles.MAX) Particles.list.shift();
+    const a = rand(TAU);
+    const rr = r * rand(0.7, 1.1);
+    const sp = rand(140, 300);
+    Particles.list.push({
+      x: x + Math.cos(a) * rr, y: y + Math.sin(a) * rr,
+      vx: -Math.cos(a) * sp, vy: -Math.sin(a) * sp,   // toward the centre
+      life: 0, maxLife: rand(0.14, 0.26),
+      size: rand(1.4, 3), color: Array.isArray(cols) ? pick(cols) : cols,
+      drag: 0.4, grav: 0, glow: true
+    });
+  }
+  Particles.ring(x, y, r, '#ff8c2a', 2, 0.16);
+}
+
 function fxExplosion(x, y, r) {
   Particles.ring(x, y, r, '#ffb43a', 6, 0.35);
   Particles.ring(x, y, r * 0.7, '#b52033', 5, 0.3);
