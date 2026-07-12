@@ -19,11 +19,20 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.29-alpha';
+const GAME_VERSION = 'v1.6.30-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.30-alpha', date: 'July 2026',
+    notes: [
+      'Top Down: the Nekromancer now turns to face the way it moves — front (with glowing eyes) toward the camera, its BACK when heading away, and left/right — and its cloak trails behind in the direction of travel',
+      'Top Down: the torch light & fog-of-war now centre on the hero\'s HEAD, not its feet, so the head is never left sitting in the dark',
+      'Minions protect the Nekromancer FIRST — they only strike foes that come near HIM (not homing across the map at distant enemies), and any minion that strays too far (stuck pathing / lost after a portal) snaps back to your side quickly',
+      'Torch crafting colours now match the inventory (rarity colours): Common = White, Uncommon = Green, Magic = Blue, Rare = Yellow, Epic = Purple, Legendary = Orange'
+    ]
+  },
   {
     v: 'v1.6.29-alpha', date: 'July 2026',
     notes: [
@@ -1387,7 +1396,7 @@ const MATERIALS = {
 // Uncommon, Magic, Rare, Epic, Legendary — is finer than the gear rarity list.
 // `rarity` is the numeric order (sorting); `tier`/`tierColor` drive the label.
 const TORCH_TYPES = {
-  wood:        { name: 'Wood Torch',           minutes: 12,  radius: 60,  color: '#ffb24a', rarity: 0, tier: 'Common',    tierColor: '#c9bfa8', recipe: { lumber: 10 } },
+  wood:        { name: 'Wood Torch',           minutes: 12,  radius: 60,  color: '#ffb24a', rarity: 0, tier: 'Common',    tierColor: '#f4f4f4', recipe: { lumber: 10 } },
   iron:        { name: 'Iron Torch',           minutes: 37,  radius: 110, color: '#ffcf6a', rarity: 1, tier: 'Uncommon',  tierColor: '#4ade80', recipe: { lumber: 10, rivets: 15 } },
   wyrmbound:   { name: 'Wyrm-bound Torch',     minutes: 55,  radius: 180, color: '#7fe0ff', rarity: 2, tier: 'Magic',     tierColor: '#6a9aff', recipe: { lumber: 5, rivets: 10, wyrmscale: 5 } },
   nephalem:    { name: 'Nephalem Torch',       minutes: 75,  radius: 250, color: '#d8b4f0', rarity: 3, tier: 'Rare',      tierColor: '#ffd76a', recipe: { lumber: 15, rivets: 30, heartstring: 3 } },

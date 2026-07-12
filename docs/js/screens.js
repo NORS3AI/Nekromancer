@@ -2597,7 +2597,7 @@ const Screens = {
     if (eq && eq.burnT !== undefined) {
       const mins = Math.floor(eq.burnT / 60), secs = Math.floor(eq.burnT % 60);
       const T = TORCH_TYPES[eq.torch] || TORCH_TYPES.wood;
-      ctx.fillStyle = T.color;
+      ctx.fillStyle = T.tierColor;   // rarity colour (matches the inventory)
       ctx.fillText('Lit: ' + eq.name + '  —  ' + mins + ':' + String(secs).padStart(2, '0') + ' left', px + 16, ty);
     } else {
       ctx.fillStyle = '#6f6552';
@@ -2630,14 +2630,14 @@ const Screens = {
       const can = Items.canCraftTorch(type);
       ctx.fillStyle = 'rgba(28,24,38,0.92)';
       rr(ctx, px + 16, y, pw - 32, rowH - 8, 8); ctx.fill();
-      ctx.strokeStyle = can ? T.color : '#3a3448';
+      ctx.strokeStyle = can ? T.tierColor : '#3a3448';
       ctx.lineWidth = 1.5;
       rr(ctx, px + 16, y, pw - 32, rowH - 8, 8); ctx.stroke();
-      // Name + rarity-tier badge.
+      // Name + rarity-tier badge. Colour = the RARITY colour (matches inventory).
       ctx.textAlign = 'left';
       ctx.font = 'bold 13px Georgia';
-      ctx.fillStyle = T.color;
-      ctx.fillText(T.name, px + 28, y + 18);   // the name colour signals the tier — no text badge
+      ctx.fillStyle = T.tierColor;
+      ctx.fillText(T.name + '  ·  ' + T.tier, px + 28, y + 18);
       ctx.font = '10px Georgia';
       ctx.fillStyle = '#9a9080';
       ctx.fillText('Burns ' + T.minutes + ' min  ·  light radius ' + T.radius, px + 28, y + 34);
@@ -2657,7 +2657,7 @@ const Screens = {
       // Craft button.
       UI.btn(ctx, px + pw - 118, y + 12, 92, rowH - 32, can ? 'CRAFT' : 'NEED MATS',
         can ? () => Items.craftTorch(type) : null,
-        { size: 11, disabled: !can, border: T.color, color: can ? T.color : '#5c5569' });
+        { size: 11, disabled: !can, border: T.tierColor, color: can ? T.tierColor : '#5c5569' });
     });
     ctx.restore();
     if (scrollMax > 0) {

@@ -262,6 +262,14 @@ const Game = {
   aimWorldAngle(dx, dy) {
     return Math.atan2(dy / this.viewTilt(), dx);
   },
+  // The world point the torch light & fog-of-war reveal centre on. In Top Down
+  // the hero stands UPRIGHT from its feet, so we lift the light to head height —
+  // the head must never sit in the dark (Bird's Eye keeps it at the feet).
+  heroLightPoint() {
+    const p = this.player;
+    if (!p) return { x: 0, y: 0 };
+    return { x: p.x, y: p.y - (this.topDown() ? 42 : 0) };
+  },
 
   showBanner(text, sub = '', dur = 2.6) {
     this.banner = { text, sub, t: dur, maxT: dur };
@@ -1705,7 +1713,8 @@ const Game = {
     if (!p) return;
     const torch = Hero.equipped.torch;
     const T = torch ? (TORCH_TYPES[torch.torch] || TORCH_TYPES.wood) : null;
-    const ps = this.worldToScreen(p.x, p.y);
+    const lp = this.heroLightPoint();
+    const ps = this.worldToScreen(lp.x, lp.y);
     const sx = ps.x, sy = ps.y;
     if (!isFinite(sx) || !isFinite(sy)) return;   // never let a bad coord crash the frame
     // Crypts are the true dark; open daylit lands stay bright (the torch just
@@ -1757,7 +1766,8 @@ const Game = {
     const p = this.player;
     if (p && !p.dead && isFinite(p.x) && isFinite(p.y)) {
       const fx = this.fogCtx;
-      const bx = p.x / F, by = p.y / F, br = this.lightRadius() / F;
+      const lp = this.heroLightPoint();
+      const bx = lp.x / F, by = lp.y / F, br = this.lightRadius() / F;
       // A feathered brush: solid clear at the centre, fading to nothing at the
       // rim, punched out with destination-out so reveals accumulate permanently.
       const g = fx.createRadialGradient(bx, by, br * 0.35, bx, by, br);

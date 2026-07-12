@@ -6,6 +6,11 @@
 // pickups and projectiles.
 // ---------------------------------------------------------------------------
 
+// Minions guard the Nekromancer: they only engage foes within MINION_DEFEND of
+// the HERO (not the whole map), and snap back to his side past MINION_LEASH.
+const MINION_DEFEND = 340;
+const MINION_LEASH = 480;
+
 // ------------------------------ Player -------------------------------------
 
 class Player {
@@ -430,9 +435,35 @@ class Player {
   drawUpright(ctx, bob) {
     const flash = this.flash > 0.4;
     const eye = (typeof Hero !== 'undefined' && Hero.eyeColor) || '#6ff7c3';
-    const flip = Math.cos(this.facing) < 0 ? -1 : 1;   // face/lean toward travel
+    const fx = Math.cos(this.facing), fy = Math.sin(this.facing);
+    const back = fy < -0.35;                 // moving AWAY → we see the hero's back
+    const flip = fx < -0.02 ? -1 : 1;        // mirror when facing left
+    const sway = Math.sin(this.anim * 3.5) * 2.6;   // cloak billow
     ctx.save();
     ctx.translate(0, -bob);
+
+    // ---- CLOAK: trails OPPOSITE the direction of travel (screen space) ----
+    // Behind the body when we face the camera; billowing toward you when the back
+    // is turned (drawn after the body then).
+    const drawCloak = () => {
+      const tx = -fx, ty = -fy;
+      const len = 15 + Math.abs(ty) * 15;
+      const ax = tx * 12, ay = ty * len;
+      ctx.beginPath();
+      ctx.moveTo(-7, -32);
+      ctx.quadraticCurveTo(-12 + ax * 0.6 + sway, -14 + ay * 0.5, ax - 6 + sway, ay + 2);
+      ctx.quadraticCurveTo(ax, ay + 8, ax + 6 - sway, ay + 2);
+      ctx.quadraticCurveTo(12 + ax * 0.6 - sway, -14 + ay * 0.5, 7, -32);
+      ctx.closePath();
+      const cg = ctx.createLinearGradient(0, -32, ax, ay || 1);
+      if (flash) { cg.addColorStop(0, '#8fe0c6'); cg.addColorStop(1, '#3a5a52'); }
+      else { cg.addColorStop(0, '#2b463f'); cg.addColorStop(1, '#0e1a17'); }
+      ctx.fillStyle = cg; ctx.fill();
+      ctx.strokeStyle = 'rgba(111,247,195,0.20)'; ctx.lineWidth = 1; ctx.stroke();
+    };
+    if (!back) drawCloak();
+
+    ctx.save();
     ctx.scale(flip, 1);
 
     // ---- staff behind the body (shaft + bone claw) ----
@@ -454,10 +485,10 @@ class Player {
     if (flash) { rg.addColorStop(0, '#a6ecd3'); rg.addColorStop(1, '#4c6f66'); }
     else { rg.addColorStop(0, '#37564f'); rg.addColorStop(0.55, '#243c37'); rg.addColorStop(1, '#141f1b'); }
     ctx.fillStyle = rg; ctx.fill();
-    // Front highlight down the middle (form/volume).
+    // Volume highlight — down the front when facing us, subtler on the back.
     const hg = ctx.createLinearGradient(-6, 0, 6, 0);
     hg.addColorStop(0, 'rgba(130,210,185,0)');
-    hg.addColorStop(0.5, flash ? 'rgba(220,255,245,0.22)' : 'rgba(130,210,185,0.16)');
+    hg.addColorStop(0.5, flash ? 'rgba(220,255,245,0.22)' : `rgba(130,210,185,${back ? 0.07 : 0.16})`);
     hg.addColorStop(1, 'rgba(130,210,185,0)');
     ctx.fillStyle = hg; ctx.fill();
     ctx.strokeStyle = 'rgba(111,247,195,0.30)'; ctx.lineWidth = 1.1; ctx.stroke();
@@ -480,13 +511,22 @@ class Player {
     else { hd.addColorStop(0, '#2f4c45'); hd.addColorStop(1, '#1a2c28'); }
     ctx.fillStyle = hd; ctx.fill();
     ctx.strokeStyle = 'rgba(111,247,195,0.30)'; ctx.lineWidth = 1; ctx.stroke();
-    // Face cavity (dark) then glowing eyes ON THE FACE.
-    ctx.fillStyle = '#0b1310';
-    ctx.beginPath(); ctx.ellipse(0, -39, 4.6, 5.6, 0, 0, TAU); ctx.fill();
-    ctx.fillStyle = eye; ctx.shadowColor = eye; ctx.shadowBlur = 8;
-    ctx.beginPath(); ctx.arc(-2.1, -39, 1.5, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(2.1, -39, 1.5, 0, TAU); ctx.fill();
-    ctx.shadowBlur = 0;
+    if (!back) {
+      // Facing us: dark face cavity + glowing eyes ON THE FACE.
+      ctx.fillStyle = '#0b1310';
+      ctx.beginPath(); ctx.ellipse(0, -39, 4.6, 5.6, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = eye; ctx.shadowColor = eye; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.arc(-2.1, -39, 1.5, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(2.1, -39, 1.5, 0, TAU); ctx.fill();
+      ctx.shadowBlur = 0;
+    } else {
+      // Back of the hood: a centre seam, no eyes — just a faint glow leaking through.
+      ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, -48); ctx.lineTo(0, -33); ctx.stroke();
+      ctx.globalAlpha = 0.22; ctx.fillStyle = eye; ctx.shadowColor = eye; ctx.shadowBlur = 6;
+      ctx.beginPath(); ctx.arc(0, -41, 2.4, 0, TAU); ctx.fill();
+      ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+    }
 
     // ---- staff crystal (in front), glowing in the eye colour ----
     const pulse = 0.7 + 0.3 * Math.sin(Game.time * 3);
@@ -496,6 +536,8 @@ class Player {
     ctx.beginPath(); ctx.arc(13, -52, 1.2, 0, TAU); ctx.fill();
     ctx.shadowBlur = 0;
 
+    ctx.restore();   // undo flip
+    if (back) drawCloak();   // billows toward the camera in front of the body
     ctx.restore();
   }
 }
@@ -1852,14 +1894,21 @@ class Minion {
     this.flash = Math.max(0, this.flash - dt * 6);
     this.atkCd = Math.max(0, this.atkCd - dt);
     this.frenzyT = Math.max(0, this.frenzyT - dt);
-    // Left behind? If a minion is far from the hero for more than 5s (stuck on
-    // terrain, lost after a portal), blink it back to his side.
+    // Stay near the Nekromancer. A minion beyond ~20 yards snaps back after a
+    // short beat (pathing failed / stuck on terrain / lost after a portal), and
+    // one that's flung really far snaps back at once. Keeps the army protecting
+    // the hero rather than wandering off.
     {
       const pl = Game.player;
       if (pl) {
-        if (dist(this.x, this.y, pl.x, pl.y) > 460) {
+        const away = dist(this.x, this.y, pl.x, pl.y);
+        if (away > 900) {
+          const ta = rand(TAU);
+          this.x = pl.x + Math.cos(ta) * 56; this.y = pl.y + Math.sin(ta) * 56;
+          this.behindT = 0; fxSummon(this.x, this.y);
+        } else if (away > MINION_LEASH) {
           this.behindT = (this.behindT || 0) + dt;
-          if (this.behindT > 5) {
+          if (this.behindT > 1.6) {
             this.behindT = 0;
             const ta = rand(TAU);
             this.x = pl.x + Math.cos(ta) * 56; this.y = pl.y + Math.sin(ta) * 56;
@@ -1886,8 +1935,13 @@ class Minion {
       else if (dist(this.x, this.y, this.commandTgt.x, this.commandTgt.y) < 900) tgt = this.commandTgt;
     }
     if (!tgt) {
+      // Protect the Nekromancer FIRST: only strike foes that threaten HIM (within
+      // MINION_DEFEND of the hero), not distant enemies across the map. Otherwise
+      // hold formation. (A Command Skeletons order above can still reach farther.)
+      const pl = Game.player;
       for (const e of Game.enemies) {
         if (e.dead || e.sleep || e.spawnT > 0) continue;
+        if (pl && dist(pl.x, pl.y, e.x, e.y) > MINION_DEFEND) continue;
         const d = dist(this.x, this.y, e.x, e.y);
         if (d < bestD) { tgt = e; bestD = d; }
       }
