@@ -19,11 +19,19 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.37-alpha';
+const GAME_VERSION = 'v1.6.38-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.38-alpha', date: 'July 2026',
+    notes: [
+      'THE LAST RUNE IS IN — Bone Spirit · Possession now works: the spirit seizes a normal foe and MIND-CONTROLS it for 15 seconds. Your new thrall hunts down other monsters and beats them for you (its own damage, and it can\'t be hurt by your attacks), then collapses into a usable corpse when the charm ends',
+      'Possession is expensive — casting it spends ALL of Bone Spirit\'s stored charges (as in D3). Bosses and unique enemies are too strong to control and just take the hit instead',
+      'A possessed foe wears a pulsing purple ring and a soul-wisp with a draining timer arc so you can always tell your thrall from the enemy — and your own auto-aim skills ignore it. All 21 Necromancer skills now have every rune implemented'
+    ]
+  },
   {
     v: 'v1.6.37-alpha', date: 'July 2026',
     notes: [

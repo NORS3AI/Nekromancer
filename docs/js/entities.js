@@ -726,6 +726,9 @@ class Enemy {
     }
     if (this.spawnT > 0) { this.spawnT -= dt; return; }
 
+    // Possessed (Bone Spirit · Possession): fights for the Nekromancer instead.
+    if (this.charmed) { this.charmedUpdate(dt); return; }
+
     // Resolve pending siege mortar impacts (they land even if we've moved).
     if (this.strikes.length) {
       for (const s of this.strikes) {
@@ -893,6 +896,62 @@ class Enemy {
     let d = this.dmg;
     if (this.curse && this.curse.type === 'decrepify') d *= 0.8;
     return Math.round(d);
+  }
+
+  // Possessed thrall AI (Bone Spirit · Possession): hunt the nearest hostile foe
+  // and pummel it for the Nekromancer. When the 15s runs out the husk collapses
+  // into a usable corpse. Immune to your own attacks while charmed (see hurt()).
+  charmedUpdate(dt) {
+    this.charmT -= dt;
+    if (this.charmT <= 0) {
+      this.dead = true;
+      Game.corpses.push(new Corpse(this.x, this.y, this.type));
+      Particles.spawn(this.x, this.y, { count: 12, color: ['#b06adf', '#6b4a8f', '#2a2436'], minSpeed: 30, maxSpeed: 140, minLife: 0.3, maxLife: 0.7, glow: true });
+      AudioSys.sfx('wave');
+      return;
+    }
+    // Nearest hostile (non-thrall) foe.
+    let tgt = null, bestD = 1e9;
+    for (const e of Game.enemies) {
+      if (e === this || e.dead || e.sleep || e.charmed || e.spawnT > 0) continue;
+      const d = dist(this.x, this.y, e.x, e.y);
+      if (d < bestD) { bestD = d; tgt = e; }
+    }
+    const p = Game.player;
+    if (tgt) {
+      const a = angleTo(this.x, this.y, tgt.x, tgt.y);
+      this.facing = lerpAngle(this.facing, a, Math.min(1, 8 * dt));
+      const range = Math.min(this.def.atkRange || 40, 60);   // thralls fight in melee
+      if (bestD > range) {
+        this.x += Math.cos(a) * this.speed * dt;
+        this.y += Math.sin(a) * this.speed * dt;
+      } else if (this.atkCd <= 0) {
+        this.atkCd = this.def.atkCd || 1;
+        tgt.hurt(this.attackDmg(), { ally: true, knock: { a, f: 30 } });
+        fxBone(tgt.x, tgt.y, 3);
+        AudioSys.sfx('hit');
+      }
+    } else if (p && !p.dead) {
+      // No one to fight — loosely follow the hero.
+      const d = dist(this.x, this.y, p.x, p.y);
+      if (d > 130) {
+        const a = angleTo(this.x, this.y, p.x, p.y);
+        this.facing = lerpAngle(this.facing, a, Math.min(1, 8 * dt));
+        this.x += Math.cos(a) * this.speed * dt;
+        this.y += Math.sin(a) * this.speed * dt;
+      }
+    }
+    // Push apart from other units so thralls don't stack.
+    for (const o of Game.enemies) {
+      if (o === this || o.dead || o.sleep) continue;
+      const dx = this.x - o.x, dy = this.y - o.y, minD = this.r + o.r;
+      const dd = dx * dx + dy * dy;
+      if (dd < minD * minD && dd > 0.001) {
+        const D = Math.sqrt(dd), push = (minD - D) * 0.5;
+        this.x += dx / D * push; this.y += dy / D * push;
+      }
+    }
+    World.collide(this);
   }
 
   // Lob an arcing mortar at the target — telegraphed landing circle, then AoE.
@@ -1120,18 +1179,24 @@ class Enemy {
 
   hurt(dmg, opts = {}) {
     if (this.dead) return;
+    // Your own possessed thrall takes no friendly fire from the hero — only
+    // damage from another thrall (opts.ally) lands, and thralls never hit thralls.
+    if (this.charmed && !opts.ally) return;
     this.wake();
     const p = Game.player;
+    // Damage dealt BY a thrall (opts.ally) uses its own attack — none of the
+    // hero's per-hit bonuses (flat damage, crit, life-per-hit) apply.
+    const heroHit = !opts.ally;
     // Ruby flat damage adds to each primary hit (not to splash/DoT ticks).
-    if (p && p.flatDmg && !opts.noSplash) dmg += p.flatDmg;
+    if (heroHit && p && p.flatDmg && !opts.noSplash) dmg += p.flatDmg;
     // Brittle (Corpse Lance · Brittle Touch, Ice Golem): the victim takes crits
     // far more often while the debuff lasts.
-    const critChance = (p ? p.critChance : 0.1) + (this.brittleT > 0 ? 0.25 : 0);
+    const critChance = (heroHit && p ? p.critChance : 0.1) + (this.brittleT > 0 ? 0.25 : 0);
     const crit = Math.random() < critChance;
-    if (crit) dmg *= 1.8 + (p ? (p.critDmg || 0) : 0);   // Emerald crit damage
+    if (crit) dmg *= 1.8 + (heroHit && p ? (p.critDmg || 0) : 0);   // Emerald crit damage
     if (this.curse) {
       if (this.curse.type === 'frailty') dmg *= 1.15;
-      if (this.curse.type === 'leech' && p && !p.dead) p.heal(p.maxHp * 0.012);
+      if (this.curse.type === 'leech' && heroHit && p && !p.dead) p.heal(p.maxHp * 0.012);
       if (p && p.powers && p.powers.corrodedFang) dmg *= 1.6; // Trag'Oul's Corroded Fang
       // Dizzying Curse (Decrepify rune): a chance to stun the cursed foe when struck.
       if (this.curse.type === 'decrepify' && !this.unique && Hero.rune('decrepify') === 'dizzyingCurse' && Math.random() < 0.10) {
@@ -1155,7 +1220,7 @@ class Enemy {
       this.stealthT = 0.9;
     }
     // Amethyst life-per-hit: heal the Necromancer on each primary hit landed.
-    if (p && !p.dead && (p.lifePerHit || 0) > 0 && !opts.noSplash) p.heal(p.lifePerHit);
+    if (heroHit && p && !p.dead && (p.lifePerHit || 0) > 0 && !opts.noSplash) p.heal(p.lifePerHit);
     dmgText(this.x, this.y, dmg, crit);
     // Feed the DPS meter (dealt damage over a rolling window).
     if (Game.dpsHits) Game.dpsHits.push({ t: Game.time, d: dmg });
@@ -1395,6 +1460,20 @@ class Enemy {
       ctx.globalAlpha = 0.85;
       ctx.beginPath(); ctx.arc(0, -this.r - 20, 3, 0, TAU); ctx.fill();
       ctx.globalAlpha = 1;
+    }
+    // Possessed thrall: a pulsing purple ring + a soul wisp overhead so it reads
+    // clearly as YOURS, and a thin timer arc that drains as the charm runs out.
+    if (this.charmed) {
+      const t = this.anim * 2;
+      ctx.strokeStyle = `rgba(176,106,223,${0.5 + 0.3 * Math.sin(t)})`;
+      ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.ellipse(0, 4, this.r + 6, (this.r + 6) * 0.42, 0, 0, TAU); ctx.stroke();
+      const frac = clamp(this.charmT / 15, 0, 1);
+      ctx.strokeStyle = 'rgba(200,150,240,0.9)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, -this.r - 16, 5, -Math.PI / 2, -Math.PI / 2 + TAU * frac); ctx.stroke();
+      ctx.fillStyle = '#e6c8ff'; ctx.shadowColor = '#b06adf'; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.arc(0, -this.r - 16, 2, 0, TAU); ctx.fill();
+      ctx.shadowBlur = 0;
     }
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.beginPath(); ctx.ellipse(0, 4, this.r * 0.9, this.r * 0.38, 0, 0, TAU); ctx.fill();
@@ -2512,6 +2591,7 @@ class Projectile {
     this.detonateR = o.detonateR || 0;     // AoE detonation on impact
     this.detonateMul = o.detonateMul || 1;
     this.fearOnHit = o.fearOnHit || 0;
+    this.charmOnHit = o.charmOnHit || 0;   // Bone Spirit · Possession: mind-control the target
     this.type = o.type || 'shard';
     this.hits = this.pierce ? new Set() : null;
     this.dead = false;
@@ -2553,6 +2633,17 @@ class Projectile {
         if (e.dead || e.sleep || e.spawnT > 0) continue;
         if (this.hits && this.hits.has(e)) continue;
         if (dist(this.x, this.y, e.x, e.y) < e.r + this.r) {
+          // Bone Spirit · Possession: seize a normal foe as a thrall instead of
+          // hurting it. Bosses & uniques resist (fall through to normal damage).
+          if (this.charmOnHit && !e.unique && !e.def.boss && !e.charmed) {
+            e.charmed = true; e.charmT = this.charmOnHit;
+            e.curse = null; e.fearT = 0; e.slow = 0; e.root = 0; e.stealthT = 0;
+            fxSummon(e.x, e.y);
+            Particles.text(e.x, e.y - e.r - 12, 'POSSESSED!', { color: '#b06adf', size: 13, life: 1.3 });
+            AudioSys.sfx('spirit');
+            this.dead = true;
+            return;
+          }
           const opts = { knock: { a: this.a, f: this.type === 'spear' ? 130 : 45 } };
           if (this.root && Math.random() < 0.3) opts.root = this.root;
           if (this.stunOnHit) opts.root = Math.max(opts.root || 0, this.stunOnHit);

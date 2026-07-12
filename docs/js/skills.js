@@ -8,7 +8,7 @@
 function nearestEnemy(x, y, maxDist = 750) {
   let best = null, bestD = maxDist;
   for (const e of Game.enemies) {
-    if (e.dead || e.sleep || e.spawnT > 0) continue;
+    if (e.dead || e.sleep || e.spawnT > 0 || e.charmed) continue;   // skip your own thralls
     const d = dist(x, y, e.x, e.y);
     if (d < bestD) { best = e; bestD = d; }
   }
@@ -18,7 +18,7 @@ function nearestEnemy(x, y, maxDist = 750) {
 function strongestEnemy(x, y, maxDist = 750) {
   let best = null, bestHp = 0;
   for (const e of Game.enemies) {
-    if (e.dead || e.sleep || e.spawnT > 0) continue;
+    if (e.dead || e.sleep || e.spawnT > 0 || e.charmed) continue;   // skip your own thralls
     if (dist(x, y, e.x, e.y) > maxDist) continue;
     if (e.hp > bestHp) { best = e; bestHp = e.hp; }
   }
@@ -364,8 +364,13 @@ const SKILL_FX = {
     if (rune === 'astralProjection') { o.pierce = true; o.astralRamp = 0.15; } // +15% per enemy passed
     if (rune === 'unfinishedBiz') { o.detonateR = 150; o.detonateMul = 0.31; }  // detonation on impact
     if (rune === 'panicAttack') o.fearOnHit = 3;                                // terrify on impact
-    // (possession/mind-control needs a system the engine lacks — deferred.)
+    if (rune === 'possession') {                                               // mind-control the target for 15s
+      o.charmOnHit = 15;
+      o.homing = tgt;                    // fly straight at the victim to seize it
+    }
     Game.projectiles.push(new Projectile(p.x, p.y - 8, a, o));
+    // Possession is expensive — it consumes ALL remaining charges (owner/D3 rule).
+    if (rune === 'possession') Skills.charges.boneSpirit = 0;
     AudioSys.sfx('spirit');
     return true;
   },
