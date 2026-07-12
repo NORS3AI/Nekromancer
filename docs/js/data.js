@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.22-alpha';
+const GAME_VERSION = 'v1.6.23-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.23-alpha', date: 'July 2026',
+    notes: [
+      'Top Down view reworked into a proper Diablo-3-style angle: the GROUND is tilted/foreshortened while every character stands UPRIGHT — so your skeletons walk on two feet on the floor instead of being squashed flat or floating around you',
+      'Stronger tilt for that isometric dungeon-crawl feel. Bird\'s Eye (the original view) is completely unchanged'
+    ]
+  },
   {
     v: 'v1.6.22-alpha', date: 'July 2026',
     notes: [

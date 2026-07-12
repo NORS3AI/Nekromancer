@@ -14,8 +14,8 @@ const LINK_DEPTH_STEP = 1.2;
 // tilt). TOP DOWN is a closer, Diablo-3-style angle: zoomed in for a more
 // personal feel with the monsters/bosses, plus a gentle vertical foreshorten
 // that fakes a tilted-down camera. Tunable.
-const TOPDOWN_ZOOM = 1.45;
-const TOPDOWN_TILT = 0.85;
+const TOPDOWN_ZOOM = 1.4;
+const TOPDOWN_TILT = 0.66;   // ground foreshorten ratio (vertical/horizontal); sprites stay upright
 
 const Game = {
   canvas: null,
@@ -245,9 +245,10 @@ const Game = {
     ctx.scale(Z, Z * TY);
     ctx.translate(-(cam.x + this.W / 2), -(cam.y + this.H / 2));
   },
-  // World → screen for HUD-layer overlays (torch light, fog, objective chevron).
-  worldToScreen(wx, wy) {
-    const Z = this.viewZoom(), TY = this.viewTilt(), c = this.camera;
+  // World → screen for HUD-layer overlays (torch light, fog, objective chevron)
+  // and top-down sprite billboarding. Pass `cam` to include screenshake.
+  worldToScreen(wx, wy, cam) {
+    const Z = this.viewZoom(), TY = this.viewTilt(), c = cam || this.camera;
     if (Z === 1 && TY === 1) return { x: wx - c.x, y: wy - c.y };
     const cx = c.x + this.W / 2, cy = c.y + this.H / 2;
     return { x: (wx - cx) * Z + this.W / 2, y: (wy - cy) * Z * TY + this.H / 2 };
@@ -1494,30 +1495,35 @@ const Game = {
     const sy = shake ? rand(-shake, shake) : 0;
     const cam = { x: this.camera.x + sx, y: this.camera.y + sy };
 
-    ctx.save();
-    this.applyWorldTransform(ctx, cam);
+    if (this.topDown()) {
+      this.drawWorldTopDown(ctx, cam);
+    } else {
+      // ---- Bird's Eye (original view — untouched) ----
+      ctx.save();
+      this.applyWorldTransform(ctx, cam);
 
-    World.drawGround(ctx, cam, this.W, this.H);
-    this.drawTelegraphs(ctx);
+      World.drawGround(ctx, cam, this.W, this.H);
+      this.drawTelegraphs(ctx);
 
-    for (const c of this.corpses) c.draw(ctx);
-    for (const p of this.pickups) p.draw(ctx);
+      for (const c of this.corpses) c.draw(ctx);
+      for (const p of this.pickups) p.draw(ctx);
 
-    this.drawAimIndicator(ctx);
+      this.drawAimIndicator(ctx);
 
-    const drawables = World.propsInView(cam, this.W, this.H);
-    const inView = e => e.x > cam.x - 90 && e.x < cam.x + this.W + 90 && e.y > cam.y - 110 && e.y < cam.y + this.H + 110;
-    for (const e of this.enemies) if (inView(e)) drawables.push({ y: e.y, draw: c => e.draw(c) });
-    for (const m of this.minions) if (inView(m)) drawables.push({ y: m.y, draw: c => m.draw(c) });
-    if (!this.player.dead) drawables.push({ y: this.player.y, draw: c => this.player.draw(c) });
-    drawables.sort((a, b) => a.y - b.y);
-    for (const d of drawables) d.draw(ctx);
+      const drawables = World.propsInView(cam, this.W, this.H);
+      const inView = e => e.x > cam.x - 90 && e.x < cam.x + this.W + 90 && e.y > cam.y - 110 && e.y < cam.y + this.H + 110;
+      for (const e of this.enemies) if (inView(e)) drawables.push({ y: e.y, draw: c => e.draw(c) });
+      for (const m of this.minions) if (inView(m)) drawables.push({ y: m.y, draw: c => m.draw(c) });
+      if (!this.player.dead) drawables.push({ y: this.player.y, draw: c => this.player.draw(c) });
+      drawables.sort((a, b) => a.y - b.y);
+      for (const d of drawables) d.draw(ctx);
 
-    for (const pr of this.projectiles) pr.draw(ctx);
-    this.drawPortalCast(ctx);
-    Particles.draw(ctx);
+      for (const pr of this.projectiles) pr.draw(ctx);
+      this.drawPortalCast(ctx);
+      Particles.draw(ctx);
 
-    ctx.restore();
+      ctx.restore();
+    }
 
     this.drawWeather(ctx);
     ctx.drawImage(this.vignette, 0, 0);
@@ -1538,6 +1544,51 @@ const Game = {
     }
 
     UI.draw(ctx, this.W, this.H);
+  },
+
+  // Diablo-3-style Top-Down render: the GROUND (and flat ground FX) is drawn
+  // through the foreshortening tilt, but every STANDING sprite — hero, minions,
+  // monsters — is billboarded UPRIGHT (uniform zoom, no vertical squash) at its
+  // projected, foreshortened foot position. So skeletons stand on two feet on the
+  // tilted floor instead of being flattened / floating. Bird's Eye is unaffected.
+  drawWorldTopDown(ctx, cam) {
+    const Z = this.viewZoom();
+    // 1) Ground plane + flat, on-the-floor elements (foreshortened).
+    ctx.save();
+    this.applyWorldTransform(ctx, cam);
+    World.drawGround(ctx, cam, this.W, this.H);
+    this.drawTelegraphs(ctx);
+    for (const c of this.corpses) c.draw(ctx);
+    for (const pk of this.pickups) pk.draw(ctx);
+    this.drawAimIndicator(ctx);
+    for (const d of World.propsInView(cam, this.W, this.H)) d.draw(ctx);
+    ctx.restore();
+
+    // 2) Standing sprites, billboarded upright, painter-sorted back-to-front.
+    const inView = e => e.x > cam.x - 240 && e.x < cam.x + this.W + 240 && e.y > cam.y - 320 && e.y < cam.y + this.H + 320;
+    const sprites = [];
+    for (const e of this.enemies) if (inView(e)) sprites.push(e);
+    for (const m of this.minions) if (inView(m)) sprites.push(m);
+    if (!this.player.dead) sprites.push(this.player);
+    sprites.sort((a, b) => a.y - b.y);
+    for (const s of sprites) {
+      const fs = this.worldToScreen(s.x, s.y, cam);   // foreshortened foot on screen
+      if (!isFinite(fs.x) || !isFinite(fs.y)) continue;
+      ctx.save();
+      ctx.translate(fs.x, fs.y);
+      ctx.scale(Z, Z);              // upright + zoomed; NO vertical squash on the body
+      ctx.translate(-s.x, -s.y);
+      s.draw(ctx);
+      ctx.restore();
+    }
+
+    // 3) Projectiles / channel / particles ride over the foreshortened ground.
+    ctx.save();
+    this.applyWorldTransform(ctx, cam);
+    for (const pr of this.projectiles) pr.draw(ctx);
+    this.drawPortalCast(ctx);
+    Particles.draw(ctx);
+    ctx.restore();
   },
 
   // The lit / fog-reveal radius (px) around the hero: tiny with no torch, more
