@@ -2315,6 +2315,13 @@ const Screens = {
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 14px Georgia'; ctx.fillStyle = catDef.color;
     ctx.fillText(chSkill ? chSkill.name : '', px + 64, y + 16);
+    // Element tag for the previewed skill+rune (a converting rune wins).
+    const chElem = (RUNE_ELEMENT[UI.sel.chRune]) || (SKILL_ELEMENT[UI.sel.chSkill]) || 'physical';
+    if (ELEMENTS[chElem]) {
+      ctx.textAlign = 'right'; ctx.font = 'bold 10px Georgia'; ctx.fillStyle = ELEMENTS[chElem].color;
+      ctx.fillText('◆ ' + ELEMENTS[chElem].name, px + pw - 28, y + 16);
+      ctx.textAlign = 'left';
+    }
     ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
     // Wrap the rune name + description onto up to THREE lines instead of clipping.
     wrapText(ctx, (chRune && chRune.id !== 'base' ? '◈ ' + chRune.name + ' — ' : '') +
@@ -3168,6 +3175,7 @@ const Screens = {
     if (s.vitality > 0) ly = line(lx, ly, 'Vitality', '+' + s.vitality.toLocaleString(), '#e0808a');
     ly = line(lx, ly, 'Crit chance', Math.round(s.critChance * 100) + '%  (×' + (1.8 + (s.critDamage || 0)).toFixed(2) + ')', '#ffb43a');
     if (s.critDamage > 0) ly = line(lx, ly, 'Crit damage', '+' + Math.round(s.critDamage * 100) + '%', '#4ade80');
+    if (s.elementalDamage > 0) ly = line(lx, ly, 'Elemental damage', '+' + Math.round(s.elementalDamage * 100) + '%', '#8fd3ff');
     if (s.flatDmg > 0) ly = line(lx, ly, 'Bonus damage', '+' + s.flatDmg + ' per hit', '#e04a5a');
     if (s.lifePerHit > 0) ly = line(lx, ly, 'Life per hit', '+' + s.lifePerHit, '#b06adf');
     ly = line(lx, ly, 'Max essence', s.maxEssence, '#4ecbe0');

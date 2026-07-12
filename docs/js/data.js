@@ -19,11 +19,40 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.39-alpha';
+// Damage elements (owner: "elemental damage types"). Each hit carries one; the
+// element tints its damage numbers and triggers an on-hit effect (see Enemy.hurt):
+//   cold → chill/slow · fire → burning DoT · poison → poison DoT · lightning →
+//   chance to shock (brief stun) · physical → the plain baseline (knockback only).
+const ELEMENTS = {
+  physical:  { name: 'Physical',  color: '#e8e0cc' },
+  cold:      { name: 'Cold',      color: '#8fd3ff' },
+  fire:      { name: 'Fire',      color: '#ff7a3a' },
+  lightning: { name: 'Lightning', color: '#ffe66a' },
+  poison:    { name: 'Poison',    color: '#8fdf4a' }
+};
+// A skill's BASE element (default physical). Death Nova is Poison, as in D3.
+const SKILL_ELEMENT = { deathNova: 'poison' };
+// Runes that CONVERT their skill's damage to another element. (Cold-themed runes
+// already exist; fire/lightning/poison runes can be added later and just work.)
+const RUNE_ELEMENT = {
+  frostSpikes: 'cold', frostScythe: 'cold', crystallization: 'cold', deadCold: 'cold',
+  iceGolem: 'cold', freezingGrasp: 'cold', frozenArmy: 'cold', frozenLands: 'cold'
+};
+
+const GAME_VERSION = 'v1.6.40-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.40-alpha', date: 'July 2026',
+    notes: [
+      'ELEMENTAL DAMAGE TYPES — every hit now has an element (Physical, Cold, Fire, Lightning, Poison). Damage numbers are tinted by element, and each element does something: COLD chills (slows), FIRE sets a burning damage-over-time, POISON festers as a lingering DoT, LIGHTNING can shock (briefly stun)',
+      'Skills are typed: Death Nova is Poison, and cold-themed runes (Frost Spikes, Frost Scythe, Crystallization, Dead Cold, Ice Golem, Freezing Grasp, Frozen Army/Lands) convert their skill to COLD. The skill chooser now shows each skill\'s current element',
+      'Monsters can RESIST an element (take half): Fallen Imps & the Sand Wyrm resist Fire, armoured Soldiers/Knights & the Skeleton King resist Physical, Corpse Bloats resist Poison, and Wraiths resist Cold — so your damage type matters',
+      'New gear affix: +% Elemental Damage (boosts your Cold/Fire/Poison/Lightning hits). Shown on the Character Sheet, rerollable within the Offense group'
+    ]
+  },
   {
     v: 'v1.6.39-alpha', date: 'July 2026',
     notes: [
@@ -1893,6 +1922,7 @@ const AFFIX_ROLLS = {
   cdr:     { base: 0.015, label: v => `+${Math.round(v * 100)}% cooldown reduction` },
   rcr:     { base: 0.015, label: v => `+${Math.round(v * 100)}% resource cost reduction` },
   lph:     { base: 60,    label: v => `+${Math.round(v)} life per hit` },
+  elem:    { base: 0.06,  label: v => `+${Math.round(v * 100)}% elemental damage` },   // Cold/Fire/Poison/Lightning hits
   // Movement speed rolls ONLY on boots (1%–25%), handled specially in generation.
   move:  { base: 0.06, label: v => `+${Math.round(v * 100)}% movement speed` },
   // Special affixes — never roll on random gear; placed on set/legendary items only.
@@ -1907,7 +1937,7 @@ const RESTRICTED_AFFIXES = new Set(['move', 'dnova', 'area']);
 // odds — enchanting is a targeted choice, not a slot machine. `dnova`/`area`
 // are signature legendary affixes and belong to no group (never rerollable).
 const AFFIX_GROUPS = {
-  offense: ['dmg', 'crit', 'ess', 'int', 'atkSpeed', 'critDmg', 'cdr'],  // + crit damage, cooldown reduction
+  offense: ['dmg', 'crit', 'ess', 'int', 'atkSpeed', 'critDmg', 'cdr', 'elem'],  // + crit damage, cooldown reduction, elemental damage
   defense: ['hp', 'armor', 'reg', 'vit', 'lph'],                        // + life per hit
   utility: ['gold', 'move', 'rcr']                                      // + resource cost reduction
 };
@@ -1938,6 +1968,7 @@ const AFFIX_CAP = {
   cdr: 0.20,      // +20% cooldown reduction per item (total capped 60% in computeStats)
   rcr: 0.20,      // +20% resource cost reduction per item (total capped 60%)
   lph: 60000,     // 60000 life per hit
+  elem: 5.0,      // +500% elemental damage
   dnova: 6.0, area: 1.5   // signature affixes — generous
 };
 // Fraction of the Artifact-5★ ceiling a given rarity/star tier can reach (so a
@@ -2070,13 +2101,13 @@ const MONSTERS = {
   skeleton: { name: 'Skeleton',       hp: 26,  speed: 92,  dmg: 8,  r: 13, xp: 14, atkRange: 32, atkCd: 1.0 },
   archer:   { name: 'Skeletal Archer',hp: 22,  speed: 70,  dmg: 10, r: 12, xp: 16, atkRange: 380, atkCd: 2.1, ranged: 'arrow' },
   ghoul:    { name: 'Ghoul',          hp: 24,  speed: 132, dmg: 13, r: 12, xp: 18, atkRange: 30, atkCd: 1.1, lunges: true },
-  imp:      { name: 'Fallen Imp',     hp: 12,  speed: 118, dmg: 6,  r: 9,  xp: 8,  atkRange: 24, atkCd: 0.8 },
+  imp:      { name: 'Fallen Imp',     hp: 12,  speed: 118, dmg: 6,  r: 9,  xp: 8,  atkRange: 24, atkCd: 0.8, resist: 'fire' },
   cultist:  { name: 'Blood Cultist',  hp: 34,  speed: 62,  dmg: 12, r: 13, xp: 22, atkRange: 420, atkCd: 2.4, ranged: 'bolt' },
   // --- heavier war-host monsters ---
   hound:    { name: 'Gore Hound',     hp: 30,  speed: 172, dmg: 12, r: 11, xp: 20, atkRange: 30, atkCd: 0.9, lunges: true },
-  soldier:  { name: 'Damned Soldier', hp: 95,  speed: 74,  dmg: 18, r: 15, xp: 30, atkRange: 40, atkCd: 1.4, armored: true, sword: true },
-  knight:   { name: 'Fallen Knight',  hp: 175, speed: 60,  dmg: 27, r: 18, xp: 50, atkRange: 52, atkCd: 1.8, armored: true, sword: true, cleave: true },
-  bloat:    { name: 'Corpse Bloat',   hp: 130, speed: 34,  dmg: 16, r: 22, xp: 36, atkRange: 40, atkCd: 1.6, explodes: 150 },
+  soldier:  { name: 'Damned Soldier', hp: 95,  speed: 74,  dmg: 18, r: 15, xp: 30, atkRange: 40, atkCd: 1.4, armored: true, sword: true, resist: 'physical' },
+  knight:   { name: 'Fallen Knight',  hp: 175, speed: 60,  dmg: 27, r: 18, xp: 50, atkRange: 52, atkCd: 1.8, armored: true, sword: true, cleave: true, resist: 'physical' },
+  bloat:    { name: 'Corpse Bloat',   hp: 130, speed: 34,  dmg: 16, r: 22, xp: 36, atkRange: 40, atkCd: 1.6, explodes: 150, resist: 'poison' },
   catapult: { name: 'Bone Catapult',  hp: 210, speed: 9,   dmg: 30, r: 24, xp: 62, atkRange: 640, atkCd: 3.6, siege: true },
   mongrel:  { name: 'Nephalem Mongrel', hp: 160, speed: 150, dmg: 22, r: 16, xp: 70, atkRange: 32, atkCd: 1.0, lunges: true, dropsHeartstring: true },
   brute:    { name: 'Grave Brute',    hp: 300, speed: 46,  dmg: 24, r: 26, xp: 110, atkRange: 46, atkCd: 1.7, boss: true },
@@ -2084,10 +2115,10 @@ const MONSTERS = {
   // life, spills gold while chased and bursts loot on death.
   goblin:   { name: 'Treasure Goblin', hp: 50, speed: 178, dmg: 0, r: 16, xp: 40, atkRange: 0, atkCd: 99, goblin: true, hpMul: 10 },
   // Story Mode bosses: the 10 named legendary ghost lords, then the King.
-  wraith:   { name: 'Vengeful Wraith', hp: 240, speed: 78, dmg: 21, r: 22, xp: 130, atkRange: 44, atkCd: 1.6, boss: true, ghost: true },
-  skeletonking: { name: 'The Skeleton King', hp: 520, speed: 54, dmg: 30, r: 30, xp: 240, atkRange: 54, atkCd: 1.8, boss: true },
+  wraith:   { name: 'Vengeful Wraith', hp: 240, speed: 78, dmg: 21, r: 22, xp: 130, atkRange: 44, atkCd: 1.6, boss: true, ghost: true, resist: 'cold' },
+  skeletonking: { name: 'The Skeleton King', hp: 520, speed: 54, dmg: 30, r: 30, xp: 240, atkRange: 54, atkCd: 1.8, boss: true, resist: 'physical' },
   // Act III finale — a colossal burrowing desert serpent.
-  sandwyrm: { name: 'The Sand Wyrm', hp: 640, speed: 60, dmg: 34, r: 34, xp: 300, atkRange: 60, atkCd: 1.7, boss: true },
+  sandwyrm: { name: 'The Sand Wyrm', hp: 640, speed: 60, dmg: 34, r: 34, xp: 300, atkRange: 60, atkCd: 1.7, boss: true, resist: 'fire' },
   // --- Phase-2 reagent bosses ------------------------------------------------
   // The Bonewyrm roams eligible modes and drops Wyrm Scales (12%).
   wyrm:    { name: 'The Bonewyrm',         hp: 720, speed: 66, dmg: 34, r: 34, xp: 340, atkRange: 60, atkCd: 1.7,

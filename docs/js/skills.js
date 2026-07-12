@@ -744,6 +744,15 @@ const Skills = {
     return cd;
   },
 
+  // A skill's damage element right now: a converting rune wins, else the skill's
+  // base element, else Physical.
+  elementFor(id) {
+    const rune = Hero.rune(id);
+    return (typeof RUNE_ELEMENT !== 'undefined' && RUNE_ELEMENT[rune])
+      || (typeof SKILL_ELEMENT !== 'undefined' && SKILL_ELEMENT[id])
+      || 'physical';
+  },
+
   costFor(s) {
     if (this.lotd > 0 && s.cat === 'corpse') return 0;
     // Land of the Dead · Invigoration: ALL skills cost zero Essence while active.
@@ -884,6 +893,8 @@ const Skills = {
     // up, but each such cast burns 4s off the Bone Armor timer.
     const cycle = s.cat === 'secondary' && p.powers && p.powers.cycleScythe && p.boneArmorT > 0;
     if (cycle) p.secondaryBoost = true;
+    // Tag this cast's element so every hit it deals is typed (read in Enemy.hurt).
+    p.castElement = this.elementFor(s.id);
     const result = SKILL_FX[s.id](p, resolveAim(angle));
     if (cycle) {
       p.secondaryBoost = false;

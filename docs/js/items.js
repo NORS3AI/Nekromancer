@@ -315,7 +315,7 @@ const Items = {
     // Every affix the engine can roll needs a weight here — a missing one used
     // to multiply by undefined and poison the whole score (and any vendor price
     // built from it) with NaN. The `|| 0` guard makes that impossible.
-    const W = { dmg: 320, hp: 1, crit: 400, ess: 18, reg: 14, gold: 40, armor: 0.8, move: 700, dnova: 200, area: 200, int: 0.32, vit: 5, atkSpeed: 620, critDmg: 250, cdr: 600, rcr: 300, lph: 3 };
+    const W = { dmg: 320, hp: 1, crit: 400, ess: 18, reg: 14, gold: 40, armor: 0.8, move: 700, dnova: 200, area: 200, int: 0.32, vit: 5, atkSpeed: 620, critDmg: 250, cdr: 600, rcr: 300, lph: 3, elem: 300 };
     let s = 0;
     for (const [k, v] of Object.entries(item.stats)) {
       s += (v || 0) * (W[k] || 0);
@@ -435,8 +435,8 @@ const Items = {
   // compare fairly within a tier.
   // dmg is the headline offense stat: +100% damage is worth MORE than +100%
   // crit chance, so dmg outweighs crit per point (they used to be reversed).
-  STAT_TIER: { dmg: 0, crit: 0, dnova: 0, area: 0, int: 0, atkSpeed: 0, critDmg: 0, cdr: 0, hp: 1, reg: 1, vit: 1, lph: 1, armor: 2, gold: 2, ess: 2, move: 2, rcr: 2 },
-  STAT_VAL:  { dmg: 1600, crit: 1000, dnova: 700, area: 500, int: 1.6, atkSpeed: 900, critDmg: 600, cdr: 800, hp: 2.4, reg: 34, vit: 12, lph: 3, armor: 0.7, gold: 110, ess: 16, move: 210, rcr: 300 },
+  STAT_TIER: { dmg: 0, crit: 0, dnova: 0, area: 0, int: 0, atkSpeed: 0, critDmg: 0, cdr: 0, elem: 0, hp: 1, reg: 1, vit: 1, lph: 1, armor: 2, gold: 2, ess: 2, move: 2, rcr: 2 },
+  STAT_VAL:  { dmg: 1600, crit: 1000, dnova: 700, area: 500, int: 1.6, atkSpeed: 900, critDmg: 600, cdr: 800, elem: 900, hp: 2.4, reg: 34, vit: 12, lph: 3, armor: 0.7, gold: 110, ess: 16, move: 210, rcr: 300 },
 
   // [offense, survival, utility] sub-scores. Sockets/gems credit offense (a
   // Perfect gem is +20% damage); a legendary power or set piece lifts the whole
@@ -1166,7 +1166,7 @@ const Items = {
   computeStats() {
     let dmg = 0, hp = 0, crit = 0, ess = 0, reg = 0, gold = 0, armor = 0, move = 0, xpBonus = 0, dnova = 0, area = 0;
     // Core D3 attributes + attack speed (owner-queued stat systems).
-    let intel = 0, vit = 0, atkSpeed = 0;
+    let intel = 0, vit = 0, atkSpeed = 0, elem = 0;
     // New gem stats (each gem grants two; see GEM_STATS in data.js).
     let resAll = 0, cdr = 0, critDmg = 0, rcr = 0, lph = 0, flatDmg = 0;
     const at70 = Hero.level >= MAX_LEVEL;
@@ -1183,6 +1183,7 @@ const Items = {
       intel += it.stats.int || 0;
       vit += it.stats.vit || 0;
       atkSpeed += it.stats.atkSpeed || 0;
+      elem += it.stats.elem || 0;
       // Combat stats now rollable as affixes too — add on top of any gem sources.
       critDmg += it.stats.critDmg || 0;
       cdr += it.stats.cdr || 0;
@@ -1250,6 +1251,7 @@ const Items = {
       intelligence: Math.round(intel),
       vitality: Math.round(vit),
       attackSpeed: clamp(atkSpeed, 0, 0.75),   // % faster primary/secondary attacks
+      elementalDamage: clamp(elem, 0, 5),      // +% Cold/Fire/Poison/Lightning damage
       maxHp: Math.round((110 + (lvl - 1) * 14 + hp + vitHp) * paraHpMul),
       critChance: 0.10 + crit,
       essenceRegen: 2 + ess,
@@ -1302,6 +1304,7 @@ const Items = {
     p.critDmg = s.critDamage;
     p.rcr = s.resourceCostReduction;
     p.atkSpeed = s.attackSpeed;   // Attack Speed → shorter Primary/Secondary cooldowns
+    p.elemDmg = s.elementalDamage; // +% elemental (non-physical) damage
     p.lifePerHit = s.lifePerHit;
     p.flatDmg = s.flatDmg;
     p.xpBonus = s.xpBonus;

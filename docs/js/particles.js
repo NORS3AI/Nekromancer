@@ -137,10 +137,13 @@ const Particles = {
 // --------------------------- effect shorthands -----------------------------
 
 // Combat numbers: RED for a normal hit, YELLOW for a crit (owner colours).
-function dmgText(x, y, amount, crit = false) {
+function dmgText(x, y, amount, crit = false, element) {
   if (typeof Settings !== 'undefined' && !Settings.g.dmgNumbers) return;
+  // Crit stays gold; otherwise tint by element so Cold/Fire/Poison/Lightning hits
+  // read apart at a glance (physical keeps the classic red).
+  const elemCol = (typeof ELEMENTS !== 'undefined' && element && ELEMENTS[element]) ? ELEMENTS[element].color : null;
   Particles.text(x, y - 24, Math.round(amount), {
-    color: crit ? '#ffd24a' : '#ff5040',
+    color: crit ? '#ffd24a' : (elemCol || '#ff5040'),
     size: crit ? 22 : 15,
     life: crit ? 1.0 : 0.8
   });

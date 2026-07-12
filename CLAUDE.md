@@ -258,10 +258,15 @@ Script lives in the session scratchpad (intentionally not committed).
   primary/secondary cooldowns, cap 75%)** as real rollable affixes (in
   `AFFIX_ROLLS`/`AFFIX_GROUPS`; folded in `computeStats`/`apply`; `atkSpeed` hooks
   `Skills.cdFor`).
-  Still not modelled: **Life per Hit, Crit Damage, resource cost reduction,
-  cooldown reduction** as ITEM affixes (they exist only through gems), and
-  elemental-damage types. Define the full stat/affix taxonomy (primary vs
-  secondary, roll ranges by ilvl, which slots) before adding more authentic D3 items.
+  Added v1.6.35: **Life per Hit, Crit Damage, cooldown reduction, resource cost
+  reduction** as real ITEM affixes (`lph`/`critDmg`/`cdr`/`rcr`, on top of the gem
+  sources). Added v1.6.40: **ELEMENTAL DAMAGE TYPES** — `ELEMENTS` (physical/cold/
+  fire/lightning/poison) in data.js; `SKILL_ELEMENT` (Death Nova = poison) +
+  `RUNE_ELEMENT` (cold runes) resolved by `Skills.elementFor()`; `Skills.tryUse`
+  stamps `p.castElement`, read in `Enemy.hurt` for tinted damage numbers, per-hit
+  effects (cold chill · fire `igniteT`/poison `poisonT` DoTs ticked in Enemy.update
+  · lightning shock), monster `def.resist` (½ dmg), and the `elem` affix (+% elemental
+  damage, non-physical → `p.elemDmg`). Remaining unmodelled: none of the core taxonomy.
 - Skill runes (D3 has 5 per skill), set items with set bonuses
 - Kanai's Cube (extract legendary powers), legendary gems
 - More bounty types (Clear / Event), Nephalem/Greater Rifts as endgame

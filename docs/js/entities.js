@@ -46,6 +46,8 @@ class Player {
     this.cdr = 0;             // Diamond: cooldown reduction (fraction)
     this.rcr = 0;             // Topaz: resource cost reduction (fraction)
     this.atkSpeed = 0;        // Attack Speed affix: faster primary/secondary attacks
+    this.elemDmg = 0;         // +% elemental (non-physical) damage
+    this.castElement = 'physical';  // element of the skill currently being cast
     this.lifePerHit = 0;      // Amethyst: life restored per hit dealt
     this.xpBonus = 0;
     this.essenceRegen = 2;
@@ -708,6 +710,25 @@ class Enemy {
     this.fearT = Math.max(0, (this.fearT || 0) - dt);       // feared → flees (rune effects)
     this.brittleT = Math.max(0, (this.brittleT || 0) - dt); // brittle → takes more crits
     this.atkSlowT = Math.max(0, (this.atkSlowT || 0) - dt); // attacks slowed (Crystallization)
+    // Elemental damage-over-time: Fire ignite + Poison, ticking twice a second
+    // independent of the hero (their damage is set from the hit that applied them).
+    if ((this.igniteT || 0) > 0 || (this.poisonT || 0) > 0) {
+      this.igniteT = Math.max(0, (this.igniteT || 0) - dt);
+      this.poisonT = Math.max(0, (this.poisonT || 0) - dt);
+      this._dotTick = (this._dotTick || 0) - dt;
+      if (this._dotTick <= 0) {
+        this._dotTick = 0.5;
+        const fire = this.igniteT > 0 ? (this.igniteDmg || 0) : 0;
+        const psn = this.poisonT > 0 ? (this.poisonDmg || 0) : 0;
+        const tick = fire + psn;
+        if (tick > 0) {
+          this.hp -= tick;
+          dmgText(this.x, this.y - 12, tick, false, fire >= psn ? 'fire' : 'poison');
+          if (Game.dpsHits) Game.dpsHits.push({ t: Game.time, d: tick });
+          if (this.hp <= 0) { this.die(); return; }
+        }
+      }
+    }
     if (this.curse) {
       this.curse.age = (this.curse.age || 0) + dt;          // for Enfeeblement's ramp
       this.curse.t -= dt;
@@ -1187,6 +1208,11 @@ class Enemy {
     // Damage dealt BY a thrall (opts.ally) uses its own attack — none of the
     // hero's per-hit bonuses (flat damage, crit, life-per-hit) apply.
     const heroHit = !opts.ally;
+    // Elemental typing: the hit's element is the cast's element (or an explicit
+    // DoT element). Resisted foes take half; +% elemental damage boosts non-physical.
+    const element = opts.element || (heroHit && p ? (p.castElement || 'physical') : 'physical');
+    if (this.def.resist === element) dmg *= 0.5;
+    if (heroHit && element !== 'physical' && p && p.elemDmg) dmg *= 1 + p.elemDmg;
     // Ruby flat damage adds to each primary hit (not to splash/DoT ticks).
     if (heroHit && p && p.flatDmg && !opts.noSplash) dmg += p.flatDmg;
     // Brittle (Corpse Lance · Brittle Touch, Ice Golem): the victim takes crits
@@ -1221,7 +1247,15 @@ class Enemy {
     }
     // Amethyst life-per-hit: heal the Necromancer on each primary hit landed.
     if (heroHit && p && !p.dead && (p.lifePerHit || 0) > 0 && !opts.noSplash) p.heal(p.lifePerHit);
-    dmgText(this.x, this.y, dmg, crit);
+    // On-hit ELEMENTAL effects — direct hero hits only (not splash / DoT ticks):
+    //   cold chills · fire ignites · poison festers · lightning may shock (stun).
+    if (heroHit && !opts.noSplash && !opts.dot && !this.dead) {
+      if (element === 'cold') this.slow = Math.max(this.slow, 1.5);
+      else if (element === 'fire') { this.igniteT = 2; this.igniteDmg = Math.max(this.igniteDmg || 0, dmg * 0.12); }
+      else if (element === 'poison') { this.poisonT = 3; this.poisonDmg = Math.max(this.poisonDmg || 0, dmg * 0.08); }
+      else if (element === 'lightning' && !this.unique && !this.def.boss && Math.random() < 0.15) this.root = Math.max(this.root, 0.5);
+    }
+    dmgText(this.x, this.y, dmg, crit, element);
     // Feed the DPS meter (dealt damage over a rolling window).
     if (Game.dpsHits) Game.dpsHits.push({ t: Game.time, d: dmg });
     // Area Damage: 20% proc to splash a share of the hit onto nearby foes.
