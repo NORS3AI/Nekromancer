@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.27-alpha';
+const GAME_VERSION = 'v1.6.28-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.28-alpha', date: 'July 2026',
+    notes: [
+      'Command Skeletons & Command Golem now AUTO-SUMMON: slot the skill and your 7 skeletons / golem rise to guard you the moment you enter a land, and any that fall are raised again on their own (no essence, no casting to summon)',
+      'The Command Skeletons / Command Golem button is now purely the RUNE COMMAND (order the warband to strike, trigger the golem\'s active) on its cooldown — and Command Skeletons no longer costs essence'
+    ]
+  },
   {
     v: 'v1.6.27-alpha', date: 'July 2026',
     notes: [
@@ -1850,7 +1857,7 @@ const SKILL_DATA = [
   { id: 'corpseExplosion', name: 'Corpse Explosion',  cat: 'corpse',    lvl: 4,  cost: 8,  cd: 3 },
   { id: 'skeletalMage',    name: 'Skeletal Mage',     cat: 'secondary', lvl: 19, cost: 40, cd: 10 },
   { id: 'corpseLance',     name: 'Corpse Lance',      cat: 'corpse',    lvl: 28, cost: 15, cd: 0.5 },
-  { id: 'commandSkeletons',name: 'Command Skeletons', cat: 'reanim',    lvl: 9,  cost: 50, cd: 25 },
+  { id: 'commandSkeletons',name: 'Command Skeletons', cat: 'reanim',    lvl: 9,  cost: 0,  cd: 25 },
   { id: 'siphonBlood',     name: 'Siphon Blood',      cat: 'primary',   lvl: 11, cost: 0,  gain: 4,  cd: 0.16, channel: true },
   { id: 'deathNova',       name: 'Death Nova',        cat: 'secondary', lvl: 12, cost: 20, cd: 1 },
   { id: 'commandGolem',    name: 'Command Golem',     cat: 'reanim',    lvl: 13, cost: 0,  cd: 30 },

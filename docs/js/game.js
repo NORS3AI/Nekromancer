@@ -413,6 +413,22 @@ const Game = {
     this.camera.x = this.player.x - this.W / 2;
     this.camera.y = this.player.y - this.H / 2;
 
+    // Auto-summon: Command Skeletons / Command Golem raise their army the moment
+    // you enter a land (the skill BUTTON is now purely the rune command). Any who
+    // fall are re-raised over time by maintainCommandMinions().
+    const pp = this.player;
+    if (Hero.loadout && Hero.loadout.includes('commandSkeletons')) {
+      for (let i = 0; i < 7; i++) {
+        const a = rand(TAU), d = rand(38, 60);
+        this.minions.push(new Minion(pp.x + Math.cos(a) * d, pp.y + Math.sin(a) * d, 'skeleton'));
+      }
+    }
+    if (Hero.loadout && Hero.loadout.includes('commandGolem')) {
+      const a = rand(TAU);
+      this.minions.push(new Minion(pp.x + Math.cos(a) * 52, pp.y + Math.sin(a) * 52, 'golem'));
+    }
+    this._skelT = 0; this._golemT = 0;
+
     // Difficulty pours on more monsters: bigger packs and extra packs. A dev
     // "spawn boost" (Hero.cheats.spawn = +0%…+1000%) scales pack SIZE so the
     // total roughly multiplies by 1+boost (linear, not compounding).
@@ -580,6 +596,44 @@ const Game = {
             World.collide(e);
             this.enemies.push(e);
           }
+        }
+      }
+    }
+  },
+
+  // Keep the auto-summoned army topped up while Command Skeletons / Command
+  // Golem are slotted: skeletons return one at a time (or a full squad after a
+  // wipe), the golem reforms a couple seconds after it falls. Summoning is free
+  // and automatic — the skill button only issues the rune command.
+  maintainCommandMinions(dt) {
+    const p = this.player;
+    if (!p || p.dead || !Hero.loadout) return;
+    if (Hero.loadout.includes('commandSkeletons')) {
+      let have = 0;
+      for (const m of this.minions) if (m.kind === 'skeleton' && !m.dead) have++;
+      if (have < 7) {
+        this._skelT = (this._skelT || 0) - dt;
+        if (have === 0 || this._skelT <= 0) {
+          this._skelT = 0.7;
+          const n = have === 0 ? 7 : 1;   // instant squad after a wipe, else trickle
+          for (let i = 0; i < n; i++) {
+            const a = rand(TAU), d = rand(40, 62);
+            const m = new Minion(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, 'skeleton');
+            this.minions.push(m); fxSummon(m.x, m.y);
+          }
+        }
+      }
+    }
+    if (Hero.loadout.includes('commandGolem')) {
+      let alive = false;
+      for (const m of this.minions) if (m.kind === 'golem' && !m.dead) { alive = true; break; }
+      if (!alive) {
+        this._golemT = (this._golemT || 0) - dt;
+        if (this._golemT <= 0) {
+          this._golemT = 2.5;
+          const a = rand(TAU);
+          this.minions.push(new Minion(p.x + Math.cos(a) * 52, p.y + Math.sin(a) * 52, 'golem'));
+          fxSummon(p.x, p.y);
         }
       }
     }
@@ -1308,6 +1362,7 @@ const Game = {
       }
     }
     this.updateRiftSpawns(dt);
+    this.maintainCommandMinions(dt);
     this.touchObjects();
 
     for (const e of this.enemies) e.update(dt);

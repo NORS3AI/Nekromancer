@@ -442,51 +442,41 @@ const SKILL_FX = {
   },
 
   commandSkeletons(p, a) {
+    // The 7 skeletons are auto-summoned & auto-resummoned (Game.maintainCommand-
+    // Minions). This button is now purely the COMMAND — hurl the warband at the
+    // nearest foe with the rune's effect, gated by the skill's cooldown.
     const rune = Hero.rune('commandSkeletons');
-    const have = minionCount('skeleton');
-    if (have >= 7) {
-      // Recast: command the warband at the nearest foe.
-      const tgt = nearestEnemy(p.x, p.y, 700);
-      for (const m of Game.minions) {
-        if (m.kind !== 'skeleton') continue;
-        if (rune === 'frenzy') m.frenzyT = 6;            // Frenzy: +attack speed
-        if (rune === 'darkMending') m.healOnHit = true;  // Dark Mending: heal on hit
-      }
-      if (tgt) {
-        if (rune === 'freezingGrasp' && !tgt.unique) tgt.root = Math.max(tgt.root || 0, 3);   // freeze
-        if (rune === 'killCommand') {                    // skeletons detonate at the target
-          fxExplosion(tgt.x, tgt.y, 150); World.smash(tgt.x, tgt.y, 150); Particles.shake(4);
-          for (const e of Game.enemies) {
-            if (e.dead || e.sleep) continue;
-            if (dist(tgt.x, tgt.y, e.x, e.y) < 150) e.hurt(60 * p.power(), { knock: { a: angleTo(tgt.x, tgt.y, e.x, e.y), f: 120 } });
-          }
-          AudioSys.sfx('explode');
+    const tgt = nearestEnemy(p.x, p.y, 700);
+    for (const m of Game.minions) {
+      if (m.kind !== 'skeleton' || m.dead) continue;
+      if (rune === 'frenzy') m.frenzyT = 6;            // Frenzy: +attack speed
+      if (rune === 'darkMending') m.healOnHit = true;  // Dark Mending: heal on hit
+      if (tgt) m.commandTgt = tgt;                     // focus-fire the marked foe
+    }
+    if (tgt) {
+      if (rune === 'freezingGrasp' && !tgt.unique) tgt.root = Math.max(tgt.root || 0, 3);   // freeze
+      if (rune === 'killCommand') {                    // skeletons detonate at the target
+        fxExplosion(tgt.x, tgt.y, 150); World.smash(tgt.x, tgt.y, 150); Particles.shake(4);
+        for (const e of Game.enemies) {
+          if (e.dead || e.sleep) continue;
+          if (dist(tgt.x, tgt.y, e.x, e.y) < 150) e.hurt(60 * p.power(), { knock: { a: angleTo(tgt.x, tgt.y, e.x, e.y), f: 120 } });
         }
+        AudioSys.sfx('explode');
       }
-      Particles.text(p.x, p.y - 40, 'ATTACK!', { color: '#ff8c5a', size: 15 });
-      AudioSys.sfx('summon');
-      return true;
     }
-    const raise = Math.min(7 - have, 4);
-    for (let i = 0; i < raise; i++) {
-      const sa = a + Math.PI + (i - raise / 2) * 0.5;
-      Game.minions.push(new Minion(p.x + Math.cos(sa) * 38, p.y + Math.sin(sa) * 38, 'skeleton'));
-    }
+    Particles.text(p.x, p.y - 40, 'ATTACK!', { color: '#ff8c5a', size: 15 });
     AudioSys.sfx('summon');
     return true;
   },
 
   commandGolem(p, a) {
+    // The golem is auto-summoned & reforms on its own (Game.maintainCommand-
+    // Minions). This button triggers the golem's ACTIVE (differs by rune), gated
+    // by cooldown. Uses the golem's spot, or the hero's if it's mid-reform.
     let golem = null;
     for (const m of Game.minions) if (!m.dead && m.kind === 'golem') golem = m;
-    if (!golem) {
-      Game.minions.push(new Minion(p.x + Math.cos(a + Math.PI) * 44, p.y + Math.sin(a + Math.PI) * 44, 'golem'));
-      AudioSys.sfx('summon');
-      return true;
-    }
-    // Recast: the golem's ACTIVE, which differs by rune.
     const rune = Hero.rune('commandGolem');
-    const gx = golem.x, gy = golem.y;
+    const gx = golem ? golem.x : p.x, gy = golem ? golem.y : p.y;
     fxExplosion(gx, gy, 150);
     World.smash(gx, gy, 150);
     Particles.shake(5);
@@ -506,11 +496,11 @@ const SKILL_FX = {
         e.hurt(50 * slamMul * p.power(), o);
       }
     }
-    if (rune === 'fleshGolem') {                 // collapse into 8 corpses
+    if (golem && rune === 'fleshGolem') {        // collapse into 8 corpses (reforms)
       for (let i = 0; i < 8; i++) Game.corpses.push(new Corpse(gx + rand(-40, 40), gy + rand(-40, 40), 'zombie'));
       golem.dead = true;
     }
-    if (rune === 'bloodGolem') { p.heal(p.maxHp * 0.25); golem.dead = true; }   // sacrifice → heal, reforms
+    if (golem && rune === 'bloodGolem') { p.heal(p.maxHp * 0.25); golem.dead = true; }   // sacrifice → heal, reforms
     AudioSys.sfx('explode');
     Skills.cds.commandGolem = 12; // slam has its own shorter cooldown
     return 'cdSet';

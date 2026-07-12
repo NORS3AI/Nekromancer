@@ -1846,10 +1846,17 @@ class Minion {
     if (this.kind === 'sim') return; // the clone just stands and casts
 
     let tgt = null, bestD = 560;
-    for (const e of Game.enemies) {
-      if (e.dead || e.sleep || e.spawnT > 0) continue;
-      const d = dist(this.x, this.y, e.x, e.y);
-      if (d < bestD) { tgt = e; bestD = d; }
+    // A Command Skeletons order focuses the marked foe (until it dies / strays).
+    if (this.commandTgt) {
+      if (this.commandTgt.dead) this.commandTgt = null;
+      else if (dist(this.x, this.y, this.commandTgt.x, this.commandTgt.y) < 900) tgt = this.commandTgt;
+    }
+    if (!tgt) {
+      for (const e of Game.enemies) {
+        if (e.dead || e.sleep || e.spawnT > 0) continue;
+        const d = dist(this.x, this.y, e.x, e.y);
+        if (d < bestD) { tgt = e; bestD = d; }
+      }
     }
     const dmgMult = Game.player.power() * (this.frenzyT > 0 ? 1.5 : 1) * (this.dmgBuff || 1);
     // Minions keep pace with the Nekromancer — never slower than the hero, so they
