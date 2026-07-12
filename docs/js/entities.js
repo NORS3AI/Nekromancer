@@ -473,15 +473,26 @@ class Player {
     const flash = this.flash > 0.4;
     const eye = (typeof Hero !== 'undefined' && Hero.eyeColor) || '#6ff7c3';
     const fx = Math.cos(this.facing), fy = Math.sin(this.facing);
-    const back = fy < -0.35;                 // moving AWAY → we see the hero's back
-    const flip = fx < -0.02 ? -1 : 1;        // mirror when facing left
-    const sway = Math.sin(this.anim * 3.5) * 2.6;   // cloak billow
+    // Continuous facing knobs (no hard thresholds → no snapping between poses):
+    //   prof  0 = square to the camera · 1 = full SIDE PROFILE (moving L/R)
+    //   back  0 = face toward camera    · 1 = turned fully AWAY (moving up)
+    //   flip  mirrors the whole figure so the profile leads the way it walks.
+    const flip = fx < 0 ? -1 : 1;                              // +x = leading edge
+    const prof = Math.min(1, Math.abs(fx) * 1.12);             // sideways-ness
+    const back = Math.max(0, Math.min(1, (-fy - 0.06) / 0.5)); // turning-away amount
+    const faceAmt = 1 - back;                                  // eyes/face visibility
+    const lead = prof * 3.4;                                   // head/face lead the turn
+    const beak = prof * 4.2;                                   // hood points the way you go
+    const squish = 1 - 0.26 * prof;                            // profile narrows the body
+    const sway = Math.sin(this.anim * 3.5) * 2.6;              // cloak billow
+    const step = Math.sin(this.anim * 3.5) * prof * 1.6;       // side-step hip sway in profile
     ctx.save();
     ctx.translate(0, -bob);
 
     // ---- CLOAK: trails OPPOSITE the direction of travel (screen space) ----
     // Behind the body when we face the camera; billowing toward you when the back
-    // is turned (drawn after the body then).
+    // is turned. Its screen offset comes straight from the (smoothed) facing so it
+    // swings around fluidly rather than snapping sides.
     const drawCloak = () => {
       const tx = -fx, ty = -fy;
       const len = 15 + Math.abs(ty) * 15;
@@ -498,16 +509,20 @@ class Player {
       ctx.fillStyle = cg; ctx.fill();
       ctx.strokeStyle = 'rgba(111,247,195,0.20)'; ctx.lineWidth = 1; ctx.stroke();
     };
-    if (!back) drawCloak();
+    // Draw-order crossfade happens at back≈0.5 — where the cloak is edge-on and the
+    // swap is invisible, so there's no visible pop.
+    if (back <= 0.5) drawCloak();
 
     ctx.save();
-    ctx.scale(flip, 1);
+    ctx.scale(flip, 1);              // mirror so +x is always the leading edge
+    ctx.translate(step, 0);          // profile walk sways the hips side to side
+    ctx.scale(squish, 1);            // narrow the silhouette as we turn to profile
 
-    // ---- staff behind the body (shaft + bone claw) ----
+    // ---- staff behind the body (shaft + bone claw), swung to the leading side ----
     ctx.strokeStyle = '#4a3c2c'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(12, 2); ctx.lineTo(14, -48); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12 + lead * 0.4, 2); ctx.lineTo(14 + lead, -48); ctx.stroke();
     ctx.strokeStyle = flash ? '#eef8f2' : '#d0c7ae'; ctx.lineWidth = 2.4;
-    ctx.beginPath(); ctx.arc(14, -48, 5.2, -0.3, 2.4); ctx.stroke();
+    ctx.beginPath(); ctx.arc(14 + lead, -48, 5.2, -0.3, 2.4); ctx.stroke();
 
     // ---- robe body (feet at ~y0, shoulders ~y-34) with a vertical gradient ----
     ctx.beginPath();
@@ -522,45 +537,55 @@ class Player {
     if (flash) { rg.addColorStop(0, '#a6ecd3'); rg.addColorStop(1, '#4c6f66'); }
     else { rg.addColorStop(0, '#37564f'); rg.addColorStop(0.55, '#243c37'); rg.addColorStop(1, '#141f1b'); }
     ctx.fillStyle = rg; ctx.fill();
-    // Volume highlight — down the front when facing us, subtler on the back.
-    const hg = ctx.createLinearGradient(-6, 0, 6, 0);
+    // Volume highlight — bright down the front, fading toward the leading edge as we
+    // turn side-on, and dim on the back (all driven continuously by faceAmt/prof).
+    const hg = ctx.createLinearGradient(-6 + lead, 0, 6 + lead, 0);
     hg.addColorStop(0, 'rgba(130,210,185,0)');
-    hg.addColorStop(0.5, flash ? 'rgba(220,255,245,0.22)' : `rgba(130,210,185,${back ? 0.07 : 0.16})`);
+    hg.addColorStop(0.5, flash ? 'rgba(220,255,245,0.22)' : `rgba(130,210,185,${0.07 + 0.11 * faceAmt})`);
     hg.addColorStop(1, 'rgba(130,210,185,0)');
     ctx.fillStyle = hg; ctx.fill();
     ctx.strokeStyle = 'rgba(111,247,195,0.30)'; ctx.lineWidth = 1.1; ctx.stroke();
 
-    // ---- bone shoulder mantle (two pauldrons) ----
+    // ---- bone shoulder mantle: the trailing pauldron tucks away in profile ----
     ctx.fillStyle = flash ? '#eef8f2' : '#cfc6ad';
     ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 0.8;
-    ctx.beginPath(); ctx.ellipse(-8.5, -32, 5.5, 3.6, -0.35, 0, TAU); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(8.5, -32, 5.5, 3.6, 0.35, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(-8.5 + lead * 0.5, -32, 5.5 * (1 - 0.45 * prof), 3.6, -0.35, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(8.5 + lead * 0.5, -32, 5.5, 3.6, 0.35, 0, TAU); ctx.fill(); ctx.stroke();
 
-    // ---- hooded head ----
+    // ---- hooded head: the hood grows a beak toward the way you travel ----
     ctx.beginPath();
-    ctx.moveTo(-7.5, -33);
-    ctx.quadraticCurveTo(-9, -49, 0, -50);
-    ctx.quadraticCurveTo(9, -49, 7.5, -33);
-    ctx.quadraticCurveTo(0, -30, -7.5, -33);
+    ctx.moveTo(-7.5 + lead * 0.4, -33);
+    ctx.quadraticCurveTo(-9 + beak * 0.25, -49, 0 + beak * 0.55, -50);
+    ctx.quadraticCurveTo(9 + beak, -49, 7.5 + beak * 0.7, -33);
+    ctx.quadraticCurveTo(0 + lead * 0.4, -30, -7.5 + lead * 0.4, -33);
     ctx.closePath();
     const hd = ctx.createLinearGradient(0, -50, 0, -30);
     if (flash) { hd.addColorStop(0, '#9fe6cd'); hd.addColorStop(1, '#4a6a62'); }
     else { hd.addColorStop(0, '#2f4c45'); hd.addColorStop(1, '#1a2c28'); }
     ctx.fillStyle = hd; ctx.fill();
     ctx.strokeStyle = 'rgba(111,247,195,0.30)'; ctx.lineWidth = 1; ctx.stroke();
-    if (!back) {
-      // Facing us: dark face cavity + glowing eyes ON THE FACE.
+
+    // Face + eyes CROSSFADE with the turn: front shows both eyes; as you swing to a
+    // profile the pair converges to one leading eye; as you turn away the seam fades
+    // in. Every alpha/offset is continuous, so rotating never pops.
+    const fcX = lead;
+    if (faceAmt > 0.01) {
+      ctx.globalAlpha = faceAmt;
       ctx.fillStyle = '#0b1310';
-      ctx.beginPath(); ctx.ellipse(0, -39, 4.6, 5.6, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(fcX, -39, 4.6 * (1 - 0.32 * prof), 5.6, 0, 0, TAU); ctx.fill();
+      const eSep = 2.1 * (1 - 0.55 * prof);
       ctx.fillStyle = eye; ctx.shadowColor = eye; ctx.shadowBlur = 8;
-      ctx.beginPath(); ctx.arc(-2.1, -39, 1.5, 0, TAU); ctx.fill();
-      ctx.beginPath(); ctx.arc(2.1, -39, 1.5, 0, TAU); ctx.fill();
-      ctx.shadowBlur = 0;
-    } else {
-      // Back of the hood: a centre seam, no eyes — just a faint glow leaking through.
+      ctx.beginPath(); ctx.arc(fcX + eSep, -39, 1.5, 0, TAU); ctx.fill();   // leading eye
+      ctx.globalAlpha = faceAmt * (1 - 0.9 * prof);                          // trailing eye fades in profile
+      ctx.beginPath(); ctx.arc(fcX - eSep, -39, 1.5, 0, TAU); ctx.fill();
+      ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+    }
+    if (back > 0.02) {
+      // Back of the hood: a centre seam + a faint glow leaking through the weave.
+      ctx.globalAlpha = back;
       ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(0, -48); ctx.lineTo(0, -33); ctx.stroke();
-      ctx.globalAlpha = 0.22; ctx.fillStyle = eye; ctx.shadowColor = eye; ctx.shadowBlur = 6;
+      ctx.globalAlpha = back * 0.22; ctx.fillStyle = eye; ctx.shadowColor = eye; ctx.shadowBlur = 6;
       ctx.beginPath(); ctx.arc(0, -41, 2.4, 0, TAU); ctx.fill();
       ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     }
@@ -568,13 +593,13 @@ class Player {
     // ---- staff crystal (in front), glowing in the eye colour ----
     const pulse = 0.7 + 0.3 * Math.sin(Game.time * 3);
     ctx.fillStyle = eye; ctx.shadowColor = eye; ctx.shadowBlur = 9 + 5 * pulse;
-    ctx.beginPath(); ctx.arc(14, -51, 3.4, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(14 + lead, -51, 3.4, 0, TAU); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.beginPath(); ctx.arc(13, -52, 1.2, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(13 + lead, -52, 1.2, 0, TAU); ctx.fill();
     ctx.shadowBlur = 0;
 
     ctx.restore();   // undo flip
-    if (back) drawCloak();   // billows toward the camera in front of the body
+    if (back > 0.5) drawCloak();   // billows toward the camera in front of the body
     ctx.restore();
   }
 }

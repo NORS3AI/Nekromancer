@@ -19,11 +19,18 @@ const RARITIES = [
   { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
 ];
 
-const GAME_VERSION = 'v1.6.31-alpha';
+const GAME_VERSION = 'v1.6.32-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.32-alpha', date: 'July 2026',
+    notes: [
+      'Top Down: the Nekromancer now shows a real SIDE PROFILE when walking left or right — the hood grows a beak pointing the way you travel, the eyes converge to a single leading eye, and the silhouette narrows — instead of the old idle-looking mirrored front pose',
+      'Top Down: turning between any two directions (left↔up, left↔down, side↔front, etc.) now morphs FLUIDLY. Every part of the pose — face reveal, eye position, hood beak, body twist, cloak swing — is a continuous function of the (smoothed) facing angle, so there\'s no more snapping or jank as you change direction'
+    ]
+  },
   {
     v: 'v1.6.31-alpha', date: 'July 2026',
     notes: [
