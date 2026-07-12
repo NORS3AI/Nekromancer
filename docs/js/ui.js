@@ -334,6 +334,21 @@ const UI = {
       return;
     }
 
+    if (Game.state === 'town') {
+      // Walkable town: overlays (open shop screens) + the movement joystick, but
+      // none of the combat HUD.
+      if (this.screen) {
+        this.overlayBarrier = this.hits.length;
+        Screens.draw(ctx, W, H);
+        this.drawGlobalClose(ctx, W);
+      } else if (!this.desktop) {
+        this.drawJoystick(ctx);
+      }
+      this.drawToasts(ctx, W);
+      this.drawTooltip(ctx, W, H);
+      return;
+    }
+
     // ---- playing ----
     const p = Game.player;
     if (!p) return;

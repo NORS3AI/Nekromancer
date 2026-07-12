@@ -198,8 +198,11 @@ const Input = {
       if (UI.startDpsDrag(x, y, t.identifier)) continue;
       if (UI.startDragScroll(x, y, t.identifier)) continue;
       if (UI.click(x, y)) continue;
-      if (!this.gameplayLive()) continue;
-      const slot = UI.buttonAt(x, y);
+      // Walking the town uses the same left-half joystick, but no skill buttons
+      // or aim stick (there's no combat there).
+      const townWalk = Game.state === 'town' && !UI.screen;
+      if (!this.gameplayLive() && !townWalk) continue;
+      const slot = townWalk ? null : UI.buttonAt(x, y);
       if (slot !== null) {
         this.buttonTouches.set(t.identifier, { slot, sx: x, sy: y, angle: null, aiming: false });
         if (slot === 0) this.heldSlots.add(0);
@@ -218,7 +221,7 @@ const Input = {
           this.joy.ox = x; this.joy.oy = y;
           this.joy.dx = 0; this.joy.dy = 0;
         }
-      } else if (!this.aim.active) {
+      } else if (!townWalk && !this.aim.active) {
         this.aim.active = true;
         this.aim.id = t.identifier;
         this.aim.ox = x; this.aim.oy = y;

@@ -1182,6 +1182,7 @@ const Screens = {
 
     // Hub buttons.
     const items = [
+      ['🏰 VISIT TOWN', () => Game.enterTown(), '#ffd76a'],
       ['⛰ THE WILDS', () => UI.open('wilds'), '#6ff7c3'],
       ['INVENTORY', () => UI.open('radial'), '#e8e0cc'],
       ['SKILLS & PASSIVES', () => UI.open('skills'), '#e8e0cc'],
@@ -3557,11 +3558,11 @@ const Screens = {
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 20, 96 + o.stock.length * 40 + (UI.sel.buy ? 140 : 40));
     const py = Math.max(8, H / 2 - ph / 2);
-    UI.panel(ctx, px, py, pw, ph, 'WANDERING MERCHANT');
+    UI.panel(ctx, px, py, pw, ph, o.name || 'WANDERING MERCHANT');
     ctx.textAlign = 'left';
     ctx.font = 'italic 11px Georgia';
     ctx.fillStyle = '#9a9080';
-    ctx.fillText('"Fine wares! Mostly. No refunds."', px + 16, py + 52);
+    ctx.fillText(o.flavor || '"Fine wares! Mostly. No refunds."', px + 16, py + 52);
     ctx.textAlign = 'right';
     ctx.font = 'bold 12px Georgia';
     ctx.fillStyle = '#ffd76a';

@@ -39,11 +39,20 @@ const RUNE_ELEMENT = {
   iceGolem: 'cold', freezingGrasp: 'cold', frozenArmy: 'cold', frozenLands: 'cold'
 };
 
-const GAME_VERSION = 'v1.6.40-alpha';
+const GAME_VERSION = 'v1.6.41-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.41-alpha', date: 'July 2026',
+    notes: [
+      'A WALKABLE TOWN — "Nekropolis"! From the camp hub tap 🏰 VISIT TOWN and you now WALK around a real hand-drawn town instead of a menu. Stroll up to a shopfront and it opens automatically',
+      'The town holds it all: the Blacksmith, Jeweler and Mystic; your Stash and Inventory; the Horadric\'s Cube (once you\'ve found it); and FOUR different merchants along the market street — a Weaponsmith, an Armorer, a Trinketeer (rings & amulets) and a Curio Peddler — each stocking different wares',
+      'A central campfire ("Adventurer\'s Rest") opens the menu hub for Skills, Paragon, Character and Settings, and the great stone Gate takes you out to the Wilds to adventure',
+      'Hand-drawn Diablo-style buildings with glowing windows, a smith\'s forge & anvil, a floating arcane orb, a gem-lit jeweler, an iron vault, market awnings, houses with chimney smoke, a fountain, lamps and trees. Walk with the joystick (or WASD)'
+    ]
+  },
   {
     v: 'v1.6.40-alpha', date: 'July 2026',
     notes: [

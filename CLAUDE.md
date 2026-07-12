@@ -242,11 +242,22 @@ Script lives in the session scratchpad (intentionally not committed).
   via `Screens.create`; `Hero.name`/`Hero.eyeColor`), SAVE/LOAD OVERHAUL (robust
   multi-character profiles, cloud-ish export/import, migration), and GRAPHICS &
   SOUND additions (richer sprites/FX/music/ambience beyond the current procedural set).
-- **⭐ OWNER TODO (requested 2026-07-04): a walkable MAIN TOWN.** Instead of the
-  menu-hub camp, the hero walks around a real town and steps up to NPC artisans —
-  the Blacksmith, the Mystic and the Jeweler (and likely the Stash/Wilds portal) —
-  to open each one. Flesh out: town map/layout, NPC placement + interaction radius,
-  how it replaces (or wraps) the current `Screens.camp` hub, and camp↔town↔zone flow.
+- **WALKABLE MAIN TOWN (DONE v1.6.41)** — "NEKROPOLIS", a hand-drawn walkable town
+  (`Game.state==='town'`). `Game.buildTown()` lays out solid buildings + interaction
+  pads on a pre-rendered cobblestone ground buffer; `enterTown()` (from the camp hub
+  "🏰 VISIT TOWN" button) drops the hero at the gate. `updateTown()` does joystick/WASD
+  movement + `townBlocked()` footprint collision + proximity auto-open (step-off to
+  re-arm); `drawTown()` painter-sorts buildings/props/NPCs/hero and draws name plates.
+  Shops open the SAME screens: Blacksmith/Mystic/Jeweler, Stash, Inventory (radial),
+  Horadric Cube (gated on `Hero.hasCube`), and **four themed merchants** (Weaponsmith/
+  Armorer/Trinketeer/Curio Peddler — distinct `merchantStock()` by slot, shown via
+  `o.name`/`o.flavor` on `Screens.vendor`). A central **campfire** → `toCamp()` (menu
+  hub for skills/paragon/character/settings), and the **Wilds gate** → `UI.open('wilds')`.
+  Art helpers: `_townShell`/`_townDoor`/`_townWindows`/`_townSign`, `drawTownBuilding`
+  (blacksmith/mystic/jeweler/stash/armory/cube/stall/house/gate), `drawTownProp`
+  (fountain/lamp/tree/barrel/crate), `drawTownNpc`, `drawCampfireProp`. Input: the town
+  reuses the left-half joystick (`Game.state==='town'` allowance in `input.js` touchstart).
+  The old `Screens.camp` menu hub REMAINS as the campfire target (skills/paragon live there).
 - **⭐ OWNER TODO (requested 2026-07-03): create the MASTER LIST of primary +
   secondary stats and affixes for items.** The engine now models:
   `dmg` (%), `hp`, `crit` (chance), `ess` (essence/s), `reg` (life/s), `gold`,
