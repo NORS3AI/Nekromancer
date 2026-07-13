@@ -37,7 +37,7 @@ const Items = {
     [ 0,  0,  0, 10, 80, 10,  0],  // Torment XIII
     [ 0,  0,  0,  0, 80, 20,  0],  // Torment XIV
     [ 0,  0,  0,  0, 70, 30,  0],  // Torment XV
-    [ 0,  0,  0,  0, 55, 40,  5]   // Torment XVI
+    [ 0,  0,  0,  0, 55, 44,  1]   // Torment XVI  (Artifact 1%, owner rule)
   ],
   // Roll a base rarity. `boost` (elites/bosses/masterwork) gives a chance to
   // upgrade the rolled rarity one column at a time (Artifact only reachable at T16).

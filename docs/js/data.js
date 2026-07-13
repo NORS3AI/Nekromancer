@@ -39,11 +39,17 @@ const RUNE_ELEMENT = {
   iceGolem: 'cold', freezingGrasp: 'cold', frozenArmy: 'cold', frozenLands: 'cold'
 };
 
-const GAME_VERSION = 'v1.6.44-alpha';
+const GAME_VERSION = 'v1.6.45-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.45-alpha', date: 'July 2026',
+    notes: [
+      'Artifacts are rarer — the Torment XVI drop chance for an Artifact is cut from 5% to 1% (that 4% rolls into Legendary instead), making a red Artifact a true prize'
+    ]
+  },
   {
     v: 'v1.6.44-alpha', date: 'July 2026',
     notes: [
