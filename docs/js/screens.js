@@ -3766,88 +3766,143 @@ const Screens = {
 
   // Talk to LUKUS, BRINGER OF LIGHT — a dialog stage (owner spec): Lukus's
   // painted portrait stands on the RIGHT (idle, gently breathing — the art's
-  // black background melts into the stage), and a black panel on the LEFT holds
-  // his greeting and the quest board.
+  // black background melts into the stage), and his words + the QUEST LINE
+  // (500 quests, level 1 → 70 → Paragon 1000) sit on the LEFT, laid straight
+  // on the black — NO panel box (owner rule: "it doesn't need to be in a box").
   lukus(ctx, W, H) {
     // The stage — solid black, so the portrait blends seamlessly.
     ctx.fillStyle = '#020104';
     ctx.fillRect(0, 0, W, H);
 
-    // RIGHT: Lukus, bottom-anchored, idle sway.
+    // RIGHT: Lukus, bottom-anchored, idle sway. Kept a touch narrower than
+    // before so the dialog column gets even breathing room.
     const img = Game.lukusImg('idle');
+    let portW = 0, portH = 0;
     if (img.complete && img.naturalWidth) {
       const aspect = img.naturalWidth / img.naturalHeight;
-      let h = Math.min(H * 0.94, 680), w = h * aspect;
-      const maxW = W * 0.52;
+      let h = Math.min(H * 0.92, 640), w = h * aspect;
+      const maxW = W * 0.44;
       if (w > maxW) { w = maxW; h = w / aspect; }
       const bob = Math.sin(Game.time * 1.5) * 3;
-      ctx.drawImage(img, W - w - Math.max(6, W * 0.03), H - h + bob, w, h);
+      ctx.drawImage(img, W - w - Math.max(4, W * 0.015), H - h + bob, w, h);
+      portW = w; portH = h;
     }
 
-    // LEFT: the black dialog panel (the future quest board lives here).
-    const pw = Math.min(420, W * 0.55);
-    const px = Math.max(10, W * 0.04);
-    const ph = Math.min(H - 28, 470);
-    const py = Math.max(14, H / 2 - ph / 2);
-    UI.panel(ctx, px, py, pw, ph, '⚔ LUKUS, BRINGER OF LIGHT');
-    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'italic 13px Georgia'; ctx.fillStyle = '#e8e0cc';
-    wrapText(ctx,
-      '"Good day! I am Lukus, Bringer of Light and protectorate of New Haven. ' +
-      'I don\'t have a lot for you to do, but I can recommend doing Bounties and Rifts."',
-      px + 18, py + 64, pw - 36, 19, 6);
+    // LEFT column: takes whatever the portrait leaves, vertically centered.
+    // On tall/narrow phones there's no room BESIDE him — span the full width
+    // and sit the dialog above the knight instead.
+    const lx = Math.max(16, W * 0.05);
+    let lw = Math.min(470, W - portW - lx - Math.max(16, W * 0.04));
+    const contentH = 300;   // approximate block height, for gentle centering
+    let y;
+    if (lw < 290) {
+      lw = W - lx * 2;
+      y = Math.max(26, (H - portH - contentH) / 2);
+    } else {
+      y = Math.max(30, H / 2 - contentH / 2);
+    }
+    const idx = clamp(Hero.questLine || 0, 0, QUEST_COUNT);
+    const allDone = idx >= QUEST_COUNT;
+    let q = Hero.quest;
+    if (q && (!QUEST_LINE[q.idx] || q.idx !== idx)) { q = Hero.quest = null; }   // stale
 
-    // Quest board.
-    const q = Hero.quest;
-    const goldReward = 200 * Hero.level, soulReward = 2;
-    let y = py + 188;
-    ctx.strokeStyle = '#3a3448'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(px + 16, y - 14); ctx.lineTo(px + pw - 16, y - 14); ctx.stroke();
+    // Name — a glowing header instead of a panel title.
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'bold ' + (W < 520 ? 15 : 18) + 'px Georgia'; ctx.fillStyle = '#ffd76a';
+    ctx.shadowColor = 'rgba(255,215,106,0.45)'; ctx.shadowBlur = 12;
+    ctx.fillText('⚔ LUKUS, BRINGER OF LIGHT', lx, y);
+    ctx.shadowBlur = 0;
+    y += 10;
+    // A thin gold rule that fades out to the right.
+    const rule = ctx.createLinearGradient(lx, 0, lx + lw, 0);
+    rule.addColorStop(0, 'rgba(216,180,74,0.65)'); rule.addColorStop(1, 'rgba(216,180,74,0)');
+    ctx.strokeStyle = rule; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(lx, y); ctx.lineTo(lx + lw, y); ctx.stroke();
+    y += 22;
+
+    // His words.
+    ctx.font = 'italic 13px Georgia'; ctx.fillStyle = '#e8e0cc';
+    const greet = allDone
+      ? '"Five hundred deeds. Every one of them yours. New Haven will sing of you until the sun burns out, friend."'
+      : '"Good day! I am Lukus, Bringer of Light and protectorate of New Haven. The Light keeps a ledger of five hundred deeds — shall we work through it together?"';
+    y = wrapText(ctx, greet, lx, y, lw, 19, 5);
+    y += 14;
+
+    // Ledger header: where you stand in the 500-quest line.
+    ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.fillText('THE LEDGER OF LIGHT', lx, y);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#ffd76a';
+    ctx.fillText(allDone ? 'COMPLETE' : 'QUEST ' + (idx + 1) + ' OF ' + QUEST_COUNT, lx + lw, y);
+    ctx.textAlign = 'left';
+    y += 8;
+    UI.bar(ctx, lx, y, lw, 5, idx / QUEST_COUNT, '#221d2e', '#8a6f2a');
+    y += 20;
+
+    if (allDone) {
+      ctx.font = '12px Georgia'; ctx.fillStyle = '#9a9080';
+      wrapText(ctx, 'There is nothing left in the ledger. Walk in the Light.', lx, y, lw, 17, 3);
+      return;
+    }
+
+    // The quest you're on.
+    const def = QUEST_LINE[idx];
+    const rw = questReward(idx);
+    const milestone = def.tid === 'reach';
+    const gateOk = def.gate.kind === 'level' ? Hero.level >= def.gate.at : (Hero.paragon || 0) >= def.gate.at;
+    const rwText = 'Reward: ' + rw.gold.toLocaleString() + 'g · ' + rw.souls + ' soul' + (rw.souls > 1 ? 's' : '') +
+      ' · XP' + (rw.gem ? ' · a gem' : '');
+
+    ctx.font = 'bold 14px Georgia'; ctx.fillStyle = milestone ? '#b06adf' : '#ffd76a';
+    ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name.toUpperCase(), lw), lx, y); y += 18;
+    ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
+    y = wrapText(ctx, def.desc, lx, y, lw, 15, 2) + 4;
+
     if (q) {
-      const def = TOWN_QUESTS.find(d => d.id === q.id);
-      if (!def) { Hero.quest = null; return; }
-      const prog = clamp(def.counter() - q.base, 0, def.need);
+      // Accepted — progress bar, then turn-in when done.
+      const prog = clamp(def.abs ? def.counter() : def.counter() - q.base, 0, def.need);
       const done = prog >= def.need;
-      ctx.textAlign = 'left'; ctx.font = 'bold 14px Georgia'; ctx.fillStyle = '#ffd76a';
-      ctx.fillText(def.name.toUpperCase(), px + 18, y + 6); y += 24;
-      ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
-      ctx.fillText(this.fitText(ctx, def.desc, pw - 36), px + 18, y); y += 16;
-      UI.bar(ctx, px + 18, y, pw - 36, 13, prog / def.need, '#3a3448', done ? '#4ade80' : '#ffd76a');
+      UI.bar(ctx, lx, y, lw, 13, prog / def.need, '#3a3448', done ? '#4ade80' : '#ffd76a');
       ctx.textAlign = 'center'; ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#e8e0cc'; ctx.textBaseline = 'middle';
-      ctx.fillText(prog + ' / ' + def.need, px + pw / 2, y + 7); y += 24;
+      ctx.fillText(prog + ' / ' + def.need, lx + lw / 2, y + 7); y += 24;
       ctx.textAlign = 'left'; ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080'; ctx.textBaseline = 'alphabetic';
-      ctx.fillText('Reward: ' + goldReward.toLocaleString() + 'g · ' + soulReward + ' souls · XP', px + 18, y + 6); y += 18;
-      UI.btn(ctx, px + 18, y, pw - 36, 40, done ? '✔  TURN IN' : 'IN PROGRESS…',
+      ctx.fillText(this.fitText(ctx, rwText, lw), lx, y + 4); y += 16;
+      UI.btn(ctx, lx, y, lw, 40, done ? '✔  TURN IN' : 'IN PROGRESS…',
         done ? () => {
-          Hero.gold += goldReward;
-          Hero.mats.soul = (Hero.mats.soul || 0) + soulReward;
-          Hero.addXP(Math.round(XP_CURVE(Math.min(Hero.level, 69)) * 0.5));
+          Hero.gold += rw.gold;
+          Hero.mats.soul = (Hero.mats.soul || 0) + rw.souls;
+          if (rw.gem) { const gem = Items.dropGem(); Hero.gems.push(gem); UI.toast('Lukus presses a gem into your hand: ' + gemName(gem), GEM_TYPES[gem.type].color); }
+          Hero.addXP(Math.round(XP_CURVE(Math.min(Hero.level, 69)) * rw.xpFrac));
           Hero.quest = null;
+          Hero.questLine = idx + 1;
           Hero.save();
-          UI.toast('Quest complete! +' + goldReward.toLocaleString() + 'g, +' + soulReward + ' souls', '#ffd76a');
+          UI.toast('Quest ' + (idx + 1) + '/' + QUEST_COUNT + ' complete! +' + rw.gold.toLocaleString() + 'g, +' + rw.souls + ' souls', '#ffd76a');
           AudioSys.sfx('level');
         } : null,
         { size: 13, disabled: !done, border: done ? '#3a7a4a' : undefined, color: done ? '#4ade80' : '#8a8070' });
       y += 48;
-      UI.btn(ctx, px + 18, y, pw - 36, 26, 'ABANDON QUEST', () => { Hero.quest = null; Hero.save(); },
-        { size: 10, border: '#7a4a4a', color: '#c98a8a' });
+      if (!def.abs) {
+        UI.btn(ctx, lx, y, lw, 26, 'ABANDON QUEST', () => { Hero.quest = null; Hero.save(); },
+          { size: 10, border: '#7a4a4a', color: '#c98a8a' });
+      }
     } else {
-      ctx.textAlign = 'left'; ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
-      ctx.fillText('…still, a few charges want doing:', px + 18, y + 4); y += 14;
-      for (const def of TOWN_QUESTS) {
-        UI.btn(ctx, px + 16, y, pw - 32, 50, '', () => {
-          Hero.quest = { id: def.id, base: def.counter() };
+      // Not yet accepted — reward line, then ACCEPT (or the gate that bars it).
+      ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.fillText(this.fitText(ctx, rwText, lw), lx, y + 4); y += 18;
+      if (gateOk) {
+        UI.btn(ctx, lx, y, lw, 40, 'ACCEPT QUEST', () => {
+          Hero.quest = { idx, base: def.abs ? 0 : def.counter() };
           Hero.save();
           UI.toast('Quest accepted: ' + def.name, '#ffd76a');
           AudioSys.sfx('gold');
-        });
-        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#ffd76a';
-        ctx.fillText(def.name, px + 32, y + 16);
-        ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
-        ctx.fillText(this.fitText(ctx, def.desc + '  ·  ' + goldReward.toLocaleString() + 'g + ' + soulReward + ' souls', pw - 60), px + 32, y + 34);
-        ctx.textBaseline = 'alphabetic';
-        y += 56;
+        }, { size: 13, border: '#8a6f2a', color: '#ffd76a' });
+      } else {
+        UI.btn(ctx, lx, y, lw, 40,
+          'REQUIRES ' + (def.gate.kind === 'level' ? 'LEVEL ' : 'PARAGON ') + def.gate.at,
+          null, { size: 12, disabled: true, color: '#8a8070' });
+        y += 58;
+        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
+        wrapText(ctx, '"Grow a little stronger first — the Light can wait."', lx, y, lw, 14, 2);
       }
     }
   },

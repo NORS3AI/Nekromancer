@@ -1331,6 +1331,9 @@ class Enemy {
     if (this.telegraph) this.telegraph.done = true;
     Game.kills++;
     Hero.totalKills++;
+    // Lukus's quest-line counters.
+    if (this.unique || this.def.boss || this.mapBoss) Hero.bossKills = (Hero.bossKills || 0) + 1;
+    else if (this.elite) Hero.eliteKills = (Hero.eliteKills || 0) + 1;
     // Curse-rune death effects (Frailty / Leech runes).
     if (this.curse) {
       const pl = Game.player;

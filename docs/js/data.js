@@ -59,19 +59,125 @@ const THEMES = {
   arcane: { name: 'Arcane', panel: '#5a3a7a', title: '#d8b4f0', btn: '#7a4a8f' },
   royal:  { name: 'Royal',  panel: '#8a6f2a', title: '#ffd76a', btn: '#8a6f4a' }
 };
-// Lucas, Bringer of Light — the knight quest-giver in New Haven. Repeatable
-// quests measured against lifetime counters (progress = counter − base at accept).
-const TOWN_QUESTS = [
-  { id: 'slay',    name: 'Cull the Dead',      desc: 'Slay 150 monsters anywhere in the wilds.', need: 150, counter: () => Hero.totalKills || 0 },
-  { id: 'rift',    name: 'Face the Guardian',  desc: 'Clear any Rift.',                          need: 1,   counter: () => Hero.riftsCleared || 0 },
-  { id: 'salvage', name: 'Feed the Forge',     desc: 'Salvage 15 items into materials.',         need: 15,  counter: () => Hero.salvagedCount || 0 }
+// Lukus, Bringer of Light — the knight quest-giver in New Haven.
+// THE QUEST LINE (owner request): 500 sequential quests spanning character
+// level 1→70 (quests 1–200) and then Paragon 1→1000 (quests 201–500). One
+// quest at a time: Hero.questLine = the index you're on; Hero.quest =
+// { idx, base } once accepted (progress = counter() − base; milestone quests
+// are ABSOLUTE — reach a level/paragon). Every 25th quest is a milestone,
+// every 10th pays double + a gem. Generation is fully DETERMINISTIC (hashed
+// by index) so a quest's target never changes between sessions or saves.
+function toRoman(n) {
+  const T = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'],
+             [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
+  let s = '';
+  for (const [v, r] of T) while (n >= v) { s += r; n -= v; }
+  return s || 'I';
+}
+
+// The repeatable deeds, each measured on a LIFETIME counter (progress =
+// counter − base at accept, so re-accepting never grandfathers old work).
+const QUEST_TEMPLATES = [
+  { id: 'slay',    min: 25, max: 2000, names: ['Cull the Dead', 'Thin the Horde', 'Break the Tide', 'Reap the Fallen'],
+    desc: n => 'Slay ' + n.toLocaleString() + ' monsters anywhere in the wilds.', counter: () => Hero.totalKills || 0 },
+  { id: 'elite',   min: 4,  max: 260,  names: ['Hunt the Marked', "Champions' Bane", 'Gold and Purple'],
+    desc: n => 'Slay ' + n + ' elite (champion) monsters.', counter: () => Hero.eliteKills || 0 },
+  { id: 'boss',    min: 1,  max: 50,   names: ['Crownbreaker', "Tyrant's Fall", 'Heads of the Hydra'],
+    desc: n => 'Fell ' + n + (n > 1 ? ' bosses or unique monsters.' : ' boss or unique monster.'), counter: () => Hero.bossKills || 0 },
+  { id: 'rift',    min: 1,  max: 25,   names: ['Into the Breach', 'Riftwalker', 'Seal the Tear'],
+    desc: n => 'Clear ' + n + ' Rift' + (n > 1 ? 's' : '') + ' of any kind.', counter: () => Hero.riftsCleared || 0 },
+  { id: 'salvage', min: 6,  max: 180,  names: ['Feed the Forge', 'Scrap and Steel', 'Ashes to Iron'],
+    desc: n => 'Salvage ' + n + ' items into materials.', counter: () => Hero.salvagedCount || 0 },
+  { id: 'combine', min: 3,  max: 90,   names: ['Facets of Power', 'The Finer Cut', 'Pressure and Time'],
+    desc: n => 'Combine gems at the Jeweler ' + n + ' times.', counter: () => Hero.gemsCombined || 0 },
+  { id: 'craft',   min: 2,  max: 70,   names: ["Smith's Apprentice", 'Anvil Song', 'Forged Anew'],
+    desc: n => 'Craft ' + n + ' item' + (n > 1 ? 's' : '') + ' (forge, torches or gems).', counter: () => Hero.itemsCrafted || 0 },
+  { id: 'enchant', min: 1,  max: 45,   names: ['Weave the Threads', 'Fatecrafter', "The Mystic's Eye"],
+    desc: n => 'Reroll ' + n + ' propert' + (n > 1 ? 'ies' : 'y') + ' at the Mystic.', counter: () => Hero.enchantsDone || 0 },
+  { id: 'chest',   min: 3,  max: 120,  names: ['Treasure Seeker', 'What Lies Hidden', 'Locks and Latches'],
+    desc: n => 'Open ' + n + ' chests in the wilds.', counter: () => Hero.chestsOpened || 0 }
 ];
 
-const GAME_VERSION = 'v1.6.50-alpha';
+const QUEST_COUNT = 500;
+
+// Quest i's unlock gate: quests 0–199 walk level 1→70, quests 200–499 walk
+// Paragon (~3 → 1000).
+function questGate(i) {
+  return i < 200
+    ? { kind: 'level',   at: Math.min(70, 1 + Math.floor(i * 70 / 200)) }
+    : { kind: 'paragon', at: Math.max(1, Math.round((i - 199) * 1000 / 300)) };
+}
+
+const QUEST_LINE = (() => {
+  // Deterministic per-index hash — the line is identical on every load.
+  const h = i => {
+    let x = ((i + 1) * 2654435761) >>> 0;
+    x ^= x >>> 13; x = (x * 2246822519) >>> 0; x ^= x >>> 11;
+    return x >>> 0;
+  };
+  const line = [];
+  const seen = {};   // per-template use count → Roman-numeral suffix
+  for (let i = 0; i < QUEST_COUNT; i++) {
+    const gate = questGate(i);
+    const lvlPhase = i < 200;
+    if (i % 25 === 24) {
+      // Milestone: REACH a level / paragon (absolute progress, no base).
+      const target = lvlPhase ? Math.min(70, gate.at + 2) : Math.min(1000, gate.at + 12);
+      seen.reach = (seen.reach || 0) + 1;
+      line.push({
+        idx: i, tid: 'reach', abs: true, need: target, gate,
+        name: (lvlPhase ? 'Trial of Ascension ' : 'Paragon Trial ') + toRoman(seen.reach),
+        desc: lvlPhase ? 'Reach level ' + target + '.' : 'Reach Paragon ' + target + '.',
+        counter: lvlPhase ? (() => Hero.level || 1) : (() => Hero.paragon || 0)
+      });
+      continue;
+    }
+    const T = QUEST_TEMPLATES[h(i) % QUEST_TEMPLATES.length];
+    // Target count ramps min→max across the whole line, with a hashed jitter,
+    // rounded to friendly numbers.
+    const t = i / (QUEST_COUNT - 1);
+    const jit = 0.8 + (h(i * 7 + 3) % 1000) / 2500;   // 0.8 – 1.2
+    let need = Math.round(T.min + (T.max - T.min) * Math.pow(t, 1.35) * jit);
+    need = Math.max(T.min, Math.min(T.max, need));
+    if (need >= 200) need = Math.round(need / 25) * 25;
+    else if (need >= 50) need = Math.round(need / 5) * 5;
+    seen[T.id] = (seen[T.id] || 0) + 1;
+    line.push({
+      idx: i, tid: T.id, abs: false, need, gate,
+      name: T.names[h(i * 13 + 5) % T.names.length] + ' ' + toRoman(seen[T.id]),
+      desc: T.desc(need),
+      counter: T.counter
+    });
+  }
+  return line;
+})();
+
+// Rewards scale with hero level AND how deep into the line you are; every
+// 10th quest and every milestone pays double gold, extra souls and a gem.
+function questReward(i) {
+  const lvl = Math.max(1, Hero.level || 1);
+  const big = (i % 10) === 9 || (i % 25) === 24;
+  let gold = Math.round(120 * lvl * (1 + i * 0.02));
+  let souls = 1 + Math.floor(i / 50);
+  if (big) { gold *= 2; souls += 2; }
+  return { gold, souls, xpFrac: 0.4, gem: big };
+}
+
+const GAME_VERSION = 'v1.6.51-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.51-alpha', date: 'July 2026',
+    notes: [
+      'THE LEDGER OF LIGHT — Lukus now keeps 500 QUESTS, a single great quest line running from level 1 all the way to level 70 and on to Paragon 1000. One quest at a time: slay monsters, hunt elites, fell bosses, clear rifts, salvage, craft, combine gems, reroll at the Mystic, crack chests — with the targets growing as you do',
+      'Every 25th quest is a ★ MILESTONE — a Trial of Ascension (reach a level) or a Paragon Trial (reach a Paragon rank). Every 10th quest and every milestone pays DOUBLE gold, bonus Forgotten Souls and a gem from Lukus\'s own pocket',
+      'Quests deeper in the ledger are gated by level (1–70 across the first 200) and then Paragon rank (up to 1000 across the last 300) — Lukus will tell you to grow a little stronger first',
+      'Lukus\'s dialog is EVENED OUT — no more cramped panel box. His words and the quest board now sit directly on the black stage beside his portrait, with a ledger progress bar showing how far through the 500 you are',
+      'New lifetime deed counters (elite kills, boss kills, gems combined, items crafted, enchants, chests opened) now tick on every character — old saves pick up the ledger from quest 1'
+    ]
+  },
   {
     v: 'v1.6.50-alpha', date: 'July 2026',
     notes: [

@@ -185,8 +185,15 @@ const Hero = {
   runes: {},                          // skillId -> rune id
   pet: null,            // cosmetic companion id (PETS), chosen at the Mystic
   wings: null,          // cosmetic wings id (WINGS), chosen at the Mystic
-  quest: null,          // active Lucas quest: { id, base } (progress = counter - base)
+  quest: null,          // active Lukus quest: { idx, base } (progress = counter - base)
+  questLine: 0,         // index into QUEST_LINE — the quest you're on (0-499, 500 = all done)
   salvagedCount: 0,     // lifetime items salvaged (quest counter)
+  eliteKills: 0,        // lifetime elite/champion kills (quest counter)
+  bossKills: 0,         // lifetime boss/unique kills (quest counter)
+  gemsCombined: 0,      // lifetime Jeweler gem merges (quest counter)
+  itemsCrafted: 0,      // lifetime crafts — forge, torches, gems (quest counter)
+  enchantsDone: 0,      // lifetime Mystic rerolls (quest counter)
+  chestsOpened: 0,      // lifetime chests opened (quest counter)
   cheats: { god: false, essence: false, spawn: 0 }, // dev panel, kept per save
   bagTier: 0,               // purchased bag expansions (0 = base 24)
   bagBonus: 0,              // dev-granted extra slots (added on top of the tier)
@@ -213,7 +220,9 @@ const Hero = {
     this.zonesCleared = 0;
     this.actsCleared = 0;
     this.actUniques = {};
-    this.pet = null; this.wings = null; this.quest = null; this.salvagedCount = 0;
+    this.pet = null; this.wings = null; this.quest = null; this.questLine = 0;
+    this.salvagedCount = 0; this.eliteKills = 0; this.bossKills = 0;
+    this.gemsCombined = 0; this.itemsCrafted = 0; this.enchantsDone = 0; this.chestsOpened = 0;
     this.difficulty = 0;
     this.bestZone = 0;
     this.totalKills = 0;
@@ -278,7 +287,10 @@ const Hero = {
       hasCube: this.hasCube, goldenMirror: this.goldenMirror, orbAutoPickup: this.orbAutoPickup,
       cubePowers: this.cubePowers, cubeActive: this.cubeActive,
       artisans: this.artisans, runes: this.runes, cheats: this.cheats,
-      pet: this.pet, wings: this.wings, quest: this.quest, salvagedCount: this.salvagedCount,
+      pet: this.pet, wings: this.wings, quest: this.quest, questLine: this.questLine,
+      salvagedCount: this.salvagedCount, eliteKills: this.eliteKills, bossKills: this.bossKills,
+      gemsCombined: this.gemsCombined, itemsCrafted: this.itemsCrafted,
+      enchantsDone: this.enchantsDone, chestsOpened: this.chestsOpened,
       bagTier: this.bagTier, bagBonus: this.bagBonus
     };
   },
@@ -348,8 +360,15 @@ const Hero = {
       })(),
       runes: d.runes || {},
       pet: d.pet || null, wings: d.wings || null,
-      quest: (d.quest && typeof d.quest === 'object') ? Object.assign({}, d.quest) : null,
+      // Only quest-line quests survive a load (old {id,base} quests are dropped —
+      // the pre-line repeatables no longer exist).
+      quest: (d.quest && typeof d.quest === 'object' && typeof d.quest.idx === 'number')
+        ? Object.assign({}, d.quest) : null,
+      questLine: clamp(d.questLine || 0, 0, QUEST_COUNT),
       salvagedCount: d.salvagedCount || 0,
+      eliteKills: d.eliteKills || 0, bossKills: d.bossKills || 0,
+      gemsCombined: d.gemsCombined || 0, itemsCrafted: d.itemsCrafted || 0,
+      enchantsDone: d.enchantsDone || 0, chestsOpened: d.chestsOpened || 0,
       cheats: Object.assign({ god: false, essence: false, spawn: 0 }, d.cheats),
       bagTier: clamp(d.bagTier || 0, 0, BAG_UPGRADES.length),
       bagBonus: Math.max(0, d.bagBonus || 0)
