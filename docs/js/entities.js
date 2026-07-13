@@ -927,6 +927,13 @@ class Enemy {
     if (this.charmT <= 0) {
       this.dead = true;
       Game.corpses.push(new Corpse(this.x, this.y, this.type));
+      // The husk skips loot/XP (it was YOURS) — but a rift's progress orbs must
+      // never be lost to possession, or charming a rare elite costs real progress.
+      if (Game.riftMode && this.elite && !this.guardian && !this.unique && Game.riftProgress < Game.riftGoal) {
+        const boost = 1 + (Hero.cheats.spawn || 0);
+        const n = Math.max(1, Math.round(randInt(1, 3) * boost));
+        for (let i = 0; i < n; i++) Game.pickups.push(new Pickup(this.x + rand(-20, 20), this.y + rand(-20, 20), 'riftorb'));
+      }
       Particles.spawn(this.x, this.y, { count: 12, color: ['#b06adf', '#6b4a8f', '#2a2436'], minSpeed: 30, maxSpeed: 140, minLife: 0.3, maxLife: 0.7, glow: true });
       AudioSys.sfx('wave');
       return;
@@ -2115,9 +2122,10 @@ class Minion {
     if (this.kind === 'sim') return; // the clone just stands and casts
 
     let tgt = null, bestD = 560;
-    // A Command Skeletons order focuses the marked foe (until it dies / strays).
+    // A Command Skeletons order focuses the marked foe (until it dies / strays —
+    // or becomes YOUR possessed thrall, which no minion may attack).
     if (this.commandTgt) {
-      if (this.commandTgt.dead) this.commandTgt = null;
+      if (this.commandTgt.dead || this.commandTgt.charmed) this.commandTgt = null;
       else if (dist(this.x, this.y, this.commandTgt.x, this.commandTgt.y) < 900) tgt = this.commandTgt;
     }
     if (!tgt) {
@@ -2126,7 +2134,7 @@ class Minion {
       // hold formation. (A Command Skeletons order above can still reach farther.)
       const pl = Game.player;
       for (const e of Game.enemies) {
-        if (e.dead || e.sleep || e.spawnT > 0) continue;
+        if (e.dead || e.sleep || e.spawnT > 0 || e.charmed) continue;   // never your own thrall
         if (pl && dist(pl.x, pl.y, e.x, e.y) > MINION_DEFEND) continue;
         const d = dist(this.x, this.y, e.x, e.y);
         if (d < bestD) { tgt = e; bestD = d; }
@@ -2668,6 +2676,9 @@ class Projectile {
       World.smash(this.x, this.y, this.r + 6); // projectiles shatter clutter
       for (const e of Game.enemies) {
         if (e.dead || e.sleep || e.spawnT > 0) continue;
+        // Your own possessed thrall never eats your shots — it's immune anyway,
+        // and without this a non-piercing spear was CONSUMED for zero damage.
+        if (e.charmed) continue;
         if (this.hits && this.hits.has(e)) continue;
         if (dist(this.x, this.y, e.x, e.y) < e.r + this.r) {
           // Bone Spirit · Possession: seize a normal foe as a thrall instead of
@@ -2675,6 +2686,7 @@ class Projectile {
           if (this.charmOnHit && !e.unique && !e.def.boss && !e.charmed) {
             e.charmed = true; e.charmT = this.charmOnHit;
             e.curse = null; e.fearT = 0; e.slow = 0; e.root = 0; e.stealthT = 0;
+            e.igniteT = 0; e.poisonT = 0;   // your fire/poison stops eating your new thrall
             fxSummon(e.x, e.y);
             Particles.text(e.x, e.y - e.r - 12, 'POSSESSED!', { color: '#b06adf', size: 13, life: 1.3 });
             AudioSys.sfx('spirit');

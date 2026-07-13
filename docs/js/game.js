@@ -332,8 +332,12 @@ const Game = {
     const S = 1254;
     if (!this.townImg) { const img = new Image(); img.src = 'art/town/newhaven.png?v=' + (typeof BUILD !== 'undefined' ? BUILD : '1'); this.townImg = img; }
     const interacts = [], blockers = [];
+    const vendors = [];
     const mkVendor = (name, flavor, slots, boost) => {
-      const o = { name: name.toUpperCase(), flavor, stock: this.rollVendorStock(slots === 'all' ? this.ALL_SLOTS : slots, { boost: boost || 0 }) };
+      const sl = slots === 'all' ? this.ALL_SLOTS : slots;
+      const o = { name: name.toUpperCase(), flavor, stock: this.rollVendorStock(sl, { boost: boost || 0 }),
+                  slots: sl, boost: boost || 0, lvl: Hero.level, t: this.time };
+      vendors.push(o);
       return () => { UI.open('vendor'); UI.sel.vendor = o; AudioSys.sfx('gold'); };
     };
     const FLAVOR = {
@@ -355,12 +359,20 @@ const Game = {
       if (bw > 0) blockers.push({ cx: bx, cy: by, w: bw, h: bh });
     }
     for (const b of this.TOWN_SCENERY) blockers.push(b);
-    this.town = { W: S, H: S, spawn: { x: 555, y: 1075 }, interacts, blockers };
+    this.town = { W: S, H: S, spawn: { x: 555, y: 1075 }, interacts, blockers, vendors };
   },
 
   enterTown() {
     if (!this.town) this.buildTown();
     const t = this.town;
+    // Vendors RESTOCK when you return a level (or 10+ minutes) later — no more
+    // level-20 goods for a level-70 hero, and bought-out shelves refill.
+    for (const v of (t.vendors || [])) {
+      if (v.lvl !== Hero.level || this.time - v.t > 600) {
+        v.stock = this.rollVendorStock(v.slots, { boost: v.boost });
+        v.lvl = Hero.level; v.t = this.time;
+      }
+    }
     if (!this.player) { this.player = new Player(t.spawn.x, t.spawn.y); if (typeof Items !== 'undefined') Items.apply(); }
     this.player.x = t.spawn.x; this.player.y = t.spawn.y;
     this.player.dead = false; this.player.facing = -Math.PI / 2; this.player.moving = false;

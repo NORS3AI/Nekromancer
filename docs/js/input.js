@@ -161,15 +161,22 @@ const Input = {
 
   releaseAll() {
     this.keys = {};
-    this.heldSlots.clear();
-    this.buttonTouches.clear();
+    this.releaseCombat();
     this.sliderTouches.clear();
     this.mouseSlider = null;
+    this.joy.active = false; this.joy.id = null;
+  },
+
+  // Drop every held ATTACK input (buttons/aim/queued casts) — called when a menu
+  // opens so a finger still resting on the primary button can't machine-gun the
+  // moment the menu closes. Movement keys/joystick are left alone.
+  releaseCombat() {
+    this.heldSlots.clear();
+    this.buttonTouches.clear();
     this.castQueue.length = 0;
     this.mousePrimary = false;
     this.mouseSecondary = false;
     this.mouseSlot = undefined;
-    this.joy.active = false; this.joy.id = null;
     this.aim.active = false; this.aim.id = null;
   },
 

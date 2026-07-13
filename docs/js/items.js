@@ -1215,7 +1215,7 @@ const Items = {
     // fractional stats (crit, cdr, resist…); multipliers scale base stats.
     const pb = k => (Hero.paragonBonus ? Hero.paragonBonus(k) : 0);
     const paraHpMul = 1 + pb('vitality') + pb('lifePct');
-    const paraDmgMul = 1 + pb('intelligence') + pb('attackSpeed');
+    const paraDmgMul = 1 + pb('intelligence');
     const paraManaMul = 1 + pb('maxMana');
     armor *= 1 + pb('paraArmor');
     reg *= 1 + pb('lifeRegen');
@@ -1250,7 +1250,9 @@ const Items = {
       gearDmg: dmg,
       intelligence: Math.round(intel),
       vitality: Math.round(vit),
-      attackSpeed: clamp(atkSpeed, 0, 0.75),   // % faster primary/secondary attacks
+      // Gear + paragon Attack Speed — REAL attack speed (faster primary/secondary
+      // casts and minion attacks), not damage as it mistakenly was.
+      attackSpeed: clamp(atkSpeed + pb('attackSpeed'), 0, 0.75),
       elementalDamage: clamp(elem, 0, 5),      // +% Cold/Fire/Poison/Lightning damage
       maxHp: Math.round((110 + (lvl - 1) * 14 + hp + vitHp) * paraHpMul),
       critChance: 0.10 + crit,

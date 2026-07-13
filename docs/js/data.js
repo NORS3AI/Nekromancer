@@ -39,11 +39,26 @@ const RUNE_ELEMENT = {
   iceGolem: 'cold', freezingGrasp: 'cold', frozenArmy: 'cold', frozenLands: 'cold'
 };
 
-const GAME_VERSION = 'v1.6.47-alpha';
+const GAME_VERSION = 'v1.6.48-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.48-alpha', date: 'July 2026',
+    notes: [
+      'BUG-FIX PASS — ten fixes from a full-code audit:',
+      'Possession fixed for real: your spears and lances now fly straight THROUGH your possessed thrall and hit the enemies behind it (they used to vanish on it for zero damage), your minions no longer waste their attacks pounding on your own thrall, charming a foe extinguishes your burning/poison on it, and a charmed rare elite still yields its rift progress orbs when the charm ends',
+      'Paragon "Attack Speed" now grants REAL attack speed (faster casts AND faster minions) — it was secretly just bonus damage',
+      'Paragon "Undo last" now always refunds the exact point you last spent (it could hand back the wrong stat)',
+      'The ONWARD/CAVE portal can no longer generate in water or inside a wall (it always finds real ground now)',
+      'Rebinding a key onto W/A/S/D or the arrows is refused with a clear message — it used to silently break movement until reload',
+      'Holding the attack button while a menu opened no longer machine-guns your primary when the menu closes',
+      'Devouring Aura and Aura of Frailty unlock at their intended levels (22 / 30 — a table was overriding them to 42 / 45)',
+      'Town vendors in New Haven now RESTOCK when you return at a new level (or after 10 minutes) — no more level-20 shelves at level 70',
+      'The stylesheet is now cache-busted with every deploy like the scripts (style changes could go stale for returning players)'
+    ]
+  },
   {
     v: 'v1.6.47-alpha', date: 'July 2026',
     notes: [
@@ -2098,7 +2113,9 @@ const RUNE_UNLOCKS = {
 };
 for (const id in RUNE_UNLOCKS) {
   const list = SKILL_RUNES[id];
-  if (list) RUNE_UNLOCKS[id].forEach((lv, i) => { if (list[i + 1]) list[i + 1].lvl = lv; });
+  // A rune with a HAND-SET lvl (the Devour/Frailty auras: 22/30) keeps it — the
+  // positional table only fills in the ones that don't specify their own.
+  if (list) RUNE_UNLOCKS[id].forEach((lv, i) => { if (list[i + 1] && list[i + 1].lvl === undefined) list[i + 1].lvl = lv; });
 }
 
 const SKILL_DESCS = {

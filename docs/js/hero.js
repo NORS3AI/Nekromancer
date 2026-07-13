@@ -574,8 +574,11 @@ const Hero = {
     }
     const cur = this.para[key] || 0;
     if (st.max && cur >= st.max) { AudioSys.sfx('denied'); return; }
-    this.para[key] = cur + 1;
+    // Reconcile any legacy free-spend history BEFORE recording this point — the
+    // old order (sync AFTER incrementing) desynced the history every spend, so a
+    // later rebuild canonicalized it and "Undo last" could refund the WRONG stat.
     this.syncParaOrder();
+    this.para[key] = cur + 1;
     this.paraOrder.push(key);
     this.np--;
     if (typeof UI !== 'undefined' && UI.sel) UI.sel.paraCat = this.paragonCat();   // advance the view

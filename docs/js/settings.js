@@ -135,6 +135,17 @@ const Settings = {
   },
 
   bindKey(action, code) {
+    // The default movement keys are sacred: load() force-reclaims WASD/arrows
+    // for the move actions on every boot, so letting another action steal one
+    // here would break movement for the session and then be silently undone on
+    // reload. Refuse up front instead (unless it's a move action reclaiming it).
+    const moveActions = ['moveUp', 'moveDown', 'moveLeft', 'moveRight'];
+    const isMoveDefault = moveActions.some(a => KEY_DEFAULTS[a].includes(code));
+    if (isMoveDefault && !moveActions.includes(action)) {
+      if (typeof UI !== 'undefined') UI.toast('That key drives movement — pick another', '#e04a5a');
+      if (typeof AudioSys !== 'undefined') AudioSys.sfx('denied');
+      return false;
+    }
     for (const a of Object.keys(this.keys)) {          // a code maps to one action
       this.keys[a] = this.keys[a].filter(c => c !== code);
     }
@@ -142,6 +153,7 @@ const Settings = {
     this.keys[action].push(code);
     this.rebuildKeyMap();
     this.save();
+    return true;
   },
 
   unbindKey(action, code) {

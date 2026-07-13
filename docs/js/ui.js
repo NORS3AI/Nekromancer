@@ -146,6 +146,8 @@ const UI = {
   open(screen) {
     this.screen = screen;
     this.sel = {};
+    // A held attack must not survive into (and out of) a menu.
+    if (typeof Input !== 'undefined' && Input.releaseCombat) Input.releaseCombat();
   },
 
   close() {

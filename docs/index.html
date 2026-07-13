@@ -8,15 +8,18 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a070c">
 <title>NEKROMANCER &mdash; Rise of the Dead</title>
-<link rel="stylesheet" href="css/style.css?v=1.6.19">
+<script>
+  // Cache-bust EVERYTHING (CSS + every game script) so a fresh deploy is NEVER
+  // served stale (GitHub Pages caches assets ~10 min). Bump BUILD on every
+  // js/css change — kept in step with GAME_VERSION in data.js. The stylesheet
+  // is written from here too so its version can never lag the scripts again.
+  var BUILD = '1.6.48';
+  document.write('<link rel="stylesheet" href="css/style.css?v=' + BUILD + '">');
+</script>
 </head>
 <body>
 <canvas id="game"></canvas>
 <script>
-  // Cache-bust every game script so a fresh deploy is NEVER served stale JS
-  // (GitHub Pages caches assets ~10 min). Bump BUILD on every js/ change — it is
-  // kept in step with GAME_VERSION in data.js. document.write keeps load order.
-  var BUILD = '1.6.47';
   ['utils','settings','audio','particles','data','hero','input','world',
    'entities','items','skills','ui','screens','game']
     .forEach(function (f) { document.write('<script src="js/' + f + '.js?v=' + BUILD + '"><\/script>'); });

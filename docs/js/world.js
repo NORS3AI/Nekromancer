@@ -61,10 +61,25 @@ const World = {
 
   // A floor point at least `minSp` from the entrance and `minBs` from the boss.
   pickFarSpot(minSp, minBs) {
-    let x, y, t = 0;
-    do { x = rand(160, this.W - 160); y = rand(160, this.H - 160); t++; }
-    while ((dist(x, y, this.spawn.x, this.spawn.y) < minSp || dist(x, y, this.bossPos.x, this.bossPos.y) < minBs || !this.isFloorAt(x, y)) && t < 40);
-    return { x, y };
+    // Two passes: strict distances, then relaxed — but a VALID FLOOR tile is
+    // non-negotiable (the old 40-try fallback could return water/wall, leaving
+    // an unreachable ONWARD/CAVE portal).
+    for (let pass = 0; pass < 2; pass++) {
+      const sp = pass ? minSp * 0.4 : minSp, bs = pass ? minBs * 0.4 : minBs;
+      for (let t = 0; t < 120; t++) {
+        const x = rand(160, this.W - 160), y = rand(160, this.H - 160);
+        if (this.isFloorAt(x, y) && dist(x, y, this.spawn.x, this.spawn.y) >= sp
+          && dist(x, y, this.bossPos.x, this.bossPos.y) >= bs) return { x, y };
+      }
+    }
+    // Last resort: spiral out from the map centre to the first real floor tile.
+    for (let r = 0; r < this.W / 2; r += 40) {
+      for (let a = 0; a < TAU; a += 0.5) {
+        const x = this.W / 2 + Math.cos(a) * r, y = this.H / 2 + Math.sin(a) * r;
+        if (this.isFloorAt(x, y)) return { x, y };
+      }
+    }
+    return { x: this.spawn.x + 80, y: this.spawn.y };   // near-spawn is always reachable
   },
 
   // Snapshot / restore ALL data fields (not methods) so a map can be parked on
