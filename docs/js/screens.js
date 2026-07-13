@@ -73,7 +73,6 @@ const Screens = {
       case 'cheats': this.cheats(ctx, W, H); break;
       case 'patchnotes': this.patchnotes(ctx, W, H); break;
       case 'season': this.season(ctx, W, H); break;
-      case 'town': this.town(ctx, W, H); break;
       case 'cube': this.cube(ctx, W, H); break;
       case 'recipes': this.recipes(ctx, W, H); break;
       case 'wilds': this.wilds(ctx, W, H); break;
@@ -198,7 +197,9 @@ const Screens = {
       rr(ctx, bx, byy, bw, bh, 12); ctx.stroke();
       ctx.fillStyle = '#aef7c8'; ctx.font = 'bold 18px Georgia'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText('▶  PLAY', W / 2, byy + bh / 2);
-      UI.register(bx, byy, bw, bh, () => { Profiles.select(pick); Game.toCamp(); });
+      // PLAY lands you in New Haven — the town is the first map after
+      // character load/creation (owner rule).
+      UI.register(bx, byy, bw, bh, () => { Profiles.select(pick); Game.enterTown(); });
     }
 
     // Delete / cancel toggle, lower-left (its own row, clear of PLAY / YES-NO).
@@ -913,42 +914,8 @@ const Screens = {
     UI.register(x - 24, y - 24, 48, 48, cb);
   },
 
-  // Town portal overlay — reachable from the wilds inventory. The artisans and
-  // stash sit here; the game stays paused underneath, so "Back to the Wilds"
-  // drops the player straight back into the fight they left.
-  town(ctx, W, H) {
-    this.dim(ctx, W, H);
-    const stops = [
-      ['🎒   INVENTORY', () => UI.open('radial'), '#6ff7c3', '#3a7a6a'],
-      ['⚒   BLACKSMITH', () => UI.open('smith'), '#ffb43a', '#8a6f4a'],
-      ['◆   JEWELER', () => UI.open('jeweler'), '#4ecbe0', '#2a6a7a'],
-      ['✦   MYSTIC', () => UI.open('mystic'), '#b06adf', '#7a4a8f'],
-      ['◉   MERCHANT', () => { UI.open('merchant'); UI.sel.shopTab = 'buy'; }, '#ffd76a', '#8a6f4a'],
-      ['▤   STASH', () => UI.open('stash'), '#8fb0e8', '#5f7ab0']
-    ];
-    // Once found, the Horadric's Cube sits just before the Blacksmith.
-    if (Hero.hasCube) stops.splice(1, 0, ['◈   HORADRIC\'S CUBE', () => UI.open('cube'), '#ff5a4a', '#a03a2a']);
-    const pw = Math.min(440, W - 20);
-    const px = W / 2 - pw / 2;
-    const needed = 82 + stops.length * 54 + 8 + 46 + 20;
-    const ph = Math.min(H - 30, Math.max(486, needed));
-    const py = Math.max(15, H / 2 - ph / 2);
-    UI.panel(ctx, px, py, pw, ph, 'TOWN PORTAL');
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'italic 12px Georgia';
-    ctx.fillStyle = '#9a9080';
-    ctx.fillText('Visit the artisans and your stash, then head back.', W / 2, py + 56);
-
-    let y = py + 82;
-    for (const [label, cb, color, border] of stops) {
-      UI.btn(ctx, px + 20, y, pw - 40, 46, label, cb, { size: 15, color, border });
-      y += 54;
-    }
-    y += 8;
-    UI.btn(ctx, px + 20, y, pw - 40, 46, '↩   BACK TO THE WILDS',
-      () => { UI.townMode = false; UI.close(); Game.returnFromTownPortal(); },
-      { size: 15, color: '#6ff7c3', border: '#3a7a6a' });
-  },
+  // (The old TOWN PORTAL menu is gone — a wilds portal walks you straight into
+  //  New Haven, and menus with LEAVE-style buttons were deleted, owner rule.)
 
   // ------------------------------------------------------ horadric's cube
   // A legendary crafting tool found in Act III. For now it holds only the
@@ -3774,17 +3741,21 @@ const Screens = {
     ctx.fillStyle = '#020104';
     ctx.fillRect(0, 0, W, H);
 
-    // RIGHT: Lukus, bottom-anchored, idle sway. Kept a touch narrower than
-    // before so the dialog column gets even breathing room.
+    // RIGHT: Lukus, bottom-anchored, idle sway — in HIS OWN AREA, fully clear
+    // of the round EXIT button in the corner (owner rule: the NPC and the exit
+    // button must not overlap), so his right edge stops where the button's
+    // zone begins.
+    const sf = UI.safe || { right: 0, bottom: 0 };
+    const btnZone = 118 + (sf.right || 0);   // EXIT button footprint (r38 @ W-66)
     const img = Game.lukusImg('idle');
     let portW = 0, portH = 0;
     if (img.complete && img.naturalWidth) {
       const aspect = img.naturalWidth / img.naturalHeight;
       let h = Math.min(H * 0.92, 640), w = h * aspect;
-      const maxW = W * 0.44;
+      const maxW = Math.max(120, (W - btnZone) * 0.5);
       if (w > maxW) { w = maxW; h = w / aspect; }
       const bob = Math.sin(Game.time * 1.5) * 3;
-      ctx.drawImage(img, W - w - Math.max(4, W * 0.015), H - h + bob, w, h);
+      ctx.drawImage(img, W - w - btnZone, H - h + bob, w, h);
       portW = w; portH = h;
     }
 
@@ -3792,7 +3763,7 @@ const Screens = {
     // On tall/narrow phones there's no room BESIDE him — span the full width
     // and sit the dialog above the knight instead.
     const lx = Math.max(16, W * 0.05);
-    let lw = Math.min(470, W - portW - lx - Math.max(16, W * 0.04));
+    let lw = Math.min(470, W - portW - btnZone - lx - Math.max(12, W * 0.03));
     const contentH = 300;   // approximate block height, for gentle centering
     let y;
     if (lw < 290) {
@@ -3969,9 +3940,8 @@ const Screens = {
         } : null,
         { size: 12, disabled: !afford, border: '#8a6f4a', color: '#ffd76a' });
       UI.btn(ctx, px + 22 + bw2, y, pw - 36 - bw2, 36, 'CANCEL', () => { UI.sel.buy = null; }, { size: 12 });
-    } else {
-      UI.btn(ctx, px + 14, y + 2, pw - 28, 32, 'LEAVE', () => UI.close(), { size: 12 });
     }
+    // (no LEAVE button — the red ✕ / Escape are the exits, owner rule)
   },
 
   // -------------------------------------------------- town merchant (buy/sell)
@@ -4387,7 +4357,7 @@ const Screens = {
       UI.toast('Save imported — welcome back, ' + Hero.name, '#6ff7c3');
       AudioSys.sfx('level');
       UI.close();
-      Game.toCamp();
+      Game.enterTown();   // the town is the first map after a load (owner rule)
     } else {
       UI.toast('That doesn\'t look like a valid save code', '#e04a5a');
       AudioSys.sfx('denied');

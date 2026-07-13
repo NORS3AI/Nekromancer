@@ -507,15 +507,13 @@ const Game = {
     ctx.globalAlpha = 1;
   },
 
+  // Just the town name — no gold readout, no bottom legend (owner rule: the
+  // explanatory grey text was unnecessary; the name plates already say it all).
   drawTownHud(ctx) {
     const s = (UI.safe || { top: 0, left: 0, right: 0 });
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 15px Georgia'; ctx.fillStyle = '#c9bfa8';
     ctx.fillText('NEW HAVEN', this.W / 2, 22 + s.top);
-    ctx.textAlign = 'right'; ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#ffd76a';
-    ctx.fillText(Hero.gold.toLocaleString() + ' gold', this.W - 14 - s.right, 22 + s.top);
-    ctx.textAlign = 'center'; ctx.font = 'italic 11px Georgia'; ctx.fillStyle = 'rgba(201,191,168,0.72)';
-    ctx.fillText('Blue waypoint: bounties · acts · adventure     Purple waypoint: rifts · seasons', this.W / 2, this.H - 14 - (s.bottom || 0));
   },
 
   // ---- Lukus, Bringer of Light — the OWNER'S PAINTED KNIGHT, shrunk onto the

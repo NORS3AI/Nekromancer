@@ -105,7 +105,7 @@ const Saves = {
     Hero.applySnapshot(s.data);
     UI.toast('Loaded: ' + s.name, '#6ff7c3');
     AudioSys.sfx('level');
-    Game.toCamp();
+    Game.enterTown();   // the town is the first map after a load (owner rule)
   },
 
   remove(i) {
