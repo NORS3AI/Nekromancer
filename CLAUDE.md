@@ -242,22 +242,22 @@ Script lives in the session scratchpad (intentionally not committed).
   via `Screens.create`; `Hero.name`/`Hero.eyeColor`), SAVE/LOAD OVERHAUL (robust
   multi-character profiles, cloud-ish export/import, migration), and GRAPHICS &
   SOUND additions (richer sprites/FX/music/ambience beyond the current procedural set).
-- **WALKABLE MAIN TOWN (DONE v1.6.41)** — "NEKROPOLIS", a hand-drawn walkable town
-  (`Game.state==='town'`). `Game.buildTown()` lays out solid buildings + interaction
-  pads on a pre-rendered cobblestone ground buffer; `enterTown()` (from the camp hub
-  "🏰 VISIT TOWN" button) drops the hero at the gate. `updateTown()` does joystick/WASD
-  movement + `townBlocked()` footprint collision + proximity auto-open (step-off to
-  re-arm); `drawTown()` painter-sorts buildings/props/NPCs/hero and draws name plates.
-  Shops open the SAME screens: Blacksmith/Mystic/Jeweler, Stash, Inventory (radial),
-  Horadric Cube (gated on `Hero.hasCube`), and **four themed merchants** (Weaponsmith/
-  Armorer/Trinketeer/Curio Peddler — distinct `merchantStock()` by slot, shown via
-  `o.name`/`o.flavor` on `Screens.vendor`). A central **campfire** → `toCamp()` (menu
-  hub for skills/paragon/character/settings), and the **Wilds gate** → `UI.open('wilds')`.
-  Art helpers: `_townShell`/`_townDoor`/`_townWindows`/`_townSign`, `drawTownBuilding`
-  (blacksmith/mystic/jeweler/stash/armory/cube/stall/house/gate), `drawTownProp`
-  (fountain/lamp/tree/barrel/crate), `drawTownNpc`, `drawCampfireProp`. Input: the town
-  reuses the left-half joystick (`Game.state==='town'` allowance in `input.js` touchstart).
-  The old `Screens.camp` menu hub REMAINS as the campfire target (skills/paragon live there).
+- **WALKABLE MAIN TOWN (DONE v1.6.41, art-mapped v1.6.42)** — "NEKROPOLIS", a walkable
+  town (`Game.state==='town'`). The map is the OWNER'S HAND-DRAWN PAINTING
+  (`docs/art/town/nekropolis.png`, 1254², loaded as `Game.townImg`) drawn 1:1 as the
+  world; `Game.TOWN_STATIONS` places interaction pads + collision boxes over the painted
+  buildings. `enterTown()` (camp hub "🏰 VISIT TOWN" button) drops the hero at the gate
+  (spawn 577,1010). `updateTown()` = joystick/WASD movement + `townBlocked()` box
+  collision + proximity auto-open (step-off to re-arm); `drawTown()` blits the visible
+  map slice, draws pad glows, the hero, and floating name plates. Stations open the SAME
+  screens — Blacksmith/Mystic/Jeweler, Stash, Inventory (radial), Horadric Cube (gated on
+  `Hero.hasCube`), **six themed merchants** (Weapons/Armor/Apothecary specialists +
+  General Goods/Food & Drink/Miscellaneous by quality — `merchantStock()` by slot, via
+  `o.name`/`o.flavor` on `Screens.vendor`), and two **blue waypoints** → `UI.open('wilds')`.
+  A top-left **☰ MENU** button (drawn in `UI.draw`'s town branch, after `clearHits`) →
+  `toCamp()` for skills/paragon/character/settings. Input: `input.js` touchstart allows
+  the left-half joystick in town; `UI.draw` has a town branch (overlays + joystick, no
+  combat HUD). If `townImg` isn't loaded yet, `drawTown` falls back to a dark fill.
 - **⭐ OWNER TODO (requested 2026-07-03): create the MASTER LIST of primary +
   secondary stats and affixes for items.** The engine now models:
   `dmg` (%), `hp`, `crit` (chance), `ess` (essence/s), `reg` (life/s), `gold`,

@@ -341,8 +341,13 @@ const UI = {
         this.overlayBarrier = this.hits.length;
         Screens.draw(ctx, W, H);
         this.drawGlobalClose(ctx, W);
-      } else if (!this.desktop) {
-        this.drawJoystick(ctx);
+      } else {
+        if (!this.desktop) this.drawJoystick(ctx);
+        // "Menu" button (top-left) → the camp hub for Skills / Paragon / Character
+        // / Settings. Registered here (after clearHits) so the tap actually lands.
+        const s = this.safe || { top: 0, left: 0 };
+        this.btn(ctx, 12 + s.left, 40 + s.top, 92, 30, '☰ MENU', () => Game.toCamp(),
+          { size: 12, color: '#c9bfa8', border: '#5a544a' });
       }
       this.drawToasts(ctx, W);
       this.drawTooltip(ctx, W, H);

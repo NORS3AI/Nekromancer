@@ -39,11 +39,19 @@ const RUNE_ELEMENT = {
   iceGolem: 'cold', freezingGrasp: 'cold', frozenArmy: 'cold', frozenLands: 'cold'
 };
 
-const GAME_VERSION = 'v1.6.41-alpha';
+const GAME_VERSION = 'v1.6.42-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.42-alpha', date: 'July 2026',
+    notes: [
+      'NEKROPOLIS is now a HAND-PAINTED town map! The whole town is the owner\'s illustrated artwork — winding cobblestone streets, torchlit shops, market tents and a great gate — and you walk right across it',
+      'Every building on the painting is live: Blacksmith · Jeweler · Mystic · Stash · Inventory · Horadric\'s Cube (once found) · and SIX merchants — Weapons, Armor, Apothecary, General Goods, Food & Drink and Miscellaneous, each with its own wares. Walk up to a building to enter it',
+      'The glowing blue waypoint in the square (and the one up top) take you out to the Wilds; a ☰ MENU button opens Skills / Paragon / Character / Settings'
+    ]
+  },
   {
     v: 'v1.6.41-alpha', date: 'July 2026',
     notes: [

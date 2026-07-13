@@ -302,101 +302,55 @@ const Game = {
     return stock;
   },
 
+  // The town is the owner's hand-drawn map (docs/art/town/nekropolis.png), drawn
+  // 1:1 as the world; interaction pads + collision boxes are placed over the
+  // painted buildings. TOWN_STATIONS holds their coordinates (in image pixels).
+  TOWN_STATIONS: [
+    // padX, padY,  blockerX,Y,W,H,  label, icon, color, kind[, slots]
+    [376, 336,  376, 250, 200, 150, 'Blacksmith',       '⚒', '#ffb43a', 'smith'],
+    [702, 300,  702, 214, 190, 150, 'Jeweler',          '◆', '#4ecbe0', 'jeweler'],
+    [1003, 402, 1003, 300, 210, 150, 'Mystic',          '✦', '#b06adf', 'mystic'],
+    [255, 452,  180, 402, 150, 150, 'Weapons',          '⚔', '#e0724a', 'vendor', ['weapon', 'offhand']],
+    [414, 536,  414, 452, 170, 130, 'Stash',            '▤', '#8fb0e8', 'stash'],
+    [627, 536,  627, 452, 170, 130, 'Inventory',        '🎒', '#6ff7c3', 'radial'],
+    [890, 586,  890, 470, 150, 130, "Horadric's Cube",  '◈', '#ff5a4a', 'cube'],
+    [300, 664,  256, 604, 180, 140, 'Armor',            '🛡', '#8fb0e8', 'vendor', ['helm', 'chest', 'gloves', 'boots', 'shoulders', 'legs']],
+    [1129, 620, 1129, 540, 160, 140, 'Apothecary',      '⚗', '#9fd88a', 'vendor', ['amulet', 'ring1', 'ring2']],
+    [389, 842,  389, 738, 200, 150, 'General Goods',    '◉', '#ffd76a', 'vendor', 'all'],
+    [589, 900,  589, 796, 170, 140, 'Food & Drink',     '🍺', '#e0a24a', 'vendor', 'all', -0.12],
+    [790, 842,  790, 738, 190, 150, 'Miscellaneous',    '❖', '#c88bf0', 'vendor', 'all', 0.22],
+    [577, 636,  0, 0, 0, 0,          'The Wilds',        '⛰', '#8fd0ff', 'wilds'],   // central waypoint
+    [176, 150,  0, 0, 0, 0,          'Waypoint',         '✧', '#8fd0ff', 'wilds']    // top-left waypoint
+  ],
+  ALL_SLOTS: ['weapon', 'offhand', 'helm', 'chest', 'gloves', 'boots', 'shoulders', 'legs', 'amulet', 'ring1', 'ring2'],
+
   buildTown() {
-    const W = 1680, H = 1140;
-    const buildings = [], interacts = [], props = [];
-    const spawn = { x: 840, y: 812 };
-
-    // A shop = a solid building + an interaction pad at its door (front/bottom).
-    const shop = (cx, cy, w, h, kind, label, icon, color, open, cond) => {
-      buildings.push({ cx, cy, w, h, kind, color, label, npc: kind });
-      interacts.push({ x: cx, y: cy + h / 2 + 40, r: 54, label, icon, color, open, cond, near: false });
+    const S = 1254;
+    if (!this.townImg) { const img = new Image(); img.src = 'art/town/nekropolis.png'; this.townImg = img; }
+    const interacts = [], blockers = [];
+    const mkVendor = (name, flavor, slots, boost) => {
+      const o = { name: name.toUpperCase(), flavor, stock: this.merchantStock(slots === 'all' ? this.ALL_SLOTS : slots, { boost: boost || 0 }) };
+      return () => { UI.open('vendor'); UI.sel.vendor = o; AudioSys.sfx('gold'); };
     };
-
-    shop(360, 380, 210, 150, 'blacksmith', 'Blacksmith', '⚒', '#ffb43a', () => UI.open('smith'));
-    shop(1320, 380, 210, 150, 'mystic', 'Mystic', '✦', '#b06adf', () => UI.open('mystic'));
-    shop(360, 780, 200, 140, 'jeweler', 'Jeweler', '◆', '#4ecbe0', () => UI.open('jeweler'));
-    shop(1320, 780, 200, 140, 'stash', 'Stash Vault', '▤', '#8fb0e8', () => UI.open('stash'));
-    shop(600, 928, 132, 104, 'armory', 'Inventory', '🎒', '#6ff7c3', () => UI.open('radial'));
-    shop(1080, 928, 132, 104, 'cube', "Horadric's Cube", '◈', '#ff5a4a',
-      () => UI.open('cube'), () => Hero.hasCube);
-
-    // Four themed merchants along the market street up top — each sells a
-    // DIFFERENT class of goods (owner request). Stock is rolled once and kept.
-    const MERCH = [
-      { x: 520,  name: 'Weaponsmith', flavor: '"Blades for the brave — and the doomed."', slots: ['weapon', 'offhand'], color: '#e0724a' },
-      { x: 745,  name: 'Armorer',     flavor: '"Good steel between you and the grave."',   slots: ['helm', 'chest', 'gloves', 'boots', 'shoulders', 'legs'], color: '#8fb0e8' },
-      { x: 970,  name: 'Trinketeer',  flavor: '"Rings and amulets. Little miracles."',      slots: ['amulet', 'ring1', 'ring2'], color: '#ffd76a' },
-      { x: 1195, name: 'Curio Peddler', flavor: '"Odd finds. No two the same."',            slots: ['weapon', 'helm', 'chest', 'amulet', 'ring1', 'gloves', 'boots'], color: '#9fd88a', boost: 0.2 }
-    ];
-    for (const m of MERCH) {
-      const vendorObj = { name: m.name.toUpperCase(), flavor: m.flavor, stock: this.merchantStock(m.slots, { boost: m.boost }) };
-      buildings.push({ cx: m.x, cy: 214, w: 156, h: 98, kind: 'stall', color: m.color, label: m.name, npc: 'merchant' });
-      interacts.push({
-        x: m.x, y: 214 + 98 / 2 + 34, r: 52, label: m.name, icon: '◉', color: m.color, near: false,
-        open: () => { UI.open('vendor'); UI.sel.vendor = vendorObj; AudioSys.sfx('gold'); }
-      });
-    }
-
-    // Campfire — opens the old menu hub for Skills / Paragon / Character / Settings.
-    interacts.push({
-      x: 840, y: 680, r: 56, label: 'Adventurer\'s Rest', icon: '☰', color: '#ffa24a',
-      open: () => this.toCamp(), near: false, campfire: true
-    });
-    // The Wilds gate — leave town to go adventuring.
-    buildings.push({ cx: 840, cy: 1052, w: 240, h: 120, kind: 'gate', color: '#6ff7c3', label: 'To the Wilds' });
-    interacts.push({
-      x: 840, y: 986, r: 58, label: 'To the Wilds', icon: '⛰', color: '#6ff7c3',
-      open: () => UI.open('wilds'), near: false
-    });
-
-    // Decorative houses & clutter so the town feels lived-in.
-    for (const h2 of [[150, 470], [1530, 470], [150, 880], [1530, 880], [430, 214], [1250, 214]]) {
-      buildings.push({ cx: h2[0], cy: h2[1], w: 150, h: 118, kind: 'house', color: '#8a6f4a', seed: h2[0] * 0.13 });
-    }
-    props.push({ x: 840, y: 540, kind: 'fountain' });
-    for (const lp of [[560, 620], [1120, 620], [560, 340], [1120, 340], [300, 640], [1380, 640]])
-      props.push({ x: lp[0], y: lp[1], kind: 'lamp' });
-    for (let i = 0; i < 10; i++) props.push({ x: 200 + i * 140, y: 300 + (i % 2) * 30, kind: i % 3 === 0 ? 'barrel' : 'crate', seed: i });
-    for (const tr of [[110, 300], [1570, 300], [110, 1000], [1570, 1000], [700, 1040], [980, 1040]])
-      props.push({ x: tr[0], y: tr[1], kind: 'tree', seed: tr[0] });
-
-    // Pre-render the cobblestone ground ONCE (blitted each frame — cheap).
-    const g = document.createElement('canvas');
-    g.width = W; g.height = H;
-    this.drawTownGroundBuffer(g.getContext('2d'), W, H, buildings);
-
-    this.town = { W, H, spawn, buildings, interacts, props, ground: g };
-  },
-
-  drawTownGroundBuffer(ctx, W, H, buildings) {
-    // Packed-earth base.
-    ctx.fillStyle = '#2b2620';
-    ctx.fillRect(0, 0, W, H);
-    // A big cobbled plaza + market street, laid as deterministic stones.
-    const stone = (x, y, w, h, base) => {
-      ctx.fillStyle = base;
-      rr(ctx, x, y, w, h, 3); ctx.fill();
+    const FLAVOR = {
+      Weapons: '"Blades for the brave — and the doomed."',
+      Armor: '"Good steel between you and the grave."',
+      Apothecary: '"Charms, rings and little miracles."',
+      'General Goods': '"A bit of everything, friend."',
+      'Food & Drink': '"Sit. Drink. Live another day."',
+      Miscellaneous: '"Odd finds. No two the same."'
     };
-    // Plaza field of cobbles.
-    for (let y = 120; y < H - 80; y += 26) {
-      for (let x = 60; x < W - 60; x += 30) {
-        const n = hash2(x * 0.7, y * 0.7);
-        const g = 46 + Math.floor(n * 26);
-        stone(x + (n * 6 - 3), y + (n * 4 - 2), 24 + n * 6, 20 + n * 4, `rgb(${g},${g - 4},${g - 10})`);
-      }
+    for (const s of this.TOWN_STATIONS) {
+      const [px, py, bx, by, bw, bh, label, icon, color, kind, slots, boost] = s;
+      let open, cond;
+      if (kind === 'vendor') open = mkVendor(label, FLAVOR[label] || '', slots, boost);
+      else if (kind === 'wilds') open = () => UI.open('wilds');
+      else if (kind === 'cube') { open = () => UI.open('cube'); cond = () => Hero.hasCube; }
+      else open = () => UI.open(kind);
+      interacts.push({ x: px, y: py, r: 50, label, icon, color, open, cond, near: false });
+      if (bw > 0) blockers.push({ cx: bx, cy: by, w: bw, h: bh });
     }
-    // A warm path spine from the gate up through the square to the market.
-    ctx.fillStyle = 'rgba(120,96,60,0.30)';
-    rr(ctx, 770, 300, 140, 720, 40); ctx.fill();
-    rr(ctx, 200, 250, W - 400, 90, 30); ctx.fill();
-    // Soft shadows under building footprints so they sit on the ground.
-    for (const b of buildings) {
-      ctx.fillStyle = 'rgba(0,0,0,0.28)';
-      ctx.beginPath();
-      ctx.ellipse(b.cx, b.cy + b.h / 2 + 6, b.w * 0.6, 20, 0, 0, TAU);
-      ctx.fill();
-    }
+    this.town = { W: S, H: S, spawn: { x: 577, y: 1010 }, interacts, blockers, image: true };
   },
 
   enterTown() {
@@ -415,10 +369,9 @@ const Game = {
   },
 
   townBlocked(x, y) {
-    for (const b of this.town.buildings) {
+    for (const b of this.town.blockers) {
       const hw = b.w / 2, hh = b.h / 2;
-      // Block the WALL box (feet area), a little forgiving so you can hug walls.
-      if (x > b.cx - hw - 8 && x < b.cx + hw + 8 && y > b.cy - hh * 0.3 && y < b.cy + hh + 10) return true;
+      if (x > b.cx - hw && x < b.cx + hw && y > b.cy - hh && y < b.cy + hh) return true;
     }
     return false;
   },
@@ -460,27 +413,29 @@ const Game = {
     const cam = this.camera, p = this.player;
     ctx.save();
     ctx.translate(-Math.round(cam.x), -Math.round(cam.y));
-    // Ground (pre-rendered), only the visible slice.
-    ctx.drawImage(t.ground, cam.x, cam.y, this.W, this.H, cam.x, cam.y, this.W, this.H);
+    // The owner's hand-drawn town map, blitting only the visible slice.
+    const img = this.townImg;
+    if (img && img.complete && img.naturalWidth) {
+      const sx = clamp(cam.x, 0, t.W), sy = clamp(cam.y, 0, t.H);
+      const sw = Math.min(this.W, t.W - sx), sh = Math.min(this.H, t.H - sy);
+      if (sw > 0 && sh > 0) ctx.drawImage(img, sx, sy, sw, sh, sx, sy, sw, sh);
+    } else {
+      ctx.fillStyle = '#171320'; ctx.fillRect(cam.x, cam.y, this.W, this.H);
+    }
 
-    // Interaction-pad glows (under everything).
+    // Interaction-pad glows sitting on the cobbles in front of each shop.
     for (const it of t.interacts) {
       if (it.cond && !it.cond()) continue;
       const on = this.townPrompt === it;
-      ctx.strokeStyle = it.color; ctx.globalAlpha = on ? 0.55 : 0.22 + 0.1 * Math.sin(this.time * 3);
+      ctx.strokeStyle = it.color; ctx.globalAlpha = on ? 0.7 : 0.3 + 0.12 * Math.sin(this.time * 3 + it.x);
       ctx.lineWidth = on ? 3 : 2;
       ctx.beginPath(); ctx.ellipse(it.x, it.y, 30, 13, 0, 0, TAU); ctx.stroke();
+      if (on) { ctx.globalAlpha = 0.12; ctx.fillStyle = it.color; ctx.fill(); }
       ctx.globalAlpha = 1;
     }
 
-    // Painter-sort buildings, props, campfire and the hero by baseline y.
-    const drawables = [];
-    for (const b of t.buildings) drawables.push({ y: b.cy + b.h / 2, fn: () => this.drawTownBuilding(ctx, b) });
-    for (const pr of t.props) drawables.push({ y: pr.y, fn: () => this.drawTownProp(ctx, pr) });
-    for (const it of t.interacts) if (it.campfire) drawables.push({ y: it.y, fn: () => this.drawCampfireProp(ctx, it) });
-    drawables.push({ y: p.y, fn: () => p.draw(ctx) });
-    drawables.sort((a, b) => a.y - b.y);
-    for (const d of drawables) d.fn();
+    // The hero walks on top of the map.
+    p.draw(ctx);
 
     // Floating name plates over each interactable.
     for (const it of t.interacts) {
@@ -489,7 +444,6 @@ const Game = {
     }
     ctx.restore();
 
-    // Vignette + town HUD (gold, hint).
     this.drawTownHud(ctx);
   },
 
@@ -515,275 +469,13 @@ const Game = {
 
   drawTownHud(ctx) {
     const s = (UI.safe || { top: 0, left: 0, right: 0 });
-    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 15px Georgia'; ctx.fillStyle = '#c9bfa8';
-    ctx.fillText('NEKROPOLIS — TOWN', 14 + s.left, 22 + s.top);
+    ctx.fillText('NEKROPOLIS', this.W / 2, 22 + s.top);
     ctx.textAlign = 'right'; ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#ffd76a';
     ctx.fillText(Hero.gold.toLocaleString() + ' gold', this.W - 14 - s.right, 22 + s.top);
-    ctx.textAlign = 'center'; ctx.font = 'italic 11px Georgia'; ctx.fillStyle = 'rgba(201,191,168,0.7)';
-    ctx.fillText('Walk up to a shop to enter · Campfire = menu · Gate = adventure', this.W / 2, this.H - 14 - (s.bottom || 0));
-  },
-
-  // ---- hand-drawn town buildings (Diablo-3-flavoured procedural art) ----
-  _townShell(ctx, b, roofCol, roofDark, wallCol) {
-    const { cx, cy, w, h } = b, hw = w / 2, hh = h / 2;
-    // Timber-framed wall.
-    const wg = ctx.createLinearGradient(0, cy - hh, 0, cy + hh);
-    wg.addColorStop(0, wallCol); wg.addColorStop(1, 'rgba(0,0,0,0.35)');
-    ctx.fillStyle = wg; rr(ctx, cx - hw, cy - hh, w, h, 4); ctx.fill();
-    ctx.strokeStyle = 'rgba(20,14,10,0.55)'; ctx.lineWidth = 2;
-    // exposed cross-beams
-    ctx.beginPath();
-    ctx.moveTo(cx - hw, cy - hh + h * 0.5); ctx.lineTo(cx + hw, cy - hh + h * 0.5);
-    ctx.moveTo(cx - hw * 0.5, cy - hh); ctx.lineTo(cx - hw * 0.5, cy + hh);
-    ctx.moveTo(cx + hw * 0.5, cy - hh); ctx.lineTo(cx + hw * 0.5, cy + hh);
-    ctx.stroke();
-    rr(ctx, cx - hw, cy - hh, w, h, 4); ctx.stroke();
-    // Pitched roof with a big overhang.
-    const rH = Math.max(38, h * 0.6);
-    ctx.beginPath();
-    ctx.moveTo(cx - hw - 16, cy - hh + 8);
-    ctx.lineTo(cx, cy - hh - rH);
-    ctx.lineTo(cx + hw + 16, cy - hh + 8);
-    ctx.closePath();
-    const rg = ctx.createLinearGradient(0, cy - hh - rH, 0, cy - hh + 8);
-    rg.addColorStop(0, roofCol); rg.addColorStop(1, roofDark);
-    ctx.fillStyle = rg; ctx.fill();
-    ctx.strokeStyle = 'rgba(10,7,5,0.6)'; ctx.lineWidth = 2; ctx.stroke();
-    // ridge shingles
-    ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1;
-    for (let i = 1; i < 4; i++) {
-      const yy = cy - hh + 8 - (rH) * (i / 4);
-      const xx = (hw + 16) * (1 - i / 4);
-      ctx.beginPath(); ctx.moveTo(cx - xx, yy); ctx.lineTo(cx + xx, yy); ctx.stroke();
-    }
-    return { hw, hh };
-  },
-
-  _townDoor(ctx, cx, cy, hh) {
-    ctx.fillStyle = '#241a12'; rr(ctx, cx - 17, cy + hh - 44, 34, 44, 5); ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 2; rr(ctx, cx - 17, cy + hh - 44, 34, 44, 5); ctx.stroke();
-    ctx.fillStyle = '#8a6f4a'; ctx.beginPath(); ctx.arc(cx + 9, cy + hh - 22, 2, 0, TAU); ctx.fill();
-  },
-
-  _townWindows(ctx, cx, cy, hh, hw) {
-    const flick = 0.7 + 0.3 * Math.sin(this.time * 4 + cx);
-    for (const sx of [-1, 1]) {
-      const wx = cx + sx * hw * 0.56 - 9;
-      ctx.fillStyle = `rgba(255,200,110,${0.55 * flick})`;
-      rr(ctx, wx, cy - hh + 16, 18, 20, 3); ctx.fill();
-      ctx.strokeStyle = 'rgba(30,20,12,0.7)'; ctx.lineWidth = 1.5;
-      rr(ctx, wx, cy - hh + 16, 18, 20, 3); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(wx + 9, cy - hh + 16); ctx.lineTo(wx + 9, cy - hh + 36);
-      ctx.moveTo(wx, cy - hh + 26); ctx.lineTo(wx + 18, cy - hh + 26); ctx.stroke();
-    }
-  },
-
-  _townSign(ctx, cx, cy, hh, color, icon) {
-    const sy = cy + hh - 54;
-    ctx.strokeStyle = '#3a2c1c'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(cx + 30, sy - 10); ctx.lineTo(cx + 30, sy + 4); ctx.stroke();
-    ctx.fillStyle = '#1a1420'; rr(ctx, cx + 22, sy + 2, 34, 22, 4); ctx.fill();
-    ctx.strokeStyle = color; ctx.lineWidth = 1.5; rr(ctx, cx + 22, sy + 2, 34, 22, 4); ctx.stroke();
-    ctx.fillStyle = color; ctx.font = '14px Georgia'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(icon, cx + 39, sy + 14);
-  },
-
-  drawTownNpc(ctx, x, y, robe, accent) {
-    const bob = Math.sin(this.time * 2 + x) * 1.2;
-    ctx.save(); ctx.translate(x, y - bob);
-    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(0, 2, 12, 4.5, 0, 0, TAU); ctx.fill();
-    // robe
-    ctx.fillStyle = robe; ctx.beginPath();
-    ctx.moveTo(-9, -2); ctx.quadraticCurveTo(-11, -26, 0, -30);
-    ctx.quadraticCurveTo(11, -26, 9, -2); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.stroke();
-    // apron/accent
-    ctx.fillStyle = accent; rr(ctx, -6, -18, 12, 14, 2); ctx.fill();
-    // head
-    ctx.fillStyle = '#d8b48a'; ctx.beginPath(); ctx.arc(0, -34, 6, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#2a2018'; ctx.beginPath(); ctx.arc(0, -37, 6.4, Math.PI, TAU); ctx.fill(); // hair/cap
-    ctx.restore();
-  },
-
-  drawTownBuilding(ctx, b) {
-    const { cx, cy, kind, color } = b;
-    switch (kind) {
-      case 'blacksmith': {
-        const { hw, hh } = this._townShell(ctx, b, '#5a5e67', '#33363d', '#6a5a48');
-        this._townWindows(ctx, cx, cy, hh, hw); this._townDoor(ctx, cx, cy, hh);
-        // chimney with fire glow + smoke
-        ctx.fillStyle = '#4a4038'; rr(ctx, cx - hw + 14, cy - hh - 34, 20, 30, 2); ctx.fill();
-        const fg = 0.6 + 0.4 * Math.sin(this.time * 8);
-        ctx.fillStyle = `rgba(255,140,50,${fg})`; ctx.beginPath(); ctx.arc(cx - hw + 24, cy - hh - 34, 6, 0, TAU); ctx.fill();
-        // anvil out front
-        ctx.fillStyle = '#26262b'; rr(ctx, cx - 46, cy + hh + 2, 30, 10, 2); ctx.fill();
-        rr(ctx, cx - 38, cy + hh + 10, 14, 12, 1); ctx.fill();
-        this._townSign(ctx, cx, cy, hh, color, '⚒');
-        this.drawTownNpc(ctx, cx + 40, cy + hh + 20, '#4a4038', '#8a5a2a');
-        break;
-      }
-      case 'mystic': {
-        const { hw, hh } = this._townShell(ctx, b, '#4a3a6a', '#241a3a', '#4a3f5e');
-        this._townWindows(ctx, cx, cy, hh, hw); this._townDoor(ctx, cx, cy, hh);
-        // floating arcane orb
-        const oy = cy - hh - 22 + Math.sin(this.time * 2) * 4;
-        ctx.shadowColor = '#b06adf'; ctx.shadowBlur = 16;
-        ctx.fillStyle = '#c88bf0'; ctx.beginPath(); ctx.arc(cx, oy, 9, 0, TAU); ctx.fill();
-        ctx.shadowBlur = 0;
-        this._townSign(ctx, cx, cy, hh, color, '✦');
-        this.drawTownNpc(ctx, cx + 42, cy + hh + 20, '#3a2c5a', '#b06adf');
-        break;
-      }
-      case 'jeweler': {
-        const { hw, hh } = this._townShell(ctx, b, '#2f6a72', '#173338', '#3f5a60');
-        this._townWindows(ctx, cx, cy, hh, hw); this._townDoor(ctx, cx, cy, hh);
-        // gem display case glint
-        for (let i = 0; i < 3; i++) {
-          ctx.fillStyle = ['#e04a5a', '#4ecbe0', '#4ade80'][i];
-          ctx.beginPath(); ctx.arc(cx - 20 + i * 20, cy + hh + 12, 3.5, 0, TAU); ctx.fill();
-        }
-        this._townSign(ctx, cx, cy, hh, color, '◆');
-        this.drawTownNpc(ctx, cx + 42, cy + hh + 20, '#2f5a60', '#4ecbe0');
-        break;
-      }
-      case 'stash': {
-        const { hw, hh } = this._townShell(ctx, b, '#4a5468', '#232a38', '#586274');
-        this._townDoor(ctx, cx, cy, hh);
-        // iron vault door with rivets
-        ctx.fillStyle = '#3a4150'; rr(ctx, cx - 26, cy - hh + 14, 52, hh, 4); ctx.fill();
-        ctx.strokeStyle = '#7f8aa0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy - hh + 14 + hh / 2, 12, 0, TAU); ctx.stroke();
-        ctx.fillStyle = '#7f8aa0';
-        for (const a of [0, 1, 2, 3]) { const an = a * Math.PI / 2 + this.time * 0.6; ctx.beginPath(); ctx.arc(cx + Math.cos(an) * 12, cy - hh + 14 + hh / 2 + Math.sin(an) * 12, 2, 0, TAU); ctx.fill(); }
-        this._townSign(ctx, cx, cy, hh, color, '▤');
-        break;
-      }
-      case 'armory': {
-        const { hh } = this._townShell(ctx, b, '#3a6a4e', '#1c3326', '#4a5a4a');
-        this._townDoor(ctx, cx, cy, hh);
-        // an open treasure chest
-        ctx.fillStyle = '#6a4a2a'; rr(ctx, cx - 16, cy + hh + 2, 32, 16, 3); ctx.fill();
-        ctx.fillStyle = '#8a6f2a'; rr(ctx, cx - 16, cy + hh - 2, 32, 8, 3); ctx.fill();
-        ctx.fillStyle = '#ffd76a'; ctx.beginPath(); ctx.arc(cx, cy + hh + 8, 2.5, 0, TAU); ctx.fill();
-        this._townSign(ctx, cx, cy, hh, color, '🎒');
-        break;
-      }
-      case 'cube': {
-        const { hh } = this._townShell(ctx, b, '#5a2a24', '#2a110d', '#5a463f');
-        this._townDoor(ctx, cx, cy, hh);
-        // a floating red Horadric cube
-        const oy = cy - hh - 18 + Math.sin(this.time * 1.6) * 5, rot = this.time * 0.7;
-        ctx.save(); ctx.translate(cx, oy); ctx.rotate(rot);
-        ctx.shadowColor = '#ff5a4a'; ctx.shadowBlur = 14;
-        ctx.fillStyle = '#c23a2a'; rr(ctx, -9, -9, 18, 18, 3); ctx.fill();
-        ctx.strokeStyle = '#ffb0a0'; ctx.lineWidth = 1.5; rr(ctx, -9, -9, 18, 18, 3); ctx.stroke();
-        ctx.restore(); ctx.shadowBlur = 0;
-        this._townSign(ctx, cx, cy, hh, color, '◈');
-        break;
-      }
-      case 'stall': {
-        const hw = b.w / 2, hh = b.h / 2;
-        // counter
-        ctx.fillStyle = '#5a4632'; rr(ctx, cx - hw, cy + hh - 30, b.w, 30, 3); ctx.fill();
-        ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1.5; rr(ctx, cx - hw, cy + hh - 30, b.w, 30, 3); ctx.stroke();
-        // posts
-        ctx.fillStyle = '#3a2c1c'; rr(ctx, cx - hw + 2, cy - hh, 6, hh + 30, 2); ctx.fill(); rr(ctx, cx + hw - 8, cy - hh, 6, hh + 30, 2); ctx.fill();
-        // striped awning
-        for (let i = 0; i < 6; i++) {
-          ctx.fillStyle = i % 2 ? '#e8e0cc' : color;
-          ctx.beginPath();
-          ctx.moveTo(cx - hw + i * (b.w / 6), cy - hh);
-          ctx.lineTo(cx - hw + (i + 1) * (b.w / 6), cy - hh);
-          ctx.lineTo(cx - hw + (i + 0.5) * (b.w / 6), cy - hh + 16);
-          ctx.closePath(); ctx.fill();
-        }
-        // goods on the counter
-        for (let i = 0; i < 4; i++) { ctx.fillStyle = ['#e0724a', '#8fb0e8', '#ffd76a', '#9fd88a'][i]; ctx.beginPath(); ctx.arc(cx - hw + 22 + i * 30, cy + hh - 34, 4, 0, TAU); ctx.fill(); }
-        this.drawTownNpc(ctx, cx, cy + hh - 6, '#4a4038', color);
-        break;
-      }
-      case 'gate': {
-        const hw = b.w / 2, hh = b.h / 2;
-        // stone archway
-        ctx.fillStyle = '#4a453f'; rr(ctx, cx - hw, cy - hh, 34, b.h, 4); ctx.fill();
-        rr(ctx, cx + hw - 34, cy - hh, 34, b.h, 4); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(cx - hw, cy - hh + 20); ctx.quadraticCurveTo(cx, cy - hh - 26, cx + hw, cy - hh + 20);
-        ctx.lineTo(cx + hw - 34, cy - hh + 20); ctx.quadraticCurveTo(cx, cy - hh + 6, cx - hw + 34, cy - hh + 20); ctx.closePath();
-        ctx.fillStyle = '#5a554f'; ctx.fill();
-        // swirling green portal in the arch
-        const g = ctx.createRadialGradient(cx, cy - 4, 4, cx, cy - 4, 44);
-        g.addColorStop(0, 'rgba(150,247,210,0.7)'); g.addColorStop(1, 'rgba(40,120,90,0.05)');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(cx, cy - 4, 40, hh - 6, 0, 0, TAU); ctx.fill();
-        for (let i = 0; i < 3; i++) { const a = this.time * 1.5 + i * TAU / 3; ctx.strokeStyle = 'rgba(150,247,210,0.5)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy - 4, 14 + i * 9, a, a + 2.2); ctx.stroke(); }
-        break;
-      }
-      default: { // house
-        const { hh } = this._townShell(ctx, b, '#7a5a3a', '#3a2a18', b.color || '#8a6f4a');
-        this._townWindows(ctx, cx, cy, hh, b.w / 2); this._townDoor(ctx, cx, cy, hh);
-        // chimney smoke
-        ctx.fillStyle = '#4a4038'; rr(ctx, cx + b.w / 2 - 26, cy - hh - 26, 14, 24, 2); ctx.fill();
-        ctx.globalAlpha = 0.3; ctx.fillStyle = '#9a9080';
-        for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(cx + b.w / 2 - 19, cy - hh - 34 - i * 12 - (this.time * 8 % 12), 4 + i * 1.5, 0, TAU); ctx.fill(); }
-        ctx.globalAlpha = 1;
-      }
-    }
-  },
-
-  drawCampfireProp(ctx, it) {
-    const x = it.x, y = it.y;
-    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(x, y, 26, 9, 0, 0, TAU); ctx.fill();
-    // stone ring
-    ctx.fillStyle = '#4a453f';
-    for (let i = 0; i < 8; i++) { const a = i * TAU / 8; ctx.beginPath(); ctx.arc(x + Math.cos(a) * 22, y + Math.sin(a) * 8, 5, 0, TAU); ctx.fill(); }
-    // logs
-    ctx.strokeStyle = '#5a4632'; ctx.lineWidth = 5; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(x - 12, y + 3); ctx.lineTo(x + 12, y - 3); ctx.moveTo(x - 12, y - 3); ctx.lineTo(x + 12, y + 3); ctx.stroke();
-    // flames
-    for (let i = 0; i < 5; i++) {
-      const fl = Math.sin(this.time * 9 + i * 1.7);
-      const fx = x + (i - 2) * 5, fh = 24 + fl * 8;
-      ctx.fillStyle = i % 2 ? `rgba(255,150,40,0.9)` : `rgba(255,210,80,0.9)`;
-      ctx.beginPath(); ctx.moveTo(fx - 5, y - 2); ctx.quadraticCurveTo(fx, y - fh, fx + 5, y - 2); ctx.closePath(); ctx.fill();
-    }
-    ctx.shadowColor = '#ff8c2a'; ctx.shadowBlur = 26; ctx.fillStyle = 'rgba(255,140,40,0.25)';
-    ctx.beginPath(); ctx.arc(x, y - 6, 14, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
-  },
-
-  drawTownProp(ctx, pr) {
-    const x = pr.x, y = pr.y;
-    if (pr.kind === 'fountain') {
-      ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(x, y + 6, 60, 22, 0, 0, TAU); ctx.fill();
-      ctx.fillStyle = '#5a554f'; ctx.beginPath(); ctx.ellipse(x, y, 58, 22, 0, 0, TAU); ctx.fill();
-      ctx.fillStyle = '#2f6a72'; ctx.beginPath(); ctx.ellipse(x, y, 46, 16, 0, 0, TAU); ctx.fill();
-      ctx.fillStyle = 'rgba(150,220,240,0.5)'; ctx.beginPath(); ctx.ellipse(x, y - 1, 44 + Math.sin(this.time * 3) * 2, 14, 0, 0, TAU); ctx.fill();
-      ctx.fillStyle = '#6a655f'; rr(ctx, x - 8, y - 34, 16, 34, 4); ctx.fill();
-      for (let i = 0; i < 6; i++) { const t = (this.time * 2 + i) % 1; ctx.fillStyle = `rgba(180,230,250,${0.6 * (1 - t)})`; ctx.beginPath(); ctx.arc(x + Math.sin(i) * 10 * t, y - 34 + t * 34, 2, 0, TAU); ctx.fill(); }
-      return;
-    }
-    if (pr.kind === 'lamp') {
-      ctx.strokeStyle = '#2a241c'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - 40); ctx.stroke();
-      const fl = 0.7 + 0.3 * Math.sin(this.time * 6 + x);
-      ctx.shadowColor = '#ffcf7a'; ctx.shadowBlur = 18 * fl; ctx.fillStyle = `rgba(255,207,122,${fl})`;
-      ctx.beginPath(); ctx.arc(x, y - 44, 6, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
-      return;
-    }
-    if (pr.kind === 'tree') {
-      ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(x, y + 2, 22, 7, 0, 0, TAU); ctx.fill();
-      ctx.fillStyle = '#3a2c1c'; rr(ctx, x - 5, y - 34, 10, 36, 3); ctx.fill();
-      for (const o of [[0, -54, 24], [-16, -44, 18], [16, -44, 18]]) { ctx.fillStyle = '#2f4a32'; ctx.beginPath(); ctx.arc(x + o[0], y + o[1], o[2], 0, TAU); ctx.fill(); }
-      ctx.fillStyle = 'rgba(120,180,120,0.3)'; ctx.beginPath(); ctx.arc(x - 6, y - 60, 10, 0, TAU); ctx.fill();
-      return;
-    }
-    // barrel / crate
-    ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.beginPath(); ctx.ellipse(x, y + 2, 14, 5, 0, 0, TAU); ctx.fill();
-    if (pr.kind === 'barrel') {
-      ctx.fillStyle = '#6a4a2a'; rr(ctx, x - 11, y - 24, 22, 26, 6); ctx.fill();
-      ctx.strokeStyle = '#3a2c1c'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 11, y - 16); ctx.lineTo(x + 11, y - 16); ctx.moveTo(x - 11, y - 6); ctx.lineTo(x + 11, y - 6); ctx.stroke();
-    } else {
-      ctx.fillStyle = '#5a4632'; rr(ctx, x - 12, y - 24, 24, 24, 2); ctx.fill();
-      ctx.strokeStyle = '#3a2c1c'; ctx.lineWidth = 2; rr(ctx, x - 12, y - 24, 24, 24, 2); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(x - 12, y - 24); ctx.lineTo(x + 12, y); ctx.moveTo(x + 12, y - 24); ctx.lineTo(x - 12, y); ctx.stroke();
-    }
+    ctx.textAlign = 'center'; ctx.font = 'italic 11px Georgia'; ctx.fillStyle = 'rgba(201,191,168,0.72)';
+    ctx.fillText('Walk up to a building to enter · the blue waypoint leads to the Wilds', this.W / 2, this.H - 14 - (s.bottom || 0));
   },
 
   // ------------------------------------------------------------ zone flow
