@@ -39,11 +39,17 @@ const RUNE_ELEMENT = {
   iceGolem: 'cold', freezingGrasp: 'cold', frozenArmy: 'cold', frozenLands: 'cold'
 };
 
-const GAME_VERSION = 'v1.6.42-alpha';
+const GAME_VERSION = 'v1.6.43-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.43-alpha', date: 'July 2026',
+    notes: [
+      'Cleaner town art — the Nekropolis map now uses the label-free painting, so the only building names are the game\'s own floating sign plates (no more doubled-up labels baked into the picture)'
+    ]
+  },
   {
     v: 'v1.6.42-alpha', date: 'July 2026',
     notes: [

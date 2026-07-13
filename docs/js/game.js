@@ -326,7 +326,7 @@ const Game = {
 
   buildTown() {
     const S = 1254;
-    if (!this.townImg) { const img = new Image(); img.src = 'art/town/nekropolis.png'; this.townImg = img; }
+    if (!this.townImg) { const img = new Image(); img.src = 'art/town/nekropolis.png?v=' + (typeof BUILD !== 'undefined' ? BUILD : '1'); this.townImg = img; }
     const interacts = [], blockers = [];
     const mkVendor = (name, flavor, slots, boost) => {
       const o = { name: name.toUpperCase(), flavor, stock: this.merchantStock(slots === 'all' ? this.ALL_SLOTS : slots, { boost: boost || 0 }) };
