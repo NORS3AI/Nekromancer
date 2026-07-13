@@ -318,6 +318,7 @@ const Game = {
     [1100, 765, 60, 1130, 680, 190, 140, 'Apothecary',     '⚗', '#9fd88a', 'vendor', ['amulet', 'ring1', 'ring2']],
     [790, 945, 60,   800, 855, 230, 150, 'General Goods',  '◉', '#ffd76a', 'vendor', 'all'],
     [610, 1015, 55,  610, 930, 130, 140, 'Stash',          '▤', '#c9bfa8', 'stash'],
+    [718, 668, 55,     0, 0, 0, 0, 'Lucas, Bringer of Light', '⚔', '#ffd76a', 'quests'],        // the knight quest-giver
     [183, 195, 62,     0, 0, 0, 0, 'Expedition Waypoint',  '✧', '#8fd0ff', 'waypoint-blue'],    // bounties · acts · adventure
     [1020, 350, 66,    0, 0, 0, 0, 'Rift Waypoint',        '✧', '#c88bf0', 'waypoint-purple'],  // rifts · greater rifts · seasons
     [585, 1120, 70,    0, 0, 0, 0, 'Return to the Wilds',  '↩', '#8fd0ff', 'gate']              // only while visiting via portal
@@ -416,6 +417,7 @@ const Game = {
 
   updateTown(dt) {
     Particles.update(dt);
+    this.updatePet(dt);
     if (UI.screen) return;            // a shop/menu is open — walking is paused
     const t = this.town, p = this.player;
     const spd = 210;
@@ -469,8 +471,13 @@ const Game = {
       ctx.fillStyle = '#171320'; ctx.fillRect(cam.x, cam.y, this.W, this.H);
     }
 
-    // The hero walks on top of the map. (No pad circles — the doorway prompt
-    // lives on the ENTER button instead, owner rule.)
+    // Lucas, Bringer of Light — the knight stands at his post by the plaza,
+    // with a golden ! when he has work for you (or ✓ when a quest is done).
+    this.drawLucas(ctx, 718, 668);
+
+    // The hero (and their pet) walk on top of the map. (No pad circles — the
+    // doorway prompt lives on the ENTER button instead, owner rule.)
+    if (this.pet) this.drawPetSprite(ctx);
     p.draw(ctx);
 
     // Floating name plates over each interactable.
@@ -508,6 +515,116 @@ const Game = {
     ctx.fillText(Hero.gold.toLocaleString() + ' gold', this.W - 14 - s.right, 22 + s.top);
     ctx.textAlign = 'center'; ctx.font = 'italic 11px Georgia'; ctx.fillStyle = 'rgba(201,191,168,0.72)';
     ctx.fillText('Blue waypoint: bounties · acts · adventure     Purple waypoint: rifts · seasons', this.W / 2, this.H - 14 - (s.bottom || 0));
+  },
+
+  // Lucas, Bringer of Light — a plate-armoured knight, drawn on the town map.
+  drawLucas(ctx, x, y) {
+    const bob = Math.sin(this.time * 1.8) * 1.2;
+    ctx.save();
+    ctx.translate(x, y - bob);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(0, 2, 14, 5, 0, 0, TAU); ctx.fill();
+    // greaves + cuirass
+    ctx.fillStyle = '#8f96a3'; rr(ctx, -9, -26, 18, 24, 4); ctx.fill();
+    ctx.strokeStyle = '#3a3f4a'; ctx.lineWidth = 1.2; rr(ctx, -9, -26, 18, 24, 4); ctx.stroke();
+    // golden tabard stripe
+    ctx.fillStyle = '#d8b44a'; rr(ctx, -3, -24, 6, 20, 2); ctx.fill();
+    // pauldrons
+    ctx.fillStyle = '#aab1bd';
+    ctx.beginPath(); ctx.ellipse(-10, -25, 5, 4, -0.3, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(10, -25, 5, 4, 0.3, 0, TAU); ctx.fill();
+    // helm with a golden plume
+    ctx.fillStyle = '#9aa1ae'; ctx.beginPath(); ctx.arc(0, -33, 7, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#1a1d24'; ctx.fillRect(-5, -34, 10, 3);   // visor slit
+    ctx.strokeStyle = '#d8b44a'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(0, -40); ctx.quadraticCurveTo(6, -46, 11, -42); ctx.stroke();
+    // sword point-down at his side
+    ctx.strokeStyle = '#cfd5de'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(14, -22); ctx.lineTo(14, 0); ctx.stroke();
+    ctx.strokeStyle = '#8a6f2a'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(10, -22); ctx.lineTo(18, -22); ctx.stroke();
+    // quest marker: ! = work available · ✓ = ready to turn in
+    const q = Hero.quest;
+    let mark = '!', col = '#ffd76a';
+    if (q) {
+      const def = (typeof TOWN_QUESTS !== 'undefined') && TOWN_QUESTS.find(d => d.id === q.id);
+      const done = def && (def.counter() - q.base) >= def.need;
+      mark = done ? '✓' : null; col = '#4ade80';
+    }
+    if (mark) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 16px Georgia'; ctx.fillStyle = col;
+      ctx.shadowColor = col; ctx.shadowBlur = 8;
+      ctx.fillText(mark, 0, -54 + Math.sin(this.time * 3) * 2);
+      ctx.shadowBlur = 0;
+    }
+    ctx.restore();
+  },
+
+  // ------------------------------- cosmetic pet -------------------------------
+  // A little companion (Mystic ▸ Pets) that trails the hero in town and the
+  // wilds. Pure cosmetic: no combat, no collision.
+  updatePet(dt) {
+    if (!Hero.pet || !PETS[Hero.pet] || !this.player) { this.pet = null; return; }
+    const p = this.player;
+    if (!this.pet || this.pet.id !== Hero.pet) {
+      this.pet = { id: Hero.pet, x: p.x - 40, y: p.y + 10, bob: 0 };
+    }
+    const pet = this.pet;
+    pet.bob += dt;
+    // Heel position: behind-left of the hero's facing.
+    const a = p.facing + 2.6;
+    const tx = p.x + Math.cos(a) * 44, ty = p.y + Math.sin(a) * 44;
+    const d = dist(pet.x, pet.y, tx, ty);
+    if (d > 700) { pet.x = tx; pet.y = ty; }              // teleport if left behind
+    else if (d > 6) {
+      const sp = Math.min(d * 5, 320) * dt;
+      const an = angleTo(pet.x, pet.y, tx, ty);
+      pet.x += Math.cos(an) * sp; pet.y += Math.sin(an) * sp;
+    }
+  },
+
+  drawPetSprite(ctx) {
+    const pet = this.pet; if (!pet) return;
+    const bob = Math.sin(pet.bob * 3) * 3;
+    ctx.save();
+    ctx.translate(pet.x, pet.y);
+    ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(0, 2, 9, 3.5, 0, 0, TAU); ctx.fill();
+    if (pet.id === 'skullWisp') {
+      ctx.translate(0, -14 + bob);
+      ctx.shadowColor = '#6ff7c3'; ctx.shadowBlur = 10;
+      ctx.fillStyle = '#e8e0cc'; ctx.beginPath(); ctx.arc(0, 0, 6.5, 0, TAU); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#0b1310';
+      ctx.beginPath(); ctx.arc(-2.2, -1, 1.6, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(2.2, -1, 1.6, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(111,247,195,0.5)';
+      ctx.beginPath(); ctx.arc(0, 7, 3, 0, TAU); ctx.fill();   // trailing wisp
+    } else if (pet.id === 'boneRaven') {
+      ctx.translate(0, -10 + bob * 0.6);
+      ctx.fillStyle = '#23202b';
+      ctx.beginPath(); ctx.ellipse(0, 0, 7, 4.5, 0, 0, TAU); ctx.fill();          // body
+      ctx.beginPath(); ctx.arc(6, -3, 3.2, 0, TAU); ctx.fill();                    // head
+      ctx.fillStyle = '#c9bfa8'; ctx.beginPath();
+      ctx.moveTo(9, -3); ctx.lineTo(13, -2); ctx.lineTo(9, -1); ctx.closePath(); ctx.fill();  // beak
+      const flap = Math.sin(pet.bob * 8) * 3;
+      ctx.strokeStyle = '#3a3448'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-2, -2); ctx.quadraticCurveTo(-7, -8 - flap, -12, -4 - flap); ctx.stroke();
+      ctx.fillStyle = '#e04a5a'; ctx.beginPath(); ctx.arc(6.6, -3.6, 0.8, 0, TAU); ctx.fill(); // eye
+    } else {   // cryptCat
+      ctx.translate(0, -6);
+      ctx.fillStyle = '#5a5560';
+      ctx.beginPath(); ctx.ellipse(0, -3, 8, 5, 0, 0, TAU); ctx.fill();             // body
+      ctx.beginPath(); ctx.arc(7, -8, 4, 0, TAU); ctx.fill();                       // head
+      ctx.beginPath(); ctx.moveTo(4.6, -11); ctx.lineTo(5.6, -14.5); ctx.lineTo(7.2, -11.4); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(7.6, -11.6); ctx.lineTo(9.4, -14.2); ctx.lineTo(10, -10.8); ctx.closePath(); ctx.fill();
+      const swish = Math.sin(pet.bob * 2.4) * 4;
+      ctx.strokeStyle = '#5a5560'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-7, -4); ctx.quadraticCurveTo(-13, -8 + swish, -15, -14 + swish); ctx.stroke();
+      ctx.fillStyle = '#9adf8f';
+      ctx.beginPath(); ctx.arc(6, -8.6, 0.9, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(8.6, -8.6, 0.9, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
   },
 
   // ------------------------------------------------------------ zone flow
@@ -1584,6 +1701,7 @@ const Game = {
     if (p.shrine && p.shrine.buff === 'fortune') p.goldFind = baseGoldFind * 2;
 
     p.update(dt);
+    this.updatePet(dt);
     this.updatePortalCast(dt);
     if (this.portalCd > 0) this.portalCd = Math.max(0, this.portalCd - dt);
     Skills.update(dt);
@@ -1856,6 +1974,7 @@ const Game = {
       const inView = e => e.x > cam.x - 90 && e.x < cam.x + this.W + 90 && e.y > cam.y - 110 && e.y < cam.y + this.H + 110;
       for (const e of this.enemies) if (inView(e)) drawables.push({ y: e.y, draw: c => e.draw(c) });
       for (const m of this.minions) if (inView(m)) drawables.push({ y: m.y, draw: c => m.draw(c) });
+      if (this.pet) drawables.push({ y: this.pet.y, draw: c => this.drawPetSprite(c) });
       if (!this.player.dead) drawables.push({ y: this.player.y, draw: c => this.player.draw(c) });
       drawables.sort((a, b) => a.y - b.y);
       for (const d of drawables) d.draw(ctx);
@@ -1911,6 +2030,7 @@ const Game = {
     const sprites = [];
     for (const e of this.enemies) if (inView(e)) sprites.push(e);
     for (const m of this.minions) if (inView(m)) sprites.push(m);
+    if (this.pet) sprites.push({ x: this.pet.x, y: this.pet.y, draw: c => this.drawPetSprite(c) });
     if (!this.player.dead) sprites.push(this.player);
     sprites.sort((a, b) => a.y - b.y);
     for (const s of sprites) {

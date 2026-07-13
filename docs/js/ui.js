@@ -166,6 +166,11 @@ const UI = {
     if (this.screen === 'recipes') return () => this.open('cube');
     if (this.screen === 'skillChooser') return () => this.open('skills');
     if (this.screen === 'storyacts') return () => this.open('wilds');
+    // Artisan sub-screens step back to their HUB (the shop interior stays up —
+    // owner rule: closing a bench shows the background art again).
+    if (['smithSalvage', 'smithWeapon', 'smithArmor', 'torches'].includes(this.screen)) return () => this.open('smith');
+    if (['jewSocket', 'jewUnsocket', 'jewMerge', 'jewSell', 'jewCraft'].includes(this.screen)) return () => this.open('jeweler');
+    if (['mysEnchant', 'mysPet', 'mysWings', 'mysTheme'].includes(this.screen)) return () => this.open('mystic');
     if (this.townMode) {
       // Closing the town menu (✕/Escape) leaves through the portal exactly like the
       // "Back to the Wilds" button — collapse the portal and start its cooldown so
@@ -182,10 +187,17 @@ const UI = {
   },
 
   // A standard chunky button; draws and registers in one call.
+  // The active UI theme (Mystic ▸ Themes). Falls back to Bone before data loads.
+  theme() {
+    const id = (typeof Settings !== 'undefined' && Settings.g && Settings.g.theme) || 'bone';
+    return (typeof THEMES !== 'undefined' && (THEMES[id] || THEMES.bone)) ||
+      { panel: '#4a4356', title: '#c9bfa8', btn: '#6b5f80' };
+  },
+
   btn(ctx, x, y, w, h, label, cb, o = {}) {
     ctx.fillStyle = o.disabled ? 'rgba(30,26,38,0.9)' : (o.bg || 'rgba(44,38,58,0.95)');
     rr(ctx, x, y, w, h, 8); ctx.fill();
-    ctx.strokeStyle = o.disabled ? '#3a3448' : (o.border || '#6b5f80');
+    ctx.strokeStyle = o.disabled ? '#3a3448' : (o.border || this.theme().btn);
     ctx.lineWidth = 1.5;
     rr(ctx, x, y, w, h, 8); ctx.stroke();
     ctx.fillStyle = o.disabled ? '#5c5569' : (o.color || '#e8e0cc');
@@ -216,13 +228,14 @@ const UI = {
 
   panel(ctx, x, y, w, h, title) {
     (this.panelRects = this.panelRects || []).push({ x, y, w, h });
+    const th = this.theme();
     ctx.fillStyle = 'rgba(10,7,14,0.94)';
     rr(ctx, x, y, w, h, 12); ctx.fill();
-    ctx.strokeStyle = '#4a4356';
+    ctx.strokeStyle = th.panel;
     ctx.lineWidth = 2;
     rr(ctx, x, y, w, h, 12); ctx.stroke();
     if (title) {
-      ctx.fillStyle = '#c9bfa8';
+      ctx.fillStyle = th.title;
       ctx.font = 'bold 17px Georgia';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(title, x + w / 2, y + 22);

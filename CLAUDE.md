@@ -271,6 +271,22 @@ Script lives in the session scratchpad (intentionally not committed).
   `returnFromTownPortal()` (portal collapse + 30s cd). `startLand()` clears
   `townPortalReturn`. Top-left ☰ MENU → `toCamp()` + a 🎒 button → radial. Camp hub
   button is "🏰 VISIT NEW HAVEN".
+- **ARTISAN HUBS (v1.6.49, owner rule)**: entering Blacksmith/Jeweler/Mystic shows the
+  shop-interior ART first (`Screens.artisanHub`, `shopBackdrop` veil 0.34) with a slim
+  bottom panel of bench buttons; each bench is its own screen and `UI.closeAction()`
+  maps it BACK to its hub (sub → hub → town). Smith: `smithSalvage`/`smithWeapon`/
+  `smithArmor` (shared `smithCraft`)/`torches`. Jeweler: `jewSocket` (reuses `gemModal`)/
+  `jewUnsocket`/`jewMerge`/`jewSell` (both via `gemStackList` — type filter chips + tier
+  sort)/`jewCraft` (`Items.craftGem(type)`, cost `gemCraftCost()`=1.5× random cut).
+  Mystic: `mysEnchant` (the old mystic body)/`mysPet`/`mysWings`/`mysTheme` (shared
+  `cosmeticList`). **COSMETICS**: `PETS`/`WINGS`/`THEMES` in data.js; `Hero.pet`/`Hero.wings`
+  persisted (snapshot parity!), `Settings.g.theme` account-wide. Pet = `Game.pet` follower
+  (`updatePet` in town + playing; drawn in town/birdseye/topdown), wings = `Player.drawWings`
+  behind the body in both views, theme = `UI.theme()` recolours `UI.panel` border/title +
+  default `UI.btn` borders. **LUCAS, BRINGER OF LIGHT** (knight quest-giver): `TOWN_QUESTS`
+  (slay 150 / clear rift / salvage 15 — lazy counters vs `{id, base}` on `Hero.quest`;
+  `Hero.salvagedCount` incremented in `grantSalvage`), station at (718,668) → `Screens.quests`
+  (accept/turn-in: gold 200×lvl + 2 souls + XP), `Game.drawLucas` sprite with !/✓ marker.
 - **⭐ OWNER TODO (requested 2026-07-03): create the MASTER LIST of primary +
   secondary stats and affixes for items.** The engine now models:
   `dmg` (%), `hp`, `crit` (chance), `ess` (essence/s), `reg` (life/s), `gold`,

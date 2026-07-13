@@ -662,6 +662,7 @@ const Items = {
     // Fallback keeps ALL loot salvageable even if an item has a missing/odd rarity.
     const { mat, n } = this.salvageYield(item);
     Hero.mats[mat] = (Hero.mats[mat] || 0) + n;
+    Hero.salvagedCount = (Hero.salvagedCount || 0) + 1;   // Lucas's quest counter
     const gems = item.gems || [];
     for (const g of gems) Hero.gems.push(g); // socketed gems survive, back to the pouch
     if (gems.length) {
@@ -978,6 +979,29 @@ const Items = {
     const gem = this.generateGem(Math.max(1, Math.round(Hero.level * (0.5 + 0.05 * Hero.artisans.jeweler))));
     Hero.gems.push(gem);
     UI.toast('Cut a fresh gem: ' + gemName(gem), GEM_TYPES[gem.type].color);
+    AudioSys.sfx('gem');
+    Hero.save();
+  },
+
+  // Craft a gem of a CHOSEN type (Jeweler's gem bench). Costs a little more than
+  // a random cut — you're paying the jeweler to be picky. Tier scales the same.
+  gemCraftCost() {
+    const base = this.gemPrice();
+    return { gold: Math.round(base.gold * 1.5) };
+  },
+  craftGem(type) {
+    if (!GEM_TYPES[type]) return;
+    const cost = this.gemCraftCost();
+    if (!this.canAfford(cost)) {
+      UI.toast('Not enough gold', '#9a9080');
+      AudioSys.sfx('denied');
+      return;
+    }
+    this.pay(cost);
+    const gem = this.generateGem(Math.max(1, Math.round(Hero.level * (0.5 + 0.05 * Hero.artisans.jeweler))));
+    gem.type = type;
+    Hero.gems.push(gem);
+    UI.toast('Crafted: ' + gemName(gem), GEM_TYPES[type].color);
     AudioSys.sfx('gem');
     Hero.save();
   },

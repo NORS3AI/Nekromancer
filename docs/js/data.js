@@ -39,11 +39,49 @@ const RUNE_ELEMENT = {
   iceGolem: 'cold', freezingGrasp: 'cold', frozenArmy: 'cold', frozenLands: 'cold'
 };
 
-const GAME_VERSION = 'v1.6.48-alpha';
+// ------------------------- cosmetics & town quests -------------------------
+// Pets & wings are pure cosmetics chosen at the Mystic; themes recolour the UI
+// chrome (panel borders/titles/button borders). All persist on the hero (pets/
+// wings) or in Settings (theme — account-wide).
+const PETS = {
+  skullWisp: { name: 'Skull Wisp',  desc: 'A faithful skull, wreathed in pale fire.' },
+  boneRaven: { name: 'Bone Raven',  desc: 'A skeletal raven that rides your shoulder-wind.' },
+  cryptCat:  { name: 'Crypt Cat',   desc: 'A grave-grey cat. It fears nothing.' }
+};
+const WINGS = {
+  boneWings:   { name: 'Wings of Bone',  color: '#e8e0cc', glow: 'rgba(232,224,204,0.25)' },
+  shadowWings: { name: 'Shadow Wings',   color: '#6b4a8f', glow: 'rgba(107,74,143,0.35)' },
+  emberWings:  { name: 'Ember Wings',    color: '#ff8c2a', glow: 'rgba(255,140,42,0.35)' }
+};
+const THEMES = {
+  bone:   { name: 'Bone',   panel: '#4a4356', title: '#c9bfa8', btn: '#6b5f80' },
+  blood:  { name: 'Blood',  panel: '#7a3040', title: '#e8b0b8', btn: '#8a4550' },
+  arcane: { name: 'Arcane', panel: '#5a3a7a', title: '#d8b4f0', btn: '#7a4a8f' },
+  royal:  { name: 'Royal',  panel: '#8a6f2a', title: '#ffd76a', btn: '#8a6f4a' }
+};
+// Lucas, Bringer of Light — the knight quest-giver in New Haven. Repeatable
+// quests measured against lifetime counters (progress = counter − base at accept).
+const TOWN_QUESTS = [
+  { id: 'slay',    name: 'Cull the Dead',      desc: 'Slay 150 monsters anywhere in the wilds.', need: 150, counter: () => Hero.totalKills || 0 },
+  { id: 'rift',    name: 'Face the Guardian',  desc: 'Clear any Rift.',                          need: 1,   counter: () => Hero.riftsCleared || 0 },
+  { id: 'salvage', name: 'Feed the Forge',     desc: 'Salvage 15 items into materials.',         need: 15,  counter: () => Hero.salvagedCount || 0 }
+];
+
+const GAME_VERSION = 'v1.6.49-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.49-alpha', date: 'July 2026',
+    notes: [
+      'THE ARTISAN SHOPS ARE REBUILT — walking into the Blacksmith, Jeweler or Mystic now shows the painted SHOP INTERIOR first, with a slim row of benches to choose from. Open a bench, close it, and you\'re back in the shop looking at the art; close that and you\'re back on the street',
+      'BLACKSMITH: four benches — SALVAGE (bulk breakdown), CRAFT WEAPON, CRAFT ARMOR & JEWELRY, and CRAFT TORCHES',
+      'JEWELER: five benches — SOCKET A GEM (pick any socketed gear, equipped or bagged), UNSOCKET (always free, full scrolling list), MERGE GEMS (with gem-type filters and tier sorting), SELL GEMS, and CRAFT A GEM (choose the exact stone type, cut fresh for gold)',
+      'MYSTIC: ENCHANT GEAR plus a whole cosmetic wardrobe — choose a PET (Skull Wisp, Bone Raven or Crypt Cat — it trails you through town and the wilds), choose WINGS (Bone, Shadow or Ember — worn on your back in every view), and choose a THEME (Bone, Blood, Arcane or Royal — re-tints every menu and button in the game)',
+      'NEW NPC — LUCAS, BRINGER OF LIGHT: a knight standing watch by the New Haven plaza. He offers repeatable quests (Cull the Dead · Face the Guardian · Feed the Forge) with gold, Forgotten Souls and XP for each turn-in. A golden ! floats over him when he has work; a green ✓ when you\'re owed a reward'
+    ]
+  },
   {
     v: 'v1.6.48-alpha', date: 'July 2026',
     notes: [

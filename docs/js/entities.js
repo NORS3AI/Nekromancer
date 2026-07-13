@@ -393,6 +393,7 @@ class Player {
       // top of the head, correct for a straight-down view).
       ctx.rotate(this.facing + Math.PI / 2);
       ctx.translate(0, -bob);
+      this.drawWings(ctx, false);   // cosmetic wings, behind the body
 
       const flare = Math.sin(this.anim * 0.7) * 1.5;
       ctx.fillStyle = this.flash > 0.4 ? '#8fe8c8' : '#2a4440';
@@ -515,6 +516,7 @@ class Player {
     // Draw-order crossfade happens at back≈0.5 — where the cloak is edge-on and the
     // swap is invisible, so there's no visible pop.
     if (back <= 0.5) drawCloak();
+    this.drawWings(ctx, true);       // cosmetic wings, behind the body
 
     ctx.save();
     ctx.scale(flip, 1);              // mirror so +x is always the leading edge
@@ -603,6 +605,40 @@ class Player {
 
     ctx.restore();   // undo flip
     if (back > 0.5) drawCloak();   // billows toward the camera in front of the body
+    ctx.restore();
+  }
+
+  // Cosmetic WINGS (Mystic ▸ Wings) — three swept feather-blades per side that
+  // flap gently, drawn BEHIND the body in both camera modes. Pure cosmetic.
+  drawWings(ctx, upright) {
+    const def = (typeof WINGS !== 'undefined' && Hero.wings) ? WINGS[Hero.wings] : null;
+    if (!def) return;
+    const flap = Math.sin(this.anim * 2.2) * 0.14;
+    const oy = upright ? -34 : -4;      // shoulder height (upright) vs sprite centre
+    const scale = upright ? 1 : 0.8;
+    ctx.save();
+    ctx.translate(0, oy);
+    ctx.scale(scale, scale);
+    ctx.shadowColor = def.color; ctx.shadowBlur = 8;
+    for (const side of [-1, 1]) {
+      for (let f = 0; f < 3; f++) {
+        const baseA = side * (0.55 + f * 0.32 + flap);   // sweep upward-outward
+        const len = 30 - f * 6;
+        const tipX = Math.sin(baseA) * len * 1.15;
+        const tipY = -Math.cos(baseA) * len * 0.5 - 8 - f * 3;
+        ctx.globalAlpha = 0.85 - f * 0.18;
+        ctx.fillStyle = def.color;
+        ctx.beginPath();
+        ctx.moveTo(side * 5, 0);
+        ctx.quadraticCurveTo(side * len * 0.55, tipY - 8, tipX, tipY);
+        ctx.quadraticCurveTo(side * len * 0.5, tipY + 8, side * 5, 4);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 0.3; ctx.fillStyle = def.glow;
+    ctx.beginPath(); ctx.ellipse(0, -8, 30, 16, 0, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     ctx.restore();
   }
 }

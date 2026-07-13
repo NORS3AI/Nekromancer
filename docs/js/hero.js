@@ -183,6 +183,10 @@ const Hero = {
   cubeActive: [],       // up to 3 extracted powers the hero has switched ON
   artisans: { smith: 1, mystic: 1, jeweler: 1 },
   runes: {},                          // skillId -> rune id
+  pet: null,            // cosmetic companion id (PETS), chosen at the Mystic
+  wings: null,          // cosmetic wings id (WINGS), chosen at the Mystic
+  quest: null,          // active Lucas quest: { id, base } (progress = counter - base)
+  salvagedCount: 0,     // lifetime items salvaged (quest counter)
   cheats: { god: false, essence: false, spawn: 0 }, // dev panel, kept per save
   bagTier: 0,               // purchased bag expansions (0 = base 24)
   bagBonus: 0,              // dev-granted extra slots (added on top of the tier)
@@ -209,6 +213,7 @@ const Hero = {
     this.zonesCleared = 0;
     this.actsCleared = 0;
     this.actUniques = {};
+    this.pet = null; this.wings = null; this.quest = null; this.salvagedCount = 0;
     this.difficulty = 0;
     this.bestZone = 0;
     this.totalKills = 0;
@@ -273,6 +278,7 @@ const Hero = {
       hasCube: this.hasCube, goldenMirror: this.goldenMirror, orbAutoPickup: this.orbAutoPickup,
       cubePowers: this.cubePowers, cubeActive: this.cubeActive,
       artisans: this.artisans, runes: this.runes, cheats: this.cheats,
+      pet: this.pet, wings: this.wings, quest: this.quest, salvagedCount: this.salvagedCount,
       bagTier: this.bagTier, bagBonus: this.bagBonus
     };
   },
@@ -341,6 +347,9 @@ const Hero = {
         return a;
       })(),
       runes: d.runes || {},
+      pet: d.pet || null, wings: d.wings || null,
+      quest: (d.quest && typeof d.quest === 'object') ? Object.assign({}, d.quest) : null,
+      salvagedCount: d.salvagedCount || 0,
       cheats: Object.assign({ god: false, essence: false, spawn: 0 }, d.cheats),
       bagTier: clamp(d.bagTier || 0, 0, BAG_UPGRADES.length),
       bagBonus: Math.max(0, d.bagBonus || 0)

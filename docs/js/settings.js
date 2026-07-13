@@ -56,6 +56,7 @@ const Settings = {
     weather:  { v: 0.6, mute: true }
   },
   g: {
+    theme: 'bone',        // UI chrome theme (THEMES in data.js) — set at the Mystic
     electiveMode: false,  // allow more than one skill per category on the action bar
     dmgNumbers: true,     // floating damage text (red hit / yellow crit / green heal)
     shake: true,          // camera shake

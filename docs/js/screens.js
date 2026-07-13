@@ -45,9 +45,22 @@ const Screens = {
       case 'skills': this.skills(ctx, W, H); break;
       case 'skillChooser': this.skillChooser(ctx, W, H); break;
       case 'smith': this.smith(ctx, W, H); break;
+      case 'smithSalvage': this.smithSalvage(ctx, W, H); break;
+      case 'smithWeapon': this.smithWeapon(ctx, W, H); break;
+      case 'smithArmor': this.smithArmor(ctx, W, H); break;
       case 'torches': this.torches(ctx, W, H); break;
       case 'jeweler': this.jeweler(ctx, W, H); break;
+      case 'jewSocket': this.jewSocket(ctx, W, H); break;
+      case 'jewUnsocket': this.jewUnsocket(ctx, W, H); break;
+      case 'jewMerge': this.jewMerge(ctx, W, H); break;
+      case 'jewSell': this.jewSell(ctx, W, H); break;
+      case 'jewCraft': this.jewCraft(ctx, W, H); break;
       case 'mystic': this.mystic(ctx, W, H); break;
+      case 'mysEnchant': this.mysEnchant(ctx, W, H); break;
+      case 'mysPet': this.mysPet(ctx, W, H); break;
+      case 'mysWings': this.mysWings(ctx, W, H); break;
+      case 'mysTheme': this.mysTheme(ctx, W, H); break;
+      case 'quests': this.quests(ctx, W, H); break;
       case 'pause': this.pause(ctx, W, H); break;
       case 'reward': this.reward(ctx, W, H); break;
       case 'character': this.character(ctx, W, H); break;
@@ -806,7 +819,7 @@ const Screens = {
   // panel content stays readable, then the menu draws on top. Falls back to the
   // plain dim() until the image loads.
   shopImg: {},
-  shopBackdrop(ctx, W, H, key) {
+  shopBackdrop(ctx, W, H, key, veil = 0.66) {
     let img = this.shopImg[key];
     if (!img) {
       img = new Image();
@@ -817,11 +830,41 @@ const Screens = {
       const s = Math.max(W / img.naturalWidth, H / img.naturalHeight);
       const dw = img.naturalWidth * s, dh = img.naturalHeight * s;
       ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
-      // Veil: darker at the edges, letting the centre art glow through a touch.
-      ctx.fillStyle = 'rgba(4,2,8,0.66)';
+      // Veil so panel content stays readable (hubs pass a LIGHTER veil so the
+      // interior painting is the star — owner rule: show the art first).
+      ctx.fillStyle = 'rgba(4,2,8,' + veil + ')';
       ctx.fillRect(0, 0, W, H);
     } else {
       this.dim(ctx, W, H);
+    }
+  },
+
+  // Artisan HUB (owner rule): entering a shop shows its INTERIOR ART first with
+  // a slim column of category buttons. Each button opens a sub-screen; closing a
+  // sub-screen (✕ / Escape / EXIT) drops back HERE (art visible again); closing
+  // the hub leaves the shop. `buttons` = [label, desc, screenId|cb, color].
+  artisanHub(ctx, W, H, artKey, title, npcLine, buttons, trainKey) {
+    this.shopBackdrop(ctx, W, H, artKey, 0.34);
+    const pw = Math.min(430, W - 24);
+    const px = W / 2 - pw / 2;
+    const rowH = 58;
+    const ph = 96 + (trainKey ? 34 : 0) + buttons.length * rowH + 14;
+    const py = Math.max(10, H - ph - 24);   // panel hugs the BOTTOM; art breathes above
+    UI.panel(ctx, px, py, pw, ph, title);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.fillText(this.fitText(ctx, npcLine, pw - 30), W / 2, py + 52);
+    let y = py + 66;
+    if (trainKey) { this.artisanRow(ctx, px, pw, y + 8, trainKey.k, trainKey.label); y += 34; }
+    for (const [label, desc, target, color] of buttons) {
+      const cb = typeof target === 'function' ? target : () => UI.open(target);
+      UI.btn(ctx, px + 14, y, pw - 28, rowH - 8, '', cb);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 15px Georgia'; ctx.fillStyle = color;
+      ctx.fillText(label, px + 30, y + rowH * 0.32);
+      ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.fillText(this.fitText(ctx, desc, pw - 60), px + 30, y + rowH * 0.66);
+      y += rowH;
     }
   },
 
@@ -2529,95 +2572,93 @@ const Screens = {
     }
   },
 
+  // BLACKSMITH — art-first hub with four benches (owner rule).
   smith(ctx, W, H) {
+    this.artisanHub(ctx, W, H, 'smith', 'HAEDRIG — BLACKSMITH',
+      '"The forge is hot. What do you need?"', [
+        ['⚒  SALVAGE', 'Break gear down into crafting materials', 'smithSalvage', '#ffb43a'],
+        ['⚔  CRAFT WEAPON', 'Forge scythes and phylacteries', 'smithWeapon', '#e0724a'],
+        ['🛡  CRAFT ARMOR', 'Forge armor, boots, rings and amulets', 'smithArmor', '#8fb0e8'],
+        ['🔥  CRAFT TORCHES', 'Recipe-built lights against the dark', 'torches', '#ffb24a']
+      ], { k: 'smith', label: 'FORGE' });
+  },
+
+  smithSalvage(ctx, W, H) {
     this.shopBackdrop(ctx, W, H, 'smith');
-    // (red ✕ drawn globally by UI.draw, above all content)
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 56, 480);
-    UI.panel(ctx, px, 46, pw, ph, 'HAEDRIG — BLACKSMITH');
-    this.artisanRow(ctx, px, pw, 88, 'smith', 'FORGE');
-    this.matsRow(ctx, px + 16, 114, pw - 32);
-
-    // Bulk salvage row (ease of access). Epics unlock at smith 8, Legendaries at
-    // smith 10; single items always break down free from the Inventory wheel.
-    const half = (pw - 40) / 2;
-    const q = (pw - 32 - 3 * 6) / 4;
+    UI.panel(ctx, px, 46, pw, Math.min(H - 56, 300), 'SALVAGE');
+    this.matsRow(ctx, px + 16, 92, pw - 32);
+    ctx.textAlign = 'left'; ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.fillText(this.fitText(ctx, 'Bulk-melt everything of a rarity in your bag. Gems survive the forge.', pw - 32), px + 16, 122);
+    const q = (pw - 32 - 3 * 8) / 2;
     const epicLvl = Items.BULK_SALVAGE_SMITH.epic, legLvl = Items.BULK_SALVAGE_SMITH.legendary;
     const epicOk = Hero.artisans.smith >= epicLvl, legOk = Hero.artisans.smith >= legLvl;
-    UI.btn(ctx, px + 16 + 0 * (q + 6), 124, q, 32, 'COM+MAG', () => Items.salvageJunk(),
-      { size: 10, border: '#8a6f4a', color: '#ffb43a' });
-    UI.btn(ctx, px + 16 + 1 * (q + 6), 124, q, 32, 'RARES', () => Items.salvageRares(),
-      { size: 10, border: '#8a6f4a', color: '#ffd76a' });
-    UI.btn(ctx, px + 16 + 2 * (q + 6), 124, q, 32, epicOk ? 'EPICS' : 'EPICS S' + epicLvl, () => Items.salvageEpics(),
-      { size: 10, border: '#7a4a8f', color: epicOk ? '#b06adf' : '#6f5a7a' });
-    UI.btn(ctx, px + 16 + 3 * (q + 6), 124, q, 32, legOk ? 'LEGENDS' : 'LEG S' + legLvl, () => Items.salvageLegendaries(),
-      { size: 10, border: '#8a5a2a', color: legOk ? '#ff8c2a' : '#7a5f45' });
+    UI.btn(ctx, px + 16, 138, q, 44, 'COMMON + MAGIC', () => Items.salvageJunk(),
+      { size: 12, border: '#8a6f4a', color: '#ffb43a' });
+    UI.btn(ctx, px + 24 + q, 138, q, 44, 'RARES', () => Items.salvageRares(),
+      { size: 12, border: '#8a6f4a', color: '#ffd76a' });
+    UI.btn(ctx, px + 16, 190, q, 44, epicOk ? 'EPICS' : 'EPICS  (smith ' + epicLvl + ')', () => Items.salvageEpics(),
+      { size: 12, border: '#7a4a8f', color: epicOk ? '#b06adf' : '#6f5a7a', disabled: !epicOk });
+    UI.btn(ctx, px + 24 + q, 190, q, 44, legOk ? 'LEGENDARIES' : 'LEGENDARIES  (smith ' + legLvl + ')', () => Items.salvageLegendaries(),
+      { size: 12, border: '#8a5a2a', color: legOk ? '#ff8c2a' : '#7a5f45', disabled: !legOk });
+    ctx.textAlign = 'center'; ctx.font = '10px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.fillText(this.fitText(ctx, 'Single items always salvage free from the Inventory wheel, any rarity.', pw - 24), px + pw / 2, 258);
+  },
 
-    // Forge quality selector.
+  // The shared craft bench body — quality toggle + a slot grid.
+  smithCraft(ctx, W, H, title, slots) {
+    this.shopBackdrop(ctx, W, H, 'smith');
+    const pw = Math.min(560, W - 20);
+    const px = W / 2 - pw / 2;
+    const cols = pw >= 480 ? 4 : 3;
+    const rows = Math.ceil(slots.length / cols);
+    UI.panel(ctx, px, 46, pw, Math.min(H - 56, 236 + rows * 40), title);
     if (UI.sel.master === undefined) UI.sel.master = false;
-    const stdCost = Items.craftCost(false);
-    const mwCost = Items.craftCost(true);
-    UI.btn(ctx, px + 16, 166, half, 42, '', () => { UI.sel.master = false; },
+    const half = (pw - 40) / 2;
+    const stdCost = Items.craftCost(false), mwCost = Items.craftCost(true);
+    UI.btn(ctx, px + 16, 92, half, 42, '', () => { UI.sel.master = false; },
       { bg: !UI.sel.master ? 'rgba(60,52,78,0.95)' : undefined, border: !UI.sel.master ? '#c9bfa8' : undefined });
-    UI.btn(ctx, px + 24 + half, 166, half, 42, '', () => { UI.sel.master = true; },
+    UI.btn(ctx, px + 24 + half, 92, half, 42, '', () => { UI.sel.master = true; },
       { bg: UI.sel.master ? 'rgba(70,54,30,0.95)' : undefined, border: UI.sel.master ? '#ffd76a' : undefined });
-    ctx.textAlign = 'center';
-    ctx.font = 'bold 12px Georgia';
-    ctx.fillStyle = '#c9bfa8';
-    ctx.fillText('STANDARD', px + 16 + half / 2, 180);
-    ctx.fillStyle = '#ffd76a';
-    ctx.fillText('MASTERWORK', px + 24 + half * 1.5, 180);
-    ctx.font = '9px Georgia';
-    ctx.fillStyle = '#8a8070';
-    ctx.fillText(this.fitText(ctx, this.costLabel(stdCost), half - 12), px + 16 + half / 2, 196);
-    ctx.fillText(this.fitText(ctx, this.costLabel(mwCost), half - 12), px + 24 + half * 1.5, 196);
-
-    const cost = Items.craftCost(UI.sel.master);
-    const afford = Items.canAfford(cost);
-    // Forge band — smith level pins the gear level the Blacksmith can make —
-    // shown alongside the quality note on one line so the slot grid stays put.
+    ctx.textAlign = 'center'; ctx.font = 'bold 12px Georgia';
+    ctx.fillStyle = '#c9bfa8'; ctx.fillText('STANDARD', px + 16 + half / 2, 106);
+    ctx.fillStyle = '#ffd76a'; ctx.fillText('MASTERWORK', px + 24 + half * 1.5, 106);
+    ctx.font = '9px Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.fillText(this.fitText(ctx, this.costLabel(stdCost), half - 12), px + 16 + half / 2, 122);
+    ctx.fillText(this.fitText(ctx, this.costLabel(mwCost), half - 12), px + 24 + half * 1.5, 122);
+    const afford = Items.canAfford(Items.craftCost(UI.sel.master));
     const [flo, fhi] = Items.smithRange();
-    ctx.font = '10px Georgia';
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#ffb43a';
+    ctx.font = '10px Georgia'; ctx.textAlign = 'left'; ctx.fillStyle = '#ffb43a';
     const bandTxt = 'Forges lvl ' + flo + '–' + fhi + '.  ';
-    ctx.fillText(bandTxt, px + 16, 220);
+    ctx.fillText(bandTxt, px + 16, 148);
     const bandW = ctx.measureText(bandTxt).width;
     ctx.fillStyle = UI.sel.master ? '#ffd76a' : '#6f6552';
     ctx.fillText(this.fitText(ctx, UI.sel.master
       ? 'Masterwork: Rare+ guaranteed, 50% socket.'
-      : 'Standard: a quick roll for the slot.', pw - 32 - bandW), px + 16 + bandW, 220);
-
-    // Torches are recipe-crafted, not random-forged — keep them off the roll grid.
-    // Both ring slots share the label "Ring", so show ONE forge button (a crafted
-    // ring goes to your bag/stash, not a fixed finger).
-    const slots = Object.keys(ITEM_SLOTS).filter(s => !ITEM_SLOTS[s].torch && s !== 'ring2');
-    const cols = pw >= 480 ? 4 : 3;
+      : 'Standard: a quick roll for the slot.', pw - 32 - bandW), px + 16 + bandW, 148);
     const bw = (pw - 32 - (cols - 1) * 8) / cols;
     slots.forEach((slot, i) => {
       const bx = px + 16 + (i % cols) * (bw + 8);
-      const by = 232 + Math.floor(i / cols) * 40;
+      const by = 162 + Math.floor(i / cols) * 40;
       UI.btn(ctx, bx, by, bw, 34, ITEM_SLOTS[slot].label, () => Items.craft(slot, UI.sel.master),
         { size: 11, disabled: !afford, border: UI.sel.master ? '#8a6f4a' : undefined });
     });
+    ctx.textAlign = 'center'; ctx.font = '10px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.fillText('Crafted gear goes to your bag.', px + pw / 2, 162 + rows * 40 + 12);
+  },
 
-    const footY = 232 + Math.ceil(slots.length / cols) * 40 + 6;
-    ctx.textAlign = 'center';
-    ctx.font = '10px Georgia';
-    ctx.fillStyle = '#6f6552';
-    ctx.fillText(this.fitText(ctx, 'Salvage single items from the Inventory wheel. Gems survive the forge.', pw - 24),
-      px + pw / 2, footY);
-    // Gateway to the torch-crafting bench.
-    UI.btn(ctx, px + 16, footY + 8, pw - 32, 30, '🔥  CRAFT TORCHES  »', () => UI.open('torches'),
-      { size: 12, border: '#c8722a', color: '#ffb24a' });
+  smithWeapon(ctx, W, H) { this.smithCraft(ctx, W, H, 'CRAFT WEAPONS', ['weapon', 'offhand']); },
+  smithArmor(ctx, W, H) {
+    this.smithCraft(ctx, W, H, 'CRAFT ARMOR & JEWELRY',
+      ['helm', 'shoulders', 'chest', 'gloves', 'legs', 'boots', 'amulet', 'ring1']);
   },
 
   // The torch-crafting bench. Torches light the darkness for a limited time,
   // then burn out. All three are recipe-built from smashed-scenery reagents
   // and go straight to the Stash for safe keeping.
   torches(ctx, W, H) {
-    this.dim(ctx, W, H);
+    this.shopBackdrop(ctx, W, H, 'smith');
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 56, 468);
@@ -2723,179 +2764,264 @@ const Screens = {
       { size: 11, border: '#6b5f80' });
   },
 
+  // JEWELER — art-first hub with five gem benches (owner rule).
   jeweler(ctx, W, H) {
-    this.shopBackdrop(ctx, W, H, 'jeweler');
-    // (red ✕ drawn globally by UI.draw, above all content)
-    // Tablet/desktop: bigger fonts + more spaced-out rows (owner request).
-    const big = W >= 760;
-    const pw = Math.min(big ? 640 : 560, W - 20);
-    const px = W / 2 - pw / 2;
-    UI.panel(ctx, px, 46, pw, Math.min(H - 56, big ? 560 : 470), 'COVETOUS SHEN — JEWELER');
-    this.artisanRow(ctx, px, pw, 88, 'jeweler', 'GEMCRAFT');
-    ctx.textAlign = 'left';
-    ctx.font = 'bold ' + (big ? 14 : 12) + 'px Georgia';
-    ctx.fillStyle = '#ffd76a';
-    ctx.fillText(Hero.gold + ' gold', px + 16, big ? 106 : 104);
-    ctx.font = (big ? 13 : 11) + 'px Georgia';
-    ctx.fillStyle = '#9a9080';
-    ctx.fillText(this.fitText(ctx, 'Combine 3 matching gems into a finer one. Socket via the Inventory wheel.', pw - 32), px + 16, big ? 124 : 114);
-    // Buy a freshly cut gem.
-    const gemCost = Items.gemPrice();
-    const buyY = big ? 136 : 122, buyH = big ? 38 : 32;
-    UI.btn(ctx, px + 16, buyY, pw - 32, buyH,
-      `CUT A RANDOM GEM — ${this.costLabel(gemCost)}`,
-      Items.canAfford(gemCost) ? () => Items.buyGem() : null,
-      { size: big ? 13 : 11, disabled: !Items.canAfford(gemCost), border: '#7a4a8f', color: '#b06adf' });
+    this.artisanHub(ctx, W, H, 'jeweler', 'COVETOUS SHEN — JEWELER',
+      '"Every stone has a soul. Let me show you."', [
+        ['◆  SOCKET A GEM', 'Set a gem into an empty socket', 'jewSocket', '#4ecbe0'],
+        ['◇  UNSOCKET', 'Pull gems back out — always free', 'jewUnsocket', '#b06adf'],
+        ['⬘  MERGE GEMS', 'Combine 3 matching gems into a finer one', 'jewMerge', '#4ade80'],
+        ['⬖  SELL GEMS', 'Trade gems for gold', 'jewSell', '#ffd76a'],
+        ['✧  CRAFT A GEM', 'Cut a brand-new gem of your chosen type', 'jewCraft', '#c88bf0']
+      ], { k: 'jeweler', label: 'GEMCRAFT' });
+  },
 
-    // Socketed gear: pull any gem back out, free of charge.
-    let y = buyY + buyH + (big ? 12 : 8);
-    const socRowH = big ? 32 : 26, socStep = big ? 38 : 30;
-    const socketedRows = [];
-    for (const slot of Object.keys(ITEM_SLOTS)) {
-      const it = Hero.equipped[slot];
-      if (it && it.gems) it.gems.forEach((g, gi) => socketedRows.push({ it, gi, g }));
-    }
-    for (const { it, gi, g } of socketedRows.slice(0, 3)) {
-      const gm = GEM_TYPES[g.type];
-      ctx.fillStyle = 'rgba(28,24,38,0.92)';
-      rr(ctx, px + 16, y, pw - 32, socRowH, 5); ctx.fill();
-      ctx.fillStyle = gm.color;
-      ctx.save();
-      ctx.translate(px + 30, y + socRowH / 2);
-      ctx.rotate(Math.PI / 4);
-      ctx.fillRect(-4, -4, 8, 8);
-      ctx.restore();
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = (big ? 13 : 11) + 'px Georgia';
-      ctx.fillStyle = '#b5ab94';
-      ctx.fillText(this.fitText(ctx, gemName(g) + '  in  ' + it.name, pw - 200), px + 44, y + socRowH / 2);
-      UI.btn(ctx, px + pw - 148, y + (socRowH - 24) / 2, 132, 24, 'UNSOCKET (free)', () => Items.unsocket(it, gi),
-        { size: 10, border: '#7a4a8f', color: '#b06adf' });
-      y += socStep;
-    }
-    if (socketedRows.length) y += 4;
+  // Shared gem-stack list with TYPE FILTER chips + tier sort. Returns the keys
+  // in display order and lays down list scroll + rows; `onRow` draws the right
+  // side of each row. Used by MERGE and SELL.
+  gemStackList(ctx, W, H, px, pw, top, panelBot, detailNeed, onSelect) {
+    // Filter chips (All + 5 types) and a sort-direction toggle.
+    const types = Object.keys(GEM_TYPES);
+    const chipW = (pw - 32 - 64) / (types.length + 1);
+    UI.btn(ctx, px + 16, top, chipW - 4, 24, 'All', () => { UI.sel.gemFilter = null; UI.sel.gemKey = null; },
+      { size: 9, bg: !UI.sel.gemFilter ? 'rgba(70,44,90,0.95)' : undefined });
+    types.forEach((t, ti) => {
+      const on = UI.sel.gemFilter === t;
+      UI.btn(ctx, px + 16 + (ti + 1) * chipW, top, chipW - 4, 24, GEM_TYPES[t].name.slice(0, 4),
+        () => { UI.sel.gemFilter = on ? null : t; UI.sel.gemKey = null; },
+        { size: 9, color: GEM_TYPES[t].color, bg: on ? 'rgba(70,44,90,0.95)' : undefined, border: on ? GEM_TYPES[t].color : undefined });
+    });
+    UI.btn(ctx, px + pw - 74, top, 58, 24, UI.sel.gemSortAsc ? '▲ tier' : '▼ tier',
+      () => { UI.sel.gemSortAsc = !UI.sel.gemSortAsc; }, { size: 9 });
 
-    // Group gems.
     const groups = {};
     for (const g of Hero.gems) {
+      if (UI.sel.gemFilter && g.type !== UI.sel.gemFilter) continue;
       const key = g.type + ':' + g.tier;
       groups[key] = (groups[key] || 0) + 1;
     }
-    // Keep each gem kind together, best (highest tier) on top, least on the bottom.
     const keys = Object.keys(groups).sort((a, b) => {
       const [ta, tia] = a.split(':'); const [tb, tib] = b.split(':');
-      if (ta !== tb) return ta < tb ? -1 : 1;   // group by kind
-      return (+tib) - (+tia);                     // then best tier first
+      if (ta !== tb) return ta < tb ? -1 : 1;
+      return UI.sel.gemSortAsc ? (+tia) - (+tib) : (+tib) - (+tia);
     });
+    const listTop = top + 32;
     if (!keys.length) {
-      ctx.font = 'italic ' + (big ? 15 : 13) + 'px Georgia';
-      ctx.fillStyle = '#544d44';
-      ctx.textAlign = 'left';
-      ctx.fillText('No gems in your pouch — monsters and chests drop them.', px + 16, y + 14);
-      return;
+      ctx.textAlign = 'left'; ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#544d44';
+      ctx.fillText(Hero.gems.length ? 'No gems match this filter.' : 'No gems in your pouch yet.', px + 16, listTop + 16);
+      return { groups, listBot: listTop };
     }
-    // Scrollable stack list — DRAG to scroll (no arrow buttons, owner request).
-    const panelBot = 46 + Math.min(H - 56, big ? 560 : 470);
-    const detailNeed = UI.sel.gemKey && groups[UI.sel.gemKey] ? (big ? 214 : 176) : 0;
-    const rowH = big ? 50 : 40;
-    const listTop = y;
+    const rowH = 40;
     const listBot = panelBot - 12 - detailNeed;
     const viewH = Math.max(rowH, listBot - listTop);
-    const contentH = keys.length * rowH;
-    const scrollMax = Math.max(0, contentH - viewH);
+    const scrollMax = Math.max(0, keys.length * rowH - viewH);
     const scrollY = clamp(UI.sel.scrollY || 0, 0, scrollMax);
-    UI.sel.scrollY = scrollY;
-    UI.sel.scrollMax = scrollMax;
+    UI.sel.scrollY = scrollY; UI.sel.scrollMax = scrollMax;
     UI.sel.scrollRegion = { x: px + 14, y: listTop, w: pw - 28, h: viewH };
     ctx.save();
     ctx.beginPath(); ctx.rect(px + 14, listTop, pw - 28, viewH); ctx.clip();
     keys.forEach((key, i) => {
       const ry = listTop + i * rowH - scrollY;
-      if (ry + rowH - 6 < listTop || ry > listBot) return;   // off-view: skip draw + hit
+      if (ry + rowH - 6 < listTop || ry > listBot) return;
       const [type, tierS] = key.split(':');
-      const tier = +tierS;
-      const n = groups[key];
-      const gm = GEM_TYPES[type];
+      const tier = +tierS, n = groups[key], gm = GEM_TYPES[type];
       const selected = UI.sel.gemKey === key;
-      const cy2 = ry + rowH / 2;
-      UI.btn(ctx, px + 16, ry, pw - 32, rowH - 6, '', () => {
-        UI.sel.gemKey = selected ? null : key;
-      }, { bg: selected ? 'rgba(70,44,90,0.9)' : undefined, border: selected ? gm.color : undefined });
-      // Gem chip.
-      drawGemIcon(ctx, type, tier, px + (big ? 38 : 34), cy2, big ? 14 : 11);
-      ctx.textAlign = 'left';
-      ctx.font = 'bold ' + (big ? 15 : 12) + 'px Georgia';
-      ctx.fillStyle = gm.color;
-      // Tier only — the chip color names the gem; inspecting reveals the rest.
-      ctx.fillText(`${GEM_TIERS[tier]}  ×${n}`, px + (big ? 58 : 50), cy2);
-      ctx.textAlign = 'right';
-      ctx.font = (big ? 12 : 10) + 'px Georgia';
-      ctx.fillStyle = '#8a8070';
-      ctx.fillText(selected ? '▾' : 'tap to inspect', px + pw - 26, cy2);
+      UI.btn(ctx, px + 16, ry, pw - 32, rowH - 6, '', () => onSelect(key, selected),
+        { bg: selected ? 'rgba(70,44,90,0.9)' : undefined, border: selected ? gm.color : undefined });
+      drawGemIcon(ctx, type, tier, px + 34, ry + rowH / 2 - 3, 11);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 12px Georgia'; ctx.fillStyle = gm.color;
+      ctx.fillText(gm.name + ' · ' + GEM_TIERS[tier] + '  ×' + n, px + 50, ry + rowH / 2 - 3);
+      ctx.textAlign = 'right'; ctx.font = '10px Georgia'; ctx.fillStyle = '#8a8070';
+      ctx.fillText(selected ? '▾' : 'tap', px + pw - 26, ry + rowH / 2 - 3);
     });
     ctx.restore();
     if (scrollMax > 0) {
       ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
       if (scrollY > 1) ctx.fillText('▲ drag ▲', px + pw / 2, listTop + 3);
-      if (scrollY < scrollMax - 1) ctx.fillText('▼ drag for more ▼', px + pw / 2, listBot - 1);
+      if (scrollY < scrollMax - 1) ctx.fillText('▼ drag ▼', px + pw / 2, listBot - 1);
     }
-    y = listBot + 4;   // the detail card (if any) sits below the scroll region
+    return { groups, listBot };
+  },
 
-    // Detail card for the selected stack.
-    if (UI.sel.gemKey && groups[UI.sel.gemKey]) {
-      const [type, tierS] = UI.sel.gemKey.split(':');
-      const tier = +tierS;
-      const n = groups[UI.sel.gemKey];
-      const gm = GEM_TYPES[type];
+  jewMerge(ctx, W, H) {
+    this.shopBackdrop(ctx, W, H, 'jeweler');
+    const pw = Math.min(560, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 56, 470);
+    UI.panel(ctx, px, 46, pw, ph, 'MERGE GEMS');
+    const sel = UI.sel.gemKey;
+    const detailNeed = sel ? 116 : 0;
+    const { groups, listBot } = this.gemStackList(ctx, W, H, px, pw, 88, 46 + ph, detailNeed,
+      (key, selected) => { UI.sel.gemKey = selected ? null : key; });
+    if (sel && groups[sel]) {
+      const [type, tierS] = sel.split(':');
+      const tier = +tierS, n = groups[sel], gm = GEM_TYPES[type];
       const canCombine = n >= 3 && tier < GEM_TIERS.length - 1;
       const cost = 500 * (tier + 1);
-      y += 4;
-      ctx.fillStyle = 'rgba(20,17,28,0.94)';
-      rr(ctx, px + 16, y, pw - 32, 62, 6); ctx.fill();
-      ctx.strokeStyle = gm.color;
-      ctx.lineWidth = 1.5;
-      rr(ctx, px + 16, y, pw - 32, 62, 6); ctx.stroke();
-      drawGemIcon(ctx, type, tier, px + pw - 46, y + 31, 18);
-      ctx.textAlign = 'left';
-      ctx.font = 'bold 13px Georgia';
-      ctx.fillStyle = gm.color;
-      ctx.fillText('◆ ' + GEM_TIERS[tier] + ' ' + gm.name, px + 28, y + 16);
-      ctx.font = '12px Georgia';
-      ctx.fillStyle = '#b5ab94';
-      ctx.fillText(this.fitText(ctx, gemStatText({ type, tier }), pw - 60), px + 32, y + 33);
+      let y = listBot + 8;
+      ctx.textAlign = 'left'; ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
+      ctx.fillText(this.fitText(ctx, 'Now: ' + gemStatText({ type, tier }), pw - 40), px + 20, y + 8);
       ctx.fillStyle = tier < GEM_MAX_TIER ? '#4ade80' : '#8a8070';
-      ctx.fillText(
-        tier < GEM_MAX_TIER
-          ? this.fitText(ctx, 'Next: ' + gemStatText({ type, tier: tier + 1 }), pw - 60)
-          : 'This gem is already Marquise — the top tier.',
-        px + 32, y + 50);
-      y += 68;
-      const halfW = (pw - 40) / 2;
-      UI.btn(ctx, px + 16, y, halfW, 34,
-        tier >= GEM_TIERS.length - 1 ? 'MAX TIER'
-          : n < 3 ? `NEED 3 (have ${n})`
-          : `COMBINE 3→1  (${cost}g)`,
-        canCombine ? () => {
-          Items.combineGems(type, tier);
-          if ((groups[UI.sel.gemKey] || 0) <= 3) UI.sel.gemKey = null;
-        } : null,
-        { size: 11, disabled: !canCombine, border: '#3a7a4a', color: '#4ade80' });
-      UI.btn(ctx, px + 24 + halfW, y, halfW, 34,
-        'COMBINE ALL',
-        canCombine && n >= 6 ? () => {
-          Items.combineAllGems(type, tier);
-          UI.sel.gemKey = null;
-        } : null,
-        { size: 11, disabled: !(canCombine && n >= 6), border: '#3a7a4a', color: '#4ade80' });
-      // Sell for gold.
+      ctx.fillText(this.fitText(ctx, tier < GEM_MAX_TIER ? 'Next: ' + gemStatText({ type, tier: tier + 1 }) : 'Already Marquise — the top tier.', pw - 40), px + 20, y + 26);
       y += 40;
+      const halfW = (pw - 40) / 2;
+      UI.btn(ctx, px + 16, y, halfW, 36,
+        tier >= GEM_TIERS.length - 1 ? 'MAX TIER' : n < 3 ? `NEED 3 (have ${n})` : `COMBINE 3→1  (${cost}g)`,
+        canCombine ? () => { Items.combineGems(type, tier); if ((groups[sel] || 0) <= 3) UI.sel.gemKey = null; } : null,
+        { size: 11, disabled: !canCombine, border: '#3a7a4a', color: '#4ade80' });
+      UI.btn(ctx, px + 24 + halfW, y, halfW, 36, 'COMBINE ALL',
+        canCombine && n >= 6 ? () => { Items.combineAllGems(type, tier); UI.sel.gemKey = null; } : null,
+        { size: 11, disabled: !(canCombine && n >= 6), border: '#3a7a4a', color: '#4ade80' });
+    }
+  },
+
+  jewSell(ctx, W, H) {
+    this.shopBackdrop(ctx, W, H, 'jeweler');
+    const pw = Math.min(560, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 56, 470);
+    UI.panel(ctx, px, 46, pw, ph, 'SELL GEMS');
+    ctx.textAlign = 'right'; ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#ffd76a';
+    ctx.fillText(Hero.gold.toLocaleString() + ' g', px + pw - 16, 80);
+    const sel = UI.sel.gemKey;
+    const detailNeed = sel ? 64 : 0;
+    const { groups, listBot } = this.gemStackList(ctx, W, H, px, pw, 88, 46 + ph, detailNeed,
+      (key, selected) => { UI.sel.gemKey = selected ? null : key; });
+    if (sel && groups[sel]) {
+      const [type, tierS] = sel.split(':');
+      const tier = +tierS, n = groups[sel];
       const sell1 = Items.gemSellValue(tier);
-      UI.btn(ctx, px + 16, y, halfW, 34, `SELL 1  (${sell1}g)`,
-        () => { Items.sellGem(type, tier, false); if ((groups[UI.sel.gemKey] || 0) <= 1) UI.sel.gemKey = null; },
+      const y = listBot + 10;
+      const halfW = (pw - 40) / 2;
+      UI.btn(ctx, px + 16, y, halfW, 36, `SELL 1  (${sell1}g)`,
+        () => { Items.sellGem(type, tier, false); if ((groups[sel] || 0) <= 1) UI.sel.gemKey = null; },
         { size: 11, border: '#8a6f4a', color: '#ffd76a' });
-      UI.btn(ctx, px + 24 + halfW, y, halfW, 34, `SELL ALL ×${n}  (${sell1 * n}g)`,
+      UI.btn(ctx, px + 24 + halfW, y, halfW, 36, `SELL ALL ×${n}  (${(sell1 * n).toLocaleString()}g)`,
         () => { Items.sellGem(type, tier, true); UI.sel.gemKey = null; },
         { size: 11, border: '#8a6f4a', color: '#ffd76a' });
+    }
+  },
+
+  jewCraft(ctx, W, H) {
+    this.shopBackdrop(ctx, W, H, 'jeweler');
+    const pw = Math.min(480, W - 20);
+    const px = W / 2 - pw / 2;
+    UI.panel(ctx, px, 46, pw, Math.min(H - 56, 380), 'CRAFT A GEM');
+    const cost = Items.gemCraftCost();
+    const afford = Items.canAfford(cost);
+    ctx.textAlign = 'center'; ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.fillText(this.fitText(ctx, 'Choose a stone — Shen cuts it fresh. Finer jeweler training cuts finer tiers.', pw - 30), W / 2, 86);
+    ctx.font = 'bold 13px Georgia'; ctx.fillStyle = afford ? '#ffd76a' : '#a05a5a';
+    ctx.fillText('Cost: ' + this.costLabel(cost) + '   (you have ' + Hero.gold.toLocaleString() + 'g)', W / 2, 108);
+    let y = 126;
+    for (const t of Object.keys(GEM_TYPES)) {
+      const gm = GEM_TYPES[t];
+      UI.btn(ctx, px + 16, y, pw - 32, 40, '', afford ? () => Items.craftGem(t) : null,
+        { disabled: !afford, border: gm.color });
+      drawGemIcon(ctx, t, 4, px + 38, y + 20, 12);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 13px Georgia'; ctx.fillStyle = gm.color;
+      ctx.fillText(gm.name, px + 58, y + 14);
+      ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.fillText(this.fitText(ctx, gemStatText({ type: t, tier: 0 }).replace(/\s*\/\s*/, ' · '), pw - 90), px + 58, y + 29);
+      y += 46;
+    }
+  },
+
+  jewSocket(ctx, W, H) {
+    this.shopBackdrop(ctx, W, H, 'jeweler');
+    const pw = Math.min(560, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 56, 470);
+    UI.panel(ctx, px, 46, pw, ph, 'SOCKET A GEM');
+    ctx.textAlign = 'left'; ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.fillText(this.fitText(ctx, 'Gear with sockets (equipped ◈ and bagged). Tap one to choose its gem.', pw - 32), px + 16, 86);
+    const rows = [];
+    for (const slot of Object.keys(ITEM_SLOTS)) {
+      const it = Hero.equipped[slot];
+      if (it && (it.sockets || 0) > 0) rows.push({ it, equipped: true });
+    }
+    for (const it of Hero.bag) if (it && !it.torch && (it.sockets || 0) > 0) rows.push({ it, equipped: false });
+    if (!rows.length) {
+      ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#544d44';
+      ctx.fillText('No socketed gear yet — sockets roll on drops, or the Mystic can add one.', px + 16, 116);
+    }
+    const rowH = 44, listTop = 98, listBot = 46 + ph - 14;
+    const viewH = Math.max(rowH, listBot - listTop);
+    const scrollMax = Math.max(0, rows.length * rowH - viewH);
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, scrollMax);
+    UI.sel.scrollY = scrollY; UI.sel.scrollMax = scrollMax;
+    UI.sel.scrollRegion = UI.sel.gemPick ? null : { x: px + 14, y: listTop, w: pw - 28, h: viewH };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(px + 14, listTop, pw - 28, viewH); ctx.clip();
+    rows.forEach(({ it, equipped }, i) => {
+      const ry = listTop + i * rowH - scrollY;
+      if (ry + rowH - 6 < listTop || ry > listBot) return;
+      const free = (it.sockets || 0) - (it.gems || []).length;
+      UI.btn(ctx, px + 16, ry, pw - 32, rowH - 6, '', () => {
+        UI.sel.gemTarget = it; UI.sel.gemPick = true; UI.sel.gemKey = undefined;
+      }, { border: RARITIES[it.rarity].color });
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 12px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
+      ctx.fillText(this.fitText(ctx, it.name, pw - 190), px + 28, ry + 13);
+      ctx.font = '10px Georgia'; ctx.fillStyle = '#8a8070';
+      ctx.fillText((equipped ? 'EQUIPPED · ' : 'in bag · ') + ITEM_SLOTS[it.slot].label, px + 28, ry + 28);
+      ctx.textAlign = 'right'; ctx.font = 'bold 11px Georgia';
+      ctx.fillStyle = free > 0 ? '#6ff7c3' : '#8a8070';
+      ctx.fillText(free > 0 ? free + ' empty ◇' : 'full', px + pw - 28, ry + rowH / 2 - 3);
+    });
+    ctx.restore();
+    if (scrollMax > 0 && !UI.sel.gemPick) {
+      ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+      if (scrollY < scrollMax - 1) ctx.fillText('▼ drag ▼', px + pw / 2, listBot - 1);
+    }
+    // The proven gem-choosing popup does the actual socketing.
+    if (UI.sel.gemPick) this.gemModal(ctx, W, H);
+  },
+
+  jewUnsocket(ctx, W, H) {
+    this.shopBackdrop(ctx, W, H, 'jeweler');
+    const pw = Math.min(560, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 56, 470);
+    UI.panel(ctx, px, 46, pw, ph, 'UNSOCKET — ALWAYS FREE');
+    const rows = [];
+    for (const slot of Object.keys(ITEM_SLOTS)) {
+      const it = Hero.equipped[slot];
+      if (it && it.gems) it.gems.forEach((g, gi) => rows.push({ it, gi, g, equipped: true }));
+    }
+    for (const it of Hero.bag) if (it && it.gems) it.gems.forEach((g, gi) => rows.push({ it, gi, g, equipped: false }));
+    if (!rows.length) {
+      ctx.textAlign = 'left'; ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#544d44';
+      ctx.fillText('Nothing is socketed right now.', px + 16, 100);
+      return;
+    }
+    const rowH = 40, listTop = 88, listBot = 46 + ph - 14;
+    const viewH = Math.max(rowH, listBot - listTop);
+    const scrollMax = Math.max(0, rows.length * rowH - viewH);
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, scrollMax);
+    UI.sel.scrollY = scrollY; UI.sel.scrollMax = scrollMax;
+    UI.sel.scrollRegion = { x: px + 14, y: listTop, w: pw - 28, h: viewH };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(px + 14, listTop, pw - 28, viewH); ctx.clip();
+    rows.forEach(({ it, gi, g, equipped }, i) => {
+      const ry = listTop + i * rowH - scrollY;
+      if (ry + rowH - 6 < listTop || ry > listBot) return;
+      const gm = GEM_TYPES[g.type];
+      ctx.fillStyle = 'rgba(28,24,38,0.92)';
+      rr(ctx, px + 16, ry, pw - 32, rowH - 6, 5); ctx.fill();
+      drawGemIcon(ctx, g.type, g.tier, px + 32, ry + rowH / 2 - 3, 10);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
+      ctx.fillText(this.fitText(ctx, gemName(g) + '  in  ' + it.name + (equipped ? '' : ' (bag)'), pw - 200), px + 46, ry + rowH / 2 - 3);
+      UI.btn(ctx, px + pw - 128, ry + 4, 112, rowH - 14, 'UNSOCKET', () => Items.unsocket(it, gi),
+        { size: 10, border: '#7a4a8f', color: '#b06adf' });
+    });
+    ctx.restore();
+    if (scrollMax > 0) {
+      ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+      if (scrollY < scrollMax - 1) ctx.fillText('▼ drag ▼', px + pw / 2, listBot - 1);
     }
   },
 
@@ -2932,7 +3058,62 @@ const Screens = {
     return m ? m[0].replace('+', '') : s;
   },
 
+  // MYSTIC — art-first hub: enchanting plus the cosmetic wardrobe (owner rule).
   mystic(ctx, W, H) {
+    this.artisanHub(ctx, W, H, 'mystic', 'MYRIAM — MYSTIC',
+      '"The threads of fate can always be rewoven."', [
+        ['✦  ENCHANT GEAR', 'Reroll a chosen property on an item', 'mysEnchant', '#b06adf'],
+        ['🐾  PETS', 'Choose a companion to walk beside you', 'mysPet', '#6ff7c3'],
+        ['🪽  WINGS', 'Choose the wings your Nekromancer wears', 'mysWings', '#e8e0cc'],
+        ['🎨  THEMES', 'Re-tint the game\'s menus and buttons', 'mysTheme', '#ffd76a']
+      ], { k: 'mystic', label: 'ENCHANTING' });
+  },
+
+  // A simple cosmetic chooser grid shared by pets/wings/themes.
+  cosmeticList(ctx, W, H, title, entries, current, onPick, noneLabel) {
+    this.shopBackdrop(ctx, W, H, 'mystic');
+    const pw = Math.min(480, W - 20);
+    const px = W / 2 - pw / 2;
+    const rows = entries.length + (noneLabel ? 1 : 0);
+    UI.panel(ctx, px, 46, pw, Math.min(H - 56, 108 + rows * 52), title);
+    let y = 92;
+    const row = (label, desc, id, color) => {
+      const on = current === id;
+      UI.btn(ctx, px + 16, y, pw - 32, 44, '', () => onPick(id),
+        { bg: on ? 'rgba(60,52,78,0.95)' : undefined, border: on ? (color || '#6ff7c3') : undefined });
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 13px Georgia'; ctx.fillStyle = color || '#e8e0cc';
+      ctx.fillText((on ? '✔  ' : '') + label, px + 30, y + 15);
+      ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.fillText(this.fitText(ctx, desc, pw - 60), px + 30, y + 31);
+      y += 52;
+    };
+    if (noneLabel) row(noneLabel, 'Plain and unadorned.', null, '#9a9080');
+    for (const [id, e, color] of entries) row(e.name, e.desc || '', id, color);
+  },
+
+  mysPet(ctx, W, H) {
+    this.cosmeticList(ctx, W, H, 'CHOOSE A PET',
+      Object.entries(PETS).map(([id, e]) => [id, e, '#6ff7c3']),
+      Hero.pet, id => { Hero.pet = id; Game.pet = null; Hero.save(); AudioSys.sfx('gem'); },
+      'No pet');
+  },
+
+  mysWings(ctx, W, H) {
+    this.cosmeticList(ctx, W, H, 'CHOOSE YOUR WINGS',
+      Object.entries(WINGS).map(([id, e]) => [id, e, e.color]),
+      Hero.wings, id => { Hero.wings = id; Hero.save(); AudioSys.sfx('gem'); },
+      'No wings');
+  },
+
+  mysTheme(ctx, W, H) {
+    this.cosmeticList(ctx, W, H, 'CHOOSE A THEME',
+      Object.entries(THEMES).map(([id, e]) => [id, { name: e.name, desc: 'Menus and buttons take on ' + e.name.toLowerCase() + ' tones.' }, e.title]),
+      Settings.g.theme || 'bone',
+      id => { if (id) { Settings.g.theme = id; Settings.save(); AudioSys.sfx('gem'); } });
+  },
+
+  mysEnchant(ctx, W, H) {
     this.shopBackdrop(ctx, W, H, 'mystic');
     // (red ✕ drawn globally by UI.draw, above all content)
     // Tablet/desktop: bigger fonts + more spaced-out rows (owner request).
@@ -2940,8 +3121,7 @@ const Screens = {
     const pw = Math.min(big ? 640 : 560, W - 20);
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 56, big ? 560 : 480);
-    UI.panel(ctx, px, 46, pw, ph, 'MYRIAM — MYSTIC');
-    this.artisanRow(ctx, px, pw, 88, 'mystic', 'ENCHANTING');
+    UI.panel(ctx, px, 46, pw, ph, 'ENCHANT GEAR');
     UI.sel.scrollRegion = null;   // only the detail view (below) is scrollable
     const rowStep = big ? 42 : 34, rowBoxH = big ? 38 : 30, rowF = big ? 15 : 12;
 
@@ -3583,6 +3763,72 @@ const Screens = {
   },
 
   // ------------------------------------------------- wandering vendor
+
+  // Lucas, Bringer of Light — New Haven's knightly quest-giver. One quest at a
+  // time; progress is measured against lifetime counters, so it ticks up
+  // wherever you fight. Turn in here for gold, souls and XP.
+  quests(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const pw = Math.min(500, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 24, 420);
+    const py = Math.max(12, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, '⚔ LUCAS, BRINGER OF LIGHT');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#c9bfa8';
+    ctx.fillText(this.fitText(ctx, '"The light holds, friend — but only because we fight for it."', pw - 30), W / 2, py + 54);
+
+    const q = Hero.quest;
+    const goldReward = 200 * Hero.level, soulReward = 2;
+    if (q) {
+      const def = TOWN_QUESTS.find(d => d.id === q.id);
+      if (!def) { Hero.quest = null; return; }
+      const prog = clamp(def.counter() - q.base, 0, def.need);
+      const done = prog >= def.need;
+      let y = py + 84;
+      ctx.font = 'bold 15px Georgia'; ctx.fillStyle = '#ffd76a';
+      ctx.fillText(def.name.toUpperCase(), W / 2, y); y += 22;
+      ctx.font = '12px Georgia'; ctx.fillStyle = '#b5ab94';
+      ctx.fillText(this.fitText(ctx, def.desc, pw - 40), W / 2, y); y += 26;
+      UI.bar(ctx, px + 40, y, pw - 80, 14, prog / def.need, '#3a3448', done ? '#4ade80' : '#ffd76a');
+      ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#e8e0cc';
+      ctx.fillText(prog + ' / ' + def.need, W / 2, y + 7); y += 34;
+      ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.fillText('Reward: ' + goldReward.toLocaleString() + 'g · ' + soulReward + ' Forgotten Souls · XP', W / 2, y); y += 28;
+      UI.btn(ctx, px + 30, y, pw - 60, 44, done ? '✔  TURN IN' : 'IN PROGRESS…',
+        done ? () => {
+          Hero.gold += goldReward;
+          Hero.mats.soul = (Hero.mats.soul || 0) + soulReward;
+          Hero.addXP(Math.round(XP_CURVE(Math.min(Hero.level, 69)) * 0.5));
+          Hero.quest = null;
+          Hero.save();
+          UI.toast('Quest complete! +' + goldReward.toLocaleString() + 'g, +' + soulReward + ' souls', '#ffd76a');
+          AudioSys.sfx('level');
+        } : null,
+        { size: 14, disabled: !done, border: done ? '#3a7a4a' : undefined, color: done ? '#4ade80' : '#8a8070' });
+      y += 54;
+      UI.btn(ctx, px + 30, y, pw - 60, 30, 'ABANDON QUEST', () => { Hero.quest = null; Hero.save(); },
+        { size: 10, border: '#7a4a4a', color: '#c98a8a' });
+    } else {
+      let y = py + 84;
+      ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.fillText('Take up a charge — one at a time:', W / 2, y); y += 20;
+      for (const def of TOWN_QUESTS) {
+        UI.btn(ctx, px + 20, y, pw - 40, 54, '', () => {
+          Hero.quest = { id: def.id, base: def.counter() };
+          Hero.save();
+          UI.toast('Quest accepted: ' + def.name, '#ffd76a');
+          AudioSys.sfx('gold');
+        });
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#ffd76a';
+        ctx.fillText(def.name, px + 36, y + 17);
+        ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
+        ctx.fillText(this.fitText(ctx, def.desc + '  ·  ' + goldReward.toLocaleString() + 'g + ' + soulReward + ' souls', pw - 70), px + 36, y + 36);
+        y += 60;
+      }
+    }
+  },
 
   vendor(ctx, W, H) {
     this.dim(ctx, W, H);
