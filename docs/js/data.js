@@ -39,11 +39,17 @@ const RUNE_ELEMENT = {
   iceGolem: 'cold', freezingGrasp: 'cold', frozenArmy: 'cold', frozenLands: 'cold'
 };
 
-const GAME_VERSION = 'v1.6.45-alpha';
+const GAME_VERSION = 'v1.6.46-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.46-alpha', date: 'July 2026',
+    notes: [
+      'Attack Speed now commands your ARMY too — the +% Attack Speed on your gear speeds up your minions\' attacks (skeletons, mages, golem), not just your own Primary/Secondary casts and channeled Siphon Blood. At +50% attack speed a skeleton swings in 0.5s instead of 0.75s. Attack Speed is finally worth building for a summoner'
+    ]
+  },
   {
     v: 'v1.6.45-alpha', date: 'July 2026',
     notes: [

@@ -2133,6 +2133,9 @@ class Minion {
       }
     }
     const dmgMult = Game.player.power() * (this.frenzyT > 0 ? 1.5 : 1) * (this.dmgBuff || 1);
+    // Attack Speed on your gear also quickens your MINIONS' attacks — the summoner's
+    // whole army strikes faster, so IAS matters for a minion build too.
+    const minAS = 1 + (Game.player.atkSpeed || 0);
     // Minions keep pace with the Nekromancer — never slower than the hero, so they
     // don't lag behind as you run (owner rule). Move-speed gear speeds them up too.
     const travel = Game.player ? Math.max(this.speed, Game.player.speed) : this.speed;
@@ -2146,7 +2149,7 @@ class Minion {
           this.x += Math.cos(a) * travel * dt;
           this.y += Math.sin(a) * travel * dt;
         } else if (this.atkCd <= 0) {
-          this.atkCd = this.cfg.atkCd * (this.archer ? 0.6 : 1);   // Skeleton Archer: faster
+          this.atkCd = this.cfg.atkCd * (this.archer ? 0.6 : 1) / minAS;   // Skeleton Archer: faster; +hero attack speed
           Game.projectiles.push(new Projectile(this.x, this.y - 8, a, {
             speed: 480, dmg: this.dmg * dmgMult * scent, r: 5, life: 1.4, type: 'deathbolt'
           }));
@@ -2156,7 +2159,7 @@ class Minion {
         this.x += Math.cos(a) * travel * (this.frenzyT > 0 ? 1.3 : 1) * dt;
         this.y += Math.sin(a) * travel * (this.frenzyT > 0 ? 1.3 : 1) * dt;
       } else if (this.atkCd <= 0) {
-        this.atkCd = this.cfg.atkCd;
+        this.atkCd = this.cfg.atkCd / minAS;
         tgt.hurt(this.dmg * dmgMult * scent, { knock: { a, f: this.kind === 'golem' ? 120 : 40 } });
         // Dark Mending: commanded skeletons heal the necromancer on each hit.
         if (this.healOnHit && !Game.player.dead) Game.player.heal(Game.player.maxHp * 0.005);
