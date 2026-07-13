@@ -283,13 +283,16 @@ const Game = {
   },
 
   // =========================== WALKABLE TOWN ============================
-  // A real hand-drawn town you WALK around (owner request), replacing the pure
-  // menu hub. Step up to a shopfront and it opens: Blacksmith · Jeweler · Mystic,
-  // four themed merchants, the Stash, your Inventory and (once found) the Cube.
-  // A central campfire opens the old menu hub (skills/paragon/settings) and the
-  // gate leads out to the Wilds.
+  // NEW HAVEN — the owner's hand-drawn town, walked for real. Buildings are
+  // solid (invisible blockers over the painting); standing at a doorway shows an
+  // ENTER button where the primary skill sits — pressing it walks you inside
+  // (opens that shop's screen); the same button flips to EXIT while inside.
+  // Blue waypoint = bounties / acts / adventure · purple = rifts / greater
+  // rifts / seasons. A town portal from the wilds arrives HERE (no more menu).
 
-  merchantStock(slots, opts = {}) {
+  // (named rollVendorStock — NOT merchantStock — because Screens.merchant caches
+  //  its stock array on Game.merchantStock and would clobber a method named that)
+  rollVendorStock(slots, opts = {}) {
     const mLvl = Math.max(1, (Hero.level || 1) + (Hero.difficulty || 0) * 3);
     const stock = [];
     const n = opts.count || 6;
@@ -302,55 +305,57 @@ const Game = {
     return stock;
   },
 
-  // The town is the owner's hand-drawn map (docs/art/town/nekropolis.png), drawn
-  // 1:1 as the world; interaction pads + collision boxes are placed over the
-  // painted buildings. TOWN_STATIONS holds their coordinates (in image pixels).
+  // Interaction pads + collision boxes traced over the New Haven painting
+  // (docs/art/town/newhaven.png, image-pixel coords).
+  //   padX, padY, padR,  blockerCX,CY,W,H,  label, icon, color, kind[, slots, boost]
   TOWN_STATIONS: [
-    // padX, padY,  blockerX,Y,W,H,  label, icon, color, kind[, slots]
-    [376, 336,  376, 250, 200, 150, 'Blacksmith',       '⚒', '#ffb43a', 'smith'],
-    [702, 300,  702, 214, 190, 150, 'Jeweler',          '◆', '#4ecbe0', 'jeweler'],
-    [1003, 402, 1003, 300, 210, 150, 'Mystic',          '✦', '#b06adf', 'mystic'],
-    [255, 452,  180, 402, 150, 150, 'Weapons',          '⚔', '#e0724a', 'vendor', ['weapon', 'offhand']],
-    [414, 536,  414, 452, 170, 130, 'Stash',            '▤', '#8fb0e8', 'stash'],
-    [627, 536,  627, 452, 170, 130, 'Inventory',        '🎒', '#6ff7c3', 'radial'],
-    [890, 586,  890, 470, 150, 130, "Horadric's Cube",  '◈', '#ff5a4a', 'cube'],
-    [300, 664,  256, 604, 180, 140, 'Armor',            '🛡', '#8fb0e8', 'vendor', ['helm', 'chest', 'gloves', 'boots', 'shoulders', 'legs']],
-    [1129, 620, 1129, 540, 160, 140, 'Apothecary',      '⚗', '#9fd88a', 'vendor', ['amulet', 'ring1', 'ring2']],
-    [389, 842,  389, 738, 200, 150, 'General Goods',    '◉', '#ffd76a', 'vendor', 'all'],
-    [589, 900,  589, 796, 170, 140, 'Food & Drink',     '🍺', '#e0a24a', 'vendor', 'all', -0.12],
-    [790, 842,  790, 738, 190, 150, 'Miscellaneous',    '❖', '#c88bf0', 'vendor', 'all', 0.22],
-    [577, 636,  0, 0, 0, 0,          'The Wilds',        '⛰', '#8fd0ff', 'wilds'],   // central waypoint
-    [176, 150,  0, 0, 0, 0,          'Waypoint',         '✧', '#8fd0ff', 'wilds']    // top-left waypoint
+    [435, 395, 60,   420, 260, 240, 220, 'Jeweler',        '◆', '#4ecbe0', 'jeweler'],
+    [720, 375, 60,   745, 240, 180, 190, 'Mystic',         '✦', '#b06adf', 'mystic'],
+    [305, 745, 60,   250, 650, 210, 150, 'Blacksmith',     '⚒', '#ffb43a', 'smith'],
+    [835, 725, 60,   885, 615, 180, 130, "Horadric's Cube", '◈', '#ff5a4a', 'cube'],
+    [150, 485, 55,    95, 415, 180, 110, 'Weapons',        '⚔', '#e0724a', 'vendor', ['weapon', 'offhand']],
+    [435, 955, 60,   370, 860, 230, 160, 'Armor',          '🛡', '#8fb0e8', 'vendor', ['helm', 'chest', 'gloves', 'boots', 'shoulders', 'legs']],
+    [1100, 765, 60, 1130, 680, 190, 140, 'Apothecary',     '⚗', '#9fd88a', 'vendor', ['amulet', 'ring1', 'ring2']],
+    [790, 945, 60,   800, 855, 230, 150, 'General Goods',  '◉', '#ffd76a', 'vendor', 'all'],
+    [610, 1015, 55,  610, 930, 130, 140, 'Stash',          '▤', '#c9bfa8', 'stash'],
+    [183, 195, 62,     0, 0, 0, 0, 'Expedition Waypoint',  '✧', '#8fd0ff', 'waypoint-blue'],    // bounties · acts · adventure
+    [1020, 350, 66,    0, 0, 0, 0, 'Rift Waypoint',        '✧', '#c88bf0', 'waypoint-purple'],  // rifts · greater rifts · seasons
+    [585, 1120, 70,    0, 0, 0, 0, 'Return to the Wilds',  '↩', '#8fd0ff', 'gate']              // only while visiting via portal
+  ],
+  // Scenery blockers with no interaction (fountain, landmarks).
+  TOWN_SCENERY: [
+    { cx: 600, cy: 610, w: 200, h: 150 }    // the central fountain
   ],
   ALL_SLOTS: ['weapon', 'offhand', 'helm', 'chest', 'gloves', 'boots', 'shoulders', 'legs', 'amulet', 'ring1', 'ring2'],
 
   buildTown() {
     const S = 1254;
-    if (!this.townImg) { const img = new Image(); img.src = 'art/town/nekropolis.png?v=' + (typeof BUILD !== 'undefined' ? BUILD : '1'); this.townImg = img; }
+    if (!this.townImg) { const img = new Image(); img.src = 'art/town/newhaven.png?v=' + (typeof BUILD !== 'undefined' ? BUILD : '1'); this.townImg = img; }
     const interacts = [], blockers = [];
     const mkVendor = (name, flavor, slots, boost) => {
-      const o = { name: name.toUpperCase(), flavor, stock: this.merchantStock(slots === 'all' ? this.ALL_SLOTS : slots, { boost: boost || 0 }) };
+      const o = { name: name.toUpperCase(), flavor, stock: this.rollVendorStock(slots === 'all' ? this.ALL_SLOTS : slots, { boost: boost || 0 }) };
       return () => { UI.open('vendor'); UI.sel.vendor = o; AudioSys.sfx('gold'); };
     };
     const FLAVOR = {
       Weapons: '"Blades for the brave — and the doomed."',
       Armor: '"Good steel between you and the grave."',
       Apothecary: '"Charms, rings and little miracles."',
-      'General Goods': '"A bit of everything, friend."',
-      'Food & Drink': '"Sit. Drink. Live another day."',
-      Miscellaneous: '"Odd finds. No two the same."'
+      'General Goods': '"A bit of everything, friend."'
     };
     for (const s of this.TOWN_STATIONS) {
-      const [px, py, bx, by, bw, bh, label, icon, color, kind, slots, boost] = s;
+      const [px, py, pr, bx, by, bw, bh, label, icon, color, kind, slots, boost] = s;
       let open, cond;
       if (kind === 'vendor') open = mkVendor(label, FLAVOR[label] || '', slots, boost);
-      else if (kind === 'wilds') open = () => UI.open('wilds');
+      else if (kind === 'waypoint-blue') open = () => { UI.open('wilds'); UI.sel.wpFilter = 'blue'; };
+      else if (kind === 'waypoint-purple') open = () => { UI.open('wilds'); UI.sel.wpFilter = 'purple'; };
+      else if (kind === 'gate') { open = () => this.returnToWilds(); cond = () => !!this.townPortalReturn; }
       else if (kind === 'cube') { open = () => UI.open('cube'); cond = () => Hero.hasCube; }
       else open = () => UI.open(kind);
-      interacts.push({ x: px, y: py, r: 50, label, icon, color, open, cond, near: false });
+      interacts.push({ x: px, y: py, r: pr, label, icon, color, open, cond });
       if (bw > 0) blockers.push({ cx: bx, cy: by, w: bw, h: bh });
     }
-    this.town = { W: S, H: S, spawn: { x: 577, y: 1010 }, interacts, blockers, image: true };
+    for (const b of this.TOWN_SCENERY) blockers.push(b);
+    this.town = { W: S, H: S, spawn: { x: 555, y: 1075 }, interacts, blockers };
   },
 
   enterTown() {
@@ -359,13 +364,34 @@ const Game = {
     if (!this.player) { this.player = new Player(t.spawn.x, t.spawn.y); if (typeof Items !== 'undefined') Items.apply(); }
     this.player.x = t.spawn.x; this.player.y = t.spawn.y;
     this.player.dead = false; this.player.facing = -Math.PI / 2; this.player.moving = false;
-    for (const it of t.interacts) it.near = false;
     this.state = 'town';
+    this.townPrompt = null;
     UI.close();
     this.camera.x = clamp(this.player.x - this.W / 2, 0, Math.max(0, t.W - this.W));
     this.camera.y = clamp(this.player.y - this.H / 2, 0, Math.max(0, t.H - this.H));
     AudioSys.sfx('portal');
     Hero.save();
+  },
+
+  // Stepping through a wilds town portal arrives IN New Haven (no menu). The
+  // run is left paused in memory; the gate's RETURN button resumes it exactly
+  // where you left off (and collapses the portal + starts its cooldown).
+  enterTownFromPortal() {
+    const p = this.player;
+    this.townPortalReturn = { x: p.x, y: p.y, hp: p.hp, essence: p.essence };
+    this.enterTown();
+    UI.toast('Welcome to New Haven — the gate leads back to your fight', '#8fd0ff');
+  },
+
+  returnToWilds() {
+    const r = this.townPortalReturn;
+    if (!r) return;
+    this.townPortalReturn = null;
+    const p = this.player;
+    p.x = r.x; p.y = r.y; p.moving = false;
+    this.state = 'playing';
+    this.returnFromTownPortal();   // collapse the portal + 30s cooldown
+    AudioSys.sfx('portal');
   },
 
   townBlocked(x, y) {
@@ -387,25 +413,33 @@ const Game = {
       const nx = p.x + mx * spd * dt, ny = p.y + my * spd * dt;
       if (!this.townBlocked(nx, p.y)) p.x = nx;
       if (!this.townBlocked(p.x, ny)) p.y = ny;
-      p.x = clamp(p.x, 28, t.W - 28);
-      p.y = clamp(p.y, 120, t.H - 24);
+      p.x = clamp(p.x, 55, t.W - 55);
+      p.y = clamp(p.y, 125, t.H - 95);
       p.facing = lerpAngle(p.facing, Math.atan2(my, mx), Math.min(1, 14 * dt));
       p.anim += dt * 7;
     }
     this.camera.x = clamp(p.x - this.W / 2, 0, Math.max(0, t.W - this.W));
     this.camera.y = clamp(p.y - this.H / 2, 0, Math.max(0, t.H - this.H));
 
-    // Proximity interaction: stepping onto a pad opens it once (step off to re-arm).
-    let prompt = null;
+    // NO auto-open: standing near a doorway only arms the ENTER button
+    // (UI.drawTownEnter); Game.townEnter() fires it.
+    let prompt = null, best = 1e9;
     for (const it of t.interacts) {
-      if (it.cond && !it.cond()) { it.near = false; continue; }
+      if (it.cond && !it.cond()) continue;
       const d = dist(p.x, p.y, it.x, it.y);
-      if (d < it.r) {
-        if (!it.near) { it.near = true; it.open(); }
-        prompt = it;
-      } else if (d > it.r + 34) it.near = false;
+      if (d < it.r && d < best) { best = d; prompt = it; }
     }
     this.townPrompt = prompt;
+  },
+
+  // The ENTER/EXIT action (bottom-right button, or the primary-attack key).
+  townEnter() {
+    if (this.state !== 'town') return;
+    if (UI.screen) { UI.closeAction()(); AudioSys.sfx('gold'); return; }   // EXIT the building
+    const it = this.townPrompt;
+    if (!it || (it.cond && !it.cond())) return;
+    it.open();
+    AudioSys.sfx('gold');
   },
 
   drawTown(ctx) {
@@ -423,18 +457,8 @@ const Game = {
       ctx.fillStyle = '#171320'; ctx.fillRect(cam.x, cam.y, this.W, this.H);
     }
 
-    // Interaction-pad glows sitting on the cobbles in front of each shop.
-    for (const it of t.interacts) {
-      if (it.cond && !it.cond()) continue;
-      const on = this.townPrompt === it;
-      ctx.strokeStyle = it.color; ctx.globalAlpha = on ? 0.7 : 0.3 + 0.12 * Math.sin(this.time * 3 + it.x);
-      ctx.lineWidth = on ? 3 : 2;
-      ctx.beginPath(); ctx.ellipse(it.x, it.y, 30, 13, 0, 0, TAU); ctx.stroke();
-      if (on) { ctx.globalAlpha = 0.12; ctx.fillStyle = it.color; ctx.fill(); }
-      ctx.globalAlpha = 1;
-    }
-
-    // The hero walks on top of the map.
+    // The hero walks on top of the map. (No pad circles — the doorway prompt
+    // lives on the ENTER button instead, owner rule.)
     p.draw(ctx);
 
     // Floating name plates over each interactable.
@@ -460,10 +484,6 @@ const Game = {
     rr(ctx, it.x - w / 2, y - 12, w, 22, 6); ctx.stroke();
     ctx.fillStyle = it.color;
     ctx.fillText(txt, it.x, y);
-    if (on) {
-      ctx.font = 'italic 9px Georgia'; ctx.fillStyle = '#c9bfa8';
-      ctx.fillText('walk in to enter', it.x, y + 16);
-    }
     ctx.globalAlpha = 1;
   },
 
@@ -471,11 +491,11 @@ const Game = {
     const s = (UI.safe || { top: 0, left: 0, right: 0 });
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 15px Georgia'; ctx.fillStyle = '#c9bfa8';
-    ctx.fillText('NEKROPOLIS', this.W / 2, 22 + s.top);
+    ctx.fillText('NEW HAVEN', this.W / 2, 22 + s.top);
     ctx.textAlign = 'right'; ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#ffd76a';
     ctx.fillText(Hero.gold.toLocaleString() + ' gold', this.W - 14 - s.right, 22 + s.top);
     ctx.textAlign = 'center'; ctx.font = 'italic 11px Georgia'; ctx.fillStyle = 'rgba(201,191,168,0.72)';
-    ctx.fillText('Walk up to a building to enter · the blue waypoint leads to the Wilds', this.W / 2, this.H - 14 - (s.bottom || 0));
+    ctx.fillText('Blue waypoint: bounties · acts · adventure     Purple waypoint: rifts · seasons', this.W / 2, this.H - 14 - (s.bottom || 0));
   },
 
   // ------------------------------------------------------------ zone flow
@@ -588,6 +608,7 @@ const Game = {
     this.portalCast = null;
     this.portalCd = 0;
     this.townPortalNear = false;
+    this.townPortalReturn = null;   // starting a NEW run invalidates a pending portal return
     this.mapStack = [];        // a new area starts a fresh backtrack chain
     this.linkDepth = 0;        // …at surface difficulty (ONWARD dives raise it)
     this.onwardSealed = false; // …with diving re-enabled (fresh original map)
@@ -1245,15 +1266,14 @@ const Game = {
       else if (this.nextBountyPart) this.startBountyPart(this.bountyPart + 1);
       else this.completeZone();
     }
-    // Blue town portal: step off then back on to open the town-portal menu.
+    // Blue town portal: step off then back on to travel to NEW HAVEN itself
+    // (no menu — you arrive in the walkable town; the gate brings you back).
     if (World.townPortal) {
       const d = dist(p.x, p.y, World.townPortal.x, World.townPortal.y);
       if (d > 46) this.townPortalNear = false;
       else if (d < 34 && !this.townPortalNear) {
         this.townPortalNear = true;
-        UI.townMode = true;
-        UI.open('town');
-        AudioSys.sfx('portal');
+        this.enterTownFromPortal();
       }
     }
     // Entrance / exit / cave links — walkable portals into OTHER maps, open until

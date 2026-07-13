@@ -246,22 +246,31 @@ Script lives in the session scratchpad (intentionally not committed).
   via `Screens.create`; `Hero.name`/`Hero.eyeColor`), SAVE/LOAD OVERHAUL (robust
   multi-character profiles, cloud-ish export/import, migration), and GRAPHICS &
   SOUND additions (richer sprites/FX/music/ambience beyond the current procedural set).
-- **WALKABLE MAIN TOWN (DONE v1.6.41, art-mapped v1.6.42)** — "NEKROPOLIS", a walkable
-  town (`Game.state==='town'`). The map is the OWNER'S HAND-DRAWN PAINTING
-  (`docs/art/town/nekropolis.png`, 1254², loaded as `Game.townImg`) drawn 1:1 as the
-  world; `Game.TOWN_STATIONS` places interaction pads + collision boxes over the painted
-  buildings. `enterTown()` (camp hub "🏰 VISIT TOWN" button) drops the hero at the gate
-  (spawn 577,1010). `updateTown()` = joystick/WASD movement + `townBlocked()` box
-  collision + proximity auto-open (step-off to re-arm); `drawTown()` blits the visible
-  map slice, draws pad glows, the hero, and floating name plates. Stations open the SAME
-  screens — Blacksmith/Mystic/Jeweler, Stash, Inventory (radial), Horadric Cube (gated on
-  `Hero.hasCube`), **six themed merchants** (Weapons/Armor/Apothecary specialists +
-  General Goods/Food & Drink/Miscellaneous by quality — `merchantStock()` by slot, via
-  `o.name`/`o.flavor` on `Screens.vendor`), and two **blue waypoints** → `UI.open('wilds')`.
-  A top-left **☰ MENU** button (drawn in `UI.draw`'s town branch, after `clearHits`) →
-  `toCamp()` for skills/paragon/character/settings. Input: `input.js` touchstart allows
-  the left-half joystick in town; `UI.draw` has a town branch (overlays + joystick, no
-  combat HUD). If `townImg` isn't loaded yet, `drawTown` falls back to a dark fill.
+- **WALKABLE MAIN TOWN (v1.6.41, renamed & reworked v1.6.47)** — "NEW HAVEN"
+  (`Game.state==='town'`). The map is the OWNER'S HAND-DRAWN PAINTING
+  (`docs/art/town/newhaven.png`, 1254², loaded as `Game.townImg`, `?v=BUILD` bust) drawn
+  1:1 as the world; `Game.TOWN_STATIONS` traces interaction pads + INVISIBLE collision
+  boxes over the painted buildings (`TOWN_SCENERY` = fountain blocker; pathways stay
+  open, `updateTown` clamps to the walls). **ENTER-BUTTON interaction (owner rule — NO
+  pad circles, NO proximity auto-open)**: standing at a doorway arms `Game.townPrompt`;
+  `UI.drawTownEnter()` shows a big round ENTER button at the primary-skill position
+  (bottom-right) which fires `Game.townEnter()` → opens that building's screen; while a
+  screen is open the button FLIPS TO EXIT (registered above `overlayBarrier`). The
+  primary-attack key does the same (input.js). Stations: Blacksmith (forge bldg),
+  Jeweler (top-left manor), Mystic (purple-door chapel), Horadric Cube (cube plinth,
+  gated `Hero.hasCube`), Stash (small chapel), 4 leftover-building vendors
+  (Weapons/Armor/Apothecary/General Goods via `Game.rollVendorStock()` — RENAMED from
+  merchantStock because `Screens.merchant` caches an ARRAY on `Game.merchantStock`; the
+  old name collision bricked buildTown). **Waypoints (owner rule)**: BLUE (top-left) →
+  bounties/acts/adventure, PURPLE (top-right) → rifts/nephalem/seasons — both open
+  `Screens.wilds` with `UI.sel.wpFilter='blue'|'purple'` which filters the mode rows.
+  **Town portal goes STRAIGHT to New Haven** (no `Screens.town` menu — that screen is
+  now orphaned): `enterTownFromPortal()` saves `townPortalReturn={x,y,hp,essence}` and
+  the paused run stays in memory; the gate pad (visible only via `cond` while
+  `townPortalReturn` is set) → `returnToWilds()` restores the position and calls
+  `returnFromTownPortal()` (portal collapse + 30s cd). `startLand()` clears
+  `townPortalReturn`. Top-left ☰ MENU → `toCamp()` + a 🎒 button → radial. Camp hub
+  button is "🏰 VISIT NEW HAVEN".
 - **⭐ OWNER TODO (requested 2026-07-03): create the MASTER LIST of primary +
   secondary stats and affixes for items.** The engine now models:
   `dmg` (%), `hp`, `crit` (chance), `ess` (essence/s), `reg` (life/s), `gold`,

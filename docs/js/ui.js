@@ -335,19 +335,24 @@ const UI = {
     }
 
     if (Game.state === 'town') {
-      // Walkable town: overlays (open shop screens) + the movement joystick, but
-      // none of the combat HUD.
+      // New Haven: overlays (open shop screens) + the movement joystick, but none
+      // of the combat HUD. The ENTER button (bottom-right, where the primary
+      // skill sits) walks you into the building you're standing at; while inside
+      // it flips to EXIT (owner rule — the button IS the doorway).
       if (this.screen) {
         this.overlayBarrier = this.hits.length;
         Screens.draw(ctx, W, H);
         this.drawGlobalClose(ctx, W);
+        this.drawTownEnter(ctx, W, H, true);   // EXIT — registered above the barrier
       } else {
         if (!this.desktop) this.drawJoystick(ctx);
-        // "Menu" button (top-left) → the camp hub for Skills / Paragon / Character
-        // / Settings. Registered here (after clearHits) so the tap actually lands.
+        // Top-left: ☰ MENU (camp hub: skills/paragon/character/settings) + 🎒.
         const s = this.safe || { top: 0, left: 0 };
         this.btn(ctx, 12 + s.left, 40 + s.top, 92, 30, '☰ MENU', () => Game.toCamp(),
           { size: 12, color: '#c9bfa8', border: '#5a544a' });
+        this.btn(ctx, 110 + s.left, 40 + s.top, 44, 30, '🎒', () => UI.open('radial'),
+          { size: 14, color: '#6ff7c3', border: '#3a7a6a' });
+        if (Game.townPrompt) this.drawTownEnter(ctx, W, H, false);
       }
       this.drawToasts(ctx, W);
       this.drawTooltip(ctx, W, H);
@@ -392,6 +397,36 @@ const UI = {
     }
     this.drawToasts(ctx, W);   // above menus, at the bottom of the screen
     this.drawTooltip(ctx, W, H);
+  },
+
+  // New Haven's ENTER/EXIT button — a big round action button at the primary-
+  // skill position (bottom-right). Outside: shows the doorway you're standing at
+  // and ENTERs it. Inside a shop: flips to EXIT. Also fired by the primary key.
+  drawTownEnter(ctx, W, H, inside) {
+    const s = this.safe || { top: 0, right: 0, bottom: 0 };
+    const r = 38;
+    const cx = W - 66 - s.right;
+    const cy = H - 92 - (s.bottom || 0);
+    const it = Game.townPrompt;
+    const color = inside ? '#e0a24a' : (it ? it.color : '#6ff7c3');
+    const pulse = 0.75 + 0.25 * Math.sin(Game.time * 4);
+    ctx.save();
+    ctx.fillStyle = 'rgba(14,10,20,0.9)';
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+    ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.globalAlpha = pulse;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '20px Georgia'; ctx.fillStyle = color;
+    ctx.fillText(inside ? '⏏' : (it ? it.icon : '➜'), cx, cy - 9);
+    ctx.font = 'bold 11px Georgia';
+    ctx.fillText(inside ? 'EXIT' : 'ENTER', cx, cy + 13);
+    if (!inside && it) {
+      ctx.font = '10px Georgia'; ctx.fillStyle = '#c9bfa8';
+      ctx.fillText(Screens.fitText(ctx, it.label, 110), cx, cy + r + 12);
+    }
+    ctx.restore();
+    this.register(cx - r - 8, cy - r - 8, r * 2 + 16, r * 2 + 16, () => Game.townEnter());
   },
 
   // Every open menu gets the same red ✕, drawn ABOVE all of its content

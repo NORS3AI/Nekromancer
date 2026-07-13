@@ -1206,7 +1206,7 @@ const Screens = {
 
     // Hub buttons.
     const items = [
-      ['🏰 VISIT TOWN', () => Game.enterTown(), '#ffd76a'],
+      ['🏰 VISIT NEW HAVEN', () => Game.enterTown(), '#ffd76a'],
       ['⛰ THE WILDS', () => UI.open('wilds'), '#6ff7c3'],
       ['INVENTORY', () => UI.open('radial'), '#e8e0cc'],
       ['SKILLS & PASSIVES', () => UI.open('skills'), '#e8e0cc'],
@@ -1250,11 +1250,16 @@ const Screens = {
   wilds(ctx, W, H) {
     this.dim(ctx, W, H);
     // (red ✕ drawn globally by UI.draw, above all content)
+    // New Haven's two waypoints open FILTERED views (owner rule):
+    //   blue → bounties · acts (story) · adventure    purple → rifts · greater
+    //   rifts · seasons. No filter (camp access) shows everything.
+    const wp = UI.sel.wpFilter || null;
     const pw = Math.min(540, W - 20);
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 16, 540);
     const py = Math.max(8, H / 2 - ph / 2);
-    UI.panel(ctx, px, py, pw, ph, '⛰ THE WILDS');
+    UI.panel(ctx, px, py, pw, ph,
+      wp === 'blue' ? '✧ EXPEDITION WAYPOINT' : wp === 'purple' ? '✧ RIFT WAYPOINT' : '⛰ THE WILDS');
 
     // Global difficulty stepper — set it once here for every mode below. The
     // arrows grey out at the bounds (Normal has nothing lower; the top Torment
@@ -1285,21 +1290,27 @@ const Screens = {
     // Rift 70; Seasons once you hold a Master Key.
     const lvl = Hero.level;
     const rows = [];
-    rows.push(['STORY MODE', 'Continue your campaign, or replay a cleared Act', '#ff8c2a',
+    const show = tag => !wp || wp === tag;    // waypoint filter (null = show all)
+    if (show('blue')) rows.push(['STORY MODE', 'Continue your campaign, or replay a cleared Act', '#ff8c2a',
       () => UI.open('storyacts')]);
-    rows.push(['THE RIFT', 'Survive the onslaught and kill the Guardian', '#b06adf',
+    if (show('purple')) rows.push(['THE RIFT', 'Survive the onslaught and kill the Guardian', '#b06adf',
       () => { UI.close(); Game.startRift('normal'); }]);
-    if (lvl >= 20) rows.push(['BOUNTIES', 'Hunt each land\'s unique boss thrice for a reward', '#6ff7c3',
+    if (show('blue') && lvl >= 20) rows.push(['BOUNTIES', 'Hunt each land\'s unique boss thrice for a reward', '#6ff7c3',
       () => { UI.close(); Game.state = 'map'; }]);
-    if (lvl >= 60) rows.push(['ADVENTURE MODE', 'A randomized land at your level, new every visit', '#ffd76a',
+    if (show('blue') && lvl >= 60) rows.push(['ADVENTURE MODE', 'A randomized land at your level, new every visit', '#ffd76a',
       () => { UI.close(); Game.startAdventure(); }]);
-    if (lvl >= MAX_LEVEL) rows.push(['NEPHALEM RIFT', Hero.riftKeys > 0
+    if (show('purple') && lvl >= MAX_LEVEL) rows.push(['NEPHALEM RIFT', Hero.riftKeys > 0
       ? 'Uses a Nephalem Rift Key'
       : 'Requires a Nephalem Rift Key — normal Rift Guardians drop them', '#4ade80',
       Hero.riftKeys > 0 ? () => { UI.close(); Game.startRift('greater'); } : null]);
     if ((Hero.masterKeys || 0) > 0) Hero.seasonUnlocked = true;   // latch once earned
-    if (Hero.seasonUnlocked) rows.push(['SEASONS', SEASON.name, '#4ade80',
+    if (show('purple') && Hero.seasonUnlocked) rows.push(['SEASONS', SEASON.name, '#4ade80',
       () => UI.open('season')]);
+    if (!rows.length) {   // e.g. purple waypoint before level 1 has The Rift — never true, but guard
+      ctx.textAlign = 'center'; ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText('Nothing calls to you from this waypoint yet.', W / 2, py + 140);
+      return;
+    }
 
     let y = py + 92;
     const avail = (py + ph - 24) - y;

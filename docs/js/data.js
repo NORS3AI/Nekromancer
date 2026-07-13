@@ -39,11 +39,22 @@ const RUNE_ELEMENT = {
   iceGolem: 'cold', freezingGrasp: 'cold', frozenArmy: 'cold', frozenLands: 'cold'
 };
 
-const GAME_VERSION = 'v1.6.46-alpha';
+const GAME_VERSION = 'v1.6.47-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.47-alpha', date: 'July 2026',
+    notes: [
+      'The town is reborn as NEW HAVEN — a fresh hand-painted map with clean, label-free buildings. Pathways are open; buildings, the fountain and the walls are solid',
+      'NEW DOOR SYSTEM: no more glowing circles or menus popping open as you walk. Stand at a doorway and an ENTER button appears where your primary skill sits (bottom-right) — press it to step inside. While inside, the same button flips to EXIT to leave. (The primary-attack key works too)',
+      'Homes found for everyone: the Blacksmith works the open forge, the Jeweler keeps the grand manor, the Mystic haunts the purple-lit chapel, the Stash fills the small chapel by the gate, the Horadric\'s Cube rests on its stone plinth — and the leftover buildings house the Weapons, Armor, Apothecary and General Goods vendors',
+      'TWO WAYPOINTS: the BLUE waypoint (northwest) carries you to Bounties, Story Acts and Adventure Mode; the PURPLE waypoint (northeast) to Rifts, Nephalem Rifts and Seasons',
+      'TOWN PORTALS NOW LEAD HERE: stepping through a town portal takes you to New Haven itself — no more menu. Your fight waits, frozen, exactly as you left it; walk back through the town gate to RETURN to it (the portal then collapses and starts its cooldown)',
+      'Also fixes a nasty bug where browsing a town-portal merchant could permanently break entering the town for the rest of the session'
+    ]
+  },
   {
     v: 'v1.6.46-alpha', date: 'July 2026',
     notes: [

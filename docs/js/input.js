@@ -55,8 +55,10 @@ const Input = {
       const action = Settings.actionFor(e.code);
       if (action === 'mute') AudioSys.enabled = !AudioSys.enabled;
 
-      // Menu shortcuts work both in the field and back at camp.
-      if (Game.state === 'playing' || Game.state === 'camp') {
+      // New Haven: the primary-attack key IS the enter/exit-building action.
+      if (Game.state === 'town' && action === 'primary') { Game.townEnter(); return; }
+      // Menu shortcuts work in the field, at camp, and walking New Haven.
+      if (Game.state === 'playing' || Game.state === 'camp' || Game.state === 'town') {
         if (action === 'inventory') UI.screen === 'radial' ? UI.close() : UI.open('radial');
         else if (action === 'skills') {
           if (UI.screen === 'skills' && UI.sel.tab !== 'passives') UI.close();
