@@ -578,10 +578,11 @@ const Game = {
     }
     // quest marker: ! = work available · ✓ = ready to turn in
     const q = Hero.quest;
-    let mark = '!', col = '#ffd76a';
-    if (q) {
-      const def = (typeof TOWN_QUESTS !== 'undefined') && TOWN_QUESTS.find(d => d.id === q.id);
-      const done = def && (def.counter() - q.base) >= def.need;
+    const cur = (typeof QUEST_LINE !== 'undefined') ? QUEST_LINE[Hero.questLine || 0] : null;
+    let mark = cur ? '!' : null, col = '#ffd76a';
+    if (q && cur && q.idx === cur.idx) {
+      const prog = cur.abs ? cur.counter() : cur.counter() - q.base;
+      const done = prog >= cur.need;
       mark = done ? '✓' : null; col = '#4ade80';
     }
     if (mark) {
@@ -1372,6 +1373,7 @@ const Game = {
       const d = dist(p.x, p.y, o.x, o.y);
       if (o.type === 'chest' && d < 46) {
         o.used = true;
+        Hero.chestsOpened = (Hero.chestsOpened || 0) + 1;   // Lukus's quest counter
         AudioSys.sfx('chest');
         Particles.spawn(o.x, o.y - 10, {
           count: 16, color: ['#ffd76a', '#ffb43a'], minSpeed: 40, maxSpeed: 180,

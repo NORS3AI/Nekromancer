@@ -301,6 +301,7 @@ const Items = {
     }
     this.addTorchToBag(this.makeTorch(type));
     for (const [k, n] of Object.entries(T.recipe)) Hero.mats[k] -= n;
+    Hero.itemsCrafted = (Hero.itemsCrafted || 0) + 1;   // Lukus's quest counter
     Hero.save();
     UI.toast('Forged a ' + T.name + ' → your inventory', T.color);
     AudioSys.sfx('craft');
@@ -859,6 +860,7 @@ const Items = {
     } while (master && item.rarity < 2 && tries++ < 30); // masterwork: Rare or better
     if (master && !item.sockets) item.sockets = Math.random() < 0.5 ? 1 : 0;
     this.stash(item);
+    Hero.itemsCrafted = (Hero.itemsCrafted || 0) + 1;   // Lukus's quest counter
     UI.toast((master ? 'Masterworked: ' : 'Forged: ') + item.name, RARITIES[item.rarity].color);
     AudioSys.sfx('craft');
     Hero.save();
@@ -941,6 +943,7 @@ const Items = {
     }
     const gem = { type, tier: tier + 1 };
     Hero.gems.push(gem);
+    Hero.gemsCombined = (Hero.gemsCombined || 0) + 1;   // Lukus's quest counter
     UI.toast('Combined: ' + gemName(gem), GEM_TYPES[type].color);
     AudioSys.sfx('gem');
     Hero.save();
@@ -978,6 +981,7 @@ const Items = {
     // Jeweler level 10 cuts gems at your full level (max tiers).
     const gem = this.generateGem(Math.max(1, Math.round(Hero.level * (0.5 + 0.05 * Hero.artisans.jeweler))));
     Hero.gems.push(gem);
+    Hero.itemsCrafted = (Hero.itemsCrafted || 0) + 1;   // Lukus's quest counter
     UI.toast('Cut a fresh gem: ' + gemName(gem), GEM_TYPES[gem.type].color);
     AudioSys.sfx('gem');
     Hero.save();
@@ -1001,6 +1005,7 @@ const Items = {
     const gem = this.generateGem(Math.max(1, Math.round(Hero.level * (0.5 + 0.05 * Hero.artisans.jeweler))));
     gem.type = type;
     Hero.gems.push(gem);
+    Hero.itemsCrafted = (Hero.itemsCrafted || 0) + 1;   // Lukus's quest counter
     UI.toast('Crafted: ' + gemName(gem), GEM_TYPES[type].color);
     AudioSys.sfx('gem');
     Hero.save();
@@ -1139,6 +1144,7 @@ const Items = {
     }
     this.pay(cost);
     item.enchants = (item.enchants || 0) + 1;
+    Hero.enchantsDone = (Hero.enchantsDone || 0) + 1;   // Lukus's quest counter
     // Rare 10% chance: the Mystic uncovers a new gem slot, up to the item's cap
     // (a per-item override like the Funerary Pick's 3, else the rarity cap).
     const maxS = item.maxSockets != null ? item.maxSockets : (MAX_SOCKETS[item.rarity] || 0);
