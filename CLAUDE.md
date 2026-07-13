@@ -264,13 +264,21 @@ Script lives in the session scratchpad (intentionally not committed).
   old name collision bricked buildTown). **Waypoints (owner rule)**: BLUE (top-left) →
   bounties/acts/adventure, PURPLE (top-right) → rifts/nephalem/seasons — both open
   `Screens.wilds` with `UI.sel.wpFilter='blue'|'purple'` which filters the mode rows.
-  **Town portal goes STRAIGHT to New Haven** (no `Screens.town` menu — that screen is
-  now orphaned): `enterTownFromPortal()` saves `townPortalReturn={x,y,hp,essence}` and
-  the paused run stays in memory; the gate pad (visible only via `cond` while
+  **Town portal goes STRAIGHT to New Haven** (the old `Screens.town` menu + its
+  `UI.townMode` routing were DELETED in v1.6.52 — owner rule "menus that have the
+  leave button are to be deleted"; the vendor menu's LEAVE button is gone too, ✕/
+  Escape are the exits): `enterTownFromPortal()` saves `townPortalReturn={x,y,hp,essence}`
+  and the paused run stays in memory; the gate pad (visible only via `cond` while
   `townPortalReturn` is set) → `returnToWilds()` restores the position and calls
   `returnFromTownPortal()` (portal collapse + 30s cd). `startLand()` clears
   `townPortalReturn`. Top-left ☰ MENU → `toCamp()` + a 🎒 button → radial. Camp hub
-  button is "🏰 VISIT NEW HAVEN".
+  button is "🏰 VISIT NEW HAVEN". **TOWN IS HOME (v1.6.52, owner rules)**: character
+  load/creation lands IN TOWN — roster PLAY (`Profiles.select` → `Game.enterTown()`),
+  `Saves.load` and `importSave` all enter New Haven, not camp. Town HUD is BARE:
+  just "NEW HAVEN" — no gold readout, no bottom explainer legend, no grey label
+  under the ENTER button (the floating name plates carry the labels). **The pet
+  FETCHES LOOT** (v1.6.52): `Pickup.update` magnets/collects off whichever is
+  nearer of hero/`Game.pet`; all effects still land on the hero.
 - **ARTISAN HUBS (v1.6.49, owner rule)**: entering Blacksmith/Jeweler/Mystic shows the
   shop-interior ART first (`Screens.artisanHub`, `shopBackdrop` veil 0.34) with a slim
   bottom panel of bench buttons; each bench is its own screen and `UI.closeAction()`

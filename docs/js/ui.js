@@ -153,14 +153,11 @@ const UI = {
   close() {
     this.screen = null;
     this.sel = {};
-    this.townMode = false;   // leaving any menu ends town-portal navigation
   },
 
   // The navigation for the red ✕ / Escape on the CURRENT screen. Most screens
   // just close, but a few step back to a parent menu instead:
   //  · recipes → Cube, skillChooser → skills, storyacts → wilds
-  //  · in town-portal mode: an artisan/stash/inventory returns to the town menu,
-  //    and the town menu itself exits back to the wilds (Escape again).
   // Returns a callback so both the ✕ and the Escape key run identical logic.
   closeAction() {
     if (this.screen === 'recipes') return () => this.open('cube');
@@ -171,13 +168,6 @@ const UI = {
     if (['smithSalvage', 'smithWeapon', 'smithArmor', 'torches'].includes(this.screen)) return () => this.open('smith');
     if (['jewSocket', 'jewUnsocket', 'jewMerge', 'jewSell', 'jewCraft'].includes(this.screen)) return () => this.open('jeweler');
     if (['mysEnchant', 'mysPet', 'mysWings', 'mysTheme'].includes(this.screen)) return () => this.open('mystic');
-    if (this.townMode) {
-      // Closing the town menu (✕/Escape) leaves through the portal exactly like the
-      // "Back to the Wilds" button — collapse the portal and start its cooldown so
-      // the player can't step back through it once they've returned.
-      if (this.screen === 'town') return () => { this.townMode = false; this.close(); Game.returnFromTownPortal(); };
-      if (['smith', 'jeweler', 'mystic', 'merchant', 'stash', 'torches', 'radial', 'cube'].includes(this.screen)) return () => this.open('town');
-    }
     return () => this.close();
   },
 
@@ -439,10 +429,7 @@ const UI = {
     ctx.fillText(inside ? '⏏' : talk ? '💬' : (it ? it.icon : '➜'), cx, cy - 9);
     ctx.font = 'bold 11px Georgia';
     ctx.fillText(inside ? 'EXIT' : talk ? 'TALK' : 'ENTER', cx, cy + 13);
-    if (!inside && it) {
-      ctx.font = '10px Georgia'; ctx.fillStyle = '#c9bfa8';
-      ctx.fillText(Screens.fitText(ctx, it.label, 110), cx, cy + r + 12);
-    }
+    // (no grey label under the button — the building's name plate says it, owner rule)
     ctx.restore();
     this.register(cx - r - 8, cy - r - 8, r * 2 + 16, r * 2 + 16, () => Game.townEnter());
   },

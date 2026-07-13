@@ -163,11 +163,21 @@ function questReward(i) {
   return { gold, souls, xpFrac: 0.4, gem: big };
 }
 
-const GAME_VERSION = 'v1.6.51-alpha';
+const GAME_VERSION = 'v1.6.52-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.52-alpha', date: 'July 2026',
+    notes: [
+      'YOUR PET FETCHES LOOT — the companion trailing you now scoops up gold, health orbs, items and gems it passes near, exactly as if you\'d walked over them yourself. Loot magnets to whichever of you is closer',
+      'NEW HAVEN IS HOME: loading or creating a character now drops you straight into town — the streets are the first map you see, with the waypoints, artisans and Lukus all around you',
+      'Town HUD decluttered (owner request): the gold counter and the grey explainer text along the bottom are gone, and the grey label under the ENTER button too — the floating name plates over each doorway already say what everything is',
+      'Lukus has his own side of the stage now — his portrait no longer overlaps the round EXIT button in the dialog corner',
+      'The redundant LEAVE button is gone from the merchant menus (close with the red ✕ or Escape, as everywhere else), and the old unused Town Portal menu screen was deleted outright'
+    ]
+  },
   {
     v: 'v1.6.51-alpha', date: 'July 2026',
     notes: [

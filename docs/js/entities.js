@@ -2475,10 +2475,17 @@ class Pickup {
     // A full bag leaves loot on the ground: no magnet, no pickup (owner rule).
     // Gold/orbs/gems (they go to the pouch) are never blocked.
     const blocked = this.kind === 'item' && !Items.canPickup(this.item);
-    const d = dist(this.x, this.y, p.x, p.y);
+    // The cosmetic pet fetches loot too (owner rule): the magnet and the collect
+    // trigger fire off whichever is nearer — the hero or their pet. All effects
+    // (gold, healing orbs, bag items, gems) still land on the hero.
+    const pet = Game.pet;
+    const dHero = dist(this.x, this.y, p.x, p.y);
+    const dPet = pet ? dist(this.x, this.y, pet.x, pet.y) : Infinity;
+    const d = Math.min(dHero, dPet);
+    const tx = dPet < dHero ? pet.x : p.x, ty = dPet < dHero ? pet.y : p.y;
     const mag = 110 * (1 + (p.pickupRadius || 0));   // paragon Pickup Radius widens the magnet
     if (!blocked && d < mag && !p.dead) {
-      const a = angleTo(this.x, this.y, p.x, p.y);
+      const a = angleTo(this.x, this.y, tx, ty);
       const pull = (mag - d) * 6 + 120;
       this.vx += Math.cos(a) * pull * dt * 4;
       this.vy += Math.sin(a) * pull * dt * 4;
