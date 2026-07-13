@@ -318,7 +318,7 @@ const Game = {
     [1100, 765, 60, 1130, 680, 190, 140, 'Apothecary',     '⚗', '#9fd88a', 'vendor', ['amulet', 'ring1', 'ring2']],
     [790, 945, 60,   800, 855, 230, 150, 'General Goods',  '◉', '#ffd76a', 'vendor', 'all'],
     [610, 1015, 55,  610, 930, 130, 140, 'Stash',          '▤', '#c9bfa8', 'stash'],
-    [718, 668, 55,     0, 0, 0, 0, 'Lucas, Bringer of Light', '⚔', '#ffd76a', 'quests'],        // the knight quest-giver
+    [718, 668, 55,     0, 0, 0, 0, 'Lukus, Bringer of Light', '⚔', '#ffd76a', 'lukus'],         // the knight quest-giver
     [183, 195, 62,     0, 0, 0, 0, 'Expedition Waypoint',  '✧', '#8fd0ff', 'waypoint-blue'],    // bounties · acts · adventure
     [1020, 350, 66,    0, 0, 0, 0, 'Rift Waypoint',        '✧', '#c88bf0', 'waypoint-purple'],  // rifts · greater rifts · seasons
     [585, 1120, 70,    0, 0, 0, 0, 'Return to the Wilds',  '↩', '#8fd0ff', 'gate']              // only while visiting via portal
@@ -356,7 +356,7 @@ const Game = {
       else if (kind === 'gate') { open = () => this.returnToWilds(); cond = () => !!this.townPortalReturn; }
       else if (kind === 'cube') { open = () => UI.open('cube'); cond = () => Hero.hasCube; }
       else open = () => UI.open(kind);
-      interacts.push({ x: px, y: py, r: pr, label, icon, color, open, cond });
+      interacts.push({ x: px, y: py, r: pr, label, icon, color, open, cond, kind });
       if (bw > 0) blockers.push({ cx: bx, cy: by, w: bw, h: bh });
     }
     for (const b of this.TOWN_SCENERY) blockers.push(b);
@@ -471,9 +471,10 @@ const Game = {
       ctx.fillStyle = '#171320'; ctx.fillRect(cam.x, cam.y, this.W, this.H);
     }
 
-    // Lucas, Bringer of Light — the knight stands at his post by the plaza,
+    // Lukus, Bringer of Light — the painted knight at his post by the plaza,
     // with a golden ! when he has work for you (or ✓ when a quest is done).
-    this.drawLucas(ctx, 718, 668);
+    // Drawn a step NORTH of his talk-pad so the hero stands before him, not on him.
+    this.drawLukus(ctx, 718, 640);
 
     // The hero (and their pet) walk on top of the map. (No pad circles — the
     // doorway prompt lives on the ENTER button instead, owner rule.)
@@ -517,31 +518,64 @@ const Game = {
     ctx.fillText('Blue waypoint: bounties · acts · adventure     Purple waypoint: rifts · seasons', this.W / 2, this.H - 14 - (s.bottom || 0));
   },
 
-  // Lucas, Bringer of Light — a plate-armoured knight, drawn on the town map.
-  drawLucas(ctx, x, y) {
-    const bob = Math.sin(this.time * 1.8) * 1.2;
+  // ---- Lukus, Bringer of Light — the OWNER'S PAINTED KNIGHT, shrunk onto the
+  // town map as his standing model. Five moods live in docs/art/npc/
+  // (helmed · idle · smile · frown · angry); the town uses HELMED, the dialog
+  // screen uses the bare-faced moods.
+  lukusArt: {},
+  lukusImg(mood) {
+    let img = this.lukusArt[mood];
+    if (!img) {
+      img = new Image();
+      img.src = 'art/npc/lukus_' + mood + '.png?v=' + (typeof BUILD !== 'undefined' ? BUILD : '1');
+      this.lukusArt[mood] = img;
+    }
+    return img;
+  },
+  // The paintings sit on solid black — key it out once into a cached canvas so
+  // the knight stands cleanly on the cobbles. If pixel readback is unavailable
+  // (file:// testing taints the canvas), fall back to 'screen' blending.
+  lukusCut: {},
+  lukusSprite(mood) {
+    if (this.lukusCut[mood]) return this.lukusCut[mood];
+    const img = this.lukusImg(mood);
+    if (!img.complete || !img.naturalWidth) return null;
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    try {
+      const d = g.getImageData(0, 0, c.width, c.height);
+      const px = d.data;
+      for (let i = 0; i < px.length; i += 4) {
+        const l = Math.max(px[i], px[i + 1], px[i + 2]);
+        if (l < 26) px[i + 3] = Math.max(0, (l - 10) * 16);   // near-black → transparent
+      }
+      g.putImageData(d, 0, 0);
+    } catch (e) { c.screenBlend = true; }
+    this.lukusCut[mood] = c;
+    return c;
+  },
+
+  drawLukus(ctx, x, y) {
+    const bob = Math.sin(this.time * 1.6) * 1.4;
+    const spr = this.lukusSprite('helmed');
     ctx.save();
-    ctx.translate(x, y - bob);
-    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(0, 2, 14, 5, 0, 0, TAU); ctx.fill();
-    // greaves + cuirass
-    ctx.fillStyle = '#8f96a3'; rr(ctx, -9, -26, 18, 24, 4); ctx.fill();
-    ctx.strokeStyle = '#3a3f4a'; ctx.lineWidth = 1.2; rr(ctx, -9, -26, 18, 24, 4); ctx.stroke();
-    // golden tabard stripe
-    ctx.fillStyle = '#d8b44a'; rr(ctx, -3, -24, 6, 20, 2); ctx.fill();
-    // pauldrons
-    ctx.fillStyle = '#aab1bd';
-    ctx.beginPath(); ctx.ellipse(-10, -25, 5, 4, -0.3, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(10, -25, 5, 4, 0.3, 0, TAU); ctx.fill();
-    // helm with a golden plume
-    ctx.fillStyle = '#9aa1ae'; ctx.beginPath(); ctx.arc(0, -33, 7, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#1a1d24'; ctx.fillRect(-5, -34, 10, 3);   // visor slit
-    ctx.strokeStyle = '#d8b44a'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(0, -40); ctx.quadraticCurveTo(6, -46, 11, -42); ctx.stroke();
-    // sword point-down at his side
-    ctx.strokeStyle = '#cfd5de'; ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.moveTo(14, -22); ctx.lineTo(14, 0); ctx.stroke();
-    ctx.strokeStyle = '#8a6f2a'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(10, -22); ctx.lineTo(18, -22); ctx.stroke();
+    ctx.translate(x, y);
+    ctx.fillStyle = 'rgba(0,0,0,0.32)'; ctx.beginPath(); ctx.ellipse(0, 2, 16, 6, 0, 0, TAU); ctx.fill();
+    if (spr) {
+      const h = 124, w = h * (spr.width / spr.height);
+      // A faint warm halo so the dark armor reads against the dark cobbles.
+      ctx.fillStyle = 'rgba(216,180,74,0.10)';
+      ctx.beginPath(); ctx.ellipse(0, -h * 0.45, w * 0.5, h * 0.5, 0, 0, TAU); ctx.fill();
+      if (spr.screenBlend) ctx.globalCompositeOperation = 'screen';
+      ctx.drawImage(spr, -w / 2, -h + 4 - bob, w, h);
+      ctx.globalCompositeOperation = 'source-over';
+    } else {
+      // Art not loaded yet — a simple stand-in silhouette.
+      ctx.fillStyle = '#8f96a3'; rr(ctx, -9, -28 - bob, 18, 26, 4); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, -34 - bob, 7, 0, TAU); ctx.fill();
+    }
     // quest marker: ! = work available · ✓ = ready to turn in
     const q = Hero.quest;
     let mark = '!', col = '#ffd76a';
@@ -552,9 +586,9 @@ const Game = {
     }
     if (mark) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 16px Georgia'; ctx.fillStyle = col;
+      ctx.font = 'bold 17px Georgia'; ctx.fillStyle = col;
       ctx.shadowColor = col; ctx.shadowBlur = 8;
-      ctx.fillText(mark, 0, -54 + Math.sin(this.time * 3) * 2);
+      ctx.fillText(mark, 0, -124 + Math.sin(this.time * 3) * 2);
       ctx.shadowBlur = 0;
     }
     ctx.restore();

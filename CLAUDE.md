@@ -283,10 +283,18 @@ Script lives in the session scratchpad (intentionally not committed).
   persisted (snapshot parity!), `Settings.g.theme` account-wide. Pet = `Game.pet` follower
   (`updatePet` in town + playing; drawn in town/birdseye/topdown), wings = `Player.drawWings`
   behind the body in both views, theme = `UI.theme()` recolours `UI.panel` border/title +
-  default `UI.btn` borders. **LUCAS, BRINGER OF LIGHT** (knight quest-giver): `TOWN_QUESTS`
+  default `UI.btn` borders. **LUKUS, BRINGER OF LIGHT** (knight quest-giver): `TOWN_QUESTS`
   (slay 150 / clear rift / salvage 15 — lazy counters vs `{id, base}` on `Hero.quest`;
-  `Hero.salvagedCount` incremented in `grantSalvage`), station at (718,668) → `Screens.quests`
-  (accept/turn-in: gold 200×lvl + 2 souls + XP), `Game.drawLucas` sprite with !/✓ marker.
+  `Hero.salvagedCount` incremented in `grantSalvage`), station at (718,668, kind
+  'lukus') → the ENTER button flips to 💬 TALK (`it.kind==='lukus'` in
+  `UI.drawTownEnter`) → `Screens.lukus` DIALOG: solid-black stage, the owner's
+  painted knight (idle) bottom-right (black bg melts in), left panel = greeting +
+  quest board (accept/turn-in: gold 200×lvl + 2 souls + XP). His in-town model is
+  the HELMED painting keyed onto the map: `Game.lukusImg(mood)` loads
+  `docs/art/npc/lukus_{helmed,idle,smile,frown,angry}.png` (owner art, ?v=BUILD),
+  `Game.lukusSprite()` chroma-keys the black bg (falls back to 'screen' blend when
+  getImageData is unavailable on file://), `Game.drawLukus` draws it at (718,640)
+  with a warm halo + !/✓ quest marker.
 - **⭐ OWNER TODO (requested 2026-07-03): create the MASTER LIST of primary +
   secondary stats and affixes for items.** The engine now models:
   `dmg` (%), `hp`, `crit` (chance), `ess` (essence/s), `reg` (life/s), `gold`,

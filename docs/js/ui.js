@@ -432,10 +432,13 @@ const UI = {
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
     ctx.globalAlpha = 1;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    // NPCs get a speech verb instead of a doorway verb (owner rule: walking up
+    // to Lukus turns the button into "Talk to Lukus").
+    const talk = !inside && it && it.kind === 'lukus';
     ctx.font = '20px Georgia'; ctx.fillStyle = color;
-    ctx.fillText(inside ? '⏏' : (it ? it.icon : '➜'), cx, cy - 9);
+    ctx.fillText(inside ? '⏏' : talk ? '💬' : (it ? it.icon : '➜'), cx, cy - 9);
     ctx.font = 'bold 11px Georgia';
-    ctx.fillText(inside ? 'EXIT' : 'ENTER', cx, cy + 13);
+    ctx.fillText(inside ? 'EXIT' : talk ? 'TALK' : 'ENTER', cx, cy + 13);
     if (!inside && it) {
       ctx.font = '10px Georgia'; ctx.fillStyle = '#c9bfa8';
       ctx.fillText(Screens.fitText(ctx, it.label, 110), cx, cy + r + 12);

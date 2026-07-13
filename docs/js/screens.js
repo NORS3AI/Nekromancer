@@ -60,7 +60,7 @@ const Screens = {
       case 'mysPet': this.mysPet(ctx, W, H); break;
       case 'mysWings': this.mysWings(ctx, W, H); break;
       case 'mysTheme': this.mysTheme(ctx, W, H); break;
-      case 'quests': this.quests(ctx, W, H); break;
+      case 'lukus': this.lukus(ctx, W, H); break;
       case 'pause': this.pause(ctx, W, H); break;
       case 'reward': this.reward(ctx, W, H); break;
       case 'character': this.character(ctx, W, H); break;
@@ -3764,38 +3764,60 @@ const Screens = {
 
   // ------------------------------------------------- wandering vendor
 
-  // Lucas, Bringer of Light — New Haven's knightly quest-giver. One quest at a
-  // time; progress is measured against lifetime counters, so it ticks up
-  // wherever you fight. Turn in here for gold, souls and XP.
-  quests(ctx, W, H) {
-    this.dim(ctx, W, H);
-    const pw = Math.min(500, W - 20);
-    const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 24, 420);
-    const py = Math.max(12, H / 2 - ph / 2);
-    UI.panel(ctx, px, py, pw, ph, '⚔ LUCAS, BRINGER OF LIGHT');
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#c9bfa8';
-    ctx.fillText(this.fitText(ctx, '"The light holds, friend — but only because we fight for it."', pw - 30), W / 2, py + 54);
+  // Talk to LUKUS, BRINGER OF LIGHT — a dialog stage (owner spec): Lukus's
+  // painted portrait stands on the RIGHT (idle, gently breathing — the art's
+  // black background melts into the stage), and a black panel on the LEFT holds
+  // his greeting and the quest board.
+  lukus(ctx, W, H) {
+    // The stage — solid black, so the portrait blends seamlessly.
+    ctx.fillStyle = '#020104';
+    ctx.fillRect(0, 0, W, H);
 
+    // RIGHT: Lukus, bottom-anchored, idle sway.
+    const img = Game.lukusImg('idle');
+    if (img.complete && img.naturalWidth) {
+      const aspect = img.naturalWidth / img.naturalHeight;
+      let h = Math.min(H * 0.94, 680), w = h * aspect;
+      const maxW = W * 0.52;
+      if (w > maxW) { w = maxW; h = w / aspect; }
+      const bob = Math.sin(Game.time * 1.5) * 3;
+      ctx.drawImage(img, W - w - Math.max(6, W * 0.03), H - h + bob, w, h);
+    }
+
+    // LEFT: the black dialog panel (the future quest board lives here).
+    const pw = Math.min(420, W * 0.55);
+    const px = Math.max(10, W * 0.04);
+    const ph = Math.min(H - 28, 470);
+    const py = Math.max(14, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, '⚔ LUKUS, BRINGER OF LIGHT');
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'italic 13px Georgia'; ctx.fillStyle = '#e8e0cc';
+    wrapText(ctx,
+      '"Good day! I am Lukus, Bringer of Light and protectorate of New Haven. ' +
+      'I don\'t have a lot for you to do, but I can recommend doing Bounties and Rifts."',
+      px + 18, py + 64, pw - 36, 19, 6);
+
+    // Quest board.
     const q = Hero.quest;
     const goldReward = 200 * Hero.level, soulReward = 2;
+    let y = py + 188;
+    ctx.strokeStyle = '#3a3448'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px + 16, y - 14); ctx.lineTo(px + pw - 16, y - 14); ctx.stroke();
     if (q) {
       const def = TOWN_QUESTS.find(d => d.id === q.id);
       if (!def) { Hero.quest = null; return; }
       const prog = clamp(def.counter() - q.base, 0, def.need);
       const done = prog >= def.need;
-      let y = py + 84;
-      ctx.font = 'bold 15px Georgia'; ctx.fillStyle = '#ffd76a';
-      ctx.fillText(def.name.toUpperCase(), W / 2, y); y += 22;
-      ctx.font = '12px Georgia'; ctx.fillStyle = '#b5ab94';
-      ctx.fillText(this.fitText(ctx, def.desc, pw - 40), W / 2, y); y += 26;
-      UI.bar(ctx, px + 40, y, pw - 80, 14, prog / def.need, '#3a3448', done ? '#4ade80' : '#ffd76a');
-      ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#e8e0cc';
-      ctx.fillText(prog + ' / ' + def.need, W / 2, y + 7); y += 34;
-      ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
-      ctx.fillText('Reward: ' + goldReward.toLocaleString() + 'g · ' + soulReward + ' Forgotten Souls · XP', W / 2, y); y += 28;
-      UI.btn(ctx, px + 30, y, pw - 60, 44, done ? '✔  TURN IN' : 'IN PROGRESS…',
+      ctx.textAlign = 'left'; ctx.font = 'bold 14px Georgia'; ctx.fillStyle = '#ffd76a';
+      ctx.fillText(def.name.toUpperCase(), px + 18, y + 6); y += 24;
+      ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
+      ctx.fillText(this.fitText(ctx, def.desc, pw - 36), px + 18, y); y += 16;
+      UI.bar(ctx, px + 18, y, pw - 36, 13, prog / def.need, '#3a3448', done ? '#4ade80' : '#ffd76a');
+      ctx.textAlign = 'center'; ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#e8e0cc'; ctx.textBaseline = 'middle';
+      ctx.fillText(prog + ' / ' + def.need, px + pw / 2, y + 7); y += 24;
+      ctx.textAlign = 'left'; ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080'; ctx.textBaseline = 'alphabetic';
+      ctx.fillText('Reward: ' + goldReward.toLocaleString() + 'g · ' + soulReward + ' souls · XP', px + 18, y + 6); y += 18;
+      UI.btn(ctx, px + 18, y, pw - 36, 40, done ? '✔  TURN IN' : 'IN PROGRESS…',
         done ? () => {
           Hero.gold += goldReward;
           Hero.mats.soul = (Hero.mats.soul || 0) + soulReward;
@@ -3805,27 +3827,27 @@ const Screens = {
           UI.toast('Quest complete! +' + goldReward.toLocaleString() + 'g, +' + soulReward + ' souls', '#ffd76a');
           AudioSys.sfx('level');
         } : null,
-        { size: 14, disabled: !done, border: done ? '#3a7a4a' : undefined, color: done ? '#4ade80' : '#8a8070' });
-      y += 54;
-      UI.btn(ctx, px + 30, y, pw - 60, 30, 'ABANDON QUEST', () => { Hero.quest = null; Hero.save(); },
+        { size: 13, disabled: !done, border: done ? '#3a7a4a' : undefined, color: done ? '#4ade80' : '#8a8070' });
+      y += 48;
+      UI.btn(ctx, px + 18, y, pw - 36, 26, 'ABANDON QUEST', () => { Hero.quest = null; Hero.save(); },
         { size: 10, border: '#7a4a4a', color: '#c98a8a' });
     } else {
-      let y = py + 84;
-      ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
-      ctx.fillText('Take up a charge — one at a time:', W / 2, y); y += 20;
+      ctx.textAlign = 'left'; ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.fillText('…still, a few charges want doing:', px + 18, y + 4); y += 14;
       for (const def of TOWN_QUESTS) {
-        UI.btn(ctx, px + 20, y, pw - 40, 54, '', () => {
+        UI.btn(ctx, px + 16, y, pw - 32, 50, '', () => {
           Hero.quest = { id: def.id, base: def.counter() };
           Hero.save();
           UI.toast('Quest accepted: ' + def.name, '#ffd76a');
           AudioSys.sfx('gold');
         });
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#ffd76a';
-        ctx.fillText(def.name, px + 36, y + 17);
+        ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#ffd76a';
+        ctx.fillText(def.name, px + 32, y + 16);
         ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
-        ctx.fillText(this.fitText(ctx, def.desc + '  ·  ' + goldReward.toLocaleString() + 'g + ' + soulReward + ' souls', pw - 70), px + 36, y + 36);
-        y += 60;
+        ctx.fillText(this.fitText(ctx, def.desc + '  ·  ' + goldReward.toLocaleString() + 'g + ' + soulReward + ' souls', pw - 60), px + 32, y + 34);
+        ctx.textBaseline = 'alphabetic';
+        y += 56;
       }
     }
   },

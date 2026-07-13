@@ -67,11 +67,19 @@ const TOWN_QUESTS = [
   { id: 'salvage', name: 'Feed the Forge',     desc: 'Salvage 15 items into materials.',         need: 15,  counter: () => Hero.salvagedCount || 0 }
 ];
 
-const GAME_VERSION = 'v1.6.49-alpha';
+const GAME_VERSION = 'v1.6.50-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.50-alpha', date: 'July 2026',
+    notes: [
+      'LUKUS, BRINGER OF LIGHT is now the owner\'s PAINTED KNIGHT — his full-body portrait (helmed) stands at his post by the New Haven plaza, keyed onto the cobbles as his in-town model, golden plume and all. Five portrait moods (helmed, idle, smiling, frowning, angry) are in the game\'s art files for future dialogue',
+      'Walking up to Lukus turns the action button into 💬 TALK (instead of ENTER) — press it and a proper DIALOG opens: Lukus stands life-size on the right (bare-headed, idle), and a black panel on the left carries his greeting — "Good day! I am Lukus, Bringer of Light and protectorate of New Haven…" — with his quest board beneath it',
+      'The quest board itself is unchanged (accept, track, turn in) — it just lives inside the conversation now, where future quests will grow'
+    ]
+  },
   {
     v: 'v1.6.49-alpha', date: 'July 2026',
     notes: [
