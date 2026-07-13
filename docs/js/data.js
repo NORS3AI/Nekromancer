@@ -39,11 +39,17 @@ const RUNE_ELEMENT = {
   iceGolem: 'cold', freezingGrasp: 'cold', frozenArmy: 'cold', frozenLands: 'cold'
 };
 
-const GAME_VERSION = 'v1.6.43-alpha';
+const GAME_VERSION = 'v1.6.44-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.44-alpha', date: 'July 2026',
+    notes: [
+      'The Blacksmith, Jeweler and Mystic menus now open over hand-painted SHOP INTERIORS — the smith\'s fire-lit forge & anvil, the jeweler\'s vault of glowing gems, and the mystic\'s candlelit chamber of purple runes — glimmering behind the menu for real atmosphere'
+    ]
+  },
   {
     v: 'v1.6.43-alpha', date: 'July 2026',
     notes: [

@@ -801,6 +801,30 @@ const Screens = {
     ctx.fillRect(0, 0, W, H);
   },
 
+  // Hand-drawn shop interiors (owner art) behind the Blacksmith/Jeweler/Mystic
+  // menus: the painting fills the screen (cover-fit) under a dark veil so the
+  // panel content stays readable, then the menu draws on top. Falls back to the
+  // plain dim() until the image loads.
+  shopImg: {},
+  shopBackdrop(ctx, W, H, key) {
+    let img = this.shopImg[key];
+    if (!img) {
+      img = new Image();
+      img.src = 'art/shops/' + key + '.png?v=' + (typeof BUILD !== 'undefined' ? BUILD : '1');
+      this.shopImg[key] = img;
+    }
+    if (img.complete && img.naturalWidth) {
+      const s = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+      const dw = img.naturalWidth * s, dh = img.naturalHeight * s;
+      ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      // Veil: darker at the edges, letting the centre art glow through a touch.
+      ctx.fillStyle = 'rgba(4,2,8,0.66)';
+      ctx.fillRect(0, 0, W, H);
+    } else {
+      this.dim(ctx, W, H);
+    }
+  },
+
   // The one true way to dismiss a menu: a fat red ✕ (Escape works too).
   closeX(ctx, W, opts = {}) {
     const x = opts.x !== undefined ? opts.x : W - 26;
@@ -2495,7 +2519,7 @@ const Screens = {
   },
 
   smith(ctx, W, H) {
-    this.dim(ctx, W, H);
+    this.shopBackdrop(ctx, W, H, 'smith');
     // (red ✕ drawn globally by UI.draw, above all content)
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
@@ -2689,7 +2713,7 @@ const Screens = {
   },
 
   jeweler(ctx, W, H) {
-    this.dim(ctx, W, H);
+    this.shopBackdrop(ctx, W, H, 'jeweler');
     // (red ✕ drawn globally by UI.draw, above all content)
     // Tablet/desktop: bigger fonts + more spaced-out rows (owner request).
     const big = W >= 760;
@@ -2898,7 +2922,7 @@ const Screens = {
   },
 
   mystic(ctx, W, H) {
-    this.dim(ctx, W, H);
+    this.shopBackdrop(ctx, W, H, 'mystic');
     // (red ✕ drawn globally by UI.draw, above all content)
     // Tablet/desktop: bigger fonts + more spaced-out rows (owner request).
     const big = W >= 760;

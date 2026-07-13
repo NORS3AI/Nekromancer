@@ -28,7 +28,11 @@ loot at the artisans. The hero is persistent (localStorage).
   through `drawSkillIcon()`) and rune PNGs in `docs/art/runes/` (`rune0..N.png`,
   drawn through `drawRuneStone()`). Both fall back to the procedural glyph
   (`SKILL_ICONS` / `drawRuneStoneGlyph`) if art is absent, so the game still runs
-  art-free.
+  art-free. Also owner-supplied: the walkable town map (`docs/art/town/nekropolis.png`,
+  `Game.townImg`) and the shop-interior backdrops (`docs/art/shops/{smith,jeweler,
+  mystic}.png`, drawn cover-fit under a dark veil by `Screens.shopBackdrop()` behind
+  those three artisan menus; falls back to `dim()` until loaded). All loaded with a
+  `?v=BUILD` cache-bust.
 - **Update `PATCH_NOTES` (data.js) with EVERY addition and bug fix** — prepend a new
   entry (newest first) and bump `GAME_VERSION` (vX.Y.Z-alpha). The version label on
   the title screen opens the notes; the owner reads them.
