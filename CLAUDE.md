@@ -60,10 +60,15 @@ loot at the artisans. The hero is persistent (localStorage).
   overlay slices** (legs sy 0.54 / torso 0.24–0.58 counter-sway / head top 0.26)
   so it strides with depth ("layer the image to make it 3d" — owner rule).
   Falls back to the procedural `drawUpright` until both sides load; Bird's-Eye
-  keeps the classic rotating sprite. `Screens.create` shows the SAME layered
-  walking preview (eye-color aura, adaptive `pvH`, swatches go 10-wide on short
-  panels); the campfire select's "up to three Nekromancers rest by the fire"
-  subtitle was deleted (owner rule).
+  keeps the classic rotating sprite. **Motion is SUBTLE (v1.6.72 owner rule
+  "subtle movements, not dancing images"): slice offsets < 1px, gentle bob/sway
+  only — big offsets read as a body sliced in half.** `Screens.create` shows a
+  calm breathing idle (NO walk slices; eye-color aura, adaptive `pvH`, swatches
+  go 10-wide on short panels), and the CAMPFIRE ROSTER (`drawRosterAvatar`)
+  shows each save's painted avatar by the fire (gender from the snapshot,
+  legacy saves default male; `drawNecroFigure` stands in until art loads).
+  The campfire select's "up to three Nekromancers rest by the fire" subtitle
+  was deleted (owner rule).
 - **Update `PATCH_NOTES` (data.js) with EVERY addition and bug fix** — prepend a new
   entry (newest first) and bump `GAME_VERSION` (vX.Y.Z-alpha). The version label on
   the title screen opens the notes; the owner reads them.

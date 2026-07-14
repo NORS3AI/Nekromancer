@@ -315,11 +315,22 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.71-alpha';
+const GAME_VERSION = 'v1.6.72-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.72-alpha', date: 'July 2026',
+    notes: [
+      'THE CAMPFIRE ROSTER SHOWS YOUR REAL HEROES — each character by the fire is now their painted avatar, male or female per the save (older saves without a chosen gender default to male)',
+      'The creation-screen preview and the walking animation were both toned WAY down — a slow breath and a subtle sway instead of the over-eager slicing that made bodies look cut in half',
+      'FIXED: the Blacksmith salvage explainer ("Gems survive the forge") was cut off on phones — it wraps now',
+      "FIXED: Addy's and Lukus's ledger counters overlapped the ledger title on narrow screens — the count drops to its own line when there isn't room",
+      'FIXED: shop flavor text (Jeweled Necessities et al) ran off the panel and collided with the gold readout',
+      'FIXED: the Stash\'s WITHDRAW buttons were truncated to "WITHDR…", and the capacity readout hid under the red ✕'
+    ]
+  },
   {
     v: 'v1.6.71-alpha', date: 'July 2026',
     notes: [
