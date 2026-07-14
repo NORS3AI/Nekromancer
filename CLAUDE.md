@@ -369,7 +369,28 @@ Script lives in the session scratchpad (intentionally not committed).
   straight from each journal row; milestones (abs) can't be dropped. The
   dialog's journal + NEXT DEED column drag-scrolls via `UI.sel.scrollRegion`.
   Old saves migrate: the single `quest` → journal[0], `questNext` derived
-  (old `{id,...}` quests dropped on load). Station at
+  (old `{id,...}` quests dropped on load).
+  **ADDY, QUEEN OF THE UNDERWORLD (v1.6.63, owner request)** — the owner's
+  painted rogue (`docs/art/npc/addy_idle.png`, chroma-keyed via
+  `Game.addySprite()`, drawn by `Game.drawAddy` at (1150,492), station pad
+  (1150,515) kind 'addy' — placed where the owner's character stood, east of
+  the rift pavilion). **NPC plates show SHORT names only (owner rule)**:
+  'Lukus' / 'Addy' on the street; full name + title only in their dialogs.
+  Her `ADDY_QUEST_LINE` = 500 MORE quests, ALL gated level 70, built by the
+  shared `makeQuestLine({salt:7777, addy:true})` (salt 0 keeps Lukus's line
+  byte-identical) using per-template rogue opener pools (`T.addy`) so all
+  1000 names are globally unique; no milestones; same strict escalation.
+  Journal entries carry `src:'A'` for her jobs; `Hero.questOffer/acceptQuest`
+  take a src param, `questRewardSrc('A', i)` pays deeper endgame gold/souls
+  (`questRewardTextFor(entry)` renders either ledger); `Hero.addyLine/
+  addyNext/addyRepool` persist. **THE QUEEN'S ERRAND (daily)**: `dailyDeed
+  (dateKey)` — deterministic per real-world day (`Hero.dailyKey()`),
+  `Hero.daily={date,base,done}` (`dailyState/acceptDaily/completeDaily`),
+  level-70 gated, pays 1 random MARQUISE gem + `Items.addyDailyItem()` —
+  owner odds 90% legendary 0★ / 6% 1–3★ / 3% 4–5★ / 1% artifact, slot an
+  even roll across all equip slots (via `Items.generate(mLvl, boost, slot,
+  force={rarity,stars})`). `Screens.addy` mirrors the Lukus stage (purple
+  accents, daily card, her journal rows keyed `'A'+idx`, NEXT JOB). Station at
   (718,668, kind 'lukus') → the ENTER button flips to 💬 TALK (`it.kind==='lukus'`
   in `UI.drawTownEnter`) → `Screens.lukus` DIALOG: solid-black stage, the owner's
   painted knight (idle) bottom-right (black bg melts in), and the dialog laid

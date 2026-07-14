@@ -318,7 +318,10 @@ const Game = {
     [1100, 765, 60, 1130, 680, 190, 140, 'Apothecary',     '⚗', '#9fd88a', 'vendor', null],   // closed for now (owner rule) — sells nothing
     [790, 945, 60,   800, 855, 230, 150, 'Jeweled Necessities', '💍', '#ffd76a', 'vendor', ['ring1', 'ring2', 'amulet']],
     [610, 1015, 55,  610, 930, 130, 140, 'Stash',          '▤', '#c9bfa8', 'stash'],
-    [718, 668, 55,     0, 0, 0, 0, 'Lukus, Bringer of Light', '⚔', '#ffd76a', 'lukus'],         // the knight quest-giver
+    // NPC plates show the SHORT name only (owner rule) — the full name + title
+    // appears once you talk to them.
+    [718, 668, 55,     0, 0, 0, 0, 'Lukus',                '⚔', '#ffd76a', 'lukus'],   // the knight quest-giver
+    [1150, 515, 55,    0, 0, 0, 0, 'Addy',                 '🗡', '#c86adf', 'addy'],   // the rogue queen, by the crates east of the rift pavilion (owner-placed)
     [183, 195, 62,     0, 0, 0, 0, 'Expedition Waypoint',  '✧', '#8fd0ff', 'waypoint-blue'],    // bounties · acts · adventure
     [1020, 350, 66,    0, 0, 0, 0, 'Rift Waypoint',        '✧', '#c88bf0', 'waypoint-purple'],  // rifts · greater rifts · seasons
     [585, 1120, 70,    0, 0, 0, 0, 'Return to the Wilds',  '↩', '#8fd0ff', 'gate']              // only while visiting via portal
@@ -373,6 +376,7 @@ const Game = {
       else if (kind === 'waypoint-purple') open = () => { UI.open('wilds'); UI.sel.wpFilter = 'purple'; };
       else if (kind === 'gate') { open = () => this.returnToWilds(); cond = () => !!this.townPortalReturn; }
       else if (kind === 'cube') { open = () => UI.open('cube'); cond = () => Hero.hasCube; }
+      else if (kind === 'addy') open = () => UI.open('addy');
       else open = () => UI.open(kind);
       interacts.push({ x: px, y: py, r: pr, label, icon, color, open, cond, kind });
       if (bw > 0) blockers.push({ cx: bx, cy: by, w: bw, h: bh });
@@ -494,6 +498,9 @@ const Game = {
     // with a golden ! when he has work for you (or ✓ when a quest is done).
     // Drawn a step NORTH of his talk-pad so the hero stands before him, not on him.
     this.drawLukus(ctx, 718, 640);
+    // Addy, Queen of the Underworld — by the crates east of the rift pavilion
+    // (placed exactly where the owner's character stood).
+    this.drawAddy(ctx, 1150, 492);
 
     // The hero (and their pet) walk on top of the map. (No pad circles — the
     // doorway prompt lives on the ENTER button instead, owner rule.)
@@ -611,6 +618,78 @@ const Game = {
       ctx.shadowColor = col; ctx.shadowBlur = 8;
       ctx.fillText(mark, 0, -124 + Math.sin(this.time * 3) * 2);
       ctx.shadowBlur = 0;
+    }
+    ctx.restore();
+  },
+
+  // ---- Addy, Queen of the Underworld — the OWNER'S PAINTED ROGUE, keyed onto
+  // the map at her post by the south-east rampart (where the hero once stood).
+  addyArt: null,
+  addyImg() {
+    if (!this.addyArt) {
+      const img = new Image();
+      img.src = 'art/npc/addy_idle.png?v=' + (typeof BUILD !== 'undefined' ? BUILD : '1');
+      this.addyArt = img;
+    }
+    return this.addyArt;
+  },
+  addyCut: null,
+  addySprite() {
+    if (this.addyCut) return this.addyCut;
+    const img = this.addyImg();
+    if (!img.complete || !img.naturalWidth) return null;
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    try {
+      const d = g.getImageData(0, 0, c.width, c.height);
+      const px = d.data;
+      for (let i = 0; i < px.length; i += 4) {
+        const l = Math.max(px[i], px[i + 1], px[i + 2]);
+        if (l < 26) px[i + 3] = Math.max(0, (l - 10) * 16);   // near-black → transparent
+      }
+      g.putImageData(d, 0, 0);
+    } catch (e) { c.screenBlend = true; }
+    this.addyCut = c;
+    return c;
+  },
+
+  drawAddy(ctx, x, y) {
+    const bob = Math.sin(this.time * 1.4 + 2) * 1.4;
+    const spr = this.addySprite();
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = 'rgba(0,0,0,0.32)'; ctx.beginPath(); ctx.ellipse(0, 2, 16, 6, 0, 0, TAU); ctx.fill();
+    if (spr) {
+      const h = 124, w = h * (spr.width / spr.height);
+      // A cold violet halo so the dark leathers read against the dark corner.
+      ctx.fillStyle = 'rgba(200,106,223,0.10)';
+      ctx.beginPath(); ctx.ellipse(0, -h * 0.45, w * 0.6, h * 0.5, 0, 0, TAU); ctx.fill();
+      if (spr.screenBlend) ctx.globalCompositeOperation = 'screen';
+      ctx.drawImage(spr, -w / 2, -h + 4 - bob, w, h);
+      ctx.globalCompositeOperation = 'source-over';
+    } else {
+      ctx.fillStyle = '#6b5470'; rr(ctx, -8, -27 - bob, 16, 25, 4); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, -33 - bob, 6.5, 0, TAU); ctx.fill();
+    }
+    // quest marker (level 70+ only): ✓ = something to collect · ! = work/daily
+    if (Hero.level >= 70 && typeof ADDY_QUEST_LINE !== 'undefined' && Hero.questProgress) {
+      const st = (Hero.daily && Hero.daily.date === Hero.dailyKey()) ? Hero.daily : { base: null, done: false };
+      const dd = dailyDeed(Hero.dailyKey());
+      const dailyReady = !st.done && st.base !== null && (dd.counter() - st.base) >= dd.need;
+      const anyDone = (Hero.journal || []).some(e => e.src === 'A' && Hero.questProgress(e).done);
+      let mark = null, col = '#c86adf';
+      if (anyDone || dailyReady) { mark = '✓'; col = '#4ade80'; }
+      else if ((!st.done && st.base === null) ||
+               (Hero.questOffer('A') >= 0 && (Hero.journal || []).length < QUEST_JOURNAL_MAX)) mark = '!';
+      if (mark) {
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = 'bold 17px Georgia'; ctx.fillStyle = col;
+        ctx.shadowColor = col; ctx.shadowBlur = 8;
+        ctx.fillText(mark, 0, -124 + Math.sin(this.time * 3 + 1) * 2);
+        ctx.shadowBlur = 0;
+      }
     }
     ctx.restore();
   },

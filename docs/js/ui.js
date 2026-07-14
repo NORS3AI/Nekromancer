@@ -426,7 +426,7 @@ const UI = {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     // NPCs get a speech verb instead of a doorway verb (owner rule: walking up
     // to Lukus turns the button into "Talk to Lukus").
-    const talk = !inside && it && it.kind === 'lukus';
+    const talk = !inside && it && (it.kind === 'lukus' || it.kind === 'addy');
     ctx.font = '20px Georgia'; ctx.fillStyle = color;
     ctx.fillText(inside ? '⏏' : talk ? '💬' : (it ? it.icon : '➜'), cx, cy - 9);
     ctx.font = 'bold 11px Georgia';

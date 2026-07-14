@@ -83,46 +83,55 @@ const QUEST_TEMPLATES = [
     names: [['Cull', 'Reap', 'Silence', 'Scatter', 'Break', 'Fell', 'Purge', 'Quiet'],
             ['the Restless Dead', 'the Shambling Horde', 'the Graveborn', 'the Hungering Swarm',
              'the Risen Rabble', 'the Crawling Dark', 'the Unhallowed', "the Night's Legion"]],
+    addy: ['Bleed', 'Hush', 'Drown', 'Erase', 'Smother', 'Sever', 'Gut', 'Undo'],
     desc: n => 'Slay ' + n.toLocaleString() + ' monsters anywhere in the wilds.', counter: () => Hero.totalKills || 0 },
   { id: 'elite', min: 4, max: 260,
     names: [['Hunt', 'Mark', 'Topple', 'Humble', 'Unmake', 'Stalk', 'Shatter', 'End'],
             ['the Champions', 'the Gilded Few', 'the Painted Terrors', 'the Warbands',
              'the Chosen Prey', 'the Crowned Beasts', 'the Boastful', 'the Marked Ones']],
+    addy: ['Rob', 'Ambush', 'Outwit', 'Undercut', 'Blindside', 'Cheat', 'Skin', 'Fleece'],
     desc: n => 'Slay ' + n + ' elite (champion) monsters.', counter: () => Hero.eliteKills || 0 },
   { id: 'boss', min: 1, max: 50,
     names: [['Behead', 'Dethrone', 'Cast Down', 'Overthrow', 'Extinguish', 'Bury', 'Break', 'Unseat'],
             ['the Tyrants', 'the Deep Kings', 'the Crowned Horrors', 'the Old Masters',
              'the Throned Dead', 'the Dread Lords', 'the Pit Princes', 'the Named Evils']],
+    addy: ['Shank', 'Swindle', 'Poison', 'Betray', 'Rot', 'Collect On', 'Cross', 'Ruin'],
     desc: n => 'Fell ' + n + (n > 1 ? ' bosses or unique monsters.' : ' boss or unique monster.'), counter: () => Hero.bossKills || 0 },
   { id: 'rift', min: 1, max: 25,
     names: [['Seal', 'Walk', 'Cleanse', 'Brave', 'Close', 'Storm', 'Chart', 'Empty'],
             ['the Breach', 'the Torn Sky', 'the Nephalem Depths', 'the Screaming Tear',
              'the Far Rifts', 'the Broken Veil', 'the Shifting Halls', 'the Pale Door']],
+    addy: ['Raid', 'Pillage', 'Slip Through', 'Haunt', 'Scour', 'Prowl', 'Case', 'Vanish Into'],
     desc: n => 'Clear ' + n + ' Rift' + (n > 1 ? 's' : '') + ' of any kind.', counter: () => Hero.riftsCleared || 0 },
   { id: 'salvage', min: 6, max: 180,
     names: [['Feed', 'Stoke', 'Fill', 'Serve', 'Tend', 'Heap', 'Supply', 'Glut'],
             ['the Forge', 'the Hungry Anvil', 'the Scrap Pile', 'the Smelter',
              'the Coals', 'the Iron Maw', "the Breaker's Bench", 'the Furnace']],
+    addy: ['Strip', 'Fence', 'Ransack', 'Shred', 'Melt Down', 'Cannibalize', 'Repossess', 'Divvy Up'],
     desc: n => 'Salvage ' + n + ' items into materials.', counter: () => Hero.salvagedCount || 0 },
   { id: 'combine', min: 3, max: 90,
     names: [['Cut', 'Fuse', 'Polish', 'Merge', 'Facet', 'Refine', 'Marry', 'Perfect'],
             ['the Stones', 'the Gleaming Shards', 'the Deep Colors', 'the Precious Things',
              "the Jeweler's Craft", 'the Brilliant Cuts', 'the Living Light', 'the Royal Facets']],
+    addy: ['Steal', 'Hoard', 'Covet', 'Smuggle', 'Appraise', 'Pocket', 'Barter', 'Palm'],
     desc: n => 'Combine gems at the Jeweler ' + n + ' times.', counter: () => Hero.gemsCombined || 0 },
   { id: 'craft', min: 2, max: 70,
     names: [['Forge', 'Hammer', 'Temper', 'Shape', 'Strike', 'Work', 'Raise', 'Draw'],
             ['New Steel', 'the White Heat', 'the Anvil Song', 'Fresh Edges',
              "the Maker's Mark", 'Iron and Ash', "the Smith's Pride", "Tomorrow's Arms"]],
+    addy: ['Commission', 'Requisition', 'Order Up', 'Procure', 'Demand', 'Acquire', 'Bespeak', 'Levy'],
     desc: n => 'Craft ' + n + ' item' + (n > 1 ? 's' : '') + ' (forge, torches or gems).', counter: () => Hero.itemsCrafted || 0 },
   { id: 'enchant', min: 1, max: 45,
     names: [['Reweave', 'Unpick', 'Twist', 'Rethread', 'Bend', 'Court', 'Tempt', 'Spin'],
             ['the Threads of Fate', 'the Hidden Weave', "Fortune's Loom", 'the Arcane Knots',
              'the Veiled Pattern', "Myriam's Craft", 'the Fateful Strands', 'the Old Magics']],
+    addy: ['Bribe', 'Beguile', 'Coax', 'Charm', 'Con', 'Outbid', 'Haggle Over', 'Sweet-Talk'],
     desc: n => 'Reroll ' + n + ' propert' + (n > 1 ? 'ies' : 'y') + ' at the Mystic.', counter: () => Hero.enchantsDone || 0 },
   { id: 'chest', min: 3, max: 120,
     names: [['Crack', 'Plunder', 'Spring', 'Pry', 'Loot', 'Rifle', 'Unseal', 'Empty'],
             ['the Buried Chests', 'the Lost Caches', 'the Rusted Locks', 'the Forgotten Hoards',
              'the Grave Goods', 'the Hidden Troves', 'the Sealed Coffers', "the Wilds' Riches"]],
+    addy: ['Burgle', 'Pickpocket', 'Liberate', 'Crowbar', 'Heist', 'Filch', 'Pilfer', 'Lift'],
     desc: n => 'Open ' + n + ' chests in the wilds.', counter: () => Hero.chestsOpened || 0 }
 ];
 
@@ -146,20 +155,24 @@ function questGate(i) {
     : { kind: 'paragon', at: Math.max(1, Math.round((i - 199) * 1000 / 300)) };
 }
 
-const QUEST_LINE = (() => {
-  // Deterministic per-index hash — the line is identical on every load.
+// Shared, fully deterministic quest-line builder (Lukus AND Addy use it).
+//  opts: count · salt (hash offset — 0 keeps Lukus's line byte-identical) ·
+//  gateFor(i) · milestoneNames (null = no milestones, every slot is a deed) ·
+//  addy (true = the rogue opener pools, so her names never collide with his).
+function makeQuestLine(opts) {
+  const salt = opts.salt || 0;
   const h = i => {
-    let x = ((i + 1) * 2654435761) >>> 0;
+    let x = ((i + salt + 1) * 2654435761) >>> 0;
     x ^= x >>> 13; x = (x * 2246822519) >>> 0; x ^= x >>> 11;
     return x >>> 0;
   };
   // Pass 1 — deal deeds from a reshuffling bag (all 9 templates per bag, in a
-  // hash-shuffled order) so every deed recurs evenly (~54 times, safely under
-  // the 64 unique names each carries) and no deed floods a stretch of the line.
+  // hash-shuffled order) so every deed recurs evenly (safely under the 64
+  // unique names each carries) and no deed floods a stretch of the line.
   const picks = [], totals = {};
   let bag = [];
-  for (let i = 0; i < QUEST_COUNT; i++) {
-    if (i % 25 === 24) { picks.push(null); continue; }
+  for (let i = 0; i < opts.count; i++) {
+    if (opts.milestoneNames && i % 25 === 24) { picks.push(null); continue; }
     if (!bag.length) {
       bag = QUEST_TEMPLATES.slice();
       for (let j = bag.length - 1; j > 0; j--) {
@@ -177,15 +190,15 @@ const QUEST_LINE = (() => {
   // previous one — the same target can never appear twice for the same deed.
   const line = [], occ = {}, prevNeed = {};
   let msLevel = 0, msParagon = 0;
-  for (let i = 0; i < QUEST_COUNT; i++) {
-    const gate = questGate(i);
-    const lvlPhase = i < 200;
+  for (let i = 0; i < opts.count; i++) {
+    const gate = opts.gateFor(i);
+    const lvlPhase = gate.kind === 'level';
     if (!picks[i]) {
       // Milestone: REACH a level / paragon (absolute progress, no base).
       const target = lvlPhase ? Math.min(70, gate.at + 2) : Math.min(1000, gate.at + 12);
       const name = lvlPhase
-        ? MILESTONE_NAMES.level[msLevel++ % MILESTONE_NAMES.level.length]
-        : MILESTONE_NAMES.paragon[msParagon++ % MILESTONE_NAMES.paragon.length];
+        ? opts.milestoneNames.level[msLevel++ % opts.milestoneNames.level.length]
+        : opts.milestoneNames.paragon[msParagon++ % opts.milestoneNames.paragon.length];
       line.push({
         idx: i, tid: 'reach', abs: true, need: target, gate, name,
         desc: lvlPhase ? 'Reach level ' + target + '.' : 'Reach Paragon ' + target + '.',
@@ -205,30 +218,57 @@ const QUEST_LINE = (() => {
     prevNeed[T.id] = need;
     // A real name of its own: openers × closers walked DIAGONALLY, so
     // successive recurrences vary both halves — unique for 64 recurrences.
-    const A = T.names[0], B = T.names[1];
+    const A = opts.addy ? T.addy : T.names[0], B = T.names[1];
     const name = A[k % A.length] + ' ' + B[(k + Math.floor(k / A.length)) % B.length];
     line.push({ idx: i, tid: T.id, abs: false, need, gate, name, desc: T.desc(need), counter: T.counter });
   }
   return line;
-})();
+}
+
+const QUEST_LINE = makeQuestLine({ count: QUEST_COUNT, salt: 0, gateFor: questGate, milestoneNames: MILESTONE_NAMES });
+
+// ADDY, QUEEN OF THE UNDERWORLD (owner request): 500 MORE quests, all for
+// LEVEL 70 — her own ledger, dealt from the same deeds but under her own
+// rogue names ("Shank the Tyrants", "Heist the Buried Chests"), no
+// milestones, every deed strictly harder each time it returns.
+const ADDY_QUEST_COUNT = 500;
+const ADDY_QUEST_LINE = makeQuestLine({
+  count: ADDY_QUEST_COUNT, salt: 7777,
+  gateFor: () => ({ kind: 'level', at: 70 }),
+  milestoneNames: null, addy: true
+});
+
+// Addy's DAILY — "The Queen's Errand", one per real-world day, deterministic
+// by the date so everyone gets the same errand on the same day.
+const DAILY_NEEDS = { slay: 300, elite: 25, boss: 5, rift: 3, salvage: 25, combine: 12, craft: 8, enchant: 5, chest: 20 };
+function dailyDeed(dateKey) {
+  let x = 0;
+  for (let i = 0; i < dateKey.length; i++) x = (x * 131 + dateKey.charCodeAt(i)) >>> 0;
+  const T = QUEST_TEMPLATES[x % QUEST_TEMPLATES.length];
+  const need = DAILY_NEEDS[T.id];
+  return { tid: T.id, need, name: "The Queen's Errand", desc: T.desc(need), counter: T.counter };
+}
 
 // Rewards are DETERMINISTIC PER QUEST (owner rule: "make sure that rewards
-// are real when awarded") — computed from the quest's own place in the line,
+// are real when awarded") — computed from the quest's own place in its line,
 // never from the hero's current level, so the amount shown when you read or
 // accept a quest is EXACTLY what is paid at turn-in, whenever that happens.
 // Every 10th quest and every milestone pays double gold, extra souls + a gem.
-function questReward(i) {
-  const gate = questGate(i);
-  // The quest's own "level equivalent": its level gate, or 70 growing with
-  // paragon depth past the cap.
-  const lvlEq = gate.kind === 'level' ? gate.at : 70 + (i - 199) * 0.5;
-  const big = (i % 10) === 9 || (i % 25) === 24;
+// src: 'L' = Lukus's ledger · 'A' = Addy's level-70 ledger (richer, deeper).
+function questRewardSrc(src, i) {
+  const addy = src === 'A';
+  // The quest's own "level equivalent": its level gate (or 70 growing with
+  // paragon depth past the cap); Addy's whole line is endgame and digs deeper.
+  const lvlEq = addy ? 70 + i * 0.6
+    : (questGate(i).kind === 'level' ? questGate(i).at : 70 + (i - 199) * 0.5);
+  const big = (i % 10) === 9 || (!addy && (i % 25) === 24);
   let gold = Math.round(120 * lvlEq * (1 + i * 0.02));
-  let souls = 1 + Math.floor(i / 50);
+  let souls = (addy ? 2 : 1) + Math.floor(i / (addy ? 40 : 50));
   if (big) { gold *= 2; souls += 2; }
   const xp = Math.round(XP_CURVE(clamp(Math.round(lvlEq), 1, 69)) * 0.4);
   return { gold, souls, xp, gem: big };
 }
+function questReward(i) { return questRewardSrc('L', i); }
 
 // ------------------------------ achievements -------------------------------
 // Earned state is computed LIVE from the hero's persistent lifetime counters —
@@ -260,21 +300,35 @@ const ACHIEVEMENTS = [
   { name: 'The Cube Restored',       desc: "Find the Horadric's Cube",           need: 1,      cur: () => Hero.hasCube ? 1 : 0 }
 ];
 
-// Reward readout, shared by the journal, Lukus's dialog and offers. `short`
+// Reward readout, shared by the journal, both NPC dialogs and offers. `short`
 // compacts "gold" to "g" so narrow phone columns can WRAP it instead of
 // ellipsizing (owner rule: no runoff under rewards).
-function questRewardText(i, short) {
-  const rw = questReward(i);
+function questRewardTextSrc(src, i, short) {
+  const rw = questRewardSrc(src, i);
   return '+' + rw.gold.toLocaleString() + (short ? 'g' : ' gold') +
     ' · +' + rw.souls + ' soul' + (rw.souls > 1 ? 's' : '') +
     ' · +' + rw.xp.toLocaleString() + ' XP' + (rw.gem ? ' · a gem' : '');
 }
+function questRewardText(i, short) { return questRewardTextSrc('L', i, short); }
+// Entry-aware variant for journal rows ({idx, base, src}).
+function questRewardTextFor(entry, short) {
+  return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
+}
 
-const GAME_VERSION = 'v1.6.62-alpha';
+const GAME_VERSION = 'v1.6.63-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.63-alpha', date: 'July 2026',
+    notes: [
+      'ADDY, QUEEN OF THE UNDERWORLD has set up shop by the crates east of the rift pavilion — the owner\'s painted rogue, twin blades and all, standing right where the boss himself stood. The street plate says only "Addy"; her full name and title appear when you talk to her (and Lukus\'s plate now reads just "Lukus" too — titles come out in conversation, not on the street)',
+      '500 MORE QUESTS — her Underworld Ledger opens at LEVEL 70: five hundred jobs under her own rogue names ("Shank the Tyrants", "Heist the Buried Chests", "Con Fortune\'s Loom"), every deed strictly harder each time it returns, all sharing the same 7-slot journal',
+      'THE QUEEN\'S ERRAND — her special DAILY, one per real-world day: finish it and she pays ONE RANDOM MARQUISE GEM plus an odds-rolled prize — 90% a legendary, 6% a 1–3★ legendary, 3% a 4–5★ legendary, 1% an ARTIFACT — the item an even roll across every slot: armor, jewelry and weapons alike',
+      'Her jobs pay endgame money (deeper gold and souls than Lukus\'s ledger), the journal and quest details know whose quest is whose, and her ! / ✓ marker only lights up once you\'re level 70'
+    ]
+  },
   {
     v: 'v1.6.62-alpha', date: 'July 2026',
     notes: [

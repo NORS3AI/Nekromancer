@@ -64,6 +64,7 @@ const Screens = {
       case 'mysWings': this.mysWings(ctx, W, H); break;
       case 'mysTheme': this.mysTheme(ctx, W, H); break;
       case 'lukus': this.lukus(ctx, W, H); break;
+      case 'addy': this.addy(ctx, W, H); break;
       case 'pause': this.pause(ctx, W, H); break;
       case 'reward': this.reward(ctx, W, H); break;
       case 'character': this.character(ctx, W, H); break;
@@ -1005,7 +1006,8 @@ const Screens = {
       const qp = Hero.questProgress(entry);
       if (!qp.def) { Hero.abandonQuest(entry); continue; }
       const def = qp.def, milestone = def.tid === 'reach';
-      const expanded = UI.sel.qInfo === entry.idx;
+      const qKey = (entry.src === 'A' ? 'A' : 'L') + entry.idx;
+      const expanded = UI.sel.qInfo === qKey;
       const yy = c - scrollY;
       if (vis(c, 62)) {
         ctx.fillStyle = expanded ? 'rgba(46,42,58,0.8)' : 'rgba(28,24,38,0.6)';
@@ -1020,7 +1022,7 @@ const Screens = {
         ctx.font = '8px Georgia'; ctx.fillStyle = '#9a9080';
         ctx.fillText(qp.prog + ' / ' + def.need + '  ·  tap for details', lx + 4, yy + 52);
         // Tap the row body (left of the buttons) for full details + reward.
-        UI.register(lx - 4, yy, lw - 56, 58, () => { UI.sel.qInfo = expanded ? null : entry.idx; });
+        UI.register(lx - 4, yy, lw - 56, 58, () => { UI.sel.qInfo = expanded ? null : qKey; });
         if (qp.done) {
           ctx.textAlign = 'right'; ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#4ade80';
           ctx.fillText('✔ READY', lx + lw - 2, yy + 30);
@@ -1050,9 +1052,9 @@ const Screens = {
           ctx.fillText('REWARD', lx + 4, ey + 52);
           ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#ffd76a';
           // Compact + wrapped (2 lines) so the reward can never run off the card.
-          wrapText(ctx, questRewardText(entry.idx, true), lx + 4, ey + 66, lw - 8, 13, 2);
+          wrapText(ctx, questRewardTextFor(entry, true), lx + 4, ey + 66, lw - 8, 13, 2);
           ctx.font = 'italic 9px Georgia'; ctx.fillStyle = '#6f6552';
-          wrapText(ctx, 'Quest ' + (entry.idx + 1) + ' of ' + QUEST_COUNT +
+          wrapText(ctx, (entry.src === 'A' ? "Addy's job " : 'Quest ') + (entry.idx + 1) + ' of ' + QUEST_COUNT +
             (milestone ? ' · ★ milestone — tracks itself, cannot be dropped' : ''), lx + 4, ey + 94, lw - 8, 11, 1);
         }
         c += eh;
@@ -4248,7 +4250,7 @@ const Screens = {
     // LEFT column, vertically centered.
     const contentH = nr ? 380 : 340;   // approximate block height
     let y = Math.max(26, H / 2 - contentH / 2);
-    const journal = Hero.journal || [];
+    const journal = (Hero.journal || []).filter(e => e.src !== 'A');   // Lukus's own deeds only
     const doneCount = clamp(Hero.questLine || 0, 0, QUEST_COUNT);
     const offerIdx = Hero.questOffer();
     const allDone = offerIdx < 0 && !journal.length;
@@ -4302,7 +4304,7 @@ const Screens = {
 
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
-    ctx.fillText('JOURNAL — ' + journal.length + ' / ' + QUEST_JOURNAL_MAX, lx, c - scrollY + 8);
+    ctx.fillText('JOURNAL — ' + (Hero.journal || []).length + ' / ' + QUEST_JOURNAL_MAX, lx, c - scrollY + 8);
     c += 16;
     if (!journal.length) {
       ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
@@ -4356,7 +4358,7 @@ const Screens = {
           ctx.font = '10px Georgia'; ctx.fillStyle = '#b5ab94';
           wrapText(ctx, def.desc, lx + 4, ey + 10, lw - 8, 13, 2);
           ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#ffd76a';
-          wrapText(ctx, 'REWARD:  ' + questRewardText(entry.idx, true), lx + 4, ey + 42, lw - 8, 11, 3);
+          wrapText(ctx, 'REWARD:  ' + questRewardTextFor(entry, true), lx + 4, ey + 42, lw - 8, 11, 3);
           ctx.font = 'italic 8px Georgia'; ctx.fillStyle = '#6f6552';
           ctx.fillText('Quest ' + (entry.idx + 1) + ' of ' + QUEST_COUNT + (milestone ? '  ·  ★ milestone' : ''), lx + 4, ey + 84);
         }
@@ -4415,6 +4417,259 @@ const Screens = {
       ctx.font = '12px Georgia'; ctx.fillStyle = '#9a9080';
       ctx.fillText('There is nothing left in the ledger.', lx, c - scrollY + 8);
       c += 20;
+    }
+
+    ctx.restore();
+    UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 8);
+    ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+    if (scrollY > 1) ctx.fillText('▲ drag ▲', lx + lw / 2, listTop + 2);
+    if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', lx + lw / 2, viewBot - 2);
+  },
+
+  // Talk to ADDY, QUEEN OF THE UNDERWORLD — the rogue by the rift pavilion.
+  // Her own 500-quest LEVEL-70 ledger, plus THE QUEEN'S ERRAND: one daily
+  // deed paying a random Marquise gem + an odds-rolled legendary/artifact.
+  // Same stage language as Lukus: her painted portrait on the right, the
+  // dialog straight on the black, side-by-side even on phones.
+  addy(ctx, W, H) {
+    ctx.fillStyle = '#020104';
+    ctx.fillRect(0, 0, W, H);
+
+    const sf = UI.safe || { right: 0, bottom: 0 };
+    const btnZone = 118 + (sf.right || 0);
+    const img = Game.addyImg();
+    const ready = img.complete && img.naturalWidth;
+    const aspect = ready ? img.naturalWidth / img.naturalHeight : 0.8;
+    const lx = Math.max(14, W * 0.04);
+
+    let h = Math.min(H * 0.92, 640), w = h * aspect;
+    const maxW = Math.max(120, (W - btnZone) * 0.5);
+    if (w > maxW) { w = maxW; h = w / aspect; }
+    let lw = Math.min(470, W - w - btnZone - lx - Math.max(12, W * 0.03));
+    const nr = lw < 260;
+    let px2, py2, feetY = H;
+    if (nr) {
+      lw = Math.floor(W * 0.52) - lx;
+      const colL = lx + lw + 10, colR = W - 10;
+      feetY = H - 148 - (sf.bottom || 0);
+      w = Math.max(40, colR - colL); h = w / aspect;
+      const maxH = Math.max(80, feetY - 30);
+      if (h > maxH) { h = maxH; w = h * aspect; }
+      px2 = colL + (colR - colL - w) / 2;
+      py2 = feetY - h;
+    } else {
+      px2 = W - w - btnZone;
+      py2 = H - h;
+    }
+    if (ready) {
+      const bob = Math.sin(Game.time * 1.3) * 3;
+      if (nr) {
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.beginPath(); ctx.ellipse(px2 + w / 2, feetY - 3, w * 0.36, 8, 0, 0, TAU); ctx.fill();
+      }
+      ctx.drawImage(img, px2, py2 + bob, w, h);
+    }
+
+    const contentH = nr ? 400 : 360;
+    let y = Math.max(26, H / 2 - contentH / 2);
+    const lvl70 = Hero.level >= 70;
+    const journal = (Hero.journal || []).filter(e => e.src === 'A');
+    const doneCount = clamp(Hero.addyLine || 0, 0, ADDY_QUEST_COUNT);
+    const offerIdx = Hero.questOffer('A');
+
+    // Name — full title only HERE (the street plate says just "Addy").
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'bold ' + (nr ? 13 : W < 520 ? 15 : 18) + 'px Georgia'; ctx.fillStyle = '#c86adf';
+    ctx.shadowColor = 'rgba(200,106,223,0.45)'; ctx.shadowBlur = 12;
+    ctx.fillText('🗡 ADDY, QUEEN OF THE UNDERWORLD', lx, y);
+    ctx.shadowBlur = 0;
+    y += 10;
+    const rule = ctx.createLinearGradient(lx, 0, lx + lw, 0);
+    rule.addColorStop(0, 'rgba(200,106,223,0.6)'); rule.addColorStop(1, 'rgba(200,106,223,0)');
+    ctx.strokeStyle = rule; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(lx, y); ctx.lineTo(lx + lw, y); ctx.stroke();
+    y += 22;
+
+    ctx.font = 'italic ' + (nr ? 12 : 13) + 'px Georgia'; ctx.fillStyle = '#e8e0cc';
+    const greet = !lvl70
+      ? '"Not yet, little corpse-raiser. The Underworld deals with professionals — come find me at level 70, and we\'ll talk business."'
+      : '"So the Light\'s errand-runner finally graduated. I keep a different ledger — five hundred jobs, paid better. And once a day, one special errand for one very special stone."';
+    y = wrapText(ctx, greet, lx, y, lw, nr ? 16 : 19, nr ? 7 : 5);
+    y += 14;
+
+    // Her ledger.
+    ctx.font = 'bold ' + (nr ? 10 : 11) + 'px Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.fillText(nr ? 'UNDERWORLD LEDGER' : 'THE UNDERWORLD LEDGER', lx, y);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#c86adf';
+    ctx.fillText(doneCount + (nr ? '/' : ' OF ') + ADDY_QUEST_COUNT + ' DONE', lx + lw, y);
+    ctx.textAlign = 'left';
+    y += 8;
+    UI.bar(ctx, lx, y, lw, 5, doneCount / ADDY_QUEST_COUNT, '#221d2e', '#7a4a8f');
+    y += 18;
+
+    // ---- scrolling column: DAILY first, then her journal, then the offer.
+    const listTop = y;
+    const viewBot = H - 16;
+    const viewH = Math.max(60, viewBot - listTop);
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
+    UI.sel.scrollY = scrollY;
+    UI.sel.scrollRegion = { x: lx - 6, y: listTop - 4, w: lw + 12, h: viewH + 8 };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(lx - 6, listTop - 4, lw + 12, viewH + 8); ctx.clip();
+    let c = listTop;
+    const vis = (top, hh) => (top - scrollY + hh > listTop) && (top - scrollY < viewBot);
+
+    if (!lvl70) {
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText('Her ledger opens at level 70.', lx, c - scrollY + 12);
+      c += 24;
+    } else {
+      // THE QUEEN'S ERRAND — the daily.
+      const st = Hero.dailyState();
+      const dd = dailyDeed(st.date);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
+      ctx.fillText("THE QUEEN'S ERRAND — DAILY", lx, c - scrollY + 8);
+      c += 14;
+      const dh = st.done ? 34 : st.base !== null ? 74 : 92;
+      const dy2 = c - scrollY;
+      if (vis(c, dh)) {
+        ctx.fillStyle = 'rgba(46,30,54,0.75)';
+        rr(ctx, lx - 4, dy2, lw + 8, dh - 4, 6); ctx.fill();
+        ctx.strokeStyle = 'rgba(200,106,223,0.45)'; ctx.lineWidth = 1;
+        rr(ctx, lx - 4, dy2, lw + 8, dh - 4, 6); ctx.stroke();
+        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        if (st.done) {
+          ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#9a9080';
+          ctx.fillText('Paid in full. Come back tomorrow.', lx + 4, dy2 + 19);
+        } else if (st.base !== null) {
+          const prog = clamp(dd.counter() - st.base, 0, dd.need);
+          const done = prog >= dd.need;
+          ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#e8b3f2';
+          ctx.fillText(this.fitText(ctx, dd.desc, lw - 100), lx + 4, dy2 + 15);
+          UI.bar(ctx, lx + 4, dy2 + 22, lw - 106, 9, prog / dd.need, '#221d2e', done ? '#4ade80' : '#7a4a8f');
+          ctx.font = '8px Georgia'; ctx.fillStyle = '#9a9080';
+          ctx.fillText(prog + ' / ' + dd.need, lx + 4, dy2 + 41);
+          ctx.font = 'italic 8px Georgia'; ctx.fillStyle = '#b08ab8';
+          ctx.fillText(this.fitText(ctx, 'Pays: a Marquise gem + a legendary (or better)', lw - 100), lx + 4, dy2 + 56);
+          if (done) {
+            UI.btn(ctx, lx + lw - 94, dy2 + 6, 90, 34, '✔ COLLECT', () => {
+              const prize = Hero.completeDaily();
+              if (!prize) return;
+              UI.toast('The Queen pays: ' + gemName(prize.gem) + ' + ' + prize.item.name, RARITIES[prize.item.rarity].color);
+              AudioSys.sfx('setdrop');
+            }, { size: 10, border: '#3a7a4a', color: '#4ade80' });
+          }
+        } else {
+          ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#e8b3f2';
+          ctx.fillText(this.fitText(ctx, dd.desc, lw - 8), lx + 4, dy2 + 15);
+          ctx.font = 'italic 9px Georgia'; ctx.fillStyle = '#b08ab8';
+          wrapText(ctx, 'Pays: one random MARQUISE gem, plus a legendary — 90% plain, 6% 1–3★, 3% 4–5★, 1% ARTIFACT.', lx + 4, dy2 + 30, lw - 8, 12, 3);
+          UI.btn(ctx, lx, dy2 + 62, lw, 24, "TAKE TODAY'S ERRAND", () => {
+            const acc = Hero.acceptDaily();
+            if (acc) { UI.toast("The Queen's Errand: " + acc.desc, '#c86adf'); AudioSys.sfx('gold'); }
+          }, { size: 11, border: '#7a4a8f', color: '#c86adf' });
+        }
+      }
+      c += dh + 8;
+
+      // Her journal rows.
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
+      ctx.fillText('JOURNAL — ' + (Hero.journal || []).length + ' / ' + QUEST_JOURNAL_MAX, lx, c - scrollY + 8);
+      c += 16;
+      if (!journal.length) {
+        ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
+        ctx.fillText('No jobs of mine in your book yet.', lx, c - scrollY + 9);
+        c += 20;
+      }
+      for (const entry of journal.slice()) {
+        const qp = Hero.questProgress(entry);
+        if (!qp.def) { Hero.abandonQuest(entry); continue; }
+        const def = qp.def;
+        const expanded = UI.sel.qInfo === 'A' + entry.idx;
+        const yy = c - scrollY;
+        if (vis(c, 46)) {
+          ctx.fillStyle = expanded ? 'rgba(46,42,58,0.8)' : 'rgba(28,24,38,0.6)';
+          rr(ctx, lx - 4, yy, lw + 8, 42, 6); ctx.fill();
+          ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+          ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#e8e0cc';
+          ctx.fillText(this.fitText(ctx, def.name, lw - 102), lx + 4, yy + 14);
+          UI.bar(ctx, lx + 4, yy + 21, lw - 106, 9, qp.prog / def.need, '#221d2e', qp.done ? '#4ade80' : '#7a4a8f');
+          ctx.font = '8px Georgia'; ctx.fillStyle = '#9a9080';
+          ctx.fillText(qp.prog + ' / ' + def.need + '  ·  tap for details', lx + 4, yy + 39);
+          UI.register(lx - 4, yy, lw - 96, 42, () => { UI.sel.qInfo = expanded ? null : 'A' + entry.idx; });
+          if (qp.done) {
+            UI.btn(ctx, lx + lw - 94, yy + 4, 90, 34, '✔ TURN IN', () => {
+              const rw = Hero.completeQuest(entry);
+              if (!rw) return;
+              if (rw.gemGot) UI.toast('She flips you a gem: ' + gemName(rw.gemGot), GEM_TYPES[rw.gemGot.type].color);
+              UI.toast('Job done! +' + rw.gold.toLocaleString() + 'g, +' + rw.souls + ' souls  ·  ' + Hero.addyLine + '/' + ADDY_QUEST_COUNT, '#c86adf');
+              AudioSys.sfx('level');
+            }, { size: 10, border: '#3a7a4a', color: '#4ade80' });
+          } else {
+            UI.btn(ctx, lx + lw - 50, yy + 10, 46, 22, 'DROP', () => {
+              Hero.abandonQuest(entry);
+              UI.toast('Returned to Addy: ' + def.name, '#9a9080');
+            }, { size: 8, border: '#7a4a4a', color: '#c98a8a' });
+          }
+        }
+        c += 50;
+        if (expanded) {
+          const eh = 92;
+          const ey = c - scrollY;
+          if (vis(c, eh)) {
+            ctx.fillStyle = 'rgba(18,14,26,0.85)';
+            rr(ctx, lx - 4, ey - 4, lw + 8, eh - 4, 6); ctx.fill();
+            ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+            ctx.font = '10px Georgia'; ctx.fillStyle = '#b5ab94';
+            wrapText(ctx, def.desc, lx + 4, ey + 10, lw - 8, 13, 2);
+            ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#c86adf';
+            wrapText(ctx, 'REWARD:  ' + questRewardTextFor(entry, true), lx + 4, ey + 42, lw - 8, 11, 3);
+            ctx.font = 'italic 8px Georgia'; ctx.fillStyle = '#6f6552';
+            ctx.fillText('Job ' + (entry.idx + 1) + ' of ' + ADDY_QUEST_COUNT, lx + 4, ey + 84);
+          }
+          c += eh;
+        }
+      }
+
+      // Divider + the next job on offer.
+      c += 4;
+      ctx.strokeStyle = 'rgba(200,106,223,0.25)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(lx, c - scrollY); ctx.lineTo(lx + lw, c - scrollY); ctx.stroke();
+      c += 16;
+      if (offerIdx >= 0) {
+        const def = ADDY_QUEST_LINE[offerIdx];
+        const full = (Hero.journal || []).length >= QUEST_JOURNAL_MAX;
+        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
+        ctx.fillText('NEXT JOB', lx, c - scrollY + 6); c += 14;
+        ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#c86adf';
+        ctx.fillText(this.fitText(ctx, def.name.toUpperCase(), lw), lx, c - scrollY + 10); c += 16;
+        ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
+        const dBot = wrapText(ctx, def.desc, lx, c - scrollY + 10, lw, 15, nr ? 3 : 2);
+        c += (dBot - (c - scrollY + 10)) + 4;
+        ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
+        const rBot = wrapText(ctx, 'Reward:  ' + questRewardTextSrc('A', offerIdx, true), lx, c - scrollY + 8, lw, 12, 2);
+        c += (rBot - (c - scrollY + 8)) + 8;
+        if (vis(c, 44)) {
+          if (full) {
+            UI.btn(ctx, lx, c - scrollY, lw, 40, 'JOURNAL FULL — ' + QUEST_JOURNAL_MAX + ' / ' + QUEST_JOURNAL_MAX,
+              null, { size: 12, disabled: true, color: '#8a8070' });
+          } else {
+            UI.btn(ctx, lx, c - scrollY, lw, 40, 'TAKE THE JOB', () => {
+              const acc = Hero.acceptQuest('A');
+              if (acc) { UI.toast('Job taken: ' + acc.name, '#c86adf'); AudioSys.sfx('gold'); }
+            }, { size: 13, border: '#7a4a8f', color: '#c86adf' });
+          }
+        }
+        c += 48;
+      } else if (!journal.length) {
+        ctx.font = '12px Georgia'; ctx.fillStyle = '#9a9080';
+        ctx.fillText('The Underworld ledger is closed. Impressive.', lx, c - scrollY + 8);
+        c += 20;
+      }
     }
 
     ctx.restore();
