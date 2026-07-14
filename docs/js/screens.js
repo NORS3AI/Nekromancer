@@ -3741,45 +3741,61 @@ const Screens = {
     ctx.fillStyle = '#020104';
     ctx.fillRect(0, 0, W, H);
 
-    // RIGHT: Lukus, bottom-anchored, idle sway — in HIS OWN AREA, fully clear
-    // of the round EXIT button in the corner (owner rule: the NPC and the exit
-    // button must not overlap), so his right edge stops where the button's
-    // zone begins.
+    // RIGHT: Lukus, idle sway — in HIS OWN AREA, fully clear of the round EXIT
+    // button in the corner (owner rule: the NPC and the exit button must not
+    // overlap). Text and knight sit SIDE BY SIDE on every screen (owner rule):
+    // on wide screens he stands bottom-anchored beside the button zone; on
+    // narrow phones he takes the right column, raised above the EXIT button,
+    // standing on a soft ground shadow.
     const sf = UI.safe || { right: 0, bottom: 0 };
     const btnZone = 118 + (sf.right || 0);   // EXIT button footprint (r38 @ W-66)
     const img = Game.lukusImg('idle');
-    let portW = 0, portH = 0;
-    if (img.complete && img.naturalWidth) {
-      const aspect = img.naturalWidth / img.naturalHeight;
-      let h = Math.min(H * 0.92, 640), w = h * aspect;
-      const maxW = Math.max(120, (W - btnZone) * 0.5);
-      if (w > maxW) { w = maxW; h = w / aspect; }
+    const ready = img.complete && img.naturalWidth;
+    const aspect = ready ? img.naturalWidth / img.naturalHeight : 0.62;
+    const lx = Math.max(14, W * 0.04);
+
+    // Try the wide layout first: knight bottom-anchored left of the button.
+    let h = Math.min(H * 0.92, 640), w = h * aspect;
+    const maxW = Math.max(120, (W - btnZone) * 0.5);
+    if (w > maxW) { w = maxW; h = w / aspect; }
+    let lw = Math.min(470, W - w - btnZone - lx - Math.max(12, W * 0.03));
+    const nr = lw < 260;   // narrow (portrait phones)
+    let px2, py2, feetY = H;
+    if (nr) {
+      lw = Math.floor(W * 0.52) - lx;
+      const colL = lx + lw + 10, colR = W - 10;
+      feetY = H - 148 - (sf.bottom || 0);   // his feet clear the EXIT zone
+      w = Math.max(40, colR - colL); h = w / aspect;
+      const maxH = Math.max(80, feetY - 30);
+      if (h > maxH) { h = maxH; w = h * aspect; }
+      px2 = colL + (colR - colL - w) / 2;
+      py2 = feetY - h;
+    } else {
+      px2 = W - w - btnZone;
+      py2 = H - h;
+    }
+    if (ready) {
       const bob = Math.sin(Game.time * 1.5) * 3;
-      ctx.drawImage(img, W - w - btnZone, H - h + bob, w, h);
-      portW = w; portH = h;
+      if (nr) {   // a soft ground shadow so he stands rather than floats
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.beginPath(); ctx.ellipse(px2 + w / 2, feetY - 3, w * 0.36, 8, 0, 0, TAU); ctx.fill();
+      }
+      ctx.drawImage(img, px2, py2 + bob, w, h);
     }
 
-    // LEFT column: takes whatever the portrait leaves, vertically centered.
-    // On tall/narrow phones there's no room BESIDE him — span the full width
-    // and sit the dialog above the knight instead.
-    const lx = Math.max(16, W * 0.05);
-    let lw = Math.min(470, W - portW - btnZone - lx - Math.max(12, W * 0.03));
-    const contentH = 300;   // approximate block height, for gentle centering
-    let y;
-    if (lw < 290) {
-      lw = W - lx * 2;
-      y = Math.max(26, (H - portH - contentH) / 2);
-    } else {
-      y = Math.max(30, H / 2 - contentH / 2);
-    }
+    // LEFT column, vertically centered.
+    const contentH = nr ? 340 : 300;   // approximate block height
+    let y = Math.max(26, H / 2 - contentH / 2);
     const idx = clamp(Hero.questLine || 0, 0, QUEST_COUNT);
     const allDone = idx >= QUEST_COUNT;
     let q = Hero.quest;
     if (q && (!QUEST_LINE[q.idx] || q.idx !== idx)) { q = Hero.quest = null; }   // stale
 
-    // Name — a glowing header instead of a panel title.
+    // Name — a glowing header instead of a panel title. (On narrow phones the
+    // header may run a little past the column into the empty black above the
+    // knight — that space is always clear.)
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold ' + (W < 520 ? 15 : 18) + 'px Georgia'; ctx.fillStyle = '#ffd76a';
+    ctx.font = 'bold ' + (nr ? 14 : W < 520 ? 15 : 18) + 'px Georgia'; ctx.fillStyle = '#ffd76a';
     ctx.shadowColor = 'rgba(255,215,106,0.45)'; ctx.shadowBlur = 12;
     ctx.fillText('⚔ LUKUS, BRINGER OF LIGHT', lx, y);
     ctx.shadowBlur = 0;
@@ -3792,18 +3808,18 @@ const Screens = {
     y += 22;
 
     // His words.
-    ctx.font = 'italic 13px Georgia'; ctx.fillStyle = '#e8e0cc';
+    ctx.font = 'italic ' + (nr ? 12 : 13) + 'px Georgia'; ctx.fillStyle = '#e8e0cc';
     const greet = allDone
       ? '"Five hundred deeds. Every one of them yours. New Haven will sing of you until the sun burns out, friend."'
       : '"Good day! I am Lukus, Bringer of Light and protectorate of New Haven. The Light keeps a ledger of five hundred deeds — shall we work through it together?"';
-    y = wrapText(ctx, greet, lx, y, lw, 19, 5);
+    y = wrapText(ctx, greet, lx, y, lw, nr ? 16 : 19, nr ? 7 : 5);
     y += 14;
 
     // Ledger header: where you stand in the 500-quest line.
-    ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#8a8070';
-    ctx.fillText('THE LEDGER OF LIGHT', lx, y);
+    ctx.font = 'bold ' + (nr ? 10 : 11) + 'px Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.fillText(nr ? 'LEDGER OF LIGHT' : 'THE LEDGER OF LIGHT', lx, y);
     ctx.textAlign = 'right'; ctx.fillStyle = '#ffd76a';
-    ctx.fillText(allDone ? 'COMPLETE' : 'QUEST ' + (idx + 1) + ' OF ' + QUEST_COUNT, lx + lw, y);
+    ctx.fillText(allDone ? 'COMPLETE' : 'QUEST ' + (idx + 1) + (nr ? '/' : ' OF ') + QUEST_COUNT, lx + lw, y);
     ctx.textAlign = 'left';
     y += 8;
     UI.bar(ctx, lx, y, lw, 5, idx / QUEST_COUNT, '#221d2e', '#8a6f2a');
@@ -3826,7 +3842,7 @@ const Screens = {
     ctx.font = 'bold 14px Georgia'; ctx.fillStyle = milestone ? '#b06adf' : '#ffd76a';
     ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name.toUpperCase(), lw), lx, y); y += 18;
     ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
-    y = wrapText(ctx, def.desc, lx, y, lw, 15, 2) + 4;
+    y = wrapText(ctx, def.desc, lx, y, lw, 15, nr ? 3 : 2) + 4;
 
     if (q) {
       // Accepted — progress bar, then turn-in when done.
