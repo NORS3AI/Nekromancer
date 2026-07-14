@@ -312,8 +312,17 @@ Script lives in the session scratchpad (intentionally not committed).
   mapBoss vs elite) · riftsCleared · salvagedCount (grantSalvage) · `gemsCombined`
   (combineGems) · `itemsCrafted` (craft/craftTorch/buyGem/craftGem) · `enchantsDone`
   (enchant) · `chestsOpened` (touchObjects). All persisted with snapshot parity.
-  `Hero.questLine` = index you're on (500 = ledger complete); `Hero.quest =
-  {idx, base}` once accepted (old `{id,...}` quests dropped on load). Station at
+  **THE JOURNAL (v1.6.55, owner rule "up to 7 quests")**: `Hero.journal` =
+  [{idx, base}] (≤ `QUEST_JOURNAL_MAX`=7 concurrent), `Hero.questNext` = next
+  fresh offer, `Hero.questRepool` = abandoned idxs (re-offered FIRST, lowest
+  first — nothing is ever lost), `Hero.questLine` = quests TURNED IN (the
+  ledger bar). API on Hero: `questProgress(entry)` / `questOffer()` /
+  `acceptQuest()` / `abandonQuest(entry)` / `completeQuest(entry)` (pays
+  gold/souls/XP/gem, bumps questLine). Turn-ins are order-independent,
+  straight from each journal row; milestones (abs) can't be dropped. The
+  dialog's journal + NEXT DEED column drag-scrolls via `UI.sel.scrollRegion`.
+  Old saves migrate: the single `quest` → journal[0], `questNext` derived
+  (old `{id,...}` quests dropped on load). Station at
   (718,668, kind 'lukus') → the ENTER button flips to 💬 TALK (`it.kind==='lukus'`
   in `UI.drawTownEnter`) → `Screens.lukus` DIALOG: solid-black stage, the owner's
   painted knight (idle) bottom-right (black bg melts in), and the dialog laid
@@ -330,7 +339,8 @@ Script lives in the session scratchpad (intentionally not committed).
   `docs/art/npc/lukus_{helmed,idle,smile,frown,angry}.png` (owner art, ?v=BUILD),
   `Game.lukusSprite()` chroma-keys the black bg (falls back to 'screen' blend when
   getImageData is unavailable on file://), `Game.drawLukus` draws it at (718,640)
-  with a warm halo + !/✓ quest marker (now driven by `QUEST_LINE[Hero.questLine]`).
+  with a warm halo + !/✓ quest marker (✓ = a journal quest is turn-in ready,
+  ! = an offer exists and the journal has room).
 - **⭐ OWNER TODO (requested 2026-07-03): create the MASTER LIST of primary +
   secondary stats and affixes for items.** The engine now models:
   `dmg` (%), `hp`, `crit` (chance), `ess` (essence/s), `reg` (life/s), `gold`,

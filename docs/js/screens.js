@@ -3799,12 +3799,12 @@ const Screens = {
     }
 
     // LEFT column, vertically centered.
-    const contentH = nr ? 340 : 300;   // approximate block height
+    const contentH = nr ? 380 : 340;   // approximate block height
     let y = Math.max(26, H / 2 - contentH / 2);
-    const idx = clamp(Hero.questLine || 0, 0, QUEST_COUNT);
-    const allDone = idx >= QUEST_COUNT;
-    let q = Hero.quest;
-    if (q && (!QUEST_LINE[q.idx] || q.idx !== idx)) { q = Hero.quest = null; }   // stale
+    const journal = Hero.journal || [];
+    const doneCount = clamp(Hero.questLine || 0, 0, QUEST_COUNT);
+    const offerIdx = Hero.questOffer();
+    const allDone = offerIdx < 0 && !journal.length;
 
     // Name — a glowing header instead of a panel title. (On narrow phones the
     // header may run a little past the column into the empty black above the
@@ -3830,83 +3830,130 @@ const Screens = {
     y = wrapText(ctx, greet, lx, y, lw, nr ? 16 : 19, nr ? 7 : 5);
     y += 14;
 
-    // Ledger header: where you stand in the 500-quest line.
+    // Ledger header: turn-ins across the 500-quest line.
     ctx.font = 'bold ' + (nr ? 10 : 11) + 'px Georgia'; ctx.fillStyle = '#8a8070';
     ctx.fillText(nr ? 'LEDGER OF LIGHT' : 'THE LEDGER OF LIGHT', lx, y);
     ctx.textAlign = 'right'; ctx.fillStyle = '#ffd76a';
-    ctx.fillText(allDone ? 'COMPLETE' : 'QUEST ' + (idx + 1) + (nr ? '/' : ' OF ') + QUEST_COUNT, lx + lw, y);
+    ctx.fillText(doneCount + (nr ? '/' : ' OF ') + QUEST_COUNT + ' DONE', lx + lw, y);
     ctx.textAlign = 'left';
     y += 8;
-    UI.bar(ctx, lx, y, lw, 5, idx / QUEST_COUNT, '#221d2e', '#8a6f2a');
-    y += 20;
+    UI.bar(ctx, lx, y, lw, 5, doneCount / QUEST_COUNT, '#221d2e', '#8a6f2a');
+    y += 18;
 
-    if (allDone) {
-      ctx.font = '12px Georgia'; ctx.fillStyle = '#9a9080';
-      wrapText(ctx, 'There is nothing left in the ledger. Walk in the Light.', lx, y, lw, 17, 3);
-      return;
+    // ---- THE JOURNAL (up to 7 accepted quests) + Lukus's next offer, in one
+    // drag-scrolling column (a full journal outgrows short landscape screens).
+    const listTop = y;
+    const viewBot = H - 16;
+    const viewH = Math.max(60, viewBot - listTop);
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
+    UI.sel.scrollY = scrollY;
+    UI.sel.scrollRegion = { x: lx - 6, y: listTop - 4, w: lw + 12, h: viewH + 8 };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(lx - 6, listTop - 4, lw + 12, viewH + 8); ctx.clip();
+    let c = listTop;
+    const vis = (top, hh) => (top - scrollY + hh > listTop) && (top - scrollY < viewBot);
+
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.fillText('JOURNAL — ' + journal.length + ' / ' + QUEST_JOURNAL_MAX, lx, c - scrollY + 8);
+    c += 16;
+    if (!journal.length) {
+      ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText(allDone ? 'Every deed is done. Walk in the Light.' : 'Empty — take up a deed below.', lx, c - scrollY + 9);
+      c += 20;
+    }
+    for (const entry of journal.slice()) {
+      const qp = Hero.questProgress(entry);
+      if (!qp.def) { Hero.abandonQuest(entry); continue; }   // stale save entry
+      const def = qp.def, milestone = def.tid === 'reach';
+      const yy = c - scrollY;
+      if (vis(c, 46)) {
+        ctx.fillStyle = 'rgba(28,24,38,0.6)';
+        rr(ctx, lx - 4, yy, lw + 8, 42, 6); ctx.fill();
+        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        ctx.font = 'bold 11px Georgia'; ctx.fillStyle = milestone ? '#b06adf' : '#e8e0cc';
+        ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name, lw - 102), lx + 4, yy + 14);
+        UI.bar(ctx, lx + 4, yy + 21, lw - 106, 9, qp.prog / def.need, '#221d2e', qp.done ? '#4ade80' : '#8a6f2a');
+        ctx.font = '8px Georgia'; ctx.fillStyle = '#9a9080';
+        ctx.fillText(qp.prog + ' / ' + def.need, lx + 4, yy + 39);
+        if (qp.done) {
+          // Turn in right from the journal row.
+          UI.btn(ctx, lx + lw - 94, yy + 4, 90, 34, '✔ TURN IN', () => {
+            const rw = Hero.completeQuest(entry);
+            if (!rw) return;
+            if (rw.gemGot) UI.toast('Lukus presses a gem into your hand: ' + gemName(rw.gemGot), GEM_TYPES[rw.gemGot.type].color);
+            UI.toast('Quest complete! +' + rw.gold.toLocaleString() + 'g, +' + rw.souls + ' souls  ·  ' + Hero.questLine + '/' + QUEST_COUNT, '#ffd76a');
+            AudioSys.sfx('level');
+          }, { size: 10, border: '#3a7a4a', color: '#4ade80' });
+        } else if (!def.abs) {
+          // Dropping returns the quest to Lukus's queue — nothing is lost.
+          UI.btn(ctx, lx + lw - 50, yy + 10, 46, 22, 'DROP', () => {
+            Hero.abandonQuest(entry);
+            UI.toast('Returned to Lukus: ' + def.name, '#9a9080');
+          }, { size: 8, border: '#7a4a4a', color: '#c98a8a' });
+        }
+      }
+      c += 50;
     }
 
-    // The quest you're on.
-    const def = QUEST_LINE[idx];
-    const rw = questReward(idx);
-    const milestone = def.tid === 'reach';
-    const gateOk = def.gate.kind === 'level' ? Hero.level >= def.gate.at : (Hero.paragon || 0) >= def.gate.at;
-    const rwText = 'Reward: ' + rw.gold.toLocaleString() + 'g · ' + rw.souls + ' soul' + (rw.souls > 1 ? 's' : '') +
-      ' · XP' + (rw.gem ? ' · a gem' : '');
+    // Divider, then the next deed on offer.
+    c += 4;
+    ctx.strokeStyle = 'rgba(216,180,74,0.25)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(lx, c - scrollY); ctx.lineTo(lx + lw, c - scrollY); ctx.stroke();
+    c += 16;
 
-    ctx.font = 'bold 14px Georgia'; ctx.fillStyle = milestone ? '#b06adf' : '#ffd76a';
-    ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name.toUpperCase(), lw), lx, y); y += 18;
-    ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
-    y = wrapText(ctx, def.desc, lx, y, lw, 15, nr ? 3 : 2) + 4;
+    if (offerIdx >= 0) {
+      const def = QUEST_LINE[offerIdx];
+      const rw = questReward(offerIdx);
+      const milestone = def.tid === 'reach';
+      const gateOk = def.gate.kind === 'level' ? Hero.level >= def.gate.at : (Hero.paragon || 0) >= def.gate.at;
+      const full = journal.length >= QUEST_JOURNAL_MAX;
+      const rwText = 'Reward: ' + rw.gold.toLocaleString() + 'g · ' + rw.souls + ' soul' + (rw.souls > 1 ? 's' : '') +
+        ' · XP' + (rw.gem ? ' · a gem' : '');
 
-    if (q) {
-      // Accepted — progress bar, then turn-in when done.
-      const prog = clamp(def.abs ? def.counter() : def.counter() - q.base, 0, def.need);
-      const done = prog >= def.need;
-      UI.bar(ctx, lx, y, lw, 13, prog / def.need, '#3a3448', done ? '#4ade80' : '#ffd76a');
-      ctx.textAlign = 'center'; ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#e8e0cc'; ctx.textBaseline = 'middle';
-      ctx.fillText(prog + ' / ' + def.need, lx + lw / 2, y + 7); y += 24;
-      ctx.textAlign = 'left'; ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080'; ctx.textBaseline = 'alphabetic';
-      ctx.fillText(this.fitText(ctx, rwText, lw), lx, y + 4); y += 16;
-      UI.btn(ctx, lx, y, lw, 40, done ? '✔  TURN IN' : 'IN PROGRESS…',
-        done ? () => {
-          Hero.gold += rw.gold;
-          Hero.mats.soul = (Hero.mats.soul || 0) + rw.souls;
-          if (rw.gem) { const gem = Items.dropGem(); Hero.gems.push(gem); UI.toast('Lukus presses a gem into your hand: ' + gemName(gem), GEM_TYPES[gem.type].color); }
-          Hero.addXP(Math.round(XP_CURVE(Math.min(Hero.level, 69)) * rw.xpFrac));
-          Hero.quest = null;
-          Hero.questLine = idx + 1;
-          Hero.save();
-          UI.toast('Quest ' + (idx + 1) + '/' + QUEST_COUNT + ' complete! +' + rw.gold.toLocaleString() + 'g, +' + rw.souls + ' souls', '#ffd76a');
-          AudioSys.sfx('level');
-        } : null,
-        { size: 13, disabled: !done, border: done ? '#3a7a4a' : undefined, color: done ? '#4ade80' : '#8a8070' });
-      y += 48;
-      if (!def.abs) {
-        UI.btn(ctx, lx, y, lw, 26, 'ABANDON QUEST', () => { Hero.quest = null; Hero.save(); },
-          { size: 10, border: '#7a4a4a', color: '#c98a8a' });
-      }
-    } else {
-      // Not yet accepted — reward line, then ACCEPT (or the gate that bars it).
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
+      ctx.fillText('NEXT DEED', lx, c - scrollY + 6); c += 14;
+      ctx.font = 'bold 13px Georgia'; ctx.fillStyle = milestone ? '#b06adf' : '#ffd76a';
+      ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name.toUpperCase(), lw), lx, c - scrollY + 10); c += 16;
+      ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
+      const dBot = wrapText(ctx, def.desc, lx, c - scrollY + 10, lw, 15, nr ? 3 : 2);
+      c += (dBot - (c - scrollY + 10)) + 4;
       ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
-      ctx.fillText(this.fitText(ctx, rwText, lw), lx, y + 4); y += 18;
-      if (gateOk) {
-        UI.btn(ctx, lx, y, lw, 40, 'ACCEPT QUEST', () => {
-          Hero.quest = { idx, base: def.abs ? 0 : def.counter() };
-          Hero.save();
-          UI.toast('Quest accepted: ' + def.name, '#ffd76a');
-          AudioSys.sfx('gold');
-        }, { size: 13, border: '#8a6f2a', color: '#ffd76a' });
-      } else {
-        UI.btn(ctx, lx, y, lw, 40,
-          'REQUIRES ' + (def.gate.kind === 'level' ? 'LEVEL ' : 'PARAGON ') + def.gate.at,
-          null, { size: 12, disabled: true, color: '#8a8070' });
-        y += 58;
+      ctx.fillText(this.fitText(ctx, rwText, lw), lx, c - scrollY + 8); c += 16;
+      if (vis(c, 44)) {
+        if (full) {
+          UI.btn(ctx, lx, c - scrollY, lw, 40, 'JOURNAL FULL — ' + QUEST_JOURNAL_MAX + ' / ' + QUEST_JOURNAL_MAX,
+            null, { size: 12, disabled: true, color: '#8a8070' });
+        } else if (gateOk) {
+          UI.btn(ctx, lx, c - scrollY, lw, 40, 'ACCEPT QUEST', () => {
+            const acc = Hero.acceptQuest();
+            if (acc) { UI.toast('Quest accepted: ' + acc.name, '#ffd76a'); AudioSys.sfx('gold'); }
+          }, { size: 13, border: '#8a6f2a', color: '#ffd76a' });
+        } else {
+          UI.btn(ctx, lx, c - scrollY, lw, 40,
+            'REQUIRES ' + (def.gate.kind === 'level' ? 'LEVEL ' : 'PARAGON ') + def.gate.at,
+            null, { size: 12, disabled: true, color: '#8a8070' });
+        }
+      }
+      c += 48;
+      if (!full && !gateOk) {
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
         ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
-        wrapText(ctx, '"Grow a little stronger first — the Light can wait."', lx, y, lw, 14, 2);
+        ctx.fillText('"Grow a little stronger first — the Light can wait."', lx, c - scrollY + 4);
+        c += 16;
       }
+    } else if (!journal.length) {
+      ctx.font = '12px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.fillText('There is nothing left in the ledger.', lx, c - scrollY + 8);
+      c += 20;
     }
+
+    ctx.restore();
+    UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 8);
+    ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+    if (scrollY > 1) ctx.fillText('▲ drag ▲', lx + lw / 2, listTop + 2);
+    if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', lx + lw / 2, viewBot - 2);
   },
 
   vendor(ctx, W, H) {

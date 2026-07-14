@@ -595,14 +595,12 @@ const Game = {
       ctx.fillStyle = '#8f96a3'; rr(ctx, -9, -28 - bob, 18, 26, 4); ctx.fill();
       ctx.beginPath(); ctx.arc(0, -34 - bob, 7, 0, TAU); ctx.fill();
     }
-    // quest marker: ! = work available · ✓ = ready to turn in
-    const q = Hero.quest;
-    const cur = (typeof QUEST_LINE !== 'undefined') ? QUEST_LINE[Hero.questLine || 0] : null;
-    let mark = cur ? '!' : null, col = '#ffd76a';
-    if (q && cur && q.idx === cur.idx) {
-      const prog = cur.abs ? cur.counter() : cur.counter() - q.base;
-      const done = prog >= cur.need;
-      mark = done ? '✓' : null; col = '#4ade80';
+    // quest marker: ✓ = a journal quest is ready to turn in · ! = Lukus has
+    // work to hand out (an offer exists and the 7-slot journal has room)
+    let mark = null, col = '#ffd76a';
+    if (typeof QUEST_LINE !== 'undefined' && Hero.questProgress) {
+      if ((Hero.journal || []).some(e => Hero.questProgress(e).done)) { mark = '✓'; col = '#4ade80'; }
+      else if (Hero.questOffer() >= 0 && (Hero.journal || []).length < QUEST_JOURNAL_MAX) mark = '!';
     }
     if (mark) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
