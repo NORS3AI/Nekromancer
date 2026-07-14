@@ -853,11 +853,21 @@ const Screens = {
   // panel content stays readable, then the menu draws on top. Falls back to the
   // plain dim() until the image loads.
   shopImg: {},
+  // Warm the three shop interiors at boot (see Game.preloadArt).
+  preloadShops() {
+    for (const key of ['smith', 'jeweler', 'mystic']) {
+      if (!this.shopImg[key]) {
+        const img = new Image();
+        img.src = 'art/shops/' + key + '.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
+        this.shopImg[key] = img;
+      }
+    }
+  },
   shopBackdrop(ctx, W, H, key, veil = 0.66) {
     let img = this.shopImg[key];
     if (!img) {
       img = new Image();
-      img.src = 'art/shops/' + key + '.png?v=' + (typeof BUILD !== 'undefined' ? BUILD : '1');
+      img.src = 'art/shops/' + key + '.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
       this.shopImg[key] = img;
     }
     if (img.complete && img.naturalWidth) {

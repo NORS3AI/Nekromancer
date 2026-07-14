@@ -1497,7 +1497,7 @@ let LOGO_IMAGE = null;
   LOGO_IMAGE = new Image();
   // Cache-bust by version so a replaced logo.png is never served stale from the
   // browser/CDN cache (the filename stays the same, so the query must change).
-  LOGO_IMAGE.src = 'art/logo.png?v=' + (typeof GAME_VERSION !== 'undefined' ? GAME_VERSION : '1');
+  LOGO_IMAGE.src = 'art/logo.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
 })();
 
 function drawGameLogo(ctx, x, y, size, t = 0) {

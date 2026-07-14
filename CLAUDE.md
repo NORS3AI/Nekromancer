@@ -32,7 +32,15 @@ loot at the artisans. The hero is persistent (localStorage).
   `Game.townImg`) and the shop-interior backdrops (`docs/art/shops/{smith,jeweler,
   mystic}.png`, drawn cover-fit under a dark veil by `Screens.shopBackdrop()` behind
   those three artisan menus; falls back to `dim()` until loaded). All loaded with a
-  `?v=BUILD` cache-bust.
+  **v1.6.69 — ALL HEAVY PAINTINGS ARE WEBP q85 now** (town map, shop interiors,
+  NPC portraits, ground tiles, logo — 35MB PNG → 3MB WebP; the .png originals
+  live only in git history) and are cache-busted with **`?v=ART_V`**
+  (index.html), NOT BUILD — bump ART_V ONLY when an art file actually changes,
+  so phones keep the paintings cached across game releases. `Game.preloadArt()`
+  (called in boot) + `Screens.preloadShops()` + `World.loadTiles()` start every
+  heavy download at the title screen; `drawTown` shows "New Haven emerges from
+  the dark…" until the map arrives. Small art (gems/icons/runes/ui) is still
+  PNG with `?v=BUILD`.
 - **Update `PATCH_NOTES` (data.js) with EVERY addition and bug fix** — prepend a new
   entry (newest first) and bump `GAME_VERSION` (vX.Y.Z-alpha). The version label on
   the title screen opens the notes; the owner reads them.

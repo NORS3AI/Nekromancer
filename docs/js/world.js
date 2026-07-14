@@ -517,11 +517,11 @@ const World = {
   loadTiles() {
     if (this.tileImages) return;
     this.tileImages = {};
-    const files = { snow: 'Snow.png', marsh: 'Marsh.png', desert: 'Desert.png', dungeon: 'Dungeon.png', cave: 'Cave.png' };
+    const files = { snow: 'Snow.webp', marsh: 'Marsh.webp', desert: 'Desert.webp', dungeon: 'Dungeon.webp', cave: 'Cave.webp' };
     for (const [k, f] of Object.entries(files)) {
       const rec = { img: new Image(), ready: false };
       rec.img.onload = () => { rec.ready = true; };
-      rec.img.src = 'art/tiles/' + f;
+      rec.img.src = 'art/tiles/' + f + '?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
       this.tileImages[k] = rec;
     }
   },
