@@ -58,6 +58,7 @@ const Settings = {
   g: {
     theme: 'bone',        // UI chrome theme (THEMES in data.js) — set at the Mystic
     electiveMode: false,  // allow more than one skill per category on the action bar
+    invGrouped: false,    // inventory layout: false = radial wheel · true = grouped list
     dmgNumbers: true,     // floating damage text (red hit / yellow crit / green heal)
     shake: true,          // camera shake
     healthBars: true,     // enemy health bars
