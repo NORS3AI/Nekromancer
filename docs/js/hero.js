@@ -185,8 +185,10 @@ const Hero = {
   runes: {},                          // skillId -> rune id
   pet: null,            // cosmetic companion id (PETS), chosen at the Mystic
   wings: null,          // cosmetic wings id (WINGS), chosen at the Mystic
-  quest: null,          // active Lukus quest: { idx, base } (progress = counter - base)
-  questLine: 0,         // index into QUEST_LINE — the quest you're on (0-499, 500 = all done)
+  journal: [],          // accepted Lukus quests: [{ idx, base }] — up to QUEST_JOURNAL_MAX (7)
+  questRepool: [],      // abandoned quest idxs Lukus re-offers first (lowest first)
+  questNext: 0,         // the next FRESH quest index Lukus offers (0-500)
+  questLine: 0,         // quests TURNED IN — the ledger progress (0-500)
   salvagedCount: 0,     // lifetime items salvaged (quest counter)
   eliteKills: 0,        // lifetime elite/champion kills (quest counter)
   bossKills: 0,         // lifetime boss/unique kills (quest counter)
@@ -220,7 +222,8 @@ const Hero = {
     this.zonesCleared = 0;
     this.actsCleared = 0;
     this.actUniques = {};
-    this.pet = null; this.wings = null; this.quest = null; this.questLine = 0;
+    this.pet = null; this.wings = null;
+    this.journal = []; this.questRepool = []; this.questNext = 0; this.questLine = 0;
     this.salvagedCount = 0; this.eliteKills = 0; this.bossKills = 0;
     this.gemsCombined = 0; this.itemsCrafted = 0; this.enchantsDone = 0; this.chestsOpened = 0;
     this.difficulty = 0;
@@ -287,7 +290,8 @@ const Hero = {
       hasCube: this.hasCube, goldenMirror: this.goldenMirror, orbAutoPickup: this.orbAutoPickup,
       cubePowers: this.cubePowers, cubeActive: this.cubeActive,
       artisans: this.artisans, runes: this.runes, cheats: this.cheats,
-      pet: this.pet, wings: this.wings, quest: this.quest, questLine: this.questLine,
+      pet: this.pet, wings: this.wings,
+      journal: this.journal, questRepool: this.questRepool, questNext: this.questNext, questLine: this.questLine,
       salvagedCount: this.salvagedCount, eliteKills: this.eliteKills, bossKills: this.bossKills,
       gemsCombined: this.gemsCombined, itemsCrafted: this.itemsCrafted,
       enchantsDone: this.enchantsDone, chestsOpened: this.chestsOpened,
@@ -360,11 +364,25 @@ const Hero = {
       })(),
       runes: d.runes || {},
       pet: d.pet || null, wings: d.wings || null,
-      // Only quest-line quests survive a load (old {id,base} quests are dropped —
-      // the pre-line repeatables no longer exist).
-      quest: (d.quest && typeof d.quest === 'object' && typeof d.quest.idx === 'number')
-        ? Object.assign({}, d.quest) : null,
+      // The quest JOURNAL (up to QUEST_JOURNAL_MAX accepted quests). Migration:
+      // an old single active quest ({idx, base}) becomes the journal's first
+      // entry; ancient {id,...} quests are dropped (those repeatables are gone).
+      journal: (() => {
+        let j = Array.isArray(d.journal) ? d.journal : [];
+        if (!j.length && d.quest && typeof d.quest === 'object' && typeof d.quest.idx === 'number') j = [d.quest];
+        const seen = {};
+        return j.filter(e => e && typeof e.idx === 'number' && e.idx >= 0 && e.idx < QUEST_COUNT && !seen[e.idx] && (seen[e.idx] = 1))
+          .slice(0, QUEST_JOURNAL_MAX).map(e => ({ idx: e.idx, base: e.base || 0 }));
+      })(),
+      questRepool: Array.isArray(d.questRepool)
+        ? d.questRepool.filter(i => typeof i === 'number' && i >= 0 && i < QUEST_COUNT) : [],
       questLine: clamp(d.questLine || 0, 0, QUEST_COUNT),
+      // Old saves have no questNext: the line pointer was questLine itself,
+      // +1 if its quest was already accepted.
+      questNext: d.questNext != null
+        ? clamp(d.questNext, 0, QUEST_COUNT)
+        : Math.max(clamp(d.questLine || 0, 0, QUEST_COUNT),
+            (d.quest && typeof d.quest === 'object' && typeof d.quest.idx === 'number') ? d.quest.idx + 1 : 0),
       salvagedCount: d.salvagedCount || 0,
       eliteKills: d.eliteKills || 0, bossKills: d.bossKills || 0,
       gemsCombined: d.gemsCombined || 0, itemsCrafted: d.itemsCrafted || 0,
@@ -481,6 +499,69 @@ const Hero = {
   wipe() {
     try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ }
     this.fresh();
+  },
+
+  // -------------------------------------------- Lukus's quest journal (≤7)
+
+  // Progress of a journal entry: milestones read the counter absolutely,
+  // deed quests measure counter − base-at-accept.
+  questProgress(entry) {
+    const def = QUEST_LINE[entry.idx];
+    if (!def) return { def: null, prog: 0, done: false };
+    const prog = clamp(def.abs ? def.counter() : def.counter() - entry.base, 0, def.need);
+    return { def, prog, done: prog >= def.need };
+  },
+
+  // The quest Lukus offers next: abandoned quests come back first (lowest
+  // index), then the next fresh one in the line. −1 = the ledger is exhausted.
+  questOffer() {
+    const pool = (this.questRepool || []).filter(i => !(this.journal || []).some(e => e.idx === i));
+    if (pool.length) return Math.min.apply(null, pool);
+    return (this.questNext || 0) < QUEST_COUNT ? this.questNext : -1;
+  },
+
+  acceptQuest() {
+    const idx = this.questOffer();
+    if (idx < 0 || this.journal.length >= QUEST_JOURNAL_MAX) return false;
+    const def = QUEST_LINE[idx];
+    const gateOk = def.gate.kind === 'level' ? this.level >= def.gate.at : (this.paragon || 0) >= def.gate.at;
+    if (!gateOk) return false;
+    this.journal.push({ idx, base: def.abs ? 0 : def.counter() });
+    const k = this.questRepool.indexOf(idx);
+    if (k >= 0) this.questRepool.splice(k, 1);
+    else this.questNext = Math.max(this.questNext || 0, idx + 1);
+    this.save();
+    return def;
+  },
+
+  // Dropping a quest sends it back to Lukus's queue — nothing in the 500 is
+  // ever lost, it just waits to be taken up again.
+  abandonQuest(entry) {
+    const k = this.journal.indexOf(entry);
+    if (k < 0) return;
+    this.journal.splice(k, 1);
+    if (!this.questRepool.includes(entry.idx)) this.questRepool.push(entry.idx);
+    this.save();
+  },
+
+  // Turn a finished journal entry in: pays gold/souls/XP (and a gem on bonus
+  // quests), bumps the ledger. Returns the reward (with .gemGot) or null.
+  completeQuest(entry) {
+    const { def, done } = this.questProgress(entry);
+    const k = this.journal.indexOf(entry);
+    if (!def || !done || k < 0) return null;
+    this.journal.splice(k, 1);
+    const rw = questReward(entry.idx);
+    this.gold += rw.gold;
+    this.mats.soul = (this.mats.soul || 0) + rw.souls;
+    if (rw.gem && typeof Items !== 'undefined') {
+      rw.gemGot = Items.dropGem();
+      this.gems.push(rw.gemGot);
+    }
+    this.questLine = Math.min(QUEST_COUNT, (this.questLine || 0) + 1);
+    this.addXP(Math.round(XP_CURVE(Math.min(this.level, 69)) * rw.xpFrac));
+    this.save();
+    return rw;
   },
 
   // ------------------------------------------------------------ progression

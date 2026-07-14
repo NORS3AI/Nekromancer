@@ -61,12 +61,16 @@ const THEMES = {
 };
 // Lukus, Bringer of Light — the knight quest-giver in New Haven.
 // THE QUEST LINE (owner request): 500 sequential quests spanning character
-// level 1→70 (quests 1–200) and then Paragon 1→1000 (quests 201–500). One
-// quest at a time: Hero.questLine = the index you're on; Hero.quest =
-// { idx, base } once accepted (progress = counter() − base; milestone quests
-// are ABSOLUTE — reach a level/paragon). Every 25th quest is a milestone,
-// every 10th pays double + a gem. Generation is fully DETERMINISTIC (hashed
-// by index) so a quest's target never changes between sessions or saves.
+// level 1→70 (quests 1–200) and then Paragon 1→1000 (quests 201–500).
+// THE JOURNAL (owner rule): a character can carry up to QUEST_JOURNAL_MAX (7)
+// accepted quests at once — Hero.journal = [{ idx, base }] (progress =
+// counter() − base; milestone quests are ABSOLUTE — reach a level/paragon).
+// Lukus offers quests in line order (abandoned ones come back first);
+// Hero.questLine counts turn-ins (the ledger bar), Hero.questNext is the next
+// fresh offer. Every 25th quest is a milestone, every 10th pays double + a
+// gem. Generation is fully DETERMINISTIC (hashed by index) so a quest's
+// target never changes between sessions or saves.
+const QUEST_JOURNAL_MAX = 7;
 function toRoman(n) {
   const T = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'],
              [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
@@ -163,11 +167,21 @@ function questReward(i) {
   return { gold, souls, xpFrac: 0.4, gem: big };
 }
 
-const GAME_VERSION = 'v1.6.54-alpha';
+const GAME_VERSION = 'v1.6.55-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.55-alpha', date: 'July 2026',
+    notes: [
+      'THE QUEST JOURNAL — you can now carry up to SEVEN of Lukus\'s quests at once. Accept a handful, go adventuring, and turn each one in as it finishes — in any order, straight from its row in the journal',
+      'Lukus\'s dialog shows the whole journal: every accepted quest with its own live progress bar, a ✔ TURN IN button the moment it\'s done, and a DROP button that returns a quest to Lukus\'s queue (nothing is ever lost — dropped deeds are offered again first). Below the journal, the NEXT DEED on offer with its reward',
+      'The journal column drag-scrolls when it outgrows the screen, and the ledger bar now counts quests TURNED IN out of 500',
+      'His golden ! now means "work available and journal has room"; the green ✓ means at least one journal quest is ready to turn in',
+      'Old saves migrate cleanly: your one active quest becomes the journal\'s first entry'
+    ]
+  },
   {
     v: 'v1.6.54-alpha', date: 'July 2026',
     notes: [
