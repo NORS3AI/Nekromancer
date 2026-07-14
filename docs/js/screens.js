@@ -44,6 +44,7 @@ const Screens = {
       case 'radial': this.radial(ctx, W, H); break;
       case 'sysmenu': this.sysmenu(ctx, W, H); break;
       case 'journal': this.journal(ctx, W, H); break;
+      case 'achievements': this.achievements(ctx, W, H); break;
       case 'skills': this.skills(ctx, W, H); break;
       case 'skillChooser': this.skillChooser(ctx, W, H); break;
       case 'smith': this.smith(ctx, W, H); break;
@@ -935,25 +936,30 @@ const Screens = {
     }
   },
 
-  // The ☰ MENU (owner rule): ONLY Skills & Passives, Inventory and Settings —
-  // everything else lives in New Haven's streets now.
+  // The ☰ MENU (owner-ruled order): Character on top, Inventory under it,
+  // Journal, Skills & Passives, Achievements beneath them, Settings last.
   sysmenu(ctx, W, H) {
     this.dim(ctx, W, H);
     const rows = [
-      ['📜   JOURNAL', 'journal', '#ffd76a'],
-      ['⚔   SKILLS & PASSIVES', 'skills', '#b06adf'],
+      ['👤   CHARACTER', 'character', '#ffd76a'],
       ['🎒   INVENTORY', 'radial', '#6ff7c3'],
+      ['📜   JOURNAL', 'journal', '#e8c56a'],
+      ['⚔   SKILLS & PASSIVES', 'skills', '#b06adf'],
+      ['🏆   ACHIEVEMENTS', 'achievements', '#8fd0a0'],
       ['⚙   SETTINGS', 'settings', '#c9bfa8']
     ];
     const pw = Math.min(360, W - 24);
     const px = W / 2 - pw / 2;
-    const ph = 70 + rows.length * 56 + 12;
-    const py = Math.max(10, Math.min(H / 2 - ph / 2, H - ph - (Game.state === 'town' ? 150 : 12)));
+    // Compact rows on short (landscape phone) screens so all six rows fit.
+    const rowH = H < 520 ? 40 : 56;
+    const btnH = rowH - 8;
+    const ph = 64 + rows.length * rowH + 10;
+    const py = Math.max(8, Math.min(H / 2 - ph / 2, H - ph - (Game.state === 'town' ? 150 : 12)));
     UI.panel(ctx, px, py, pw, ph, 'MENU');
-    let y = py + 62;
+    let y = py + 56;
     for (const [label, target, color] of rows) {
-      UI.btn(ctx, px + 16, y, pw - 32, 48, label, () => UI.open(target), { size: 14, color });
-      y += 56;
+      UI.btn(ctx, px + 16, y, pw - 32, btnH, label, () => UI.open(target), { size: H < 520 ? 12 : 14, color });
+      y += rowH;
     }
   },
 
@@ -1051,6 +1057,58 @@ const Screens = {
         }
         c += eh;
       }
+    }
+    ctx.restore();
+    UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 6);
+    ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+    if (scrollY > 1) ctx.fillText('▲ drag ▲', px + pw / 2, listTop + 2);
+    if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', px + pw / 2, viewBot - 2);
+  },
+
+  // 🏆 ACHIEVEMENTS — earned live from the hero's lifetime counters.
+  achievements(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const earned = ACHIEVEMENTS.filter(a => a.cur() >= a.need).length;
+    const pw = Math.min(470, W - 24);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(560, H - (Game.state === 'town' ? 170 : 24));
+    const py = Math.max(10, Math.min(H / 2 - ph / 2, H - ph - (Game.state === 'town' ? 150 : 12)));
+    UI.panel(ctx, px, py, pw, ph, '🏆 ACHIEVEMENTS — ' + earned + ' / ' + ACHIEVEMENTS.length);
+
+    const lx = px + 16, lw = pw - 32;
+    const listTop = py + 56, viewBot = py + ph - 14, viewH = Math.max(50, viewBot - listTop);
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
+    UI.sel.scrollY = scrollY;
+    UI.sel.scrollRegion = { x: lx - 4, y: listTop - 4, w: lw + 8, h: viewH + 8 };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(lx - 4, listTop - 4, lw + 8, viewH + 8); ctx.clip();
+    let c = listTop;
+    const vis = (top, hh) => (top - scrollY + hh > listTop) && (top - scrollY < viewBot);
+
+    for (const a of ACHIEVEMENTS) {
+      const cur = a.cur();
+      const done = cur >= a.need;
+      const yy = c - scrollY;
+      if (vis(c, 44)) {
+        ctx.fillStyle = done ? 'rgba(42,38,24,0.75)' : 'rgba(28,24,38,0.6)';
+        rr(ctx, lx - 4, yy, lw + 8, 40, 6); ctx.fill();
+        if (done) { ctx.strokeStyle = 'rgba(255,215,106,0.5)'; ctx.lineWidth = 1; rr(ctx, lx - 4, yy, lw + 8, 40, 6); ctx.stroke(); }
+        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        ctx.font = 'bold 11px Georgia'; ctx.fillStyle = done ? '#ffd76a' : '#8a8070';
+        ctx.fillText(this.fitText(ctx, a.name, lw - 78), lx + 4, yy + 15);
+        ctx.font = '9px Georgia'; ctx.fillStyle = done ? '#b5ab94' : '#6f6552';
+        ctx.fillText(this.fitText(ctx, a.desc, lw - 78), lx + 4, yy + 30);
+        if (done) {
+          ctx.textAlign = 'right'; ctx.font = 'bold 16px Georgia'; ctx.fillStyle = '#4ade80';
+          ctx.fillText('✓', lx + lw - 4, yy + 24);
+        } else {
+          UI.bar(ctx, lx + lw - 68, yy + 12, 64, 7, Math.min(1, cur / a.need), '#221d2e', '#8a6f2a');
+          ctx.textAlign = 'right'; ctx.font = '8px Georgia'; ctx.fillStyle = '#9a9080';
+          const gs = n => n >= 1e6 ? (n / 1e6) + 'm' : n >= 10000 ? Math.round(n / 1000) + 'k' : n.toLocaleString();
+          ctx.fillText(gs(cur) + ' / ' + gs(a.need), lx + lw - 4, yy + 30);
+        }
+      }
+      c += 46;
     }
     ctx.restore();
     UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 6);
@@ -1746,6 +1804,9 @@ const Screens = {
   },
 
   radial(ctx, W, H) {
+    // Grouped-list layout (Settings ▸ Gameplay ▸ Inventory: Grouped) replaces
+    // the wheel entirely (owner rule).
+    if (Settings.g.invGrouped) { this.invGrouped(ctx, W, H); return; }
     this.dim(ctx, W, H);
     // (red ✕ drawn globally by UI.draw, above all content)
     const p = Game.player;
@@ -2089,6 +2150,178 @@ const Screens = {
     ctx.fillStyle = '#6f6552';
     if (scrollY > 1) ctx.fillText('▲ drag ▲', dx + dw / 2, listTop + 4);
     if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', dx + dw / 2, viewBot - 1);
+
+    // The socketing popup, drawn over everything.
+    if (UI.sel.gemPick) this.gemModal(ctx, W, H);
+  },
+
+  // Grouped INVENTORY (Settings ▸ Gameplay ▸ Inventory: Grouped) — no wheel:
+  // equipped gear + the bag in one scrolling list, in fixed category order
+  // (owner rule): Helm → Shoulders → Chest → Gloves → Legs → Boots → Amulet →
+  // Ring 1 → Ring 2 → Weapon → Off-Hand → Torch.
+  INV_GROUP_ORDER: ['helm', 'shoulders', 'chest', 'gloves', 'legs', 'boots',
+                    'amulet', 'ring1', 'ring2', 'weapon', 'offhand', 'torch'],
+
+  invGrouped(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const sfa = UI.safe || { top: 0 };
+    const pw = Math.min(560, W - 20);
+    const px = W / 2 - pw / 2;
+    let y = 18 + (sfa.top || 0);
+
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'bold 16px Georgia'; ctx.fillStyle = '#c9bfa8';
+    ctx.fillText('INVENTORY', px, y);
+    ctx.textAlign = 'right'; ctx.font = '11px Georgia'; ctx.fillStyle = '#6ff7c3';
+    ctx.fillText(Hero.bagUsed() + ' / ' + Hero.BAG_SIZE + ' in bag', px + pw, y);
+    y += 10;
+
+    // Bag expansion (same as the wheel's).
+    const up = Hero.nextBagUpgrade();
+    if (up) {
+      const afford = Hero.gold >= up.cost;
+      const gshort = n => n >= 1e6 ? (n / 1e6) + 'm' : n >= 1000 ? (n / 1000) + 'k' : '' + n;
+      UI.btn(ctx, px, y, pw, 26, 'EXPAND BAG → ' + up.size + ' slots  (' + gshort(up.cost) + ' g)',
+        afford ? () => Hero.buyBagUpgrade() : null,
+        { size: 10, disabled: !afford, border: '#8a6f4a', color: '#ffd76a' });
+      y += 32;
+    }
+
+    // Filter chips (flow-wrapped): ALL + one per category with something in it.
+    const filter = UI.sel.invFilter || 'all';
+    const setFilter = f => { UI.sel.invFilter = f; UI.sel.scrollY = 0; UI.sel.invItem = null; };
+    const groupLabel = s => s === 'ring1' ? 'Ring 1' : s === 'ring2' ? 'Ring 2' : ITEM_SLOTS[s].label;
+    const bagFor = s => s === 'torch'
+      ? Hero.bag.filter(it => it && it.torch)
+      : Hero.bag.filter(it => it && !it.torch && it.slot === s);
+    let chX = px, chY = y;
+    const chip = (label, on, cb) => {
+      ctx.font = 'bold 9px Georgia';
+      const cw = ctx.measureText(label).width + 16;
+      if (chX + cw > px + pw + 1) { chX = px; chY += 24; }
+      ctx.fillStyle = on ? 'rgba(52,66,102,0.95)' : 'rgba(28,24,38,0.9)';
+      rr(ctx, chX, chY, cw, 20, 10); ctx.fill();
+      ctx.strokeStyle = on ? '#6ff7c3' : '#3a3448'; ctx.lineWidth = 1.2;
+      rr(ctx, chX, chY, cw, 20, 10); ctx.stroke();
+      ctx.fillStyle = on ? '#dbeafe' : '#9a9080';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(label, chX + cw / 2, chY + 10.5);
+      UI.register(chX, chY, cw, 20, cb);
+      chX += cw + 6;
+    };
+    chip('ALL', filter === 'all', () => setFilter('all'));
+    for (const s of this.INV_GROUP_ORDER) {
+      const n = bagFor(s).length + (Hero.equipped[s] ? 1 : 0);
+      if (!n && filter !== s) continue;
+      chip(groupLabel(s) + (n ? ' ' + n : ''), filter === s, () => setFilter(s));
+    }
+    y = chY + 28;
+
+    // Scrolling grouped list.
+    const listTop = y, viewBot = H - (Game.state === 'town' ? 150 : 12), viewH = Math.max(60, viewBot - listTop);
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
+    UI.sel.scrollY = scrollY;
+    UI.sel.scrollRegion = { x: px - 4, y: listTop - 4, w: pw + 8, h: viewH + 8 };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(px - 4, listTop - 4, pw + 8, viewH + 8); ctx.clip();
+    let c = listTop;
+    const vis = (top, h) => (top - scrollY + h > listTop) && (top - scrollY < viewBot);
+
+    const drawRow = (slotKey, it, isEq, arrows) => {
+      const yy = c - scrollY;
+      const selected = UI.sel.invItem === it;
+      if (vis(c, 34)) {
+        ctx.fillStyle = selected ? 'rgba(46,42,58,0.95)' : isEq ? 'rgba(26,40,32,0.9)' : 'rgba(28,24,38,0.92)';
+        rr(ctx, px, yy, pw, 30, 6); ctx.fill();
+        if (selected) { ctx.strokeStyle = RARITIES[it.rarity].color; ctx.lineWidth = 1.5; rr(ctx, px, yy, pw, 30, 6); ctx.stroke(); }
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.font = 'bold 12px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
+        const nm = it.name + (it.torch && (it.count || 1) > 1 ? '  ×' + it.count : '');
+        ctx.fillText(this.fitText(ctx, nm, pw - 96), px + 10, yy + 15);
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        if (isEq) {
+          ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#4ade80';
+          ctx.fillText('EQUIPPED', px + pw - 10, yy + 15);
+        } else if (!it.torch) {
+          ctx.font = 'bold 13px Georgia';
+          ctx.fillStyle = arrows > 0 ? '#4ade80' : arrows < 0 ? '#e04a5a' : '#9a9080';
+          ctx.fillText(arrows > 0 ? '▲'.repeat(Math.min(3, arrows)) : arrows < 0 ? '▼'.repeat(Math.min(3, -arrows)) : '—', px + pw - 10, yy + 15);
+        }
+        UI.register(px, yy, pw, 30, () => { UI.sel.invItem = selected ? null : it; UI.sel.gemPick = false; });
+      }
+      c += 34;
+      if (selected) {
+        // Full card + actions right under the row.
+        const cmp = isEq || it.torch ? null : Hero.equipped[it.slot];
+        const cardH = 30 + Items.statLines(it).length * 15 + 8;
+        if (vis(c, cardH)) this.itemCard(ctx, px, c - scrollY, pw, it, cmp, true);
+        c += cardH + 4;
+        const ay = c - scrollY;
+        if (vis(c, 36)) {
+          if (isEq) {
+            if (it.sockets || (it.gems && it.gems.length)) {
+              UI.btn(ctx, px, ay, 150, 32, (it.gems && it.gems.length) ? 'MANAGE SOCKETS' : 'SOCKET GEM', () => {
+                UI.sel.gemTarget = it; UI.sel.gemPick = true; UI.sel.gemKey = undefined;
+              }, { border: '#7a4a8f', color: '#b06adf', size: 11 });
+            }
+          } else {
+            const bw = (pw - 24) / 4;
+            UI.btn(ctx, px, ay, bw, 32, 'EQUIP', () => {
+              Items.equip(it, it.torch ? 'torch' : it.slot);
+              UI.sel.invItem = null;
+            }, { border: '#57b894', color: '#6ff7c3', size: 11 });
+            const canSalv = Items.canSalvage(it) && !it.torch;
+            UI.btn(ctx, px + bw + 8, ay, bw, 32, canSalv ? 'SALVAGE' : '—',
+              canSalv ? () => { Items.salvage(it); UI.sel.invItem = null; } : null,
+              { disabled: !canSalv, border: '#8a6f4a', color: '#ffb43a', size: 11 });
+            const canSocket = !!it.sockets;
+            UI.btn(ctx, px + (bw + 8) * 2, ay, bw, 32, 'SOCKET', canSocket ? () => {
+              UI.sel.gemTarget = it; UI.sel.gemPick = true; UI.sel.gemKey = undefined;
+            } : null, { disabled: !canSocket, border: '#7a4a8f', color: '#b06adf', size: 11 });
+            const stashFull = !it.torch && Hero.stashSlotCount(it.slot) >= Hero.stashPerSlot();
+            const canStash = !it.torch && !stashFull;
+            UI.btn(ctx, px + (bw + 8) * 3, ay, bw, 32, it.torch ? '—' : (stashFull ? 'FULL' : 'STASH'),
+              canStash ? () => { if (Items.toStash(it)) UI.sel.invItem = null; } : null,
+              { disabled: !canStash, border: '#5f7ab0', color: '#8fb0e8', size: 11 });
+          }
+        }
+        c += 40;
+      }
+    };
+
+    let anything = false;
+    for (const s of this.INV_GROUP_ORDER) {
+      if (filter !== 'all' && filter !== s) continue;
+      const eq = Hero.equipped[s];
+      const bagItems = bagFor(s)
+        .map(it => ({ it, arrows: it.torch ? 0 : Items.compareArrows(it, Hero.equipped[it.slot]) }))
+        .sort((a, b) => b.arrows - a.arrows || (b.it.rarity || 0) - (a.it.rarity || 0));
+      if (!eq && !bagItems.length) continue;
+      anything = true;
+      // Group header.
+      if (vis(c, 20)) {
+        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#6ff7c3';
+        ctx.fillText(groupLabel(s).toUpperCase(), px + 2, c - scrollY + 13);
+        ctx.strokeStyle = 'rgba(111,247,195,0.22)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(px, c - scrollY + 18); ctx.lineTo(px + pw, c - scrollY + 18); ctx.stroke();
+      }
+      c += 24;
+      if (eq) drawRow(s, eq, true, 0);
+      for (const { it, arrows } of bagItems) drawRow(s, it, false, arrows);
+      c += 8;
+    }
+    if (!anything) {
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText('Nothing here yet — loot the wilds.', px, c - scrollY + 14);
+      c += 24;
+    }
+    ctx.restore();
+    UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 6);
+    ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+    if (scrollY > 1) ctx.fillText('▲ drag ▲', px + pw / 2, listTop + 3);
+    if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', px + pw / 2, viewBot - 1);
 
     // The socketing popup, drawn over everything.
     if (UI.sel.gemPick) this.gemModal(ctx, W, H);
@@ -4526,6 +4759,14 @@ const Screens = {
       Hero.save();
       UI.toast(Settings.g.electiveMode ? 'Elective Mode ON — any skill in any slot' : 'Elective Mode OFF — one skill per category', '#6ff7c3');
     }, 'Elective Mode (multiple skills per category)');
+    gy += rowStep;
+    // Inventory layout — the radial wheel, or a grouped category list
+    // (Helm → Shoulders → … → Torch), owner rule.
+    UI.check(ctx, gx, gy, Settings.g.invGrouped, () => {
+      Settings.g.invGrouped = !Settings.g.invGrouped;
+      Settings.save();
+      UI.toast(Settings.g.invGrouped ? 'Inventory: GROUPED list' : 'Inventory: RADIAL wheel', '#6ff7c3');
+    }, 'Inventory: Grouped list (off = radial wheel)');
     gy += rowStep;
     // Full screen — hide the browser's address bar / chrome (live browser state,
     // not a saved toggle; the checkbox mirrors it). ONLY shown where the

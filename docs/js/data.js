@@ -230,6 +230,36 @@ function questReward(i) {
   return { gold, souls, xp, gem: big };
 }
 
+// ------------------------------ achievements -------------------------------
+// Earned state is computed LIVE from the hero's persistent lifetime counters —
+// no separate save data needed (the counters already snapshot).
+const ACHIEVEMENTS = [
+  { name: 'First Blood',             desc: 'Slay 100 monsters',                  need: 100,    cur: () => Hero.totalKills || 0 },
+  { name: 'Gravekeeper',             desc: 'Slay 1,000 monsters',                need: 1000,   cur: () => Hero.totalKills || 0 },
+  { name: 'Deathbringer',            desc: 'Slay 10,000 monsters',               need: 10000,  cur: () => Hero.totalKills || 0 },
+  { name: 'Warden of Silence',       desc: 'Slay 100,000 monsters',              need: 100000, cur: () => Hero.totalKills || 0 },
+  { name: "Champions' End",          desc: 'Slay 50 elite monsters',             need: 50,     cur: () => Hero.eliteKills || 0 },
+  { name: 'Terror of Terrors',       desc: 'Slay 500 elite monsters',            need: 500,    cur: () => Hero.eliteKills || 0 },
+  { name: 'Kingsbane',               desc: 'Fell 10 bosses or unique monsters',  need: 10,     cur: () => Hero.bossKills || 0 },
+  { name: 'Godslayer',               desc: 'Fell 100 bosses or unique monsters', need: 100,    cur: () => Hero.bossKills || 0 },
+  { name: 'Riftwalker',              desc: 'Clear 10 Rifts',                     need: 10,     cur: () => Hero.riftsCleared || 0 },
+  { name: 'Master of the Breach',    desc: 'Clear 100 Rifts',                    need: 100,    cur: () => Hero.riftsCleared || 0 },
+  { name: 'Journeyman of the Anvil', desc: 'Craft 25 items',                     need: 25,     cur: () => Hero.itemsCrafted || 0 },
+  { name: 'Forgemaster',             desc: 'Craft 250 items',                    need: 250,    cur: () => Hero.itemsCrafted || 0 },
+  { name: 'Ashes to Ashes',          desc: 'Salvage 100 items',                  need: 100,    cur: () => Hero.salvagedCount || 0 },
+  { name: 'Stonecutter',             desc: 'Combine 50 gems at the Jeweler',     need: 50,     cur: () => Hero.gemsCombined || 0 },
+  { name: 'Fateweaver',              desc: 'Reroll 25 properties at the Mystic', need: 25,     cur: () => Hero.enchantsDone || 0 },
+  { name: 'Cartographer of Greed',   desc: 'Open 100 chests',                    need: 100,    cur: () => Hero.chestsOpened || 0 },
+  { name: 'The Long Road',           desc: 'Reach level 70',                     need: 70,     cur: () => Hero.level || 1 },
+  { name: 'Beyond Mortality',        desc: 'Reach Paragon 100',                  need: 100,    cur: () => Hero.paragon || 0 },
+  { name: 'The Thousandth Step',     desc: 'Reach Paragon 1000',                 need: 1000,   cur: () => Hero.paragon || 0 },
+  { name: 'A Good Start',            desc: "Complete 10 of Lukus's quests",      need: 10,     cur: () => Hero.questLine || 0 },
+  { name: "Lukus's Right Hand",      desc: "Complete 100 of Lukus's quests",     need: 100,    cur: () => Hero.questLine || 0 },
+  { name: 'The Ledger Closed',       desc: 'Complete all 500 quests',            need: 500,    cur: () => Hero.questLine || 0 },
+  { name: 'Landfall',                desc: 'Clear all 5 lands',                  need: 5,      cur: () => Hero.zonesCleared || 0 },
+  { name: 'The Cube Restored',       desc: "Find the Horadric's Cube",           need: 1,      cur: () => Hero.hasCube ? 1 : 0 }
+];
+
 // Reward readout, shared by the journal, Lukus's dialog and offers. `short`
 // compacts "gold" to "g" so narrow phone columns can WRAP it instead of
 // ellipsizing (owner rule: no runoff under rewards).
@@ -240,11 +270,19 @@ function questRewardText(i, short) {
     ' · +' + rw.xp.toLocaleString() + ' XP' + (rw.gem ? ' · a gem' : '');
 }
 
-const GAME_VERSION = 'v1.6.61-alpha';
+const GAME_VERSION = 'v1.6.62-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.62-alpha', date: 'July 2026',
+    notes: [
+      'THE ☰ MENU GREW UP (owner order): 👤 CHARACTER on top, 🎒 INVENTORY under it, then 📜 Journal, ⚔ Skills & Passives, the brand-new 🏆 ACHIEVEMENTS beneath them, and ⚙ Settings last',
+      'ACHIEVEMENTS ARE IN — 24 deeds computed live from your lifetime record: from First Blood (100 kills) through Deathbringer and Warden of Silence (100,000), Godslayer, Master of the Breach, Forgemaster, The Thousandth Step (Paragon 1000), The Ledger Closed (all 500 quests) and more, each with a live progress bar until it\'s earned',
+      'NEW SETTING — Settings ▸ Gameplay ▸ "Inventory: Grouped list": OFF keeps the radial wheel exactly as it is; ON replaces it with a GROUPED inventory — your equipped piece and bag items sorted into categories (Helm → Shoulders → Chest → Gloves → Legs → Boots → Amulet → Ring 1 → Ring 2 → Weapon → Off-Hand → Torch) with filter chips, upgrade arrows, and the full EQUIP / SALVAGE / SOCKET / STASH actions on every item'
+    ]
+  },
   {
     v: 'v1.6.61-alpha', date: 'July 2026',
     notes: [

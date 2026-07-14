@@ -290,10 +290,21 @@ Script lives in the session scratchpad (intentionally not committed).
   `returnFromTownPortal()` (portal collapse + 30s cd). `startLand()` clears
   `townPortalReturn`. **THE ☰ MENU (v1.6.57, owner rule "only skills and
   passives, inventory, and settings")**: the top-left ☰ opens `Screens.sysmenu`
-  — a compact overlay with EXACTLY those rows (+ 📜 JOURNAL added ABOVE
-  Skills & Passives in v1.6.58, owner rule — `Screens.journal`: read-anywhere
-  quest list with live bars, DROP buttons, "✔ READY — see Lukus" on finished
-  deeds; turn-ins stay with Lukus) — and the 🎒 button → radial. **THE SURVIVOR'S CAMP HUB IS RETIRED**: `Game.toCamp()` now calls
+  — a compact overlay (v1.6.62 owner ORDER: 👤 CHARACTER top · 🎒 INVENTORY ·
+  📜 JOURNAL (`Screens.journal`: read-anywhere quest list with live bars, DROP
+  buttons, "✔ READY — see Lukus"; turn-ins stay with Lukus) · ⚔ SKILLS &
+  PASSIVES · 🏆 ACHIEVEMENTS · ⚙ SETTINGS; compact rows below H<520) — and the
+  🎒 button → radial. **ACHIEVEMENTS (v1.6.62)**: `ACHIEVEMENTS` (data.js, 24
+  entries `{name, desc, need, cur()}`) computed LIVE from lifetime counters (no
+  extra save state); `Screens.achievements` = scroll list, gold+✓ when earned,
+  mini progress bar otherwise. **INVENTORY LAYOUT TOGGLE (v1.6.62, owner
+  rule)**: `Settings.g.invGrouped` (Settings ▸ Gameplay "Inventory: Grouped
+  list") — OFF = the radial wheel; ON = `Screens.invGrouped`, a grouped list in
+  fixed `INV_GROUP_ORDER` (helm→shoulders→chest→gloves→legs→boots→amulet→
+  ring1→ring2→weapon→offhand→torch): equipped row tagged EQUIPPED (green tint,
+  MANAGE SOCKETS), bag rows with upgrade arrows sorted best-first, tap →
+  itemCard + EQUIP/SALVAGE/SOCKET/STASH, filter chips, gemModal on top,
+  EXIT-zone-aware scroll. **THE SURVIVOR'S CAMP HUB IS RETIRED**: `Game.toCamp()` now calls
   `enterTown()`, every reward/act-clear/death/abandon/bounty-map exit lands in
   New Haven (reward + actclear overlays open OVER the streets), and no code
   path sets `state='camp'` anymore (`Screens.camp` is dead code). **TOWN IS HOME (v1.6.52, owner rules)**: character
