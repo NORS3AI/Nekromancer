@@ -167,11 +167,20 @@ function questReward(i) {
   return { gold, souls, xpFrac: 0.4, gem: big };
 }
 
-const GAME_VERSION = 'v1.6.57-alpha';
+const GAME_VERSION = 'v1.6.58-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.58-alpha', date: 'July 2026',
+    notes: [
+      'THE STASH WHEEL IS GONE — the vault is now one clean list SORTED INTO GROUPS by gear type, with FILTER chips (All · Weapon · Phylactery · Helm · … · Rings · Amulet) and a SORT picker: ▲ Upgrade · Rarity · Level · Name. Deposit-bag and upgrade buttons sit right on top',
+      'THE QUEST JOURNAL LIVES IN THE ☰ MENU now, above Skills & Passives — read every accepted quest with live progress bars anywhere, drop deeds back to Lukus\'s queue, and finished ones say ✔ READY — see Lukus',
+      '"JEWELED NECESSITIES" is the new shop where General Goods stood — rings, necklaces and amulets only, worn once by the dead, priced for the living',
+      'The APOTHECARY has shut its doors for now — the cauldron\'s cold and the shelves are bare (nothing for sale, come back another day)'
+    ]
+  },
   {
     v: 'v1.6.57-alpha', date: 'July 2026',
     notes: [

@@ -315,8 +315,8 @@ const Game = {
     [835, 725, 60,   885, 615, 180, 130, "Horadric's Cube", '◈', '#ff5a4a', 'cube'],
     [150, 485, 55,    95, 415, 180, 110, 'Weapons',        '⚔', '#e0724a', 'vendor', ['weapon', 'offhand']],
     [435, 955, 60,   370, 860, 230, 160, 'Armor',          '🛡', '#8fb0e8', 'vendor', ['helm', 'chest', 'gloves', 'boots', 'shoulders', 'legs']],
-    [1100, 765, 60, 1130, 680, 190, 140, 'Apothecary',     '⚗', '#9fd88a', 'vendor', ['amulet', 'ring1', 'ring2']],
-    [790, 945, 60,   800, 855, 230, 150, 'General Goods',  '◉', '#ffd76a', 'vendor', 'all'],
+    [1100, 765, 60, 1130, 680, 190, 140, 'Apothecary',     '⚗', '#9fd88a', 'vendor', null],   // closed for now (owner rule) — sells nothing
+    [790, 945, 60,   800, 855, 230, 150, 'Jeweled Necessities', '💍', '#ffd76a', 'vendor', ['ring1', 'ring2', 'amulet']],
     [610, 1015, 55,  610, 930, 130, 140, 'Stash',          '▤', '#c9bfa8', 'stash'],
     [718, 668, 55,     0, 0, 0, 0, 'Lukus, Bringer of Light', '⚔', '#ffd76a', 'lukus'],         // the knight quest-giver
     [183, 195, 62,     0, 0, 0, 0, 'Expedition Waypoint',  '✧', '#8fd0ff', 'waypoint-blue'],    // bounties · acts · adventure
@@ -351,8 +351,10 @@ const Game = {
     const interacts = [], blockers = [];
     const vendors = [];
     const mkVendor = (name, flavor, slots, boost) => {
-      const sl = slots === 'all' ? this.ALL_SLOTS : slots;
-      const o = { name: name.toUpperCase(), flavor, stock: this.rollVendorStock(sl, { boost: boost || 0 }),
+      // A null slot list = the shop is CLOSED (owner rule: the Apothecary
+      // sells nothing right now) — the counter shows, the shelves are bare.
+      const sl = slots === 'all' ? this.ALL_SLOTS : (slots || []);
+      const o = { name: name.toUpperCase(), flavor, stock: sl.length ? this.rollVendorStock(sl, { boost: boost || 0 }) : [],
                   slots: sl, boost: boost || 0, lvl: Hero.level, t: this.time };
       vendors.push(o);
       return () => { UI.open('vendor'); UI.sel.vendor = o; AudioSys.sfx('gold'); };
@@ -360,8 +362,8 @@ const Game = {
     const FLAVOR = {
       Weapons: '"Blades for the brave — and the doomed."',
       Armor: '"Good steel between you and the grave."',
-      Apothecary: '"Charms, rings and little miracles."',
-      'General Goods': '"A bit of everything, friend."'
+      Apothecary: '"The cauldron\'s cold, friend. Nothing for sale — yet."',
+      'Jeweled Necessities': '"Rings, chains and charms — worn once by the dead, priced for the living."'
     };
     for (const s of this.TOWN_STATIONS) {
       const [px, py, pr, bx, by, bw, bh, label, icon, color, kind, slots, boost] = s;
@@ -385,6 +387,7 @@ const Game = {
     // Vendors RESTOCK when you return a level (or 10+ minutes) later — no more
     // level-20 goods for a level-70 hero, and bought-out shelves refill.
     for (const v of (t.vendors || [])) {
+      if (!v.slots || !v.slots.length) continue;   // closed shop — nothing to restock
       if (v.lvl !== Hero.level || this.time - v.t > 600) {
         v.stock = this.rollVendorStock(v.slots, { boost: v.boost });
         v.lvl = Hero.level; v.t = this.time;
