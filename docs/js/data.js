@@ -174,18 +174,27 @@ function questReward(i) {
   return { gold, souls, xp, gem: big };
 }
 
-// One-line reward readout, shared by the journal, Lukus's dialog and offers.
-function questRewardText(i) {
+// Reward readout, shared by the journal, Lukus's dialog and offers. `short`
+// compacts "gold" to "g" so narrow phone columns can WRAP it instead of
+// ellipsizing (owner rule: no runoff under rewards).
+function questRewardText(i, short) {
   const rw = questReward(i);
-  return '+' + rw.gold.toLocaleString() + ' gold  ·  +' + rw.souls + ' soul' + (rw.souls > 1 ? 's' : '') +
-    '  ·  +' + rw.xp.toLocaleString() + ' XP' + (rw.gem ? '  ·  a gem' : '');
+  return '+' + rw.gold.toLocaleString() + (short ? 'g' : ' gold') +
+    ' · +' + rw.souls + ' soul' + (rw.souls > 1 ? 's' : '') +
+    ' · +' + rw.xp.toLocaleString() + ' XP' + (rw.gem ? ' · a gem' : '');
 }
 
-const GAME_VERSION = 'v1.6.59-alpha';
+const GAME_VERSION = 'v1.6.60-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.60-alpha', date: 'July 2026',
+    notes: [
+      'REWARD LINES NO LONGER RUN OFF THE CARD — quest details in the Journal and Lukus\'s dialog (and the NEXT DEED offer) now use a compact readout ("+120g" instead of "+120 gold") that WRAPS onto a second line on narrow phones instead of being cut off with "…"'
+    ]
+  },
   {
     v: 'v1.6.59-alpha', date: 'July 2026',
     notes: [
