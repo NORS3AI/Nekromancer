@@ -315,11 +315,21 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.69-alpha';
+const GAME_VERSION = 'v1.6.70-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.70-alpha', date: 'July 2026',
+    notes: [
+      'THE HERO IS NOW A PAINTED AVATAR — the owner\'s hand-drawn Nekromancer walks the world in Top Down view: front art facing you, back art when walking away, and a mirrored three-quarter lean for left and right',
+      'The painting is layered into legs, torso and head that sway on offset rhythms as you walk, so the figure strides with real dimension instead of sliding like a card',
+      'CHOOSE YOUR NEKROMANCER — character creation now offers MALE and FEMALE avatars (the owner\'s paintings, one for each), and the creation screen shows your actual walking top-down character instead of the old bird\'s-eye skull',
+      'The campfire select screen dropped its "up to three Nekromancers rest by the fire" line — the fire speaks for itself',
+      'The classic procedural figure still stands in anywhere the avatar art hasn\'t loaded yet, so nothing ever renders blank'
+    ]
+  },
   {
     v: 'v1.6.69-alpha', date: 'July 2026',
     notes: [

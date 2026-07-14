@@ -194,6 +194,7 @@ const Hero = {
   addyLine: 0,          // Addy quests TURNED IN (0-500)
   daily: null,          // Addy's daily: { date, base (null = not taken), done }
   amOrbs: 0,            // Amidrassi Orbs — rift/season boss drops, spent at Lyssa
+  gender: 'm',          // 'm' | 'f' — picks the painted avatar (creation choice)
   salvagedCount: 0,     // lifetime items salvaged (quest counter)
   eliteKills: 0,        // lifetime elite/champion kills (quest counter)
   bossKills: 0,         // lifetime boss/unique kills (quest counter)
@@ -209,9 +210,10 @@ const Hero = {
   SAVE_VERSION: 4,   // v2: Epic rarity @ index 3 · v3: item.gem → item.gems[] · v4: 13-tier gems
 
   fresh() {
-    // name/eyeColor are chosen at character creation; keep any already set.
+    // name/eyeColor/gender are chosen at character creation; keep any already set.
     if (!this.name) this.name = 'The Nekromancer';
     if (!this.eyeColor) this.eyeColor = '#6ff7c3';
+    if (!this.gender) this.gender = 'm';
     this.level = 1; this.xp = 0; this.gold = 0;
     this.paragon = 0; this.paragonXp = 0; this.np = 0; this.para = {}; this.paraOrder = [];
     this.mats = { parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0, wyrmscale: 0, brain: 0, rathmasoul: 0 };
@@ -300,7 +302,7 @@ const Hero = {
       pet: this.pet, wings: this.wings,
       journal: this.journal, questRepool: this.questRepool, questNext: this.questNext, questLine: this.questLine,
       addyRepool: this.addyRepool, addyNext: this.addyNext, addyLine: this.addyLine, daily: this.daily,
-      amOrbs: this.amOrbs,
+      amOrbs: this.amOrbs, gender: this.gender,
       salvagedCount: this.salvagedCount, eliteKills: this.eliteKills, bossKills: this.bossKills,
       gemsCombined: this.gemsCombined, itemsCrafted: this.itemsCrafted,
       enchantsDone: this.enchantsDone, chestsOpened: this.chestsOpened,
@@ -399,6 +401,7 @@ const Hero = {
       daily: (d.daily && typeof d.daily === 'object' && d.daily.date)
         ? { date: '' + d.daily.date, base: d.daily.base == null ? null : d.daily.base, done: !!d.daily.done } : null,
       amOrbs: Math.max(0, d.amOrbs || 0),
+      gender: d.gender === 'f' ? 'f' : 'm',
       questLine: clamp(d.questLine || 0, 0, QUEST_COUNT),
       // Old saves have no questNext: the line pointer was questLine itself,
       // +1 if its quest was already accepted.

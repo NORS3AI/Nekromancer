@@ -386,8 +386,13 @@ class Player {
     if (this.dash) ctx.globalAlpha = 0.55;
 
     if (typeof Game !== 'undefined' && Game.topDown && Game.topDown()) {
-      // Diablo-style upright figure (face forward, shaded for depth).
-      this.drawUpright(ctx, bob);
+      // The owner's PAINTED AVATAR (male/female) walks the world when its art
+      // is loaded; the procedural upright figure stands in until then.
+      const gd = (typeof Hero !== 'undefined' && Hero.gender) || 'm';
+      const front = Game.heroSprite ? Game.heroSprite(gd, 'front') : null;
+      const back = Game.heroSprite ? Game.heroSprite(gd, 'back') : null;
+      if (front && back) this.drawAvatarModel(ctx, front, back, bob);
+      else this.drawUpright(ctx, bob);
     } else {
       // Classic Bird's-Eye sprite (rotates to face movement; eyes read as the
       // top of the head, correct for a straight-down view).
@@ -473,6 +478,62 @@ class Player {
   // with a lit front and shadowed sides, and the eye-coloured staff crystal. It
   // mirrors left/right with movement so it still feels responsive. Feet sit at the
   // origin so it stands on the tilted floor. (Called only in Top Down view.)
+  // ---- The painted avatar as the walking top-down model (owner art) ----
+  // Front art faces the camera (moving down/idle), back art shows when
+  // walking away, and left/right use the front art mirrored with a lean and
+  // a slight shear (a cheap 3/4 turn). The image is drawn in THREE LAYERED
+  // SLICES — legs, torso, head — swaying on phase-shifted curves so the
+  // painting reads as an articulated, dimensional figure rather than a
+  // sliding card (owner rule: "animate it to walk… layer the image").
+  drawAvatarModel(ctx, front, back, bob) {
+    const fx = Math.cos(this.facing), fy = Math.sin(this.facing);
+    const useBack = fy < -0.25 && Math.abs(fy) > Math.abs(fx) * 0.7;
+    const img = useBack ? back : front;
+    const HT = 58;                                  // world height of the figure
+    const w = HT * (img.width / img.height);
+    const moving = this.moving;
+    const ph = this.anim * 1.9;
+    const bobY = moving ? Math.abs(Math.sin(ph)) * 2.4 : Math.sin((Game.time || 0) * 1.8) * 0.7;
+    const sideways = !useBack && Math.abs(fx) > 0.45;
+    const flip = fx < 0 ? -1 : 1;
+
+    ctx.save();
+    ctx.translate(0, -bobY);
+    if (img.screenBlend) ctx.globalCompositeOperation = 'screen';   // file:// fallback (black bg melts in)
+    if (this.flash > 0.4) ctx.globalAlpha = 0.65;   // hurt blink
+    if (sideways) {
+      ctx.scale(flip, 1);                            // profile leads the walk
+      ctx.transform(1, 0, -0.14, 1, 0, 0);           // shear = cheap 3/4 turn
+      ctx.scale(0.9, 1);                             // profile narrows the body
+      ctx.rotate(moving ? Math.sin(ph) * 0.05 + 0.05 : 0.03);   // lean into the stride
+    } else {
+      ctx.rotate(moving ? Math.sin(ph) * 0.04 : 0);  // gentle idle/walk sway
+    }
+    // Cosmetic wings ride behind the painting.
+    this.drawWings(ctx, false);
+
+    const sw = img.width, sh = img.height;
+    const feet = 8;                                  // feet line (matches the shadow)
+    // Base pass — the whole painting, so slice seams never show skin.
+    ctx.drawImage(img, -w / 2, feet - HT, w, HT);
+    if (moving) {
+      const stride = Math.sin(ph);
+      // LEGS (bottom 46%): the strongest sway + a step-length stretch.
+      const legY = 0.54;
+      ctx.drawImage(img, 0, sh * legY, sw, sh * (1 - legY),
+        -w / 2 + stride * 1.7, feet - HT + HT * legY, w, HT * (1 - legY) * (1 + Math.abs(stride) * 0.045));
+      // TORSO (24%–58%): counter-sways against the hips.
+      const tY = 0.24, tH = 0.34;
+      ctx.drawImage(img, 0, sh * tY, sw, sh * tH,
+        -w / 2 - stride * 1.1, feet - HT + HT * tY, w, HT * tH);
+      // HEAD (top 26%): nearly steady, the slightest counter-nod.
+      ctx.drawImage(img, 0, 0, sw, sh * 0.26,
+        -w / 2 + stride * 0.5, feet - HT, w, HT * 0.26);
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
   drawUpright(ctx, bob) {
     const flash = this.flash > 0.4;
     const eye = (typeof Hero !== 'undefined' && Hero.eyeColor) || '#6ff7c3';

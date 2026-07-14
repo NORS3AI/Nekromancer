@@ -357,6 +357,7 @@ const Game = {
     this.townImg = this.townImg || (() => { const i = new Image(); i.src = 'art/town/newhaven.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1'); return i; })();
     this.lukusImg('helmed'); this.lukusImg('idle');
     this.addyImg(); this.lyssaImg();
+    for (const gd of ['m', 'f']) { this.heroImg(gd, 'front'); this.heroImg(gd, 'back'); }
     if (typeof Screens !== 'undefined' && Screens.preloadShops) Screens.preloadShops();
     if (typeof World !== 'undefined' && World.loadTiles) World.loadTiles();
   },
@@ -713,6 +714,43 @@ const Game = {
       }
     }
     ctx.restore();
+  },
+
+  // ---- The PLAYER'S PAINTED AVATAR (owner art): male/female, front & back
+  // views, chroma-keyed and driven by Player.drawAvatarModel as the walking
+  // top-down model (layered slices fake articulation/depth).
+  heroArt: {},
+  heroImg(gender, side) {
+    const key = (gender === 'f' ? 'f' : 'm') + '_' + side;
+    let img = this.heroArt[key];
+    if (!img) {
+      img = new Image();
+      img.src = 'art/hero/' + key + '.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
+      this.heroArt[key] = img;
+    }
+    return img;
+  },
+  heroCut: {},
+  heroSprite(gender, side) {
+    const key = (gender === 'f' ? 'f' : 'm') + '_' + side;
+    if (this.heroCut[key]) return this.heroCut[key];
+    const img = this.heroImg(gender, side);
+    if (!img.complete || !img.naturalWidth) return null;
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const g2 = c.getContext('2d');
+    g2.drawImage(img, 0, 0);
+    try {
+      const d = g2.getImageData(0, 0, c.width, c.height);
+      const px = d.data;
+      for (let i = 0; i < px.length; i += 4) {
+        const l = Math.max(px[i], px[i + 1], px[i + 2]);
+        if (l < 26) px[i + 3] = Math.max(0, (l - 10) * 16);   // near-black → transparent
+      }
+      g2.putImageData(d, 0, 0);
+    } catch (e) { c.screenBlend = true; }
+    this.heroCut[key] = c;
+    return c;
   },
 
   // ---- Lyssa, Mistress of Fate — the OWNER'S PAINTED GAMBLER, keyed onto the
