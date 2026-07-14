@@ -559,7 +559,7 @@ const Hero = {
       this.gems.push(rw.gemGot);
     }
     this.questLine = Math.min(QUEST_COUNT, (this.questLine || 0) + 1);
-    this.addXP(Math.round(XP_CURVE(Math.min(this.level, 69)) * rw.xpFrac));
+    this.addXP(rw.xp);   // the exact XP the quest advertised (gear XP bonuses can only add)
     this.save();
     return rw;
   },

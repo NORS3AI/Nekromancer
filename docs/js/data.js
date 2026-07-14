@@ -156,22 +156,44 @@ const QUEST_LINE = (() => {
   return line;
 })();
 
-// Rewards scale with hero level AND how deep into the line you are; every
-// 10th quest and every milestone pays double gold, extra souls and a gem.
+// Rewards are DETERMINISTIC PER QUEST (owner rule: "make sure that rewards
+// are real when awarded") — computed from the quest's own place in the line,
+// never from the hero's current level, so the amount shown when you read or
+// accept a quest is EXACTLY what is paid at turn-in, whenever that happens.
+// Every 10th quest and every milestone pays double gold, extra souls + a gem.
 function questReward(i) {
-  const lvl = Math.max(1, Hero.level || 1);
+  const gate = questGate(i);
+  // The quest's own "level equivalent": its level gate, or 70 growing with
+  // paragon depth past the cap.
+  const lvlEq = gate.kind === 'level' ? gate.at : 70 + (i - 199) * 0.5;
   const big = (i % 10) === 9 || (i % 25) === 24;
-  let gold = Math.round(120 * lvl * (1 + i * 0.02));
+  let gold = Math.round(120 * lvlEq * (1 + i * 0.02));
   let souls = 1 + Math.floor(i / 50);
   if (big) { gold *= 2; souls += 2; }
-  return { gold, souls, xpFrac: 0.4, gem: big };
+  const xp = Math.round(XP_CURVE(clamp(Math.round(lvlEq), 1, 69)) * 0.4);
+  return { gold, souls, xp, gem: big };
 }
 
-const GAME_VERSION = 'v1.6.58-alpha';
+// One-line reward readout, shared by the journal, Lukus's dialog and offers.
+function questRewardText(i) {
+  const rw = questReward(i);
+  return '+' + rw.gold.toLocaleString() + ' gold  ·  +' + rw.souls + ' soul' + (rw.souls > 1 ? 's' : '') +
+    '  ·  +' + rw.xp.toLocaleString() + ' XP' + (rw.gem ? '  ·  a gem' : '');
+}
+
+const GAME_VERSION = 'v1.6.59-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.59-alpha', date: 'July 2026',
+    notes: [
+      'TAP A QUEST FOR THE FULL STORY — in the Journal and in Lukus\'s dialog, tapping a quest row opens its details: the complete deed text, its place in the 500 (with a ★ milestone note), and the EXACT reward — gold, Forgotten Souls, XP, and whether a gem is coming',
+      'REWARDS ARE REAL NOW (owner rule) — every quest\'s payout is fixed to the quest itself, not to your level when you happen to turn it in. What the details show is precisely what Lukus pays: same gold, same souls, same XP, whether you read it at level 9 or turn it in at level 70 (gear XP bonuses can only add on top)',
+      'The NEXT DEED offer shows the same full reward line before you accept'
+    ]
+  },
   {
     v: 'v1.6.58-alpha', date: 'July 2026',
     notes: [
