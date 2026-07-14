@@ -322,6 +322,7 @@ const Game = {
     // appears once you talk to them.
     [718, 668, 55,     0, 0, 0, 0, 'Lukus',                '⚔', '#ffd76a', 'lukus'],   // the knight quest-giver
     [1150, 515, 55,    0, 0, 0, 0, 'Addy',                 '🗡', '#c86adf', 'addy'],   // the rogue queen, by the crates east of the rift pavilion (owner-placed)
+    [880, 500, 55,     0, 0, 0, 0, 'Lyssa',                '✦', '#c88bf0', 'lyssa'],   // the fate-gambler at the rift pavilion steps (Amidrassi Orbs)
     [183, 195, 62,     0, 0, 0, 0, 'Expedition Waypoint',  '✧', '#8fd0ff', 'waypoint-blue'],    // bounties · acts · adventure
     [1020, 350, 66,    0, 0, 0, 0, 'Rift Waypoint',        '✧', '#c88bf0', 'waypoint-purple'],  // rifts · greater rifts · seasons
     [585, 1120, 70,    0, 0, 0, 0, 'Return to the Wilds',  '↩', '#8fd0ff', 'gate']              // only while visiting via portal
@@ -377,6 +378,7 @@ const Game = {
       else if (kind === 'gate') { open = () => this.returnToWilds(); cond = () => !!this.townPortalReturn; }
       else if (kind === 'cube') { open = () => UI.open('cube'); cond = () => Hero.hasCube; }
       else if (kind === 'addy') open = () => UI.open('addy');
+      else if (kind === 'lyssa') open = () => UI.open('lyssa');
       else open = () => UI.open(kind);
       interacts.push({ x: px, y: py, r: pr, label, icon, color, open, cond, kind });
       if (bw > 0) blockers.push({ cx: bx, cy: by, w: bw, h: bh });
@@ -501,6 +503,8 @@ const Game = {
     // Addy, Queen of the Underworld — by the crates east of the rift pavilion
     // (placed exactly where the owner's character stood).
     this.drawAddy(ctx, 1150, 492);
+    // Lyssa, Mistress of Fate — at the rift pavilion steps.
+    this.drawLyssa(ctx, 880, 477);
 
     // The hero (and their pet) walk on top of the map. (No pad circles — the
     // doorway prompt lives on the ENTER button instead, owner rule.)
@@ -690,6 +694,70 @@ const Game = {
         ctx.fillText(mark, 0, -124 + Math.sin(this.time * 3 + 1) * 2);
         ctx.shadowBlur = 0;
       }
+    }
+    ctx.restore();
+  },
+
+  // ---- Lyssa, Mistress of Fate — the OWNER'S PAINTED GAMBLER, keyed onto the
+  // map at the rift pavilion steps. Rift and Season bosses breathe out
+  // Amidrassi Orbs; she turns them into gambled gear (Kadala-style).
+  lyssaArt: null,
+  lyssaImg() {
+    if (!this.lyssaArt) {
+      const img = new Image();
+      img.src = 'art/npc/lyssa_idle.png?v=' + (typeof BUILD !== 'undefined' ? BUILD : '1');
+      this.lyssaArt = img;
+    }
+    return this.lyssaArt;
+  },
+  lyssaCut: null,
+  lyssaSprite() {
+    if (this.lyssaCut) return this.lyssaCut;
+    const img = this.lyssaImg();
+    if (!img.complete || !img.naturalWidth) return null;
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    try {
+      const d = g.getImageData(0, 0, c.width, c.height);
+      const px = d.data;
+      for (let i = 0; i < px.length; i += 4) {
+        const l = Math.max(px[i], px[i + 1], px[i + 2]);
+        if (l < 26) px[i + 3] = Math.max(0, (l - 10) * 16);   // near-black → transparent
+      }
+      g.putImageData(d, 0, 0);
+    } catch (e) { c.screenBlend = true; }
+    this.lyssaCut = c;
+    return c;
+  },
+
+  drawLyssa(ctx, x, y) {
+    const bob = Math.sin(this.time * 1.5 + 4) * 1.4;
+    const spr = this.lyssaSprite();
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = 'rgba(0,0,0,0.32)'; ctx.beginPath(); ctx.ellipse(0, 2, 16, 6, 0, 0, TAU); ctx.fill();
+    if (spr) {
+      const h = 124, w = h * (spr.width / spr.height);
+      // A soft arcane-violet halo, like the orb in her palm.
+      ctx.fillStyle = 'rgba(200,139,240,0.10)';
+      ctx.beginPath(); ctx.ellipse(0, -h * 0.45, w * 0.62, h * 0.5, 0, 0, TAU); ctx.fill();
+      if (spr.screenBlend) ctx.globalCompositeOperation = 'screen';
+      ctx.drawImage(spr, -w / 2, -h + 4 - bob, w, h);
+      ctx.globalCompositeOperation = 'source-over';
+    } else {
+      ctx.fillStyle = '#7a5f96'; rr(ctx, -8, -27 - bob, 16, 25, 4); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, -33 - bob, 6.5, 0, TAU); ctx.fill();
+    }
+    // ! = you carry enough orbs to gamble at least the cheapest slot.
+    const cheapest = (typeof Items !== 'undefined' && Items.GAMBLE_COSTS) ? Items.GAMBLE_COSTS.helm : 10;
+    if ((Hero.amOrbs || 0) >= cheapest) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 17px Georgia'; ctx.fillStyle = '#c88bf0';
+      ctx.shadowColor = '#c88bf0'; ctx.shadowBlur = 8;
+      ctx.fillText('!', 0, -124 + Math.sin(this.time * 3 + 2) * 2);
+      ctx.shadowBlur = 0;
     }
     ctx.restore();
   },
@@ -1289,6 +1357,11 @@ const Game = {
       const gem = Items.dropGem();
       Hero.gems.push(gem);
       lines.push([gemName(gem), GEM_TYPES[gem.type].color]);
+      // Amidrassi Orbs — the boss's dying breath, 1–10 at random (owner rule).
+      // Spent at Lyssa, Mistress of Fate, for gambled gear.
+      const orbs = randInt(1, 10);
+      Hero.amOrbs = (Hero.amOrbs || 0) + orbs;
+      lines.push([orbs + '× Amidrassi Orb' + (orbs > 1 ? 's' : ''), '#c88bf0']);
       const kind = (this.zone && this.zone.riftKind) || 'normal';
       if (kind === 'season') {
         // Seasons don't drop keys — they GUARANTEE a set piece (owner rule): one

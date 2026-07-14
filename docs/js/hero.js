@@ -193,6 +193,7 @@ const Hero = {
   addyNext: 0,          // the next FRESH quest Addy offers (0-500)
   addyLine: 0,          // Addy quests TURNED IN (0-500)
   daily: null,          // Addy's daily: { date, base (null = not taken), done }
+  amOrbs: 0,            // Amidrassi Orbs — rift/season boss drops, spent at Lyssa
   salvagedCount: 0,     // lifetime items salvaged (quest counter)
   eliteKills: 0,        // lifetime elite/champion kills (quest counter)
   bossKills: 0,         // lifetime boss/unique kills (quest counter)
@@ -229,6 +230,7 @@ const Hero = {
     this.pet = null; this.wings = null;
     this.journal = []; this.questRepool = []; this.questNext = 0; this.questLine = 0;
     this.addyRepool = []; this.addyNext = 0; this.addyLine = 0; this.daily = null;
+    this.amOrbs = 0;
     this.salvagedCount = 0; this.eliteKills = 0; this.bossKills = 0;
     this.gemsCombined = 0; this.itemsCrafted = 0; this.enchantsDone = 0; this.chestsOpened = 0;
     this.difficulty = 0;
@@ -298,6 +300,7 @@ const Hero = {
       pet: this.pet, wings: this.wings,
       journal: this.journal, questRepool: this.questRepool, questNext: this.questNext, questLine: this.questLine,
       addyRepool: this.addyRepool, addyNext: this.addyNext, addyLine: this.addyLine, daily: this.daily,
+      amOrbs: this.amOrbs,
       salvagedCount: this.salvagedCount, eliteKills: this.eliteKills, bossKills: this.bossKills,
       gemsCombined: this.gemsCombined, itemsCrafted: this.itemsCrafted,
       enchantsDone: this.enchantsDone, chestsOpened: this.chestsOpened,
@@ -395,6 +398,7 @@ const Hero = {
       addyLine: clamp(d.addyLine || 0, 0, ADDY_QUEST_COUNT),
       daily: (d.daily && typeof d.daily === 'object' && d.daily.date)
         ? { date: '' + d.daily.date, base: d.daily.base == null ? null : d.daily.base, done: !!d.daily.done } : null,
+      amOrbs: Math.max(0, d.amOrbs || 0),
       questLine: clamp(d.questLine || 0, 0, QUEST_COUNT),
       // Old saves have no questNext: the line pointer was questLine itself,
       // +1 if its quest was already accepted.

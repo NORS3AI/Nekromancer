@@ -233,6 +233,18 @@ script drives: title→camp→map→zone via real taps, combat via keyboard, the
 portal→reward, dungeon walls, reload persistence). Assert zero console errors.
 Script lives in the session scratchpad (intentionally not committed).
 
+- **LYSSA, MISTRESS OF FATE (v1.6.66, owner request)** — the owner's painted
+  gambler (`docs/art/npc/lyssa_idle.png`, chroma-keyed `Game.lyssaSprite()`,
+  drawn at (880,477), pad (880,500) kind 'lyssa', near the rift pavilion;
+  plate says just 'Lyssa'). **AMIDRASSI ORBS** (`Hero.amOrbs`, snapshot
+  parity): every Rift/Season boss completion grants `randInt(1,10)` (in the
+  riftMode reward block). **Kadala-style gambling** (`Items.GAMBLE_COSTS`:
+  armor 10 · offhand/ring 15 · weapon 25 · amulet 30; `Items.gambleItem(slot)`
+  — 20% magic / 45% rare / 25% epic / 10% legendary with `legendaryStars
+  (tormentTier())`, mLvl = level + 3·difficulty, item → bag). `Screens.lyssa`
+  = the NPC stage + orb purse + FATE DEALT card (`UI.sel.lastGamble`) +
+  slot table; her ! lights when orbs ≥ cheapest cost.
+
 ## Roadmap ideas (not yet built)
 
 - **⭐ OWNER TODO (requested 2026-07-03): HORADRIC'S CUBE — a legendary tool
