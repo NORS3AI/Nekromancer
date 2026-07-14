@@ -163,11 +163,17 @@ function questReward(i) {
   return { gold, souls, xpFrac: 0.4, gem: big };
 }
 
-const GAME_VERSION = 'v1.6.52-alpha';
+const GAME_VERSION = 'v1.6.53-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.53-alpha', date: 'July 2026',
+    notes: [
+      'LUKUS STANDS BESIDE HIS WORDS ON PHONES TOO — on portrait mobile screens the dialog no longer stacks above him: his words and the quest board take the left side and the knight takes the right, raised on a soft ground shadow so he stays clear of the EXIT button below'
+    ]
+  },
   {
     v: 'v1.6.52-alpha', date: 'July 2026',
     notes: [

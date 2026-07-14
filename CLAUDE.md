@@ -311,8 +311,12 @@ Script lives in the session scratchpad (intentionally not committed).
   STRAIGHT ON THE BLACK — **NO panel box (owner rule: "it doesn't need to be in a
   box")**: glowing gold header + fading rule, greeting, ledger progress bar
   ("QUEST n OF 500"), then the current quest (accept / progress / turn-in, or a
-  disabled "REQUIRES LEVEL/PARAGON X" gate). On narrow portrait phones (side room
-  < 290px) the text spans full width ABOVE the knight. His in-town model is
+  disabled "REQUIRES LEVEL/PARAGON X" gate). SIDE-BY-SIDE ON EVERY SCREEN (owner
+  rule v1.6.53 "lukus needs to be side to side with the text"): on narrow
+  portrait phones (`nr` = side room < 260px) the text keeps the LEFT ~52% and
+  the knight takes the right column, RAISED above the EXIT button zone
+  (`feetY = H-148`) on a soft ground-shadow ellipse, with compact fonts. His
+  in-town model is
   the HELMED painting keyed onto the map: `Game.lukusImg(mood)` loads
   `docs/art/npc/lukus_{helmed,idle,smile,frown,angry}.png` (owner art, ?v=BUILD),
   `Game.lukusSprite()` chroma-keys the black bg (falls back to 'screen' blend when
