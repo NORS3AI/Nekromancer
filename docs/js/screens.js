@@ -859,12 +859,12 @@ const Screens = {
       enter: 'STEP UP TO THE ANVIL'
     },
     jeweler: {
-      npc: 'COVETOUS SHEN', color: '#4ecbe0', welcome: "WELCOME TO THE JEWELER'S",
+      npc: 'ORREN GILDSTONE', color: '#4ecbe0', welcome: "WELCOME TO THE JEWELER'S",
       info: '"Every stone has a soul, friend — let me show you. I cut fresh gems, merge three of a kind into finer ones, set them snug into your sockets and pry them out again without a scratch. Tired of a stone? I pay honest gold."',
       enter: 'BROWSE THE STONES'
     },
     mystic: {
-      npc: 'MYRIAM', color: '#b06adf', welcome: 'WELCOME TO THE SANCTUM',
+      npc: 'VESSA NIGHTWEAVE', color: '#b06adf', welcome: 'WELCOME TO THE SANCTUM',
       info: '"Sit, child — the threads of fate can always be rewoven. I reroll the properties on your gear until they suit you, and I keep a wardrobe of wonders besides: pets to walk beside you, wings for your back, and themes to re-tint the very world."',
       enter: 'PART THE VEIL'
     }
@@ -915,7 +915,9 @@ const Screens = {
     const pw = Math.min(430, W - 24);
     const px = W / 2 - pw / 2;
     const rowH = 58;
-    const ph = 96 + (trainKey ? 34 : 0) + buttons.length * rowH + 14;
+    // A maxed artisan shows NO level line at all (owner rule: no "10/10 (MAX)").
+    const showTrain = trainKey && (Hero.artisans[trainKey.k] || 1) < 10;
+    const ph = 96 + (showTrain ? 34 : 0) + buttons.length * rowH + 14;
     // Panel hugs the bottom; in town it stops above the round EXIT button's
     // corner zone so the last bench row is never covered (owner screenshots).
     const py = Math.max(10, H - ph - (Game.state === 'town' ? 150 : 24));
@@ -924,7 +926,7 @@ const Screens = {
     ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#9a9080';
     ctx.fillText(this.fitText(ctx, npcLine, pw - 30), W / 2, py + 52);
     let y = py + 66;
-    if (trainKey) { this.artisanRow(ctx, px, pw, y + 8, trainKey.k, trainKey.label); y += 34; }
+    if (showTrain) { this.artisanRow(ctx, px, pw, y + 8, trainKey.k, trainKey.label); y += 34; }
     for (const [label, desc, target, color] of buttons) {
       const cb = typeof target === 'function' ? target : () => UI.open(target);
       UI.btn(ctx, px + 14, y, pw - 28, rowH - 8, '', cb);
@@ -3171,7 +3173,7 @@ const Screens = {
 
   // JEWELER — art-first hub with five gem benches (owner rule).
   jeweler(ctx, W, H) {
-    this.artisanHub(ctx, W, H, 'jeweler', 'COVETOUS SHEN — JEWELER',
+    this.artisanHub(ctx, W, H, 'jeweler', 'ORREN GILDSTONE — JEWELER',
       '"Every stone has a soul. Let me show you."', [
         ['◆  SOCKET A GEM', 'Set a gem into an empty socket', 'jewSocket', '#4ecbe0'],
         ['◇  UNSOCKET', 'Pull gems back out — always free', 'jewUnsocket', '#b06adf'],
@@ -3312,24 +3314,32 @@ const Screens = {
     this.shopBackdrop(ctx, W, H, 'jeweler');
     const pw = Math.min(480, W - 20);
     const px = W / 2 - pw / 2;
-    UI.panel(ctx, px, 46, pw, Math.min(H - 56, 380), 'CRAFT A GEM');
+    UI.panel(ctx, px, 46, pw, Math.min(H - 56, 420), 'CRAFT A GEM');
+    const spec = Items.gemCraftSpec();
     const cost = Items.gemCraftCost();
     const afford = Items.canAfford(cost);
-    ctx.textAlign = 'center'; ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
-    ctx.fillText(this.fitText(ctx, 'Choose a stone — Shen cuts it fresh. Finer jeweler training cuts finer tiers.', pw - 30), W / 2, 86);
-    ctx.font = 'bold 13px Georgia'; ctx.fillStyle = afford ? '#ffd76a' : '#a05a5a';
-    ctx.fillText('Cost: ' + this.costLabel(cost) + '   (you have ' + Hero.gold.toLocaleString() + 'g)', W / 2, 108);
-    let y = 126;
+    // Flavor WRAPPED over its own lines (owner rule: no more cut-off text).
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#9a9080';
+    let y = wrapText(ctx, '"Choose a stone and Orren cuts it fresh. The finer my training, the finer the cut."',
+      px + 20, 94, pw - 40, 15, 3);
+    ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#4ecbe0';
+    y = wrapText(ctx, 'Jeweler level ' + (Hero.artisans.jeweler || 1) + ' cuts ' + GEM_TIERS[spec.tier].toUpperCase() + ' gems.',
+      px + 20, y + 4, pw - 40, 14, 2);
+    ctx.font = 'bold 12px Georgia'; ctx.fillStyle = afford ? '#ffd76a' : '#a05a5a';
+    y = wrapText(ctx, 'Cost: ' + this.costLabel(cost) + '  ·  you have ' + Hero.gold.toLocaleString() + 'g',
+      px + 20, y + 4, pw - 40, 14, 2);
+    y += 8;
     for (const t of Object.keys(GEM_TYPES)) {
       const gm = GEM_TYPES[t];
       UI.btn(ctx, px + 16, y, pw - 32, 40, '', afford ? () => Items.craftGem(t) : null,
         { disabled: !afford, border: gm.color });
-      drawGemIcon(ctx, t, 4, px + 38, y + 20, 12);
+      drawGemIcon(ctx, t, spec.tier, px + 38, y + 20, 12);
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 13px Georgia'; ctx.fillStyle = gm.color;
       ctx.fillText(gm.name, px + 58, y + 14);
       ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
-      ctx.fillText(this.fitText(ctx, gemStatText({ type: t, tier: 0 }).replace(/\s*\/\s*/, ' · '), pw - 90), px + 58, y + 29);
+      ctx.fillText(this.fitText(ctx, gemStatText({ type: t, tier: spec.tier }).replace(/\s*\/\s*/, ' · '), pw - 90), px + 58, y + 29);
       y += 46;
     }
   },
@@ -3417,9 +3427,11 @@ const Screens = {
       ctx.fillStyle = 'rgba(28,24,38,0.92)';
       rr(ctx, px + 16, ry, pw - 32, rowH - 6, 5); ctx.fill();
       drawGemIcon(ctx, g.type, g.tier, px + 32, ry + rowH / 2 - 3, 10);
+      // Just the ITEM the gem sits in — the icon already says which gem
+      // (owner rule: the "Gem Name in" prefix was redundant).
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
-      ctx.fillText(this.fitText(ctx, gemName(g) + '  in  ' + it.name + (equipped ? '' : ' (bag)'), pw - 200), px + 46, ry + rowH / 2 - 3);
+      ctx.font = '11px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
+      ctx.fillText(this.fitText(ctx, it.name + (equipped ? '' : '  (bag)'), pw - 200), px + 46, ry + rowH / 2 - 3);
       UI.btn(ctx, px + pw - 128, ry + 4, 112, rowH - 14, 'UNSOCKET', () => Items.unsocket(it, gi),
         { size: 10, border: '#7a4a8f', color: '#b06adf' });
     });
@@ -3465,7 +3477,7 @@ const Screens = {
 
   // MYSTIC — art-first hub: enchanting plus the cosmetic wardrobe (owner rule).
   mystic(ctx, W, H) {
-    this.artisanHub(ctx, W, H, 'mystic', 'MYRIAM — MYSTIC',
+    this.artisanHub(ctx, W, H, 'mystic', 'VESSA NIGHTWEAVE — MYSTIC',
       '"The threads of fate can always be rewoven."', [
         ['✦  ENCHANT GEAR', 'Reroll a chosen property on an item', 'mysEnchant', '#b06adf'],
         ['🐾  PETS', 'Choose a companion to walk beside you', 'mysPet', '#6ff7c3'],
@@ -4212,7 +4224,8 @@ const Screens = {
     // narrow phones he takes the right column, raised above the EXIT button,
     // standing on a soft ground shadow.
     const sf = UI.safe || { right: 0, bottom: 0 };
-    const btnZone = 118 + (sf.right || 0);   // EXIT button footprint (r38 @ W-66)
+    const lefty = Settings.g && Settings.g.leftHanded;   // EXIT sits bottom-LEFT when mirrored
+    const btnZone = (lefty ? 12 : 118) + (sf.right || 0);
     const img = Game.lukusImg('idle');
     const ready = img.complete && img.naturalWidth;
     const aspect = ready ? img.naturalWidth / img.naturalHeight : 0.62;
@@ -4292,7 +4305,7 @@ const Screens = {
     // ---- THE JOURNAL (up to 7 accepted quests) + Lukus's next offer, in one
     // drag-scrolling column (a full journal outgrows short landscape screens).
     const listTop = y;
-    const viewBot = H - 16;
+    const viewBot = H - (lefty ? 150 : 16);
     const viewH = Math.max(60, viewBot - listTop);
     const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
     UI.sel.scrollY = scrollY;
@@ -4436,7 +4449,8 @@ const Screens = {
     ctx.fillRect(0, 0, W, H);
 
     const sf = UI.safe || { right: 0, bottom: 0 };
-    const btnZone = 118 + (sf.right || 0);
+    const lefty = Settings.g && Settings.g.leftHanded;   // EXIT sits bottom-LEFT when mirrored
+    const btnZone = (lefty ? 12 : 118) + (sf.right || 0);
     const img = Game.addyImg();
     const ready = img.complete && img.naturalWidth;
     const aspect = ready ? img.naturalWidth / img.naturalHeight : 0.8;
@@ -4509,7 +4523,7 @@ const Screens = {
 
     // ---- scrolling column: DAILY first, then her journal, then the offer.
     const listTop = y;
-    const viewBot = H - 16;
+    const viewBot = H - (lefty ? 150 : 16);
     const viewH = Math.max(60, viewBot - listTop);
     const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
     UI.sel.scrollY = scrollY;
@@ -5022,6 +5036,16 @@ const Screens = {
       Settings.save();
       UI.toast(Settings.g.invGrouped ? 'Inventory: GROUPED list' : 'Inventory: RADIAL wheel', '#6ff7c3');
     }, 'Inventory: Grouped list (off = radial wheel)');
+    gy += rowStep;
+    // Handedness — right-handed is the designed default; left-handed mirrors
+    // the skill cluster / potion / portal / town button to the LEFT side and
+    // moves the movement half to the right (owner rule).
+    UI.check(ctx, gx, gy, Settings.g.leftHanded, () => {
+      Settings.g.leftHanded = !Settings.g.leftHanded;
+      Settings.save();
+      UI.layout(Game.W, Game.H);   // re-anchor the cluster right away
+      UI.toast(Settings.g.leftHanded ? 'LEFT-HANDED — cluster on the left, move on the right' : 'RIGHT-HANDED controls', '#6ff7c3');
+    }, 'Left-handed mode (mirror controls)');
     gy += rowStep;
     // Full screen — hide the browser's address bar / chrome (live browser state,
     // not a saved toggle; the checkbox mirrors it). ONLY shown where the

@@ -189,8 +189,13 @@ const Input = {
   },
 
   fixedAnchor() {
-    const s = Game.safe || { left: 0, bottom: 0 };
-    return { x: 96 + s.left, y: Game.H - 108 - s.bottom };
+    const s = Game.safe || { left: 0, right: 0, bottom: 0 };
+    const lefty = typeof Settings !== 'undefined' && Settings.g && Settings.g.leftHanded;
+    // Fixed joystick sits on the MOVEMENT side: left normally, right when
+    // the controls are mirrored for left-handed play.
+    return lefty
+      ? { x: Game.W - 96 - (s.right || 0), y: Game.H - 108 - s.bottom }
+      : { x: 96 + s.left, y: Game.H - 108 - s.bottom };
   },
 
   onTouchStart(e) {
@@ -207,15 +212,19 @@ const Input = {
       if (UI.startDpsDrag(x, y, t.identifier)) continue;
       if (UI.startDragScroll(x, y, t.identifier)) continue;
       if (UI.click(x, y)) continue;
-      // Walking the town uses the same left-half joystick, but no skill buttons
-      // or aim stick (there's no combat there).
+      // Walking the town: the movement joystick spawns ANYWHERE on the screen
+      // (owner rule — comfortable for left- and right-handed players alike; no
+      // combat there). In the wilds it spawns on the MOVEMENT half: left
+      // normally, right in left-handed mode (the cluster mirrors to the left).
       const townWalk = Game.state === 'town' && !UI.screen;
       if (!this.gameplayLive() && !townWalk) continue;
       const slot = townWalk ? null : UI.buttonAt(x, y);
+      const lefty = typeof Settings !== 'undefined' && Settings.g && Settings.g.leftHanded;
+      const moveSide = townWalk ? true : (lefty ? x > Game.W * 0.5 : x < Game.W * 0.5);
       if (slot !== null) {
         this.buttonTouches.set(t.identifier, { slot, sx: x, sy: y, angle: null, aiming: false });
         if (slot === 0) this.heldSlots.add(0);
-      } else if (!this.joy.active && x < Game.W * 0.5) {
+      } else if (!this.joy.active && moveSide) {
         this.joy.active = true;
         this.joy.id = t.identifier;
         if (Settings.g.fixedJoy) {

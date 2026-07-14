@@ -124,7 +124,7 @@ const QUEST_TEMPLATES = [
   { id: 'enchant', min: 1, max: 45,
     names: [['Reweave', 'Unpick', 'Twist', 'Rethread', 'Bend', 'Court', 'Tempt', 'Spin'],
             ['the Threads of Fate', 'the Hidden Weave', "Fortune's Loom", 'the Arcane Knots',
-             'the Veiled Pattern', "Myriam's Craft", 'the Fateful Strands', 'the Old Magics']],
+             'the Veiled Pattern', "Vessa's Craft", 'the Fateful Strands', 'the Old Magics']],
     addy: ['Bribe', 'Beguile', 'Coax', 'Charm', 'Con', 'Outbid', 'Haggle Over', 'Sweet-Talk'],
     desc: n => 'Reroll ' + n + ' propert' + (n > 1 ? 'ies' : 'y') + ' at the Mystic.', counter: () => Hero.enchantsDone || 0 },
   { id: 'chest', min: 3, max: 120,
@@ -315,11 +315,21 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.63-alpha';
+const GAME_VERSION = 'v1.6.64-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.64-alpha', date: 'July 2026',
+    notes: [
+      'NEW NAMES, ALL OUR OWN: the Jeweler is now ORREN GILDSTONE and the Mystic is VESSA NIGHTWEAVE (no more borrowed names, matching Tharn Emberhand at the forge) — quest names that quoted the old Mystic now read "Vessa\'s Craft"',
+      'LEFT-HANDED MODE — Settings ▸ Gameplay: mirrors the whole touch layout. The skill cluster, potion, portal and the town ENTER/EXIT button move to the LEFT side, and the movement joystick half moves to the RIGHT. Right-handed stays exactly as designed',
+      'TOWN MOVEMENT: the walk joystick now spawns ANYWHERE you touch in New Haven — comfortable for either hand',
+      'GEM CRAFTING BY JEWELER LEVEL (owner spec): level 1 cuts CHIPPED gems at 1,000g, climbing the ladder — Square, Flawless Square, Brilliant Square, Star, Flawless Star, Radiant Star, Imperial, Flawless Imperial — to level 10 cutting ROYAL IMPERIAL gems at 700,000g. The bench shows exactly what your level cuts',
+      'The gem-crafting flavor text wraps onto its own lines instead of being cut off, the UNSOCKET list now shows just the item name beside the gem\'s icon (the gem name was redundant), and maxed artisans no longer show "LEVEL 10 / 10 (MAX)"'
+    ]
+  },
   {
     v: 'v1.6.63-alpha', date: 'July 2026',
     notes: [

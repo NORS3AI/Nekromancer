@@ -296,6 +296,14 @@ const UI = {
     // Town-portal button stacks directly above the potion (same proven column).
     const portR = 20 * scale;
     this.portalHudBtn = { x: this.potionBtn.x, y: this.potionBtn.y - (this.potionBtn.r + portR + 30 * scale), r: portR };
+    // LEFT-HANDED mode (Settings ▸ Gameplay, owner rule): the whole action
+    // cluster mirrors to the LEFT side of the screen; movement moves to the
+    // right half (input.js). Everything keeps its proven geometry — just flipped.
+    if (typeof Settings !== 'undefined' && Settings.g && Settings.g.leftHanded) {
+      for (const b of this.buttons) b.x = W - b.x;
+      this.potionBtn.x = W - this.potionBtn.x;
+      this.portalHudBtn.x = W - this.portalHudBtn.x;
+    }
   },
 
   // Key label shown on a desktop action-bar slot.
@@ -410,9 +418,10 @@ const UI = {
   // skill position (bottom-right). Outside: shows the doorway you're standing at
   // and ENTERs it. Inside a shop: flips to EXIT. Also fired by the primary key.
   drawTownEnter(ctx, W, H, inside) {
-    const s = this.safe || { top: 0, right: 0, bottom: 0 };
+    const s = this.safe || { top: 0, right: 0, bottom: 0, left: 0 };
     const r = 38;
-    const cx = W - 66 - s.right;
+    const lefty = typeof Settings !== 'undefined' && Settings.g && Settings.g.leftHanded;
+    const cx = lefty ? 66 + (s.left || 0) : W - 66 - s.right;
     const cy = H - 92 - (s.bottom || 0);
     const it = Game.townPrompt;
     const color = inside ? '#e0a24a' : (it ? it.color : '#6ff7c3');

@@ -1003,25 +1003,40 @@ const Items = {
     Hero.save();
   },
 
-  // Craft a gem of a CHOSEN type (Jeweler's gem bench). Costs a little more than
-  // a random cut — you're paying the jeweler to be picky. Tier scales the same.
+  // Craft a gem of a CHOSEN type (Jeweler's gem bench). The CUT and the COST
+  // are set by JEWELER LEVEL (owner spec): L1 Chipped @1,000g climbing the
+  // ladder to L10 Royal Imperial @700,000g.
+  GEM_CRAFT_LEVELS: {
+    1:  { tier: 0,  gold: 1000 },     // Chipped
+    2:  { tier: 3,  gold: 2000 },     // Square
+    3:  { tier: 4,  gold: 4300 },     // Flawless Square
+    4:  { tier: 5,  gold: 8900 },     // Brilliant Square
+    5:  { tier: 6,  gold: 18500 },    // Star
+    6:  { tier: 7,  gold: 38000 },    // Flawless Star
+    7:  { tier: 8,  gold: 79000 },    // Radiant Star
+    8:  { tier: 9,  gold: 163000 },   // Imperial
+    9:  { tier: 10, gold: 340000 },   // Flawless Imperial
+    10: { tier: 11, gold: 700000 }    // Royal Imperial
+  },
+  gemCraftSpec() {
+    return this.GEM_CRAFT_LEVELS[clamp(Hero.artisans.jeweler || 1, 1, 10)];
+  },
   gemCraftCost() {
-    const base = this.gemPrice();
-    return { gold: Math.round(base.gold * 1.5) };
+    return { gold: this.gemCraftSpec().gold };
   },
   craftGem(type) {
     if (!GEM_TYPES[type]) return;
-    const cost = this.gemCraftCost();
+    const spec = this.gemCraftSpec();
+    const cost = { gold: spec.gold };
     if (!this.canAfford(cost)) {
       UI.toast('Not enough gold', '#9a9080');
       AudioSys.sfx('denied');
       return;
     }
     this.pay(cost);
-    const gem = this.generateGem(Math.max(1, Math.round(Hero.level * (0.5 + 0.05 * Hero.artisans.jeweler))));
-    gem.type = type;
+    const gem = { type, tier: spec.tier };
     Hero.gems.push(gem);
-    Hero.itemsCrafted = (Hero.itemsCrafted || 0) + 1;   // Lukus's quest counter
+    Hero.itemsCrafted = (Hero.itemsCrafted || 0) + 1;   // quest counter
     UI.toast('Crafted: ' + gemName(gem), GEM_TYPES[type].color);
     AudioSys.sfx('gem');
     Hero.save();
