@@ -315,11 +315,19 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.70-alpha';
+const GAME_VERSION = 'v1.6.71-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.71-alpha', date: 'July 2026',
+    notes: [
+      'FIXED: the hero avatar walked the town half-transparent — the black-costume paintings were being chroma-keyed at runtime, and the key ate the dark leather along with the black backdrop',
+      'The avatars now ship with a proper baked-in cutout (the background was separated from the costume offline, where flat backdrop black can be told apart from painted shadow), so the figure is fully solid everywhere — town, wilds, and the creation preview',
+      'Side benefit: no more per-device image processing at load, and the avatar renders identically on every browser'
+    ]
+  },
   {
     v: 'v1.6.70-alpha', date: 'July 2026',
     notes: [

@@ -41,12 +41,19 @@ loot at the artisans. The hero is persistent (localStorage).
   heavy download at the title screen; `drawTown` shows "New Haven emerges from
   the dark…" until the map arrives. Small art (gems/icons/runes/ui) is still
   PNG with `?v=BUILD`.
-- **PAINTED HERO AVATARS (v1.6.70, owner art)**: `docs/art/hero/{m,f}_{front,back}
-  .webp` — male & female Nekromancer paintings on black. `Hero.gender` ('m'|'f',
-  snapshot parity, chosen on the creation screen via ♂ MALE / ♀ FEMALE buttons).
-  `Game.heroImg(gender,side)` / `Game.heroSprite(gender,side)` follow the NPC
-  chroma-key pattern (near-black → alpha; `screenBlend` flag fallback on file://),
-  warmed in `preloadArt()`. In **Top Down view** `Player.draw` calls
+- **PAINTED HERO AVATARS (v1.6.70, owner art; v1.6.71 BAKED ALPHA)**:
+  `docs/art/hero/{m,f}_{front,back}.webp` — male & female Nekromancer paintings.
+  **These four WebPs carry a real alpha channel** (RGBA, cut out OFFLINE): the
+  costumes are as black as the backdrop, so the NPC-style runtime chroma-key
+  hollowed out ~2/3 of the body — do NOT chroma-key hero art at runtime. The
+  offline cut (scratchpad `cutout.py` pattern): background = flat pure-black
+  (9px maximum-filter < 8) connected to the border via scipy label, re-grown
+  4px across l<10, hole-filled by complement, 1.1px Gaussian feather. If the
+  owner ships new avatar art on black, rerun that and bump ART_V. `Hero.gender`
+  ('m'|'f', snapshot parity, chosen on the creation screen via ♂ MALE / ♀ FEMALE
+  buttons). `Game.heroImg(gender,side)` loads them; `Game.heroSprite(gender,side)`
+  just returns the loaded Image (no canvas, no file:// taint), warmed in
+  `preloadArt()`. In **Top Down view** `Player.draw` calls
   `drawAvatarModel(ctx, front, back, bob)` (entities.js): back art when walking
   up, front art mirrored + sheared (`ctx.transform` −0.14) for left/right as a
   cheap ¾ turn, and the painting drawn as a base pass + **three phase-shifted

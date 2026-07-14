@@ -802,7 +802,6 @@ const Screens = {
       ctx.fillStyle = 'rgba(0,0,0,0.5)';
       ctx.beginPath(); ctx.ellipse(cx, pvFeet - 2, pw2 * 0.4, 7, 0, 0, TAU); ctx.fill();
       ctx.translate(0, -bobY);
-      if (spr.screenBlend) ctx.globalCompositeOperation = 'screen';   // file:// fallback
       const sw2 = spr.width, sh2 = spr.height;
       ctx.drawImage(spr, cx - pw2 / 2, pvFeet - pvH, pw2, pvH);
       // the same layered walk the in-game model uses (legs/torso/head slices)

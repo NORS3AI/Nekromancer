@@ -499,7 +499,6 @@ class Player {
 
     ctx.save();
     ctx.translate(0, -bobY);
-    if (img.screenBlend) ctx.globalCompositeOperation = 'screen';   // file:// fallback (black bg melts in)
     if (this.flash > 0.4) ctx.globalAlpha = 0.65;   // hurt blink
     if (sideways) {
       ctx.scale(flip, 1);                            // profile leads the walk
