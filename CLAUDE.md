@@ -41,6 +41,22 @@ loot at the artisans. The hero is persistent (localStorage).
   heavy download at the title screen; `drawTown` shows "New Haven emerges from
   the dark…" until the map arrives. Small art (gems/icons/runes/ui) is still
   PNG with `?v=BUILD`.
+- **PAINTED HERO AVATARS (v1.6.70, owner art)**: `docs/art/hero/{m,f}_{front,back}
+  .webp` — male & female Nekromancer paintings on black. `Hero.gender` ('m'|'f',
+  snapshot parity, chosen on the creation screen via ♂ MALE / ♀ FEMALE buttons).
+  `Game.heroImg(gender,side)` / `Game.heroSprite(gender,side)` follow the NPC
+  chroma-key pattern (near-black → alpha; `screenBlend` flag fallback on file://),
+  warmed in `preloadArt()`. In **Top Down view** `Player.draw` calls
+  `drawAvatarModel(ctx, front, back, bob)` (entities.js): back art when walking
+  up, front art mirrored + sheared (`ctx.transform` −0.14) for left/right as a
+  cheap ¾ turn, and the painting drawn as a base pass + **three phase-shifted
+  overlay slices** (legs sy 0.54 / torso 0.24–0.58 counter-sway / head top 0.26)
+  so it strides with depth ("layer the image to make it 3d" — owner rule).
+  Falls back to the procedural `drawUpright` until both sides load; Bird's-Eye
+  keeps the classic rotating sprite. `Screens.create` shows the SAME layered
+  walking preview (eye-color aura, adaptive `pvH`, swatches go 10-wide on short
+  panels); the campfire select's "up to three Nekromancers rest by the fire"
+  subtitle was deleted (owner rule).
 - **Update `PATCH_NOTES` (data.js) with EVERY addition and bug fix** — prepend a new
   entry (newest first) and bump `GAME_VERSION` (vX.Y.Z-alpha). The version label on
   the title screen opens the notes; the owner reads them.

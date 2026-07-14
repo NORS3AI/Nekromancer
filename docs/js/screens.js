@@ -157,11 +157,11 @@ const Screens = {
     ctx.font = 'bold ' + Math.min(30, W * 0.07) + 'px Georgia';
     ctx.fillStyle = delMode ? '#e04a5a' : '#e8d8b0';
     ctx.fillText(delMode ? 'RETIRE A HERO' : 'CHOOSE YOUR HERO', W / 2, H * 0.1);
-    // The subtitle is decoration — skip it on short landscape screens so the
-    // back hero's nameplate has clear air beneath the title.
-    if (H >= 480 || delMode) {
+    // (The "up to 3 Nekromancers" subtitle is DELETED, owner rule — only the
+    // delete-mode hint remains.)
+    if (delMode) {
       ctx.font = '12px Georgia'; ctx.fillStyle = '#9a8f7a';
-      ctx.fillText(delMode ? 'Tap the hero you wish to retire' : 'Up to ' + Profiles.MAX + ' Nekromancers rest by the fire', W / 2, H * 0.1 + 26);
+      ctx.fillText('Tap the hero you wish to retire', W / 2, H * 0.1 + 26);
     }
 
     // One hero stands behind the fire (higher & smaller); two flank it up close.
@@ -773,30 +773,57 @@ const Screens = {
     this.dim(ctx, W, H);
     const pw = Math.min(460, W - 20);
     const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 16, 460);
+    const ph = Math.min(H - 16, 620);
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, 'CREATE YOUR NEKROMANCER');
 
-    // Live preview — a hooded skull with the chosen glowing eyes.
-    const cx = W / 2, hy = py + 96;
+    // Live preview — the PAINTED AVATAR (the actual top-down walking model,
+    // owner rule), gently striding in place; glowing eyes tint a soft aura.
+    const cx = W / 2;
+    const gd = Hero.gender || 'm';
+    const spr = Game.heroSprite ? Game.heroSprite(gd, 'front') : null;
     const eye = Hero.eyeColor || '#6ff7c3';
-    ctx.save();
-    ctx.translate(cx, hy);
-    ctx.fillStyle = '#ded5bd';
-    ctx.beginPath(); ctx.arc(0, 0, 30, 0, TAU); ctx.fill();
-    ctx.fillRect(-16, 17, 32, 15);
-    ctx.fillStyle = '#0a070c';
-    ctx.beginPath(); ctx.ellipse(-10, -2, 7, 9, 0, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(10, -2, 7, 9, 0, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(0, 6); ctx.lineTo(-4, 14); ctx.lineTo(4, 14); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = eye; ctx.shadowColor = eye; ctx.shadowBlur = 12;
-    ctx.beginPath(); ctx.arc(-10, -2, 3 + Math.sin(Game.time * 3) * 0.7, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(10, -2, 3 + Math.sin(Game.time * 3 + 1) * 0.7, 0, TAU); ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.restore();
+    // Everything below the preview has a fixed cost; whatever headroom is left
+    // goes to the avatar so short landscape phones still fit the whole panel.
+    const cols = ph < 560 ? 10 : 5, gap = 8;
+    const sw = (pw - 32 - (cols - 1) * gap) / cols;
+    const swRows = Math.ceil(EYE_COLORS.length / cols);
+    const pvH = Math.max(64, Math.min(150, ph - 230 - swRows * (sw + 20)));
+    const pvFeet = py + 40 + pvH;
+    if (spr) {
+      const pw2 = pvH * (spr.width / spr.height);
+      const t = Game.time || 0;
+      const stride = Math.sin(t * 5);
+      const bobY = Math.abs(stride) * 3;
+      ctx.save();
+      // eye-colored aura behind the figure
+      ctx.fillStyle = eye + '22';
+      ctx.beginPath(); ctx.ellipse(cx, pvFeet - pvH * 0.5, pw2 * 0.9, pvH * 0.55, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.beginPath(); ctx.ellipse(cx, pvFeet - 2, pw2 * 0.4, 7, 0, 0, TAU); ctx.fill();
+      ctx.translate(0, -bobY);
+      if (spr.screenBlend) ctx.globalCompositeOperation = 'screen';   // file:// fallback
+      const sw2 = spr.width, sh2 = spr.height;
+      ctx.drawImage(spr, cx - pw2 / 2, pvFeet - pvH, pw2, pvH);
+      // the same layered walk the in-game model uses (legs/torso/head slices)
+      ctx.drawImage(spr, 0, sh2 * 0.54, sw2, sh2 * 0.46, cx - pw2 / 2 + stride * 3.4, pvFeet - pvH + pvH * 0.54, pw2, pvH * 0.46);
+      ctx.drawImage(spr, 0, sh2 * 0.24, sw2, sh2 * 0.34, cx - pw2 / 2 - stride * 2.2, pvFeet - pvH + pvH * 0.24, pw2, pvH * 0.34);
+      ctx.drawImage(spr, 0, 0, sw2, sh2 * 0.26, cx - pw2 / 2 + stride * 1.0, pvFeet - pvH, pw2, pvH * 0.26);
+      ctx.restore();
+    } else {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText('the flesh takes shape…', cx, py + 110);
+    }
 
-    // Name row.
-    let y = py + 150;
+    // MALE / FEMALE choice (owner art for each).
+    let y = pvFeet + 18;
+    const gbw = (pw - 40) / 2;
+    UI.btn(ctx, px + 16, y, gbw, 32, '♂  MALE', () => { Hero.gender = 'm'; },
+      { size: 12, border: gd === 'm' ? '#6ff7c3' : '#3a3448', color: gd === 'm' ? '#6ff7c3' : '#8a8070' });
+    UI.btn(ctx, px + 24 + gbw, y, gbw, 32, '♀  FEMALE', () => { Hero.gender = 'f'; },
+      { size: 12, border: gd === 'f' ? '#e08ae0' : '#3a3448', color: gd === 'f' ? '#e08ae0' : '#8a8070' });
+    y += 44;
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#9a9080';
     ctx.fillText('NAME', px + 16, y);
@@ -812,8 +839,6 @@ const Screens = {
     ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#9a9080';
     ctx.fillText('GLOWING EYES', px + 16, y);
     y += 12;
-    const cols = 5, gap = 8;
-    const sw = (pw - 32 - (cols - 1) * gap) / cols;
     EYE_COLORS.forEach((c, i) => {
       const bx = px + 16 + (i % cols) * (sw + gap);
       const by = y + Math.floor(i / cols) * (sw + 20);
