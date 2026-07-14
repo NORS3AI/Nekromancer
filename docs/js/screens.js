@@ -93,7 +93,9 @@ const Screens = {
   // to enter. "Delete Hero" toggles a retire flow. Empty spots create.
   select(ctx, W, H) {
     // Fire sits nearer the viewer (foreground); heroes gather behind/around it.
-    const fx = W / 2, fy = H * 0.64;
+    // On PORTRAIT phones the scene rides higher so the seat nameplates stay
+    // well clear of the selection plate + PLAY at the bottom.
+    const fx = W / 2, fy = (W < H ? 0.52 : 0.64) * H;
     const t = Game.time || 0;
     // Night sky — deep blue-black at the top, warming toward the horizon.
     const sky = ctx.createLinearGradient(0, 0, 0, H);
@@ -141,8 +143,9 @@ const Screens = {
     ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
     // Ground litter + a wind-swept grass field around the fire.
     this.drawGroundLitter(ctx, fx, fy, W, H, t);
-    // A fallen adventurer's bones rest in the foreground grass.
-    this.drawFallenSkeleton(ctx, W * 0.19, fy + 96, clamp(W / 900, 0.7, 1.1), t);
+    // A fallen adventurer's bones rest in the foreground grass — dropped a
+    // little lower on portrait so they never strike through the nameplates.
+    this.drawFallenSkeleton(ctx, W * 0.16, fy + (W < H ? 150 : 96), clamp(W / 900, 0.7, 1.1), t);
 
     const delMode = !!UI.sel.delMode;
     // Pre-select the active hero so PLAY is ready (unless we're deleting).
@@ -154,15 +157,22 @@ const Screens = {
     ctx.font = 'bold ' + Math.min(30, W * 0.07) + 'px Georgia';
     ctx.fillStyle = delMode ? '#e04a5a' : '#e8d8b0';
     ctx.fillText(delMode ? 'RETIRE A HERO' : 'CHOOSE YOUR HERO', W / 2, H * 0.1);
-    ctx.font = '12px Georgia'; ctx.fillStyle = '#9a8f7a';
-    ctx.fillText(delMode ? 'Tap the hero you wish to retire' : 'Up to ' + Profiles.MAX + ' Nekromancers rest by the fire', W / 2, H * 0.1 + 26);
+    // The subtitle is decoration — skip it on short landscape screens so the
+    // back hero's nameplate has clear air beneath the title.
+    if (H >= 480 || delMode) {
+      ctx.font = '12px Georgia'; ctx.fillStyle = '#9a8f7a';
+      ctx.fillText(delMode ? 'Tap the hero you wish to retire' : 'Up to ' + Profiles.MAX + ' Nekromancers rest by the fire', W / 2, H * 0.1 + 26);
+    }
 
     // One hero stands behind the fire (higher & smaller); two flank it up close.
+    // The flank spread never drops below 96px so the two nameplates (≤150px
+    // wide each) can NEVER collide, even on narrow portrait phones.
     const s = clamp(W / 760, 0.72, 1.05);
+    const spread = Math.max(W * 0.12, 96);
     const spots = [
-      { i: 0, x: fx,             y: fy - 118 * s, scale: 0.74 * s, front: false },  // behind the fire
-      { i: 1, x: fx - W * 0.12,  y: fy + 20 * s,  scale: 1.06 * s, front: true },
-      { i: 2, x: fx + W * 0.12,  y: fy + 20 * s,  scale: 1.06 * s, front: true }
+      { i: 0, x: fx,          y: fy - 118 * s, scale: 0.74 * s, front: false },  // behind the fire
+      { i: 1, x: fx - spread, y: fy + 20 * s,  scale: 1.06 * s, front: true },
+      { i: 2, x: fx + spread, y: fy + 20 * s,  scale: 1.06 * s, front: true }
     ];
     const back = spots.find(sp => !sp.front);
     this.drawRosterSpot(ctx, back, back.scale, delMode);
@@ -170,6 +180,16 @@ const Screens = {
     for (const sp of spots) if (sp.front) this.drawRosterSpot(ctx, sp, sp.scale, delMode);
 
     // ---- bottom controls ----
+    // A soft scrim so the selection plate + buttons read cleanly over the
+    // grass, litter and bones (owner: "clean this page up"). On short
+    // landscape screens the whole stack compresses to hug the bottom edge.
+    const short = H < 480;
+    const scrimH = short ? 120 : 190;
+    const scrim = ctx.createLinearGradient(0, H - scrimH, 0, H);
+    scrim.addColorStop(0, 'rgba(5,4,10,0)');
+    scrim.addColorStop(0.45, 'rgba(5,4,10,0.6)');
+    scrim.addColorStop(1, 'rgba(5,4,10,0.85)');
+    ctx.fillStyle = scrim; ctx.fillRect(0, H - scrimH, W, scrimH);
     const pick = UI.sel.pick;
     const delId = UI.sel.delConfirm;
     if (delMode && delId !== undefined && Profiles.slots[delId]) {
@@ -187,11 +207,11 @@ const Screens = {
       // Selected hero → name/level + a green pulsing PLAY button.
       const snap = Profiles.slots[pick];
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 18px Georgia'; ctx.fillStyle = '#ffd76a';
-      ctx.fillText(this.fitText(ctx, snap.name || 'The Nekromancer', W - 40), W / 2, H - 118);
-      ctx.font = '12px Georgia'; ctx.fillStyle = '#9a8f7a';
-      ctx.fillText('Level ' + (snap.level || 1) + ' Necromancer', W / 2, H - 100);
-      const bw = Math.min(220, W - 70), bh = 40, bx = W / 2 - bw / 2, byy = H - 86;
+      ctx.font = 'bold ' + (short ? 15 : 18) + 'px Georgia'; ctx.fillStyle = '#ffd76a';
+      ctx.fillText(this.fitText(ctx, snap.name || 'The Nekromancer', W - 40), W / 2, H - (short ? 94 : 118));
+      ctx.font = (short ? 11 : 12) + 'px Georgia'; ctx.fillStyle = '#9a8f7a';
+      ctx.fillText('Level ' + (snap.level || 1) + ' Necromancer', W / 2, H - (short ? 79 : 100));
+      const bw = Math.min(220, W - 70), bh = short ? 32 : 40, bx = W / 2 - bw / 2, byy = H - (short ? 66 : 86);
       const pulse = 0.5 + 0.5 * Math.sin(Game.time * 4);
       ctx.save();
       ctx.shadowColor = '#4ade80'; ctx.shadowBlur = 10 + pulse * 16;
@@ -607,8 +627,13 @@ const Screens = {
         ctx.lineWidth = 2.5 + pulse * 1.5;
         ctx.beginPath(); ctx.ellipse(sp.x, sp.y + 56 * scale, 42 * scale, 15 * scale, 0, 0, TAU); ctx.stroke();
       }
-      // Nameplate — below the front heroes, higher above the one behind the fire.
-      const ny = sp.front ? sp.y + 80 * scale : sp.y - 96 * scale;
+      // Nameplate — below the front heroes (ABOVE their heads on short
+      // landscape screens, clear of the bottom controls), higher above the
+      // one behind the fire (clamped below the title).
+      const short = (Game.H || 600) < 480;
+      const ny = sp.front
+        ? (short ? sp.y - 96 * scale : sp.y + 80 * scale)
+        : Math.max(sp.y - 96 * scale, (Game.H || 600) * 0.16 + 12);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 14px Georgia';
       ctx.fillStyle = selRing ? '#ffd76a' : '#e8e0cc';
@@ -627,7 +652,10 @@ const Screens = {
       ctx.font = 'bold 22px Georgia'; ctx.fillStyle = '#6ff7c3';
       ctx.fillText('＋', sp.x, sp.y - 6 * scale);
       ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#8fb0e8';
-      ctx.fillText('New Nekromancer', sp.x, sp.front ? sp.y + 82 * scale : sp.y - 74 * scale);
+      const shortE = (Game.H || 600) < 480;
+      ctx.fillText('New Nekromancer', sp.x,
+        sp.front ? (shortE ? sp.y - 84 * scale : sp.y + 82 * scale)
+          : Math.max(sp.y - 74 * scale, (Game.H || 600) * 0.16 + 12));
       if (!delMode) {
         UI.register(sp.x - R * 0.6, sp.y - R, R * 1.2, R * 1.6, () => {
           if (Profiles.create(sp.i)) UI.open('create');
