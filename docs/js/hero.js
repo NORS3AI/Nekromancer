@@ -185,10 +185,14 @@ const Hero = {
   runes: {},                          // skillId -> rune id
   pet: null,            // cosmetic companion id (PETS), chosen at the Mystic
   wings: null,          // cosmetic wings id (WINGS), chosen at the Mystic
-  journal: [],          // accepted Lukus quests: [{ idx, base }] — up to QUEST_JOURNAL_MAX (7)
+  journal: [],          // accepted quests: [{ idx, base[, src:'A'] }] — up to QUEST_JOURNAL_MAX (7)
   questRepool: [],      // abandoned quest idxs Lukus re-offers first (lowest first)
   questNext: 0,         // the next FRESH quest index Lukus offers (0-500)
-  questLine: 0,         // quests TURNED IN — the ledger progress (0-500)
+  questLine: 0,         // Lukus quests TURNED IN — the ledger progress (0-500)
+  addyRepool: [],       // abandoned Addy quest idxs, re-offered first
+  addyNext: 0,          // the next FRESH quest Addy offers (0-500)
+  addyLine: 0,          // Addy quests TURNED IN (0-500)
+  daily: null,          // Addy's daily: { date, base (null = not taken), done }
   salvagedCount: 0,     // lifetime items salvaged (quest counter)
   eliteKills: 0,        // lifetime elite/champion kills (quest counter)
   bossKills: 0,         // lifetime boss/unique kills (quest counter)
@@ -224,6 +228,7 @@ const Hero = {
     this.actUniques = {};
     this.pet = null; this.wings = null;
     this.journal = []; this.questRepool = []; this.questNext = 0; this.questLine = 0;
+    this.addyRepool = []; this.addyNext = 0; this.addyLine = 0; this.daily = null;
     this.salvagedCount = 0; this.eliteKills = 0; this.bossKills = 0;
     this.gemsCombined = 0; this.itemsCrafted = 0; this.enchantsDone = 0; this.chestsOpened = 0;
     this.difficulty = 0;
@@ -292,6 +297,7 @@ const Hero = {
       artisans: this.artisans, runes: this.runes, cheats: this.cheats,
       pet: this.pet, wings: this.wings,
       journal: this.journal, questRepool: this.questRepool, questNext: this.questNext, questLine: this.questLine,
+      addyRepool: this.addyRepool, addyNext: this.addyNext, addyLine: this.addyLine, daily: this.daily,
       salvagedCount: this.salvagedCount, eliteKills: this.eliteKills, bossKills: this.bossKills,
       gemsCombined: this.gemsCombined, itemsCrafted: this.itemsCrafted,
       enchantsDone: this.enchantsDone, chestsOpened: this.chestsOpened,
@@ -371,11 +377,21 @@ const Hero = {
         let j = Array.isArray(d.journal) ? d.journal : [];
         if (!j.length && d.quest && typeof d.quest === 'object' && typeof d.quest.idx === 'number') j = [d.quest];
         const seen = {};
-        return j.filter(e => e && typeof e.idx === 'number' && e.idx >= 0 && e.idx < QUEST_COUNT && !seen[e.idx] && (seen[e.idx] = 1))
-          .slice(0, QUEST_JOURNAL_MAX).map(e => ({ idx: e.idx, base: e.base || 0 }));
+        return j.filter(e => {
+          if (!e || typeof e.idx !== 'number' || e.idx < 0 || e.idx >= QUEST_COUNT) return false;
+          const key = (e.src === 'A' ? 'A' : 'L') + e.idx;
+          return !seen[key] && (seen[key] = 1);
+        }).slice(0, QUEST_JOURNAL_MAX)
+          .map(e => e.src === 'A' ? { idx: e.idx, base: e.base || 0, src: 'A' } : { idx: e.idx, base: e.base || 0 });
       })(),
       questRepool: Array.isArray(d.questRepool)
         ? d.questRepool.filter(i => typeof i === 'number' && i >= 0 && i < QUEST_COUNT) : [],
+      addyRepool: Array.isArray(d.addyRepool)
+        ? d.addyRepool.filter(i => typeof i === 'number' && i >= 0 && i < ADDY_QUEST_COUNT) : [],
+      addyNext: clamp(d.addyNext || 0, 0, ADDY_QUEST_COUNT),
+      addyLine: clamp(d.addyLine || 0, 0, ADDY_QUEST_COUNT),
+      daily: (d.daily && typeof d.daily === 'object' && d.daily.date)
+        ? { date: '' + d.daily.date, base: d.daily.base == null ? null : d.daily.base, done: !!d.daily.done } : null,
       questLine: clamp(d.questLine || 0, 0, QUEST_COUNT),
       // Old saves have no questNext: the line pointer was questLine itself,
       // +1 if its quest was already accepted.
@@ -504,64 +520,113 @@ const Hero = {
   // -------------------------------------------- Lukus's quest journal (≤7)
 
   // Progress of a journal entry: milestones read the counter absolutely,
-  // deed quests measure counter − base-at-accept.
+  // deed quests measure counter − base-at-accept. Entries with src 'A' come
+  // from Addy's ledger, all others from Lukus's.
   questProgress(entry) {
-    const def = QUEST_LINE[entry.idx];
+    const def = (entry.src === 'A' ? ADDY_QUEST_LINE : QUEST_LINE)[entry.idx];
     if (!def) return { def: null, prog: 0, done: false };
     const prog = clamp(def.abs ? def.counter() : def.counter() - entry.base, 0, def.need);
     return { def, prog, done: prog >= def.need };
   },
 
-  // The quest Lukus offers next: abandoned quests come back first (lowest
-  // index), then the next fresh one in the line. −1 = the ledger is exhausted.
-  questOffer() {
-    const pool = (this.questRepool || []).filter(i => !(this.journal || []).some(e => e.idx === i));
+  // The quest an NPC offers next: abandoned quests come back first (lowest
+  // index), then the next fresh one in the line. −1 = the ledger is
+  // exhausted. src: undefined/'L' = Lukus · 'A' = Addy.
+  questOffer(src) {
+    const addy = src === 'A';
+    const line = addy ? ADDY_QUEST_LINE : QUEST_LINE;
+    const next = addy ? (this.addyNext || 0) : (this.questNext || 0);
+    const pool = ((addy ? this.addyRepool : this.questRepool) || [])
+      .filter(i => !(this.journal || []).some(e => e.idx === i && (e.src === 'A') === addy));
     if (pool.length) return Math.min.apply(null, pool);
-    return (this.questNext || 0) < QUEST_COUNT ? this.questNext : -1;
+    return next < line.length ? next : -1;
   },
 
-  acceptQuest() {
-    const idx = this.questOffer();
+  acceptQuest(src) {
+    const addy = src === 'A';
+    const idx = this.questOffer(src);
     if (idx < 0 || this.journal.length >= QUEST_JOURNAL_MAX) return false;
-    const def = QUEST_LINE[idx];
+    const def = (addy ? ADDY_QUEST_LINE : QUEST_LINE)[idx];
     const gateOk = def.gate.kind === 'level' ? this.level >= def.gate.at : (this.paragon || 0) >= def.gate.at;
     if (!gateOk) return false;
-    this.journal.push({ idx, base: def.abs ? 0 : def.counter() });
-    const k = this.questRepool.indexOf(idx);
-    if (k >= 0) this.questRepool.splice(k, 1);
+    const entry = { idx, base: def.abs ? 0 : def.counter() };
+    if (addy) entry.src = 'A';
+    this.journal.push(entry);
+    const pool = addy ? this.addyRepool : this.questRepool;
+    const k = pool.indexOf(idx);
+    if (k >= 0) pool.splice(k, 1);
+    else if (addy) this.addyNext = Math.max(this.addyNext || 0, idx + 1);
     else this.questNext = Math.max(this.questNext || 0, idx + 1);
     this.save();
     return def;
   },
 
-  // Dropping a quest sends it back to Lukus's queue — nothing in the 500 is
-  // ever lost, it just waits to be taken up again.
+  // Dropping a quest sends it back to its NPC's queue — nothing in either
+  // 500 is ever lost, it just waits to be taken up again.
   abandonQuest(entry) {
     const k = this.journal.indexOf(entry);
     if (k < 0) return;
     this.journal.splice(k, 1);
-    if (!this.questRepool.includes(entry.idx)) this.questRepool.push(entry.idx);
+    const pool = entry.src === 'A' ? this.addyRepool : this.questRepool;
+    if (!pool.includes(entry.idx)) pool.push(entry.idx);
     this.save();
   },
 
   // Turn a finished journal entry in: pays gold/souls/XP (and a gem on bonus
-  // quests), bumps the ledger. Returns the reward (with .gemGot) or null.
+  // quests), bumps that NPC's ledger. Returns the reward (with .gemGot) or null.
   completeQuest(entry) {
     const { def, done } = this.questProgress(entry);
     const k = this.journal.indexOf(entry);
     if (!def || !done || k < 0) return null;
     this.journal.splice(k, 1);
-    const rw = questReward(entry.idx);
+    const addy = entry.src === 'A';
+    const rw = questRewardSrc(addy ? 'A' : 'L', entry.idx);
     this.gold += rw.gold;
     this.mats.soul = (this.mats.soul || 0) + rw.souls;
     if (rw.gem && typeof Items !== 'undefined') {
       rw.gemGot = Items.dropGem();
       this.gems.push(rw.gemGot);
     }
-    this.questLine = Math.min(QUEST_COUNT, (this.questLine || 0) + 1);
+    if (addy) this.addyLine = Math.min(ADDY_QUEST_COUNT, (this.addyLine || 0) + 1);
+    else this.questLine = Math.min(QUEST_COUNT, (this.questLine || 0) + 1);
     this.addXP(rw.xp);   // the exact XP the quest advertised (gear XP bonuses can only add)
     this.save();
     return rw;
+  },
+
+  // ---- Addy's daily ("The Queen's Errand") — one per real-world day. ----
+  dailyKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  },
+  // Normalized daily state for TODAY (a stale entry resets at midnight).
+  dailyState() {
+    const key = this.dailyKey();
+    if (!this.daily || this.daily.date !== key) this.daily = { date: key, base: null, done: false };
+    return this.daily;
+  },
+  acceptDaily() {
+    if (this.level < 70) return false;
+    const st = this.dailyState();
+    if (st.done || st.base !== null) return false;
+    st.base = dailyDeed(st.date).counter();
+    this.save();
+    return dailyDeed(st.date);
+  },
+  // Pays the daily prize: a random MARQUISE gem + the odds-item (90% legendary,
+  // 6% 1–3★, 3% 4–5★, 1% artifact — Items.addyDailyItem). Item goes to the bag.
+  completeDaily() {
+    const st = this.dailyState();
+    if (st.done || st.base === null) return null;
+    const dd = dailyDeed(st.date);
+    if (dd.counter() - st.base < dd.need) return null;
+    st.done = true;
+    const gem = { type: pick(Object.keys(GEM_TYPES)), tier: GEM_MAX_TIER };
+    this.gems.push(gem);
+    const item = Items.addyDailyItem();
+    Items.stash(item);
+    this.save();
+    return { gem, item };
   },
 
   // ------------------------------------------------------------ progression

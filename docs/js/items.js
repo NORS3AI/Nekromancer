@@ -74,16 +74,19 @@ const Items = {
     return 0;
   },
 
-  generate(mLvl, boost = 0, forceSlot = null) {
+  // `force` = {rarity, stars} skips the drop table entirely (quest/daily
+  // rewards with promised odds, e.g. Addy's daily).
+  generate(mLvl, boost = 0, forceSlot = null, force = null) {
     const slot = forceSlot || pick(Object.keys(ITEM_SLOTS).filter(s => !ITEM_SLOTS[s].torch));
     const def = ITEM_SLOTS[slot];
-    const roll = this.rollRarity(boost);
+    const roll = force ? { r: force.rarity } : this.rollRarity(boost);
     const rarity = roll.r;
     const trash = !!roll.trash;         // grey junk
     const tt = tormentTier();
     // Star tier is gated by Torment band, not by the rarity roll (owner spec).
     let stars = 0;
-    if (rarity === 4) stars = this.legendaryStars(tt);
+    if (force && force.stars != null) stars = force.stars;
+    else if (rarity === 4) stars = this.legendaryStars(tt);
     else if (rarity === 6) stars = this.artifactStars();
     const R = RARITIES[rarity];
     const lvlScale = 1 + mLvl * 0.11;
@@ -240,6 +243,19 @@ const Items = {
       item.sockets = Math.random() < 0.4 ? 1 : 0;
     }
     return item;
+  },
+
+  // Addy's daily prize (owner odds): 90% legendary (no star) · 6% legendary
+  // 1–3★ · 3% legendary 4–5★ · 1% artifact — the slot is an even roll across
+  // ALL equip slots (armor, jewelry, weapon alike).
+  addyDailyItem() {
+    const r = Math.random();
+    let force;
+    if (r < 0.01) force = { rarity: 6, stars: this.artifactStars() };
+    else if (r < 0.04) force = { rarity: 4, stars: randInt(4, 5) };
+    else if (r < 0.10) force = { rarity: 4, stars: randInt(1, 3) };
+    else force = { rarity: 4, stars: 0 };
+    return this.generate(70, 0, null, force);
   },
 
   // A single wild-loot roll: in Torment, a 10% slice becomes one of the named
