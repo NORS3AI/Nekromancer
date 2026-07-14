@@ -43,6 +43,7 @@ const Screens = {
     switch (UI.screen) {
       case 'radial': this.radial(ctx, W, H); break;
       case 'sysmenu': this.sysmenu(ctx, W, H); break;
+      case 'journal': this.journal(ctx, W, H); break;
       case 'skills': this.skills(ctx, W, H); break;
       case 'skillChooser': this.skillChooser(ctx, W, H); break;
       case 'smith': this.smith(ctx, W, H); break;
@@ -939,6 +940,7 @@ const Screens = {
   sysmenu(ctx, W, H) {
     this.dim(ctx, W, H);
     const rows = [
+      ['📜   JOURNAL', 'journal', '#ffd76a'],
       ['⚔   SKILLS & PASSIVES', 'skills', '#b06adf'],
       ['🎒   INVENTORY', 'radial', '#6ff7c3'],
       ['⚙   SETTINGS', 'settings', '#c9bfa8']
@@ -953,6 +955,81 @@ const Screens = {
       UI.btn(ctx, px + 16, y, pw - 32, 48, label, () => UI.open(target), { size: 14, color });
       y += 56;
     }
+  },
+
+  // The QUEST JOURNAL from the ☰ MENU — read your accepted quests anywhere.
+  // Progress bars live-update; finished deeds say to see Lukus (turn-ins are
+  // his), and unfinished ones can be dropped back to his queue from here.
+  journal(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const jr = Hero.journal || [];
+    const pw = Math.min(470, W - 24);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(560, H - (Game.state === 'town' ? 170 : 24));
+    const py = Math.max(10, Math.min(H / 2 - ph / 2, H - ph - (Game.state === 'town' ? 150 : 12)));
+    UI.panel(ctx, px, py, pw, ph, '📜 QUEST JOURNAL — ' + jr.length + ' / ' + QUEST_JOURNAL_MAX);
+
+    // The ledger line.
+    const doneCount = clamp(Hero.questLine || 0, 0, QUEST_COUNT);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.fillText('LEDGER OF LIGHT', px + 16, py + 54);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#ffd76a';
+    ctx.fillText(doneCount + ' / ' + QUEST_COUNT + ' DONE', px + pw - 16, py + 54);
+    UI.bar(ctx, px + 16, py + 60, pw - 32, 5, doneCount / QUEST_COUNT, '#221d2e', '#8a6f2a');
+
+    // Scrollable quest rows.
+    const lx = px + 16, lw = pw - 32;
+    const listTop = py + 76, viewBot = py + ph - 14, viewH = Math.max(50, viewBot - listTop);
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
+    UI.sel.scrollY = scrollY;
+    UI.sel.scrollRegion = { x: lx - 4, y: listTop - 4, w: lw + 8, h: viewH + 8 };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(lx - 4, listTop - 4, lw + 8, viewH + 8); ctx.clip();
+    let c = listTop;
+    const vis = (top, hh) => (top - scrollY + hh > listTop) && (top - scrollY < viewBot);
+
+    if (!jr.length) {
+      ctx.textAlign = 'left'; ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText('The journal is empty.', lx, c - scrollY + 14);
+      ctx.fillText('Lukus, Bringer of Light, keeps the deeds in New Haven.', lx, c - scrollY + 32);
+      c += 44;
+    }
+    for (const entry of jr.slice()) {
+      const qp = Hero.questProgress(entry);
+      if (!qp.def) { Hero.abandonQuest(entry); continue; }
+      const def = qp.def, milestone = def.tid === 'reach';
+      const yy = c - scrollY;
+      if (vis(c, 62)) {
+        ctx.fillStyle = 'rgba(28,24,38,0.6)';
+        rr(ctx, lx - 4, yy, lw + 8, 58, 6); ctx.fill();
+        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        ctx.font = 'bold 11px Georgia'; ctx.fillStyle = milestone ? '#b06adf' : '#e8e0cc';
+        ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name, lw - 60), lx + 4, yy + 14);
+        ctx.font = '9px Georgia'; ctx.fillStyle = '#8a8070';
+        ctx.fillText(this.fitText(ctx, def.desc, lw - 60), lx + 4, yy + 27);
+        UI.bar(ctx, lx + 4, yy + 33, lw - 64, 9, qp.prog / def.need, '#221d2e', qp.done ? '#4ade80' : '#8a6f2a');
+        ctx.font = '8px Georgia'; ctx.fillStyle = '#9a9080';
+        ctx.fillText(qp.prog + ' / ' + def.need, lx + 4, yy + 52);
+        if (qp.done) {
+          ctx.textAlign = 'right'; ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#4ade80';
+          ctx.fillText('✔ READY', lx + lw - 2, yy + 30);
+          ctx.font = '8px Georgia'; ctx.fillStyle = '#7ab88a';
+          ctx.fillText('see Lukus', lx + lw - 2, yy + 42);
+        } else if (!def.abs) {
+          UI.btn(ctx, lx + lw - 50, yy + 18, 48, 22, 'DROP', () => {
+            Hero.abandonQuest(entry);
+            UI.toast('Returned to Lukus: ' + def.name, '#9a9080');
+          }, { size: 8, border: '#7a4a4a', color: '#c98a8a' });
+        }
+      }
+      c += 64;
+    }
+    ctx.restore();
+    UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 6);
+    ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+    if (scrollY > 1) ctx.fillText('▲ drag ▲', px + pw / 2, listTop + 2);
+    if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', px + pw / 2, viewBot - 2);
   },
 
   // The one true way to dismiss a menu: a fat red ✕ (Escape works too).
@@ -3690,142 +3767,168 @@ const Screens = {
     return tips;
   },
 
-  // -------------------------------------------------- stash (per-slot radial)
-  // Auto-sorted into equip-slot bins (the inventory wheel), STASH_PER_SLOT[tier]
-  // each. Tap a slot chip to browse/withdraw/salvage that bin; upgrade for more.
+  // -------------------------------------------------- stash (grouped list)
+  // The wheel is GONE (owner rule): the vault is one flat list SORTED INTO
+  // GROUPS by gear type, with filter chips and a sort picker (upgrade /
+  // rarity / level / name). Items still live in per-slot bins underneath.
+  STASH_SORTS: [['up', '▲ UPGRADE'], ['rar', 'RARITY'], ['lvl', 'LEVEL'], ['name', 'NAME']],
+
   stash(ctx, W, H) {
     this.dim(ctx, W, H);
-    // Torches live in the bag now — no stash bin for them.
     const slots = Object.keys(ITEM_SLOTS).filter(s => !ITEM_SLOTS[s].torch);
-    if (!UI.sel.stashSlot || ITEM_SLOTS[UI.sel.stashSlot].torch) UI.sel.stashSlot = 'weapon';
-    const narrow = W < 620;
-    const cx = narrow ? W / 2 : W * 0.26;
-    const cy = narrow ? 116 : H * 0.5;
-    const R = narrow ? Math.min(78, W * 0.30) : Math.min(150, H * 0.32);
-    const chipR = narrow ? 19 : 25;
+    // Groups: one per gear type, the two ring bins folded into "Rings".
+    const groupsDef = [];
+    for (const s of slots) {
+      if (s === 'ring2') continue;
+      if (s === 'ring1') groupsDef.push(['Rings', ['ring1', 'ring2']]);
+      else groupsDef.push([ITEM_SLOTS[s].label, [s]]);
+    }
+    const filter = UI.sel.stashFilter || 'all';
+    const sortKey = UI.sel.stashSort || 'up';
+    const sorters = {
+      up: (a, b) => Items.compareArrows(b, Hero.equipped[b.slot]) - Items.compareArrows(a, Hero.equipped[a.slot]) || b.rarity - a.rarity,
+      rar: (a, b) => b.rarity - a.rarity || (b.stars || 0) - (a.stars || 0) || b.mLvl - a.mLvl,
+      lvl: (a, b) => b.mLvl - a.mLvl || b.rarity - a.rarity,
+      name: (a, b) => a.name.localeCompare(b.name)
+    };
 
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold ' + (narrow ? 14 : 17) + 'px Georgia';
-    ctx.fillStyle = '#c9bfa8';
-    ctx.fillText('STASH', cx, cy - R - chipR - 8);
+    const sfa = UI.safe || { top: 0 };
+    const pw = Math.min(560, W - 20);
+    const px = W / 2 - pw / 2;
+    let y = 18 + (sfa.top || 0);
+
+    // Header: totals + capacity.
     const total = Hero.stash.filter(it => it && !it.torch).length;
-    ctx.font = 'bold ' + (narrow ? 10 : 12) + 'px Georgia';
-    ctx.fillStyle = '#8fb0e8';
-    ctx.fillText(total + ' stored', cx, cy - (narrow ? 7 : 10));
-    ctx.font = (narrow ? 9 : 11) + 'px Georgia';
-    ctx.fillStyle = '#6f6552';
-    ctx.fillText(Hero.stashPerSlot().toLocaleString() + '/slot', cx, cy + (narrow ? 9 : 12));
-
-    // The wheel — each chip shows how many items its bin holds.
-    slots.forEach((slot, i) => {
-      const a = -Math.PI / 2 + i * TAU / slots.length;
-      const bx = cx + Math.cos(a) * R, by = cy + Math.sin(a) * R;
-      const selected = UI.sel.stashSlot === slot;
-      const cnt = slot === 'torch'
-        ? Hero.stash.filter(it => it && it.torch).reduce((s, it) => s + (it.count || 1), 0)
-        : Hero.stashSlotCount(slot);
-      ctx.fillStyle = selected ? '#2e2a3a' : '#16121d';
-      ctx.beginPath(); ctx.arc(bx, by, chipR, 0, TAU); ctx.fill();
-      ctx.strokeStyle = cnt ? '#8fb0e8' : '#3a3448';
-      ctx.lineWidth = selected ? 3 : 2;
-      ctx.beginPath(); ctx.arc(bx, by, chipR, 0, TAU); ctx.stroke();
-      this.slotGlyph(ctx, slot, bx, by, chipR - 3);
-      if (cnt) {
-        const ex = bx + chipR * 0.72, ey = by - chipR * 0.72;
-        ctx.fillStyle = '#20364e';
-        ctx.beginPath(); ctx.arc(ex, ey, 8.5, 0, TAU); ctx.fill();
-        ctx.strokeStyle = '#8fb0e8'; ctx.lineWidth = 1.2;
-        ctx.beginPath(); ctx.arc(ex, ey, 8.5, 0, TAU); ctx.stroke();
-        ctx.fillStyle = '#dbeafe'; ctx.font = 'bold 9px Georgia';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(cnt > 99 ? '99+' : cnt, ex, ey + 0.5);
-      }
-      UI.register(bx - chipR - 3, by - chipR - 3, chipR * 2 + 6, chipR * 2 + 6,
-        () => { UI.sel.stashSlot = slot; UI.sel.scrollY = 0; UI.sel.stashItem = null; });
-    });
-
-    // Detail column for the selected bin.
-    const dx = narrow ? 12 : W * 0.48;
-    const dw = narrow ? W - 24 : W * 0.48;
-    let dy = narrow ? cy + R + chipR + 20 : 54;
-    const slot = UI.sel.stashSlot;
-    const isTorch = slot === 'torch';
-    const items = isTorch ? Hero.stash.filter(it => it && it.torch) : Hero.stashSlotItems(slot);
-    if (!isTorch) items.sort((a, b) => Items.compareArrows(b, Hero.equipped[b.slot]) - Items.compareArrows(a, Hero.equipped[a.slot]));
-    const binCnt = isTorch ? items.reduce((s, it) => s + (it.count || 1), 0) : items.length;
-
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#9a9080';
-    ctx.fillText(ITEM_SLOTS[slot].label.toUpperCase() + ' BIN', dx, dy);
+    ctx.font = 'bold 16px Georgia'; ctx.fillStyle = '#c9bfa8';
+    ctx.fillText('STASH', px, y);
     ctx.textAlign = 'right'; ctx.font = '11px Georgia'; ctx.fillStyle = '#8fb0e8';
-    ctx.fillText(binCnt + ' / ' + Hero.stashPerSlot().toLocaleString(), dx + dw, dy);
-    dy += 12;
+    ctx.fillText(total + ' stored  ·  ' + Hero.stashPerSlot().toLocaleString() + '/type', px + pw, y);
+    y += 10;
 
+    // Deposit + upgrade.
     const gs = n => n >= 1e6 ? (n / 1e6) + 'm' : n >= 1000 ? (n / 1000) + 'k' : '' + n;
     const upCost = Hero.stashUpgradeCost();
-    const half = (dw - 8) / 2;
-    UI.btn(ctx, dx, dy, half, 26, 'DEPOSIT BAG (' + Hero.bagUsed() + ')',
+    const half = (pw - 8) / 2;
+    UI.btn(ctx, px, y, half, 26, 'DEPOSIT BAG (' + Hero.bagUsed() + ')',
       Hero.bagUsed() ? () => Items.depositAll() : null,
       { size: 10, disabled: !Hero.bagUsed(), border: '#57b894', color: '#6ff7c3' });
-    UI.btn(ctx, dx + half + 8, dy, half, 26,
+    UI.btn(ctx, px + half + 8, y, half, 26,
       upCost === null ? 'STASH MAXED'
-        : 'UPGRADE → ' + STASH_PER_SLOT[Hero.stashTier + 1].toLocaleString() + ' (' + gs(upCost) + 'g)',
+        : 'UPGRADE → ' + STASH_PER_SLOT[Hero.stashTier + 1].toLocaleString() + ' (' + gs(upCost) + ' g)',
       upCost !== null && Hero.gold >= upCost ? () => Hero.buyStashUpgrade() : null,
       { size: 9, disabled: upCost === null || Hero.gold < upCost, border: '#8a6f4a', color: '#ffd76a' });
-    dy += 34;
+    y += 34;
 
-    // Scrollable bin list — drag to scroll. (In town, stop above the EXIT button.)
-    const listTop = dy, viewBot = H - (Game.state === 'town' ? 150 : 12), viewH = Math.max(60, viewBot - listTop);
+    // Filter chips (flow-wrapped): ALL + one per group.
+    let chX = px, chY = y;
+    const chip = (label, on, cb, hue) => {
+      ctx.font = 'bold 9px Georgia';
+      const cw = ctx.measureText(label).width + 16;
+      if (chX + cw > px + pw + 1) { chX = px; chY += 24; }
+      ctx.fillStyle = on ? 'rgba(52,66,102,0.95)' : 'rgba(28,24,38,0.9)';
+      rr(ctx, chX, chY, cw, 20, 10); ctx.fill();
+      ctx.strokeStyle = on ? (hue || '#8fb0e8') : '#3a3448'; ctx.lineWidth = 1.2;
+      rr(ctx, chX, chY, cw, 20, 10); ctx.stroke();
+      ctx.fillStyle = on ? '#dbeafe' : '#9a9080';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(label, chX + cw / 2, chY + 10.5);
+      UI.register(chX, chY, cw, 20, cb);
+      chX += cw + 6;
+    };
+    const setFilter = f => { UI.sel.stashFilter = f; UI.sel.scrollY = 0; UI.sel.stashItem = null; };
+    chip('ALL (' + total + ')', filter === 'all', () => setFilter('all'));
+    for (const [label, gSlots] of groupsDef) {
+      const n = gSlots.reduce((s2, sl) => s2 + Hero.stashSlotCount(sl), 0);
+      if (!n && filter !== label) continue;   // hide empty groups' chips
+      chip(label + (n ? ' ' + n : ''), filter === label, () => setFilter(label));
+    }
+    y = chY + 26;
+
+    // Sort picker.
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.fillText('SORT', px, y + 10);
+    chX = px + 34; chY = y;
+    for (const [key, label] of this.STASH_SORTS) {
+      chip(label, sortKey === key, () => { UI.sel.stashSort = key; UI.sel.scrollY = 0; }, '#ffd76a');
+    }
+    y = chY + 28;
+
+    // The grouped, scrollable list.
+    const shown = groupsDef
+      .filter(([label]) => filter === 'all' || filter === label)
+      .map(([label, gSlots]) => {
+        const items = gSlots.reduce((arr, sl) => arr.concat(Hero.stashSlotItems(sl)), []);
+        items.sort(sorters[sortKey] || sorters.up);
+        return { label, items };
+      })
+      .filter(g => g.items.length);
+
+    const listTop = y, viewBot = H - (Game.state === 'town' ? 150 : 12), viewH = Math.max(60, viewBot - listTop);
     const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
     UI.sel.scrollY = scrollY;
-    UI.sel.scrollRegion = { x: dx - 4, y: listTop - 4, w: dw + 8, h: viewH + 8 };
+    UI.sel.scrollRegion = { x: px - 4, y: listTop - 4, w: pw + 8, h: viewH + 8 };
     ctx.save();
-    ctx.beginPath(); ctx.rect(dx - 4, listTop - 4, dw + 8, viewH + 8); ctx.clip();
+    ctx.beginPath(); ctx.rect(px - 4, listTop - 4, pw + 8, viewH + 8); ctx.clip();
     let c = listTop;
     const vis = (top, h) => (top - scrollY + h > listTop) && (top - scrollY < viewBot);
-    if (!items.length) {
-      ctx.textAlign = 'left'; ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#6f6552';
-      ctx.fillText('Empty — deposit ' + ITEM_SLOTS[slot].label.toLowerCase() + ' items here.', dx, c - scrollY + 12);
-      c += 22;
+
+    if (!shown.length) {
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText(total ? 'Nothing in this group.' : 'The vault is empty — deposit your bag here.', px, c - scrollY + 14);
+      c += 24;
     }
-    items.forEach(it => {
-      const yy = c - scrollY;
-      const expanded = UI.sel.stashItem === it;
-      if (vis(c, 42)) {
-        ctx.fillStyle = expanded ? 'rgba(46,42,58,0.95)' : 'rgba(28,24,38,0.92)';
-        rr(ctx, dx, yy, dw, 38, 6); ctx.fill();
-        if (expanded) { ctx.strokeStyle = RARITIES[it.rarity].color; ctx.lineWidth = 1.5; rr(ctx, dx, yy, dw, 38, 6); ctx.stroke(); }
+    for (const g of shown) {
+      // Group header.
+      if (vis(c, 20)) {
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        ctx.font = 'bold 12px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
-        const nm = it.name + (it.torch && (it.count || 1) > 1 ? '  ×' + it.count : '');
-        ctx.fillText(this.fitText(ctx, nm, dw - 152), dx + 10, yy + 15);
-        ctx.font = '10px Georgia'; ctx.fillStyle = '#8a8070';
-        ctx.fillText(it.torch ? 'Torch' : (ITEM_SLOTS[it.slot].label + ' · lvl ' + it.mLvl) + '  ·  tap to inspect', dx + 10, yy + 30);
-        const bw = 66;
-        // Tap the card area (left of the buttons) to inspect the item.
-        UI.register(dx, yy, dw - bw * 2 - 16, 38, () => { UI.sel.stashItem = expanded ? null : it; });
-        UI.btn(ctx, dx + dw - bw * 2 - 12, yy + 5, bw, 28, it.torch ? 'TAKE 1' : 'WITHDRAW',
-          () => Items.fromStash(it), { size: 9, border: '#57b894', color: '#6ff7c3' });
-        if (!it.torch) {
+        ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#8fb0e8';
+        ctx.fillText(g.label.toUpperCase(), px + 2, c - scrollY + 13);
+        ctx.textAlign = 'right'; ctx.font = '10px Georgia'; ctx.fillStyle = '#6f6552';
+        ctx.fillText(g.items.length + '', px + pw - 2, c - scrollY + 13);
+        ctx.strokeStyle = 'rgba(143,176,232,0.25)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(px, c - scrollY + 18); ctx.lineTo(px + pw, c - scrollY + 18); ctx.stroke();
+      }
+      c += 24;
+      for (const it of g.items) {
+        const yy = c - scrollY;
+        const expanded = UI.sel.stashItem === it;
+        if (vis(c, 42)) {
+          ctx.fillStyle = expanded ? 'rgba(46,42,58,0.95)' : 'rgba(28,24,38,0.92)';
+          rr(ctx, px, yy, pw, 38, 6); ctx.fill();
+          if (expanded) { ctx.strokeStyle = RARITIES[it.rarity].color; ctx.lineWidth = 1.5; rr(ctx, px, yy, pw, 38, 6); ctx.stroke(); }
+          ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+          ctx.font = 'bold 12px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
+          ctx.fillText(this.fitText(ctx, it.name, pw - 152), px + 10, yy + 15);
+          ctx.font = '10px Georgia'; ctx.fillStyle = '#8a8070';
+          ctx.fillText(ITEM_SLOTS[it.slot].label + ' · lvl ' + it.mLvl + '  ·  tap to inspect', px + 10, yy + 30);
+          const bw = 66;
+          // Tap the card area (left of the buttons) to inspect the item.
+          UI.register(px, yy, pw - bw * 2 - 16, 38, () => { UI.sel.stashItem = expanded ? null : it; });
+          UI.btn(ctx, px + pw - bw * 2 - 12, yy + 5, bw, 28, 'WITHDRAW',
+            () => Items.fromStash(it), { size: 9, border: '#57b894', color: '#6ff7c3' });
           const canSalv = Items.canSalvage(it);
-          UI.btn(ctx, dx + dw - bw - 6, yy + 5, bw, 28, 'SALVAGE',
+          UI.btn(ctx, px + pw - bw - 6, yy + 5, bw, 28, 'SALVAGE',
             canSalv ? () => { const k = Hero.stash.indexOf(it); if (k >= 0) { Hero.stash.splice(k, 1); Items.grantSalvage(it); Hero.saveStash(); Hero.save(); if (UI.sel.stashItem === it) UI.sel.stashItem = null; } } : null,
             { size: 9, disabled: !canSalv, border: '#8a6f4a', color: '#ffb43a' });
         }
+        c += 42;
+        // Expanded inspect card: full stats + upgrade arrows vs what's equipped.
+        if (expanded) {
+          const cardH = 30 + Items.statLines(it).length * 15 + 8;
+          if (vis(c, cardH)) this.itemCard(ctx, px, c - scrollY, pw, it, Hero.equipped[it.slot], true);
+          c += cardH;
+        }
       }
-      c += 42;
-      // Expanded inspect card: full stats + upgrade arrows vs what's equipped.
-      if (expanded) {
-        const cardH = 30 + Items.statLines(it).length * 15 + 8;
-        if (vis(c, cardH)) this.itemCard(ctx, dx, c - scrollY, dw, it, it.torch ? null : Hero.equipped[it.slot], true);
-        c += cardH;
-      }
-    });
+      c += 8;
+    }
     ctx.restore();
     UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 6);
     ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
-    if (scrollY > 1) ctx.fillText('▲ drag ▲', dx + dw / 2, listTop + 3);
-    if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', dx + dw / 2, viewBot - 1);
+    if (scrollY > 1) ctx.fillText('▲ drag ▲', px + pw / 2, listTop + 3);
+    if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', px + pw / 2, viewBot - 1);
   },
 
   // ------------------------------------------------- wandering vendor
@@ -4060,6 +4163,12 @@ const Screens = {
     ctx.fillText(Hero.gold + ' gold', px + pw - 16, py + 52);
 
     let y = py + 66;
+    if (!o.stock.length) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText('The shelves are bare. Come back another day.', px + pw / 2, y + 14);
+      y += 34;
+    }
     o.stock.forEach(entry => {
       const it = entry.item;
       const selected = UI.sel.buy === entry;

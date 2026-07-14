@@ -268,9 +268,17 @@ Script lives in the session scratchpad (intentionally not committed).
   primary-attack key does the same (input.js). Stations: Blacksmith (forge bldg),
   Jeweler (top-left manor), Mystic (purple-door chapel), Horadric Cube (cube plinth,
   gated `Hero.hasCube`), Stash (small chapel), 4 leftover-building vendors
-  (Weapons/Armor/Apothecary/General Goods via `Game.rollVendorStock()` — RENAMED from
+  (Weapons/Armor via `Game.rollVendorStock()` — RENAMED from
   merchantStock because `Screens.merchant` caches an ARRAY on `Game.merchantStock`; the
-  old name collision bricked buildTown). **Waypoints (owner rule)**: BLUE (top-left) →
+  old name collision bricked buildTown; v1.6.58 owner rules: **"Jeweled
+  Necessities"** replaced General Goods and sells ONLY ring1/ring2/amulet, and
+  the **Apothecary is CLOSED** — `slots: null` → empty stock, "shelves are
+  bare" line in `Screens.vendor`, skipped by the restock loop). **STASH is a
+  GROUPED LIST (v1.6.58, owner rule "get rid of the stash wheel")**: one
+  scrolling list grouped by gear type (rings folded into "Rings"), flow-wrap
+  FILTER chips (ALL + per-group, empty groups hidden) + SORT picker
+  (`STASH_SORTS`: ▲ Upgrade / Rarity / Level / Name via `UI.sel.stashFilter`/
+  `stashSort`), deposit/upgrade pinned on top, same per-slot bins underneath. **Waypoints (owner rule)**: BLUE (top-left) →
   bounties/acts/adventure, PURPLE (top-right) → rifts/nephalem/seasons — both open
   `Screens.wilds` with `UI.sel.wpFilter='blue'|'purple'` which filters the mode rows.
   **Town portal goes STRAIGHT to New Haven** (the old `Screens.town` menu + its
@@ -282,8 +290,10 @@ Script lives in the session scratchpad (intentionally not committed).
   `returnFromTownPortal()` (portal collapse + 30s cd). `startLand()` clears
   `townPortalReturn`. **THE ☰ MENU (v1.6.57, owner rule "only skills and
   passives, inventory, and settings")**: the top-left ☰ opens `Screens.sysmenu`
-  — a compact overlay with EXACTLY those three rows — and the 🎒 button →
-  radial. **THE SURVIVOR'S CAMP HUB IS RETIRED**: `Game.toCamp()` now calls
+  — a compact overlay with EXACTLY those rows (+ 📜 JOURNAL added ABOVE
+  Skills & Passives in v1.6.58, owner rule — `Screens.journal`: read-anywhere
+  quest list with live bars, DROP buttons, "✔ READY — see Lukus" on finished
+  deeds; turn-ins stay with Lukus) — and the 🎒 button → radial. **THE SURVIVOR'S CAMP HUB IS RETIRED**: `Game.toCamp()` now calls
   `enterTown()`, every reward/act-clear/death/abandon/bounty-map exit lands in
   New Haven (reward + actclear overlays open OVER the streets), and no code
   path sets `state='camp'` anymore (`Screens.camp` is dead code). **TOWN IS HOME (v1.6.52, owner rules)**: character
