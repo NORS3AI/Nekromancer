@@ -164,10 +164,12 @@ const UI = {
     if (this.screen === 'skillChooser') return () => this.open('skills');
     if (this.screen === 'storyacts') return () => this.open('wilds');
     // Artisan sub-screens step back to their HUB (the shop interior stays up —
-    // owner rule: closing a bench shows the background art again).
-    if (['smithSalvage', 'smithWeapon', 'smithArmor', 'torches'].includes(this.screen)) return () => this.open('smith');
-    if (['jewSocket', 'jewUnsocket', 'jewMerge', 'jewSell', 'jewCraft'].includes(this.screen)) return () => this.open('jeweler');
-    if (['mysEnchant', 'mysPet', 'mysWings', 'mysTheme'].includes(this.screen)) return () => this.open('mystic');
+    // owner rule: closing a bench shows the background art again). Arriving
+    // FROM a bench skips the welcome splash (sel.inside) — you're already in.
+    const backToHub = hub => () => { this.open(hub); this.sel.inside = true; };
+    if (['smithSalvage', 'smithWeapon', 'smithArmor', 'torches'].includes(this.screen)) return backToHub('smith');
+    if (['jewSocket', 'jewUnsocket', 'jewMerge', 'jewSell', 'jewCraft'].includes(this.screen)) return backToHub('jeweler');
+    if (['mysEnchant', 'mysPet', 'mysWings', 'mysTheme'].includes(this.screen)) return backToHub('mystic');
     return () => this.close();
   },
 

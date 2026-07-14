@@ -844,7 +844,69 @@ const Screens = {
   // a slim column of category buttons. Each button opens a sub-screen; closing a
   // sub-screen (✕ / Escape / EXIT) drops back HERE (art visible again); closing
   // the hub leaves the shop. `buttons` = [label, desc, screenId|cb, color].
+  // Walking into an artisan's shop shows the PAINTED INTERIOR first with a
+  // "welcome" moment unique to each artisan (owner rule) — the benches only
+  // appear after you step inside. Returning from a bench skips the welcome
+  // (closeAction sets UI.sel.inside), so browsing benches stays snappy.
+  ARTISAN_INTROS: {
+    smith: {
+      npc: 'HAEDRIG', color: '#ffb43a', welcome: 'WELCOME TO THE FORGE',
+      info: '"The coals never cool in New Haven. Bring me your battle-scrap and I\'ll break it down to parts, dust and crystal — or set the hammer to fresh steel: weapons, armor, and torches to carry the Light into the dark."',
+      enter: 'STEP UP TO THE ANVIL'
+    },
+    jeweler: {
+      npc: 'COVETOUS SHEN', color: '#4ecbe0', welcome: 'WELCOME TO THE GEMWORKS',
+      info: '"Every stone has a soul, friend — let me show you. I cut fresh gems, merge three of a kind into finer ones, set them snug into your sockets and pry them out again without a scratch. Tired of a stone? I pay honest gold."',
+      enter: 'BROWSE THE STONES'
+    },
+    mystic: {
+      npc: 'MYRIAM', color: '#b06adf', welcome: 'WELCOME TO THE SANCTUM',
+      info: '"Sit, child — the threads of fate can always be rewoven. I reroll the properties on your gear until they suit you, and I keep a wardrobe of wonders besides: pets to walk beside you, wings for your back, and themes to re-tint the very world."',
+      enter: 'PART THE VEIL'
+    }
+  },
+
+  artisanIntro(ctx, W, H, artKey) {
+    const I = this.ARTISAN_INTROS[artKey];
+    // The art is the star — barely veiled.
+    this.shopBackdrop(ctx, W, H, artKey, 0.10);
+    // A readability gradient over the lower third only.
+    const g = ctx.createLinearGradient(0, H * 0.35, 0, H);
+    g.addColorStop(0, 'rgba(2,1,4,0)'); g.addColorStop(1, 'rgba(2,1,4,0.9)');
+    ctx.fillStyle = g; ctx.fillRect(0, H * 0.35, W, H * 0.65);
+
+    // Anywhere on the art steps inside (the red ✕, drawn above, still exits).
+    UI.register(0, 0, W, H, () => { UI.sel.inside = true; AudioSys.sfx('gold'); });
+
+    const pad = (Game.state === 'town' ? 150 : 28);
+    const bw = Math.min(300, W - 40), bx = W / 2 - bw / 2;
+    const by = H - pad - 42;
+    let iy = by - 16 - 5 * 17;   // up to 5 wrapped info lines
+
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.fillText('—  ' + I.npc + '  —', W / 2, iy - 44);
+    ctx.font = 'bold ' + (W < 520 ? 20 : 26) + 'px Georgia';
+    ctx.fillStyle = I.color;
+    ctx.shadowColor = I.color; ctx.shadowBlur = 16;
+    ctx.fillText(this.fitText(ctx, I.welcome, W - 30), W / 2, iy - 16);
+    ctx.shadowBlur = 0;
+    ctx.textAlign = 'left';
+    ctx.font = 'italic ' + (W < 520 ? 11 : 12) + 'px Georgia'; ctx.fillStyle = '#e8e0cc';
+    const iw = Math.min(470, W - 48);
+    wrapText(ctx, I.info, W / 2 - iw / 2, iy, iw, 17, 5);
+
+    const pulse = 0.6 + 0.4 * Math.sin(Game.time * 3.5);
+    UI.btn(ctx, bx, by, bw, 40, I.enter, () => { UI.sel.inside = true; AudioSys.sfx('gold'); },
+      { size: 13, border: I.color, color: I.color });
+    ctx.textAlign = 'center'; ctx.font = '9px Georgia';
+    ctx.fillStyle = 'rgba(201,191,168,' + (0.35 + 0.3 * pulse).toFixed(2) + ')';
+    ctx.fillText('tap anywhere to step inside', W / 2, by + 52);
+  },
+
   artisanHub(ctx, W, H, artKey, title, npcLine, buttons, trainKey) {
+    // First moment in the shop: the interior art + the artisan's welcome.
+    if (!UI.sel.inside && this.ARTISAN_INTROS[artKey]) { this.artisanIntro(ctx, W, H, artKey); return; }
     this.shopBackdrop(ctx, W, H, artKey, 0.34);
     const pw = Math.min(430, W - 24);
     const px = W / 2 - pw / 2;
