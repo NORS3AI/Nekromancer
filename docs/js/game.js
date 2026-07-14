@@ -275,11 +275,11 @@ const Game = {
     this.banner = { text, sub, t: dur, maxT: dur };
   },
 
+  // The Survivor's Camp hub is RETIRED (owner rule) — every "leave the run"
+  // path now lands in New Haven; the ☰ MENU is a compact overlay instead.
   toCamp() {
-    this.state = 'camp';
     this.playerDeadT = 0;
-    UI.close();
-    Hero.save();
+    this.enterTown();
   },
 
   // =========================== WALKABLE TOWN ============================
@@ -1224,7 +1224,7 @@ const Game = {
       this.rewardLines = lines;
       Hero.addXP(Math.round(400 * diff.reward));
       Hero.save();
-      this.state = 'camp';
+      this.enterTown();   // home is New Haven — the reward opens over the streets
       UI.open('reward');
       AudioSys.sfx('level');
       return;
@@ -1275,8 +1275,8 @@ const Game = {
       this.storyNextAct = act + 1;
       Hero.addXP(Math.round(1600 * diff.reward));
       Hero.save();
-      this.state = 'camp';
-      // Instead of dumping to the camp hub, offer a difficulty pick + CONTINUE.
+      this.enterTown();   // home is New Haven
+      // Offer a difficulty pick + CONTINUE over the streets.
       UI.open('actclear');
       AudioSys.sfx('level');
       return;
@@ -1319,7 +1319,7 @@ const Game = {
     Hero.bestZone = Math.max(Hero.bestZone, this.zoneIdx + 1);
     Hero.addXP(Math.round(120 * (this.zoneIdx + 1) * diff.reward));
     Hero.save();
-    this.state = 'camp';
+    this.enterTown();   // home is New Haven — the reward opens over the streets
     UI.open('reward');
     AudioSys.sfx('level');
   },

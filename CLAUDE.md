@@ -280,8 +280,13 @@ Script lives in the session scratchpad (intentionally not committed).
   and the paused run stays in memory; the gate pad (visible only via `cond` while
   `townPortalReturn` is set) → `returnToWilds()` restores the position and calls
   `returnFromTownPortal()` (portal collapse + 30s cd). `startLand()` clears
-  `townPortalReturn`. Top-left ☰ MENU → `toCamp()` + a 🎒 button → radial. Camp hub
-  button is "🏰 VISIT NEW HAVEN". **TOWN IS HOME (v1.6.52, owner rules)**: character
+  `townPortalReturn`. **THE ☰ MENU (v1.6.57, owner rule "only skills and
+  passives, inventory, and settings")**: the top-left ☰ opens `Screens.sysmenu`
+  — a compact overlay with EXACTLY those three rows — and the 🎒 button →
+  radial. **THE SURVIVOR'S CAMP HUB IS RETIRED**: `Game.toCamp()` now calls
+  `enterTown()`, every reward/act-clear/death/abandon/bounty-map exit lands in
+  New Haven (reward + actclear overlays open OVER the streets), and no code
+  path sets `state='camp'` anymore (`Screens.camp` is dead code). **TOWN IS HOME (v1.6.52, owner rules)**: character
   load/creation lands IN TOWN — roster PLAY (`Profiles.select` → `Game.enterTown()`),
   `Saves.load` and `importSave` all enter New Haven, not camp. Town HUD is BARE:
   just "NEW HAVEN" — no gold readout, no bottom explainer legend, no grey label
@@ -294,8 +299,9 @@ Script lives in the session scratchpad (intentionally not committed).
   maps it BACK to its hub (sub → hub → town). **WELCOME SPLASH (v1.6.56, owner rule
   "open up to the background first, then a welcome — different for each")**:
   fresh entry shows `Screens.artisanIntro` — the interior art near-unveiled
-  (veil 0.10) + a per-artisan welcome (`ARTISAN_INTROS`: Haedrig "WELCOME TO THE
-  FORGE" / Shen "WELCOME TO THE GEMWORKS" / Myriam "WELCOME TO THE SANCTUM",
+  (veil 0.10) + a per-artisan welcome (`ARTISAN_INTROS`: Tharn Emberhand
+  "WELCOME TO THE FORGE" (blacksmith renamed v1.6.57, owner rule — no borrowed
+  Diablo names) / Shen "WELCOME TO THE JEWELER'S" / Myriam "WELCOME TO THE SANCTUM",
   each with its own info line + enter-button label); tap anywhere or the button
   sets `UI.sel.inside` → benches. Bench-close `backToHub()` re-sets
   `sel.inside` so the splash only plays on street entry. Smith: `smithSalvage`/`smithWeapon`/
