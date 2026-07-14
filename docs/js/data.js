@@ -315,11 +315,18 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.64-alpha';
+const GAME_VERSION = 'v1.6.65-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.65-alpha', date: 'July 2026',
+    notes: [
+      'THE JOURNAL KNOWS ITS GIVERS — Addy\'s jobs now SHOW DIFFERENTLY from Lukus\'s deeds: the journal is grouped into two sections, each with the giver\'s name, their slot count and their own ledger bar; her rows wear Underworld violet with her colored stripe, his wear the gold of the Light, and finished quests say exactly whom to see',
+      'BOTH AT ONCE (owner rule): quest slots are now PER GIVER — up to 7 of Lukus\'s deeds AND 7 of Addy\'s jobs can ride in the journal together (14 total). Each dialog counts only its own ("JOURNAL — n / 7 of mine"), and the street markers light up per giver'
+    ]
+  },
   {
     v: 'v1.6.64-alpha', date: 'July 2026',
     notes: [

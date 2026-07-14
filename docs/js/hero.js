@@ -376,13 +376,16 @@ const Hero = {
       journal: (() => {
         let j = Array.isArray(d.journal) ? d.journal : [];
         if (!j.length && d.quest && typeof d.quest === 'object' && typeof d.quest.idx === 'number') j = [d.quest];
-        const seen = {};
+        // Slots are PER GIVER: up to 7 of Lukus's AND 7 of Addy's survive a load.
+        const seen = {}, cnt = { L: 0, A: 0 };
         return j.filter(e => {
           if (!e || typeof e.idx !== 'number' || e.idx < 0 || e.idx >= QUEST_COUNT) return false;
-          const key = (e.src === 'A' ? 'A' : 'L') + e.idx;
-          return !seen[key] && (seen[key] = 1);
-        }).slice(0, QUEST_JOURNAL_MAX)
-          .map(e => e.src === 'A' ? { idx: e.idx, base: e.base || 0, src: 'A' } : { idx: e.idx, base: e.base || 0 });
+          const src = e.src === 'A' ? 'A' : 'L';
+          const key = src + e.idx;
+          if (seen[key] || cnt[src] >= QUEST_JOURNAL_MAX) return false;
+          seen[key] = 1; cnt[src]++;
+          return true;
+        }).map(e => e.src === 'A' ? { idx: e.idx, base: e.base || 0, src: 'A' } : { idx: e.idx, base: e.base || 0 });
       })(),
       questRepool: Array.isArray(d.questRepool)
         ? d.questRepool.filter(i => typeof i === 'number' && i >= 0 && i < QUEST_COUNT) : [],
@@ -542,10 +545,17 @@ const Hero = {
     return next < line.length ? next : -1;
   },
 
+  // Slots are PER GIVER (owner rule: the player can carry BOTH Lukus's and
+  // Addy's quests): up to 7 of his AND 7 of hers at once.
+  journalCount(src) {
+    const addy = src === 'A';
+    return (this.journal || []).filter(e => (e.src === 'A') === addy).length;
+  },
+
   acceptQuest(src) {
     const addy = src === 'A';
     const idx = this.questOffer(src);
-    if (idx < 0 || this.journal.length >= QUEST_JOURNAL_MAX) return false;
+    if (idx < 0 || this.journalCount(src) >= QUEST_JOURNAL_MAX) return false;
     const def = (addy ? ADDY_QUEST_LINE : QUEST_LINE)[idx];
     const gateOk = def.gate.kind === 'level' ? this.level >= def.gate.at : (this.paragon || 0) >= def.gate.at;
     if (!gateOk) return false;
