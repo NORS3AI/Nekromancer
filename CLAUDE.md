@@ -250,8 +250,17 @@ Script lives in the session scratchpad (intentionally not committed).
   (`Game.state==='town'`). The map is the OWNER'S HAND-DRAWN PAINTING
   (`docs/art/town/newhaven.png`, 1254², loaded as `Game.townImg`, `?v=BUILD` bust) drawn
   1:1 as the world; `Game.TOWN_STATIONS` traces interaction pads + INVISIBLE collision
-  boxes over the painted buildings (`TOWN_SCENERY` = fountain blocker; pathways stay
-  open, `updateTown` clamps to the walls). **ENTER-BUTTON interaction (owner rule — NO
+  boxes over the painted buildings (`TOWN_SCENERY` = fountain blocker + the PERIMETER
+  WALLS, added v1.6.54 — 12 stepped boxes tracing the painted battlements/rampart/
+  treelines so the hero can't leave town; the only opening is the south gate corridor
+  x 540–660; pathways stay open, `updateTown` clamps to the map edges).
+  **TOWN MENUS vs the EXIT button (v1.6.54)**: the round EXIT button owns the
+  bottom-right ~150px while a screen is open in town — `artisanHub` bottom-pads 150
+  in town, radial + stash scroll lists set `viewBot = H-150` in town, the radial's
+  narrow wheel sits at `cx=W*0.63` clear of the stat readout, huge readout values
+  shorten to k/m, the detail column starts below `Screens._radialStatsBottom`, and
+  `drawTown` hides the street HUD + name plates while `UI.screen` is open.
+  **ENTER-BUTTON interaction (owner rule — NO
   pad circles, NO proximity auto-open)**: standing at a doorway arms `Game.townPrompt`;
   `UI.drawTownEnter()` shows a big round ENTER button at the primary-skill position
   (bottom-right) which fires `Game.townEnter()` → opens that building's screen; while a
