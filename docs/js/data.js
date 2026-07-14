@@ -71,36 +71,70 @@ const THEMES = {
 // gem. Generation is fully DETERMINISTIC (hashed by index) so a quest's
 // target never changes between sessions or saves.
 const QUEST_JOURNAL_MAX = 7;
-function toRoman(n) {
-  const T = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'],
-             [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
-  let s = '';
-  for (const [v, r] of T) while (n >= v) { s += r; n -= v; }
-  return s || 'I';
-}
 
 // The repeatable deeds, each measured on a LIFETIME counter (progress =
 // counter − base at accept, so re-accepting never grandfathers old work).
+// NAMES (owner rules: no numbering like "Forged Anew VII" — quests deserve
+// quest names): each template carries an OPENER pool and a CLOSER pool; the
+// k-th occurrence takes openers[k % 8] + closers[floor(k/8) % 8], giving 64
+// distinct natural names per deed — more than any deed ever repeats.
 const QUEST_TEMPLATES = [
-  { id: 'slay',    min: 25, max: 2000, names: ['Cull the Dead', 'Thin the Horde', 'Break the Tide', 'Reap the Fallen'],
+  { id: 'slay', min: 25, max: 2000,
+    names: [['Cull', 'Reap', 'Silence', 'Scatter', 'Break', 'Fell', 'Purge', 'Quiet'],
+            ['the Restless Dead', 'the Shambling Horde', 'the Graveborn', 'the Hungering Swarm',
+             'the Risen Rabble', 'the Crawling Dark', 'the Unhallowed', "the Night's Legion"]],
     desc: n => 'Slay ' + n.toLocaleString() + ' monsters anywhere in the wilds.', counter: () => Hero.totalKills || 0 },
-  { id: 'elite',   min: 4,  max: 260,  names: ['Hunt the Marked', "Champions' Bane", 'Gold and Purple'],
+  { id: 'elite', min: 4, max: 260,
+    names: [['Hunt', 'Mark', 'Topple', 'Humble', 'Unmake', 'Stalk', 'Shatter', 'End'],
+            ['the Champions', 'the Gilded Few', 'the Painted Terrors', 'the Warbands',
+             'the Chosen Prey', 'the Crowned Beasts', 'the Boastful', 'the Marked Ones']],
     desc: n => 'Slay ' + n + ' elite (champion) monsters.', counter: () => Hero.eliteKills || 0 },
-  { id: 'boss',    min: 1,  max: 50,   names: ['Crownbreaker', "Tyrant's Fall", 'Heads of the Hydra'],
+  { id: 'boss', min: 1, max: 50,
+    names: [['Behead', 'Dethrone', 'Cast Down', 'Overthrow', 'Extinguish', 'Bury', 'Break', 'Unseat'],
+            ['the Tyrants', 'the Deep Kings', 'the Crowned Horrors', 'the Old Masters',
+             'the Throned Dead', 'the Dread Lords', 'the Pit Princes', 'the Named Evils']],
     desc: n => 'Fell ' + n + (n > 1 ? ' bosses or unique monsters.' : ' boss or unique monster.'), counter: () => Hero.bossKills || 0 },
-  { id: 'rift',    min: 1,  max: 25,   names: ['Into the Breach', 'Riftwalker', 'Seal the Tear'],
+  { id: 'rift', min: 1, max: 25,
+    names: [['Seal', 'Walk', 'Cleanse', 'Brave', 'Close', 'Storm', 'Chart', 'Empty'],
+            ['the Breach', 'the Torn Sky', 'the Nephalem Depths', 'the Screaming Tear',
+             'the Far Rifts', 'the Broken Veil', 'the Shifting Halls', 'the Pale Door']],
     desc: n => 'Clear ' + n + ' Rift' + (n > 1 ? 's' : '') + ' of any kind.', counter: () => Hero.riftsCleared || 0 },
-  { id: 'salvage', min: 6,  max: 180,  names: ['Feed the Forge', 'Scrap and Steel', 'Ashes to Iron'],
+  { id: 'salvage', min: 6, max: 180,
+    names: [['Feed', 'Stoke', 'Fill', 'Serve', 'Tend', 'Heap', 'Supply', 'Glut'],
+            ['the Forge', 'the Hungry Anvil', 'the Scrap Pile', 'the Smelter',
+             'the Coals', 'the Iron Maw', "the Breaker's Bench", 'the Furnace']],
     desc: n => 'Salvage ' + n + ' items into materials.', counter: () => Hero.salvagedCount || 0 },
-  { id: 'combine', min: 3,  max: 90,   names: ['Facets of Power', 'The Finer Cut', 'Pressure and Time'],
+  { id: 'combine', min: 3, max: 90,
+    names: [['Cut', 'Fuse', 'Polish', 'Merge', 'Facet', 'Refine', 'Marry', 'Perfect'],
+            ['the Stones', 'the Gleaming Shards', 'the Deep Colors', 'the Precious Things',
+             "the Jeweler's Craft", 'the Brilliant Cuts', 'the Living Light', 'the Royal Facets']],
     desc: n => 'Combine gems at the Jeweler ' + n + ' times.', counter: () => Hero.gemsCombined || 0 },
-  { id: 'craft',   min: 2,  max: 70,   names: ["Smith's Apprentice", 'Anvil Song', 'Forged Anew'],
+  { id: 'craft', min: 2, max: 70,
+    names: [['Forge', 'Hammer', 'Temper', 'Shape', 'Strike', 'Work', 'Raise', 'Draw'],
+            ['New Steel', 'the White Heat', 'the Anvil Song', 'Fresh Edges',
+             "the Maker's Mark", 'Iron and Ash', "the Smith's Pride", "Tomorrow's Arms"]],
     desc: n => 'Craft ' + n + ' item' + (n > 1 ? 's' : '') + ' (forge, torches or gems).', counter: () => Hero.itemsCrafted || 0 },
-  { id: 'enchant', min: 1,  max: 45,   names: ['Weave the Threads', 'Fatecrafter', "The Mystic's Eye"],
+  { id: 'enchant', min: 1, max: 45,
+    names: [['Reweave', 'Unpick', 'Twist', 'Rethread', 'Bend', 'Court', 'Tempt', 'Spin'],
+            ['the Threads of Fate', 'the Hidden Weave', "Fortune's Loom", 'the Arcane Knots',
+             'the Veiled Pattern', "Myriam's Craft", 'the Fateful Strands', 'the Old Magics']],
     desc: n => 'Reroll ' + n + ' propert' + (n > 1 ? 'ies' : 'y') + ' at the Mystic.', counter: () => Hero.enchantsDone || 0 },
-  { id: 'chest',   min: 3,  max: 120,  names: ['Treasure Seeker', 'What Lies Hidden', 'Locks and Latches'],
+  { id: 'chest', min: 3, max: 120,
+    names: [['Crack', 'Plunder', 'Spring', 'Pry', 'Loot', 'Rifle', 'Unseal', 'Empty'],
+            ['the Buried Chests', 'the Lost Caches', 'the Rusted Locks', 'the Forgotten Hoards',
+             'the Grave Goods', 'the Hidden Troves', 'the Sealed Coffers', "the Wilds' Riches"]],
     desc: n => 'Open ' + n + ' chests in the wilds.', counter: () => Hero.chestsOpened || 0 }
 ];
+
+// The 20 milestones (every 25th quest) each get their OWN name — 8 across the
+// level climb, 12 across the Paragon ascent (no numbering, owner rule).
+const MILESTONE_NAMES = {
+  level: ['The First Ascent', 'A Flame Kindled', 'The Broadening Road', 'Strength of the Grave',
+          'The Deepening Dark', 'A Name Whispered', 'The Gathering Storm', 'The Summit of Flesh'],
+  paragon: ['Beyond the Veil', 'The Endless Stair', 'Starlight and Bone', "The Paragon's Path",
+            'A Thousand Steps', 'The Horizon Calls', 'Light Undying', 'The Great Work',
+            'Crown of Ages', 'The Last Threshold', 'Apotheosis Rising', 'The Final Trial']
+};
 
 const QUEST_COUNT = 500;
 
@@ -119,39 +153,61 @@ const QUEST_LINE = (() => {
     x ^= x >>> 13; x = (x * 2246822519) >>> 0; x ^= x >>> 11;
     return x >>> 0;
   };
-  const line = [];
-  const seen = {};   // per-template use count → Roman-numeral suffix
+  // Pass 1 — deal deeds from a reshuffling bag (all 9 templates per bag, in a
+  // hash-shuffled order) so every deed recurs evenly (~54 times, safely under
+  // the 64 unique names each carries) and no deed floods a stretch of the line.
+  const picks = [], totals = {};
+  let bag = [];
+  for (let i = 0; i < QUEST_COUNT; i++) {
+    if (i % 25 === 24) { picks.push(null); continue; }
+    if (!bag.length) {
+      bag = QUEST_TEMPLATES.slice();
+      for (let j = bag.length - 1; j > 0; j--) {
+        const r = h(i * 31 + j) % (j + 1);
+        const tmp = bag[j]; bag[j] = bag[r]; bag[r] = tmp;
+      }
+    }
+    const T = bag.shift();
+    picks.push(T);
+    totals[T.id] = (totals[T.id] || 0) + 1;
+  }
+  // Pass 2 — build the line. HARDER EVERY TIME (owner rule): a deed's k-th
+  // recurrence climbs a geometric min→max curve over its total recurrences
+  // (front-loaded via the 0.7 exponent), and is FORCED strictly above the
+  // previous one — the same target can never appear twice for the same deed.
+  const line = [], occ = {}, prevNeed = {};
+  let msLevel = 0, msParagon = 0;
   for (let i = 0; i < QUEST_COUNT; i++) {
     const gate = questGate(i);
     const lvlPhase = i < 200;
-    if (i % 25 === 24) {
+    if (!picks[i]) {
       // Milestone: REACH a level / paragon (absolute progress, no base).
       const target = lvlPhase ? Math.min(70, gate.at + 2) : Math.min(1000, gate.at + 12);
-      seen.reach = (seen.reach || 0) + 1;
+      const name = lvlPhase
+        ? MILESTONE_NAMES.level[msLevel++ % MILESTONE_NAMES.level.length]
+        : MILESTONE_NAMES.paragon[msParagon++ % MILESTONE_NAMES.paragon.length];
       line.push({
-        idx: i, tid: 'reach', abs: true, need: target, gate,
-        name: (lvlPhase ? 'Trial of Ascension ' : 'Paragon Trial ') + toRoman(seen.reach),
+        idx: i, tid: 'reach', abs: true, need: target, gate, name,
         desc: lvlPhase ? 'Reach level ' + target + '.' : 'Reach Paragon ' + target + '.',
         counter: lvlPhase ? (() => Hero.level || 1) : (() => Hero.paragon || 0)
       });
       continue;
     }
-    const T = QUEST_TEMPLATES[h(i) % QUEST_TEMPLATES.length];
-    // Target count ramps min→max across the whole line, with a hashed jitter,
-    // rounded to friendly numbers.
-    const t = i / (QUEST_COUNT - 1);
-    const jit = 0.8 + (h(i * 7 + 3) % 1000) / 2500;   // 0.8 – 1.2
-    let need = Math.round(T.min + (T.max - T.min) * Math.pow(t, 1.35) * jit);
-    need = Math.max(T.min, Math.min(T.max, need));
+    const T = picks[i];
+    const k = occ[T.id] || 0; occ[T.id] = k + 1;
+    const K = totals[T.id];
+    let need = Math.round(T.min * Math.pow(T.max / T.min, K > 1 ? Math.pow(k / (K - 1), 0.7) : 1));
     if (need >= 200) need = Math.round(need / 25) * 25;
     else if (need >= 50) need = Math.round(need / 5) * 5;
-    seen[T.id] = (seen[T.id] || 0) + 1;
-    line.push({
-      idx: i, tid: T.id, abs: false, need, gate,
-      name: T.names[h(i * 13 + 5) % T.names.length] + ' ' + toRoman(seen[T.id]),
-      desc: T.desc(need),
-      counter: T.counter
-    });
+    const prev = prevNeed[T.id] || 0;
+    if (need <= prev) need = prev + (prev >= 200 ? 25 : prev >= 50 ? 5 : 1);
+    need = Math.max(T.min, need);
+    prevNeed[T.id] = need;
+    // A real name of its own: openers × closers walked DIAGONALLY, so
+    // successive recurrences vary both halves — unique for 64 recurrences.
+    const A = T.names[0], B = T.names[1];
+    const name = A[k % A.length] + ' ' + B[(k + Math.floor(k / A.length)) % B.length];
+    line.push({ idx: i, tid: T.id, abs: false, need, gate, name, desc: T.desc(need), counter: T.counter });
   }
   return line;
 })();
@@ -184,11 +240,20 @@ function questRewardText(i, short) {
     ' · +' + rw.xp.toLocaleString() + ' XP' + (rw.gem ? ' · a gem' : '');
 }
 
-const GAME_VERSION = 'v1.6.60-alpha';
+const GAME_VERSION = 'v1.6.61-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.61-alpha', date: 'July 2026',
+    notes: [
+      'EVERY QUEST NOW HAS A NAME OF ITS OWN — all 500 are unique, and the numbered repeats ("Forged Anew VII") are gone for good. Crafting deeds run from "Forge New Steel" through "Hammer the White Heat" to "Draw Tomorrow\'s Arms"; the 20 milestones carry names like "The First Ascent", "Starlight and Bone" and "The Final Trial"',
+      'QUESTS THAT COME BACK COME BACK HARDER (owner rule): every repeat of a deed is strictly tougher than the last — craft 2 items, then 3, then 4… up to 85; slay 25 monsters, then 33, then 39… up to 2,000. The same target can never appear twice for the same deed',
+      'Deeds are dealt evenly through the ledger (each of the nine returns ~53 times, well spread) so no stretch of the line repeats itself',
+      'Note: the ledger was re-rolled for this — quest names and targets in your journal will have changed once, but your progress counters and turn-ins are untouched'
+    ]
+  },
   {
     v: 'v1.6.60-alpha', date: 'July 2026',
     notes: [
