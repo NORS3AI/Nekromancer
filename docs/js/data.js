@@ -163,11 +163,20 @@ function questReward(i) {
   return { gold, souls, xpFrac: 0.4, gem: big };
 }
 
-const GAME_VERSION = 'v1.6.53-alpha';
+const GAME_VERSION = 'v1.6.54-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.54-alpha', date: 'July 2026',
+    notes: [
+      'NEW HAVEN\'S WALLS ARE SOLID — the painted perimeter (north battlements, west wall, the diagonal south-east rampart, the treelines and market tents along the south) now blocks walking, so the hero can no longer stroll out of town into the wilderness art. The south gate remains the only opening',
+      'MOBILE MENU FIXES from the owner\'s screenshots: the Blacksmith / Jeweler / Mystic bench menus now stop above the round EXIT button, so the last bench (Craft Torches / Craft a Gem / Themes) is never covered',
+      'The Equipment wheel on phones: the wheel moved clear of the stat readout, huge endgame numbers (gold, life, damage-per-hit) shorten to k/m so they can\'t spill into the wheel, the readout can no longer write over the WEAPON — EQUIPPED header, and the bag list stops above the EXIT button',
+      'While a menu is open in town, the street HUD ("NEW HAVEN") no longer bleeds through the dimmed background'
+    ]
+  },
   {
     v: 'v1.6.53-alpha', date: 'July 2026',
     notes: [

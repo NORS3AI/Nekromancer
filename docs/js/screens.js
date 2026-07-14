@@ -850,7 +850,9 @@ const Screens = {
     const px = W / 2 - pw / 2;
     const rowH = 58;
     const ph = 96 + (trainKey ? 34 : 0) + buttons.length * rowH + 14;
-    const py = Math.max(10, H - ph - 24);   // panel hugs the BOTTOM; art breathes above
+    // Panel hugs the bottom; in town it stops above the round EXIT button's
+    // corner zone so the last bench row is never covered (owner screenshots).
+    const py = Math.max(10, H - ph - (Game.state === 'town' ? 150 : 24));
     UI.panel(ctx, px, py, pw, ph, title);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#9a9080';
@@ -1573,8 +1575,10 @@ const Screens = {
     const chipR = narrow ? 19 : 25;
     let cx, R;
     if (narrow) {
-      cx = W * 0.57;
-      R = Math.min(78, W * 0.30);
+      // Pushed right + slightly smaller so the stat readout column (left)
+      // never reaches the wheel's chips (owner screenshot: they collided).
+      cx = W * 0.63;
+      R = Math.min(70, W * 0.27);
     } else if (big) {
       const readoutRight = 215, detailLeft = W * 0.48;
       cx = (readoutRight + detailLeft) / 2;
@@ -1599,12 +1603,16 @@ const Screens = {
       // Raw per-hit damage (equipped primary base × multiplier + flat gem
       // damage) so the player sees an actual number, not only the ×multiplier.
       const rawHit = Items.rawHit(st);
+      // Endgame numbers get huge (209,778,275 gold) — shorten to k/m so the
+      // readout can NEVER grow wide enough to run into the wheel or headers.
+      const short = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'm'
+        : n >= 1e5 ? Math.round(n / 1000) + 'k' : n.toLocaleString();
       const rows = [
         ['DMG', '×' + st.dmgMult.toFixed(2), '#6ff7c3'],
-        ['DMG/HIT', rawHit.toLocaleString(), '#ff9a6a'],
+        ['DMG/HIT', short(rawHit), '#ff9a6a'],
         ['CRIT', Math.round(st.critChance * 100) + '%', '#ffb43a'],
         ['GOLD FIND', '+' + Math.round((st.goldFind - 1) * 100) + '%', '#ffd76a'],
-        ['LIFE', '' + st.maxHp, '#e04a5a'],
+        ['LIFE', short(st.maxHp), '#e04a5a'],
         ['LIFE/s', st.hpRegen.toFixed(1), '#e0808a'],
         ['ESS/s', st.essenceRegen.toFixed(1), '#8fb0e8']
       ];
@@ -1612,15 +1620,15 @@ const Screens = {
       // visibly moves the readout (Emerald crit dmg, Amethyst life/hit, Diamond
       // cooldowns & resist, Topaz resource cost — gold already covers the rest).
       if (st.attackSpeed > 0) rows.push(['ATK SPD', '+' + (st.attackSpeed * 100).toFixed(1) + '%', '#ffd76a']);
-      if (st.intelligence > 0) rows.push(['INT', '+' + st.intelligence.toLocaleString(), '#8fd3ff']);
-      if (st.vitality > 0) rows.push(['VIT', '+' + st.vitality.toLocaleString(), '#e0808a']);
+      if (st.intelligence > 0) rows.push(['INT', '+' + short(st.intelligence), '#8fd3ff']);
+      if (st.vitality > 0) rows.push(['VIT', '+' + short(st.vitality), '#e0808a']);
       if (st.critDamage > 0) rows.push(['CRIT DMG', '+' + Math.round(st.critDamage * 100) + '%', '#ffca6a']);
-      if (st.lifePerHit > 0) rows.push(['LIFE/HIT', '+' + st.lifePerHit, '#e0808a']);
+      if (st.lifePerHit > 0) rows.push(['LIFE/HIT', '+' + short(st.lifePerHit), '#e0808a']);
       if (st.cooldownReduction > 0) rows.push(['CDR', '-' + Math.round(st.cooldownReduction * 100) + '%', '#bfe8f4']);
       if (st.resourceCostReduction > 0) rows.push(['ESS COST', '-' + Math.round(st.resourceCostReduction * 100) + '%', '#8fd0a0']);
-      if (st.resistAll > 0) rows.push(['RESIST', '' + st.resistAll, '#bfe8f4']);
+      if (st.resistAll > 0) rows.push(['RESIST', short(st.resistAll), '#bfe8f4']);
       // The player's actual gold purse, pinned to the bottom of the readout.
-      rows.push(['GOLD', Hero.gold.toLocaleString(), '#ffe08a']);
+      rows.push(['GOLD', short(Hero.gold), '#ffe08a']);
       // Tablet/desktop gets a much bigger, more spaced-out readout (owner request).
       const labF = big ? 13 : 9, valF = big ? 18 : 11, step = big ? 23 : 15, valX = big ? 92 : 58;
       let sy = (big ? 62 : 50) + sf2.top;
@@ -1635,6 +1643,9 @@ const Screens = {
         ctx.fillText(val, valX + sf2.left, sy);
         sy += step;
       }
+      // A long readout (endgame gear rolls every stat) must PUSH the detail
+      // column below it on phones, never write over its header.
+      this._radialStatsBottom = sy;
     }
 
     // (Damage/Life/Crit live in the upper-left readout now — no duplicate in
@@ -1717,10 +1728,12 @@ const Screens = {
       });
     });
 
-    // Detail column.
+    // Detail column. On narrow screens it starts below BOTH the wheel and the
+    // stat readout (whichever runs lower), so the gold line can't collide with
+    // the "WEAPON — EQUIPPED" header (owner screenshot).
     const dx = narrow ? 12 : W * 0.48;
     const dw = narrow ? W - 24 : W * 0.48;
-    let dy = narrow ? cy + R + chipR + 22 : 54;
+    let dy = narrow ? Math.max(cy + R + chipR + 22, (this._radialStatsBottom || 0) + 14) : 54;
     const slot = UI.sel.slot;
     const equipped = Hero.equipped[slot];
     const fam = Items.slotFamily(slot);
@@ -1768,7 +1781,9 @@ const Screens = {
       .map(it => ({ it, arrows: Items.compareArrows(it, equipped) }))
       .sort((a, b) => b.arrows - a.arrows || RARITIES[b.it.rarity].mult - RARITIES[a.it.rarity].mult);
     const listTop = dy;
-    const viewBot = H - 12;
+    // In town the round EXIT button owns the bottom-right corner — stop the
+    // list above it so MANAGE SOCKETS / item actions never sit underneath.
+    const viewBot = H - (Game.state === 'town' ? 150 : 12);
     const viewH = Math.max(60, viewBot - listTop);
     const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
     UI.sel.scrollY = scrollY;
@@ -3675,8 +3690,8 @@ const Screens = {
       { size: 9, disabled: upCost === null || Hero.gold < upCost, border: '#8a6f4a', color: '#ffd76a' });
     dy += 34;
 
-    // Scrollable bin list — drag to scroll.
-    const listTop = dy, viewBot = H - 12, viewH = Math.max(60, viewBot - listTop);
+    // Scrollable bin list — drag to scroll. (In town, stop above the EXIT button.)
+    const listTop = dy, viewBot = H - (Game.state === 'town' ? 150 : 12), viewH = Math.max(60, viewBot - listTop);
     const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
     UI.sel.scrollY = scrollY;
     UI.sel.scrollRegion = { x: dx - 4, y: listTop - 4, w: dw + 8, h: viewH + 8 };

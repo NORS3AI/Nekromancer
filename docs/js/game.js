@@ -323,9 +323,25 @@ const Game = {
     [1020, 350, 66,    0, 0, 0, 0, 'Rift Waypoint',        '✧', '#c88bf0', 'waypoint-purple'],  // rifts · greater rifts · seasons
     [585, 1120, 70,    0, 0, 0, 0, 'Return to the Wilds',  '↩', '#8fd0ff', 'gate']              // only while visiting via portal
   ],
-  // Scenery blockers with no interaction (fountain, landmarks).
+  // Scenery blockers with no interaction (fountain, landmarks) PLUS the town's
+  // PERIMETER WALLS (owner rule: the painted walls must be solid — the hero was
+  // walking out through them into the trees). Axis-aligned boxes traced over
+  // the painting; the diagonal south-east rampart is stepped. The only opening
+  // is the south gate corridor (x 540–660) where the hero spawns.
   TOWN_SCENERY: [
-    { cx: 600, cy: 610, w: 200, h: 150 }    // the central fountain
+    { cx: 600, cy: 610, w: 200, h: 150 },      // the central fountain
+    { cx: 290, cy: 68, w: 580, h: 136 },       // north wall, west run
+    { cx: 690, cy: 55, w: 260, h: 110 },       // north treeline behind the chapel
+    { cx: 1027, cy: 75, w: 454, h: 150 },      // north wall, east run (and the water beyond)
+    { cx: 28, cy: 525, w: 56, h: 830 },        // west wall
+    { cx: 120, cy: 1097, w: 240, h: 314 },     // south-west tents & treeline
+    { cx: 390, cy: 1190, w: 300, h: 130 },     // south wall, west of the gate
+    { cx: 840, cy: 1177, w: 360, h: 154 },     // south wall, east of the gate (market tents)
+    { cx: 1122, cy: 1147, w: 264, h: 214 },    // south-east corner woods
+    { cx: 1157, cy: 980, w: 194, h: 160 },     // south-east rampart, lower step
+    { cx: 1192, cy: 840, w: 124, h: 160 },     // south-east rampart, upper step
+    { cx: 1217, cy: 630, w: 74, h: 300 },      // east wall
+    { cx: 1240, cy: 320, w: 30, h: 360 }       // east edge beside the pavilion
   ],
   ALL_SLOTS: ['weapon', 'offhand', 'helm', 'chest', 'gloves', 'boots', 'shoulders', 'legs', 'amulet', 'ring1', 'ring2'],
 
@@ -481,14 +497,19 @@ const Game = {
     if (this.pet) this.drawPetSprite(ctx);
     p.draw(ctx);
 
-    // Floating name plates over each interactable.
-    for (const it of t.interacts) {
-      if (it.cond && !it.cond()) continue;
-      this.drawTownPlate(ctx, it, this.townPrompt === it);
+    // Floating name plates over each interactable — hidden while a menu is
+    // open so they don't ghost through the dimmed backdrop (owner screenshot).
+    if (!UI.screen) {
+      for (const it of t.interacts) {
+        if (it.cond && !it.cond()) continue;
+        this.drawTownPlate(ctx, it, this.townPrompt === it);
+      }
     }
     ctx.restore();
 
-    this.drawTownHud(ctx);
+    // The street HUD only while actually on the street — behind an open menu
+    // the town title just bled through the dim (owner screenshot).
+    if (!UI.screen) this.drawTownHud(ctx);
   },
 
   drawTownPlate(ctx, it, on) {
