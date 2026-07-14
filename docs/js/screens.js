@@ -616,7 +616,12 @@ const Screens = {
     const snap = Profiles.slots[sp.i];
     const R = 70 * scale;
     if (snap) {
-      this.drawNecroFigure(ctx, sp.x, sp.y, scale, snap.eyeColor || '#6ff7c3', false);
+      // The hero's PAINTED AVATAR rests by the fire (male/female per the
+      // save; old saves without a gender default to male). The procedural
+      // hooded figure stands in until the art loads.
+      const spr = Game.heroSprite ? Game.heroSprite(snap.gender === 'f' ? 'f' : 'm', 'front') : null;
+      if (spr) this.drawRosterAvatar(ctx, sp.x, sp.y, scale, spr, sp.i);
+      else this.drawNecroFigure(ctx, sp.x, sp.y, scale, snap.eyeColor || '#6ff7c3', false);
       // Selection / delete ring.
       const selRing = !delMode && UI.sel.pick === sp.i;
       const delRing = delMode && UI.sel.delConfirm === sp.i;
@@ -662,6 +667,24 @@ const Screens = {
         });
       }
     }
+  },
+
+  // A roster hero as their painted avatar: standing quietly by the fire with
+  // just a slow breath (subtle — no walk animation here). Feet sit on the same
+  // ground line the procedural figure used (y + 56·scale).
+  drawRosterAvatar(ctx, x, y, scale, spr, seed) {
+    const HT = 112 * scale;
+    const w = HT * (spr.width / spr.height);
+    const feetY = y + 56 * scale;
+    const breath = Math.sin((Game.time || 0) * 1.5 + (seed || 0) * 1.7);
+    ctx.save();
+    // Ground shadow + warm fire glow at the feet.
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.beginPath(); ctx.ellipse(x, feetY, w * 0.42, 10 * scale, 0, 0, TAU); ctx.fill();
+    ctx.translate(x, feetY);
+    ctx.rotate(breath * 0.006);
+    ctx.drawImage(spr, -w / 2, -HT - breath * 0.9 * scale, w, HT + breath * 0.9 * scale);
+    ctx.restore();
   },
 
   // A standing hooded Nekromancer with glowing eyes of the given colour.
@@ -793,22 +816,18 @@ const Screens = {
     if (spr) {
       const pw2 = pvH * (spr.width / spr.height);
       const t = Game.time || 0;
-      const stride = Math.sin(t * 5);
-      const bobY = Math.abs(stride) * 3;
+      // SUBTLE idle — a slow breath and the faintest sway. No walk slices
+      // here (owner rule: "subtle movements, not dancing images").
+      const breath = Math.sin(t * 1.6);
       ctx.save();
       // eye-colored aura behind the figure
       ctx.fillStyle = eye + '22';
       ctx.beginPath(); ctx.ellipse(cx, pvFeet - pvH * 0.5, pw2 * 0.9, pvH * 0.55, 0, 0, TAU); ctx.fill();
       ctx.fillStyle = 'rgba(0,0,0,0.5)';
       ctx.beginPath(); ctx.ellipse(cx, pvFeet - 2, pw2 * 0.4, 7, 0, 0, TAU); ctx.fill();
-      ctx.translate(0, -bobY);
-      if (spr.screenBlend) ctx.globalCompositeOperation = 'screen';   // file:// fallback
-      const sw2 = spr.width, sh2 = spr.height;
-      ctx.drawImage(spr, cx - pw2 / 2, pvFeet - pvH, pw2, pvH);
-      // the same layered walk the in-game model uses (legs/torso/head slices)
-      ctx.drawImage(spr, 0, sh2 * 0.54, sw2, sh2 * 0.46, cx - pw2 / 2 + stride * 3.4, pvFeet - pvH + pvH * 0.54, pw2, pvH * 0.46);
-      ctx.drawImage(spr, 0, sh2 * 0.24, sw2, sh2 * 0.34, cx - pw2 / 2 - stride * 2.2, pvFeet - pvH + pvH * 0.24, pw2, pvH * 0.34);
-      ctx.drawImage(spr, 0, 0, sw2, sh2 * 0.26, cx - pw2 / 2 + stride * 1.0, pvFeet - pvH, pw2, pvH * 0.26);
+      ctx.translate(cx, pvFeet);
+      ctx.rotate(breath * 0.008);
+      ctx.drawImage(spr, -pw2 / 2, -pvH - breath * 1.1, pw2, pvH + breath * 1.1);
       ctx.restore();
     } else {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -3087,7 +3106,8 @@ const Screens = {
     UI.panel(ctx, px, 46, pw, Math.min(H - 56, 300), 'SALVAGE');
     this.matsRow(ctx, px + 16, 92, pw - 32);
     ctx.textAlign = 'left'; ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
-    ctx.fillText(this.fitText(ctx, 'Bulk-melt everything of a rarity in your bag. Gems survive the forge.', pw - 32), px + 16, 122);
+    // Two lines on narrow panels — never ellipsize the explainer.
+    wrapText(ctx, 'Bulk-melt everything of a rarity in your bag. Gems survive the forge.', px + 16, 116, pw - 32, 13, 2);
     const q = (pw - 32 - 3 * 8) / 2;
     const epicLvl = Items.BULK_SALVAGE_SMITH.epic, legLvl = Items.BULK_SALVAGE_SMITH.legendary;
     const epicOk = Hero.artisans.smith >= epicLvl, legOk = Hero.artisans.smith >= legLvl;
@@ -4166,8 +4186,9 @@ const Screens = {
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     ctx.font = 'bold 16px Georgia'; ctx.fillStyle = '#c9bfa8';
     ctx.fillText('STASH', px, y);
+    // Right-aligned clear of the red ✕ in the corner.
     ctx.textAlign = 'right'; ctx.font = '11px Georgia'; ctx.fillStyle = '#8fb0e8';
-    ctx.fillText(total + ' stored  ·  ' + Hero.stashPerSlot().toLocaleString() + '/type', px + pw, y);
+    ctx.fillText(total + ' stored  ·  ' + Hero.stashPerSlot().toLocaleString() + '/type', px + pw - 54, y);
     y += 10;
 
     // Deposit + upgrade.
@@ -4265,10 +4286,10 @@ const Screens = {
           if (expanded) { ctx.strokeStyle = RARITIES[it.rarity].color; ctx.lineWidth = 1.5; rr(ctx, px, yy, pw, 38, 6); ctx.stroke(); }
           ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
           ctx.font = 'bold 12px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
-          ctx.fillText(this.fitText(ctx, it.name, pw - 152), px + 10, yy + 15);
+          const bw = 76;   // wide enough for WITHDRAW at 9px — never ellipsized
+          ctx.fillText(this.fitText(ctx, it.name, pw - bw * 2 - 26), px + 10, yy + 15);
           ctx.font = '10px Georgia'; ctx.fillStyle = '#8a8070';
-          ctx.fillText(ITEM_SLOTS[it.slot].label + ' · lvl ' + it.mLvl + '  ·  tap to inspect', px + 10, yy + 30);
-          const bw = 66;
+          ctx.fillText(this.fitText(ctx, ITEM_SLOTS[it.slot].label + ' · lvl ' + it.mLvl + '  ·  tap to inspect', pw - bw * 2 - 26), px + 10, yy + 30);
           // Tap the card area (left of the buttons) to inspect the item.
           UI.register(px, yy, pw - bw * 2 - 16, 38, () => { UI.sel.stashItem = expanded ? null : it; });
           UI.btn(ctx, px + pw - bw * 2 - 12, yy + 5, bw, 28, 'WITHDRAW',
@@ -4382,11 +4403,15 @@ const Screens = {
     y = wrapText(ctx, greet, lx, y, lw, nr ? 16 : 19, nr ? 7 : 5);
     y += 14;
 
-    // Ledger header: turn-ins across the 500-quest line.
+    // Ledger header: turn-ins across the 500-quest line. The count drops to
+    // its own line when the column is too narrow to share one (no overlap).
     ctx.font = 'bold ' + (nr ? 10 : 11) + 'px Georgia'; ctx.fillStyle = '#8a8070';
-    ctx.fillText(nr ? 'LEDGER OF LIGHT' : 'THE LEDGER OF LIGHT', lx, y);
+    const llbl = nr ? 'LEDGER OF LIGHT' : 'THE LEDGER OF LIGHT';
+    const lcnt = doneCount + (nr ? '/' : ' OF ') + QUEST_COUNT + ' DONE';
+    ctx.fillText(llbl, lx, y);
     ctx.textAlign = 'right'; ctx.fillStyle = '#ffd76a';
-    ctx.fillText(doneCount + (nr ? '/' : ' OF ') + QUEST_COUNT + ' DONE', lx + lw, y);
+    if (ctx.measureText(llbl).width + ctx.measureText(lcnt).width + 12 > lw) y += nr ? 13 : 15;
+    ctx.fillText(lcnt, lx + lw, y);
     ctx.textAlign = 'left';
     y += 8;
     UI.bar(ctx, lx, y, lw, 5, doneCount / QUEST_COUNT, '#221d2e', '#8a6f2a');
@@ -4601,11 +4626,15 @@ const Screens = {
     y = wrapText(ctx, greet, lx, y, lw, nr ? 16 : 19, nr ? 7 : 5);
     y += 14;
 
-    // Her ledger.
+    // Her ledger. The count drops to its own line when the column is too
+    // narrow to share one (no overlap).
     ctx.font = 'bold ' + (nr ? 10 : 11) + 'px Georgia'; ctx.fillStyle = '#8a8070';
-    ctx.fillText(nr ? 'UNDERWORLD LEDGER' : 'THE UNDERWORLD LEDGER', lx, y);
+    const albl = nr ? 'UNDERWORLD LEDGER' : 'THE UNDERWORLD LEDGER';
+    const acnt = doneCount + (nr ? '/' : ' OF ') + ADDY_QUEST_COUNT + ' DONE';
+    ctx.fillText(albl, lx, y);
     ctx.textAlign = 'right'; ctx.fillStyle = '#c86adf';
-    ctx.fillText(doneCount + (nr ? '/' : ' OF ') + ADDY_QUEST_COUNT + ' DONE', lx + lw, y);
+    if (ctx.measureText(albl).width + ctx.measureText(acnt).width + 12 > lw) y += nr ? 13 : 15;
+    ctx.fillText(acnt, lx + lw, y);
     ctx.textAlign = 'left';
     y += 8;
     UI.bar(ctx, lx, y, lw, 5, doneCount / ADDY_QUEST_COUNT, '#221d2e', '#7a4a8f');
@@ -4924,14 +4953,19 @@ const Screens = {
     const ph = Math.min(H - 20, 96 + o.stock.length * 40 + (UI.sel.buy ? 140 : 40));
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, o.name || 'WANDERING MERCHANT');
+    // The flavor line shares its row with the gold readout — fit it to the
+    // space that's actually left so neither ever overlaps or runs off-panel.
+    ctx.font = 'bold 12px Georgia';
+    const goldTxt = Hero.gold + ' gold';
+    const goldW = ctx.measureText(goldTxt).width;
     ctx.textAlign = 'left';
     ctx.font = 'italic 11px Georgia';
     ctx.fillStyle = '#9a9080';
-    ctx.fillText(o.flavor || '"Fine wares! Mostly. No refunds."', px + 16, py + 52);
+    ctx.fillText(this.fitText(ctx, o.flavor || '"Fine wares! Mostly. No refunds."', pw - 44 - goldW), px + 16, py + 52);
     ctx.textAlign = 'right';
     ctx.font = 'bold 12px Georgia';
     ctx.fillStyle = '#ffd76a';
-    ctx.fillText(Hero.gold + ' gold', px + pw - 16, py + 52);
+    ctx.fillText(goldTxt, px + pw - 16, py + 52);
 
     let y = py + 66;
     if (!o.stock.length) {

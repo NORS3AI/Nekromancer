@@ -730,27 +730,13 @@ const Game = {
     }
     return img;
   },
-  heroCut: {},
+  // The avatar WebPs carry a BAKED ALPHA CHANNEL (the costumes are as black as
+  // the backdrop, so runtime chroma-keying hollowed the body out — the cutout
+  // is done offline instead). No canvas work, no file:// taint: the sprite IS
+  // the image once it's loaded.
   heroSprite(gender, side) {
-    const key = (gender === 'f' ? 'f' : 'm') + '_' + side;
-    if (this.heroCut[key]) return this.heroCut[key];
     const img = this.heroImg(gender, side);
-    if (!img.complete || !img.naturalWidth) return null;
-    const c = document.createElement('canvas');
-    c.width = img.naturalWidth; c.height = img.naturalHeight;
-    const g2 = c.getContext('2d');
-    g2.drawImage(img, 0, 0);
-    try {
-      const d = g2.getImageData(0, 0, c.width, c.height);
-      const px = d.data;
-      for (let i = 0; i < px.length; i += 4) {
-        const l = Math.max(px[i], px[i + 1], px[i + 2]);
-        if (l < 26) px[i + 3] = Math.max(0, (l - 10) * 16);   // near-black → transparent
-      }
-      g2.putImageData(d, 0, 0);
-    } catch (e) { c.screenBlend = true; }
-    this.heroCut[key] = c;
-    return c;
+    return (img.complete && img.naturalWidth) ? img : null;
   },
 
   // ---- Lyssa, Mistress of Fate — the OWNER'S PAINTED GAMBLER, keyed onto the
