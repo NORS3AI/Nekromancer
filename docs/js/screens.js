@@ -65,6 +65,7 @@ const Screens = {
       case 'mysTheme': this.mysTheme(ctx, W, H); break;
       case 'lukus': this.lukus(ctx, W, H); break;
       case 'addy': this.addy(ctx, W, H); break;
+      case 'lyssa': this.lyssa(ctx, W, H); break;
       case 'pause': this.pause(ctx, W, H); break;
       case 'reward': this.reward(ctx, W, H); break;
       case 'character': this.character(ctx, W, H); break;
@@ -4711,6 +4712,143 @@ const Screens = {
         c += 20;
       }
     }
+
+    ctx.restore();
+    UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 8);
+    ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+    if (scrollY > 1) ctx.fillText('▲ drag ▲', lx + lw / 2, listTop + 2);
+    if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', lx + lw / 2, viewBot - 2);
+  },
+
+  // Talk to LYSSA, MISTRESS OF FATE — the gambler at the rift pavilion steps
+  // (owner rule, Kadala-style like Diablo 3): AMIDRASSI ORBS from rift and
+  // season bosses buy weighted rolls of a chosen gear slot. Same stage
+  // language as the other NPCs: her painting on the right, text on the black.
+  lyssa(ctx, W, H) {
+    ctx.fillStyle = '#020104';
+    ctx.fillRect(0, 0, W, H);
+
+    const sf = UI.safe || { right: 0, bottom: 0 };
+    const lefty = Settings.g && Settings.g.leftHanded;   // EXIT sits bottom-LEFT when mirrored
+    const btnZone = (lefty ? 12 : 118) + (sf.right || 0);
+    const img = Game.lyssaImg();
+    const ready = img.complete && img.naturalWidth;
+    const aspect = ready ? img.naturalWidth / img.naturalHeight : 0.66;
+    const lx = Math.max(14, W * 0.04);
+
+    let h = Math.min(H * 0.92, 640), w = h * aspect;
+    const maxW = Math.max(120, (W - btnZone) * 0.5);
+    if (w > maxW) { w = maxW; h = w / aspect; }
+    let lw = Math.min(470, W - w - btnZone - lx - Math.max(12, W * 0.03));
+    const nr = lw < 260;
+    let px2, py2, feetY = H;
+    if (nr) {
+      lw = Math.floor(W * 0.52) - lx;
+      const colL = lx + lw + 10, colR = W - 10;
+      feetY = H - 148 - (sf.bottom || 0);
+      w = Math.max(40, colR - colL); h = w / aspect;
+      const maxH = Math.max(80, feetY - 30);
+      if (h > maxH) { h = maxH; w = h * aspect; }
+      px2 = colL + (colR - colL - w) / 2;
+      py2 = feetY - h;
+    } else {
+      px2 = W - w - btnZone;
+      py2 = H - h;
+    }
+    if (ready) {
+      const bob = Math.sin(Game.time * 1.2) * 3;
+      if (nr) {
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.beginPath(); ctx.ellipse(px2 + w / 2, feetY - 3, w * 0.36, 8, 0, 0, TAU); ctx.fill();
+      }
+      ctx.drawImage(img, px2, py2 + bob, w, h);
+    }
+
+    const contentH = nr ? 400 : 360;
+    let y = Math.max(26, H / 2 - contentH / 2);
+
+    // Name — full title only HERE (the street plate says just "Lyssa").
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'bold ' + (nr ? 13 : W < 520 ? 15 : 18) + 'px Georgia'; ctx.fillStyle = '#c88bf0';
+    ctx.shadowColor = 'rgba(200,139,240,0.45)'; ctx.shadowBlur = 12;
+    ctx.fillText('✦ LYSSA, MISTRESS OF FATE', lx, y);
+    ctx.shadowBlur = 0;
+    y += 10;
+    const rule = ctx.createLinearGradient(lx, 0, lx + lw, 0);
+    rule.addColorStop(0, 'rgba(200,139,240,0.6)'); rule.addColorStop(1, 'rgba(200,139,240,0)');
+    ctx.strokeStyle = rule; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(lx, y); ctx.lineTo(lx + lw, y); ctx.stroke();
+    y += 22;
+
+    ctx.font = 'italic ' + (nr ? 12 : 13) + 'px Georgia'; ctx.fillStyle = '#e8e0cc';
+    y = wrapText(ctx,
+      '"Every Amidrassi Orb hums with a rift boss\'s dying breath. Give them to me and fate deals you a hand — no refunds, no promises. Only chance."',
+      lx, y, lw, nr ? 16 : 19, nr ? 7 : 5);
+    y += 12;
+
+    // Orb purse.
+    ctx.font = 'bold ' + (nr ? 12 : 14) + 'px Georgia'; ctx.fillStyle = '#c88bf0';
+    ctx.fillText('◉ ' + (Hero.amOrbs || 0).toLocaleString() + ' Amidrassi Orbs', lx, y + 4);
+    ctx.font = (nr ? 8 : 9) + 'px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.fillText('Rift & Season bosses drop 1–10', lx, y + (nr ? 17 : 19));
+    y += nr ? 28 : 32;
+
+    // Scrolling column: the last hand dealt, then the gamble table.
+    const listTop = y;
+    const viewBot = H - (lefty ? 150 : 16);
+    const viewH = Math.max(60, viewBot - listTop);
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
+    UI.sel.scrollY = scrollY;
+    UI.sel.scrollRegion = { x: lx - 6, y: listTop - 4, w: lw + 12, h: viewH + 8 };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(lx - 6, listTop - 4, lw + 12, viewH + 8); ctx.clip();
+    let c = listTop;
+    const vis = (top, hh) => (top - scrollY + hh > listTop) && (top - scrollY < viewBot);
+
+    // The last item fate dealt, in full.
+    if (UI.sel.lastGamble) {
+      const it = UI.sel.lastGamble;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
+      ctx.fillText('FATE DEALT', lx, c - scrollY + 8);
+      c += 14;
+      const cardH = 30 + Items.statLines(it).length * 15 + 8;
+      if (vis(c, cardH)) this.itemCard(ctx, lx, c - scrollY, lw, it, Hero.equipped[it.slot], true);
+      c += cardH + 10;
+    }
+
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.fillText('GAMBLE — PICK A SLOT', lx, c - scrollY + 8);
+    c += 16;
+    const table = [
+      ['helm', 'Helm'], ['shoulders', 'Shoulders'], ['chest', 'Chest Armor'],
+      ['gloves', 'Gloves'], ['legs', 'Legs'], ['boots', 'Boots'],
+      ['offhand', 'Phylactery'], ['ring', 'Ring'], ['weapon', 'Weapon'], ['amulet', 'Amulet']
+    ];
+    for (const [key, label] of table) {
+      const cost = Items.GAMBLE_COSTS[key];
+      const afford = (Hero.amOrbs || 0) >= cost;
+      const yy = c - scrollY;
+      if (vis(c, 38)) {
+        UI.btn(ctx, lx - 4, yy, lw + 8, 34, '', afford ? () => {
+          const it = Items.gambleItem(key);
+          if (it) UI.sel.lastGamble = it;
+        } : null, { disabled: !afford, border: afford ? '#7a4a8f' : undefined });
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.font = 'bold 12px Georgia'; ctx.fillStyle = afford ? '#e8e0cc' : '#6f6552';
+        ctx.fillText(label, lx + 8, yy + 17);
+        ctx.textAlign = 'right';
+        ctx.font = 'bold 11px Georgia'; ctx.fillStyle = afford ? '#c88bf0' : '#5a4a66';
+        ctx.fillText('◉ ' + cost, lx + lw - 6, yy + 17);
+      }
+      c += 38;
+    }
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'italic 9px Georgia'; ctx.fillStyle = '#6f6552';
+    wrapText(ctx, 'Odds: mostly rares and epics — 1 in 10 hands turns legendary (finer stars in deeper Torment).',
+      lx, c - scrollY + 8, lw, 12, 3);
+    c += 34;
 
     ctx.restore();
     UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 8);

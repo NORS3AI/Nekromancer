@@ -315,11 +315,20 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.65-alpha';
+const GAME_VERSION = 'v1.6.66-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.66-alpha', date: 'July 2026',
+    notes: [
+      'LYSSA, MISTRESS OF FATE has taken her place at the rift pavilion steps — the owner\'s painted gambler, fate-orb in hand. Her street plate says only "Lyssa"; her full title appears when you talk to her',
+      'NEW RESOURCE: AMIDRASSI ORBS — every Rift and Season boss now breathes out 1–10 orbs at random when it falls (shown on the completion cache)',
+      'SPEND THEM AT LYSSA (Kadala-style, straight from Diablo 3): pick a gear slot and she deals an unidentified roll — armor 10 orbs · phylactery and rings 15 · weapon 25 · amulet 30. Odds: mostly rares and epics, 1 in 10 hands comes up LEGENDARY (with star tiers by Torment, like world drops). The last hand she dealt shows in full so you know what fate gave you',
+      'Her ! lights up whenever you carry enough orbs for at least the cheapest gamble'
+    ]
+  },
   {
     v: 'v1.6.65-alpha', date: 'July 2026',
     notes: [

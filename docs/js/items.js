@@ -258,6 +258,39 @@ const Items = {
     return this.generate(70, 0, null, force);
   },
 
+  // ---- Lyssa, Mistress of Fate — gambling with Amidrassi Orbs (owner rule,
+  // Kadala-style like Diablo 3): pick a slot, pay orbs, get an unidentified
+  // roll of that slot. Armor is cheap, weapons dear, amulets dearest.
+  GAMBLE_COSTS: {
+    helm: 10, shoulders: 10, chest: 10, gloves: 10, legs: 10, boots: 10,
+    offhand: 15, ring: 15, weapon: 25, amulet: 30
+  },
+  // Kadala's odds, tuned to our ladder: 20% magic · 45% rare · 25% epic ·
+  // 10% legendary (star tier by Torment band, like world drops).
+  gambleItem(slotKey) {
+    const cost = this.GAMBLE_COSTS[slotKey];
+    if (!cost || (Hero.amOrbs || 0) < cost) {
+      UI.toast('Not enough Amidrassi Orbs', '#9a9080');
+      AudioSys.sfx('denied');
+      return null;
+    }
+    Hero.amOrbs -= cost;
+    const slot = slotKey === 'ring' ? pick(['ring1', 'ring2']) : slotKey;
+    const r = Math.random();
+    let force;
+    if (r < 0.10) force = { rarity: 4, stars: this.legendaryStars(tormentTier()) };
+    else if (r < 0.35) force = { rarity: 3, stars: 0 };
+    else if (r < 0.80) force = { rarity: 2, stars: 0 };
+    else force = { rarity: 1, stars: 0 };
+    const mLvl = Math.max(1, (Hero.level || 1) + (Hero.difficulty || 0) * 3);
+    const item = this.generate(mLvl, 0, slot, force);
+    this.stash(item);
+    UI.toast('Fate deals: ' + item.name, RARITIES[item.rarity].color);
+    AudioSys.sfx(item.rarity >= 4 ? 'setdrop' : 'gem');
+    Hero.save();
+    return item;
+  },
+
   // A single wild-loot roll: in Torment, a 10% slice becomes one of the named
   // build-defining legendaries (tier by Torment); otherwise an ordinary drop.
   wildDrop(mLvl, boost = 0) {
