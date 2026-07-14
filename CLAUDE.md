@@ -291,7 +291,14 @@ Script lives in the session scratchpad (intentionally not committed).
 - **ARTISAN HUBS (v1.6.49, owner rule)**: entering Blacksmith/Jeweler/Mystic shows the
   shop-interior ART first (`Screens.artisanHub`, `shopBackdrop` veil 0.34) with a slim
   bottom panel of bench buttons; each bench is its own screen and `UI.closeAction()`
-  maps it BACK to its hub (sub → hub → town). Smith: `smithSalvage`/`smithWeapon`/
+  maps it BACK to its hub (sub → hub → town). **WELCOME SPLASH (v1.6.56, owner rule
+  "open up to the background first, then a welcome — different for each")**:
+  fresh entry shows `Screens.artisanIntro` — the interior art near-unveiled
+  (veil 0.10) + a per-artisan welcome (`ARTISAN_INTROS`: Haedrig "WELCOME TO THE
+  FORGE" / Shen "WELCOME TO THE GEMWORKS" / Myriam "WELCOME TO THE SANCTUM",
+  each with its own info line + enter-button label); tap anywhere or the button
+  sets `UI.sel.inside` → benches. Bench-close `backToHub()` re-sets
+  `sel.inside` so the splash only plays on street entry. Smith: `smithSalvage`/`smithWeapon`/
   `smithArmor` (shared `smithCraft`)/`torches`. Jeweler: `jewSocket` (reuses `gemModal`)/
   `jewUnsocket`/`jewMerge`/`jewSell` (both via `gemStackList` — type filter chips + tier
   sort)/`jewCraft` (`Items.craftGem(type)`, cost `gemCraftCost()`=1.5× random cut).

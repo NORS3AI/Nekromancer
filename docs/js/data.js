@@ -167,11 +167,18 @@ function questReward(i) {
   return { gold, souls, xpFrac: 0.4, gem: big };
 }
 
-const GAME_VERSION = 'v1.6.55-alpha';
+const GAME_VERSION = 'v1.6.56-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.56-alpha', date: 'July 2026',
+    notes: [
+      'STEPPING INTO A SHOP IS A MOMENT NOW — the Blacksmith, Jeweler and Mystic open onto their painted interiors first, nearly unveiled, with a welcome all their own: Haedrig\'s "WELCOME TO THE FORGE", Shen\'s "WELCOME TO THE GEMWORKS" and Myriam\'s "WELCOME TO THE SANCTUM", each with the artisan\'s own words about what they can do for you',
+      'Tap anywhere (or the big invitation button — STEP UP TO THE ANVIL · BROWSE THE STONES · PART THE VEIL) to step inside to the benches. Closing a bench still returns you straight to the shop — the welcome only greets you when you walk in from the street'
+    ]
+  },
   {
     v: 'v1.6.55-alpha', date: 'July 2026',
     notes: [
