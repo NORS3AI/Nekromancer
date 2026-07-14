@@ -1032,7 +1032,7 @@ const Screens = {
       // reward it pays (rewards are fixed per quest — what you read is what
       // you get, owner rule).
       if (expanded) {
-        const eh = 96;
+        const eh = 110;
         const ey = c - scrollY;
         if (vis(c, eh)) {
           ctx.fillStyle = 'rgba(18,14,26,0.85)';
@@ -1043,10 +1043,11 @@ const Screens = {
           ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#8a8070';
           ctx.fillText('REWARD', lx + 4, ey + 52);
           ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#ffd76a';
-          ctx.fillText(this.fitText(ctx, questRewardText(entry.idx), lw - 8), lx + 4, ey + 66);
+          // Compact + wrapped (2 lines) so the reward can never run off the card.
+          wrapText(ctx, questRewardText(entry.idx, true), lx + 4, ey + 66, lw - 8, 13, 2);
           ctx.font = 'italic 9px Georgia'; ctx.fillStyle = '#6f6552';
-          ctx.fillText('Quest ' + (entry.idx + 1) + ' of ' + QUEST_COUNT +
-            (milestone ? '  ·  ★ milestone — tracks itself, cannot be dropped' : ''), lx + 4, ey + 82);
+          wrapText(ctx, 'Quest ' + (entry.idx + 1) + ' of ' + QUEST_COUNT +
+            (milestone ? ' · ★ milestone — tracks itself, cannot be dropped' : ''), lx + 4, ey + 94, lw - 8, 11, 1);
         }
         c += eh;
       }
@@ -4110,9 +4111,10 @@ const Screens = {
         }
       }
       c += 50;
-      // Expanded details: the full deed + the EXACT reward it will pay.
+      // Expanded details: the full deed + the EXACT reward it will pay
+      // (compact reward text WRAPS onto two lines — never runs off, owner rule).
       if (expanded) {
-        const eh = 62;
+        const eh = 92;
         const ey = c - scrollY;
         if (vis(c, eh)) {
           ctx.fillStyle = 'rgba(18,14,26,0.85)';
@@ -4121,9 +4123,9 @@ const Screens = {
           ctx.font = '10px Georgia'; ctx.fillStyle = '#b5ab94';
           wrapText(ctx, def.desc, lx + 4, ey + 10, lw - 8, 13, 2);
           ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#ffd76a';
-          ctx.fillText(this.fitText(ctx, 'REWARD:  ' + questRewardText(entry.idx), lw - 8), lx + 4, ey + 42);
+          wrapText(ctx, 'REWARD:  ' + questRewardText(entry.idx, true), lx + 4, ey + 42, lw - 8, 11, 3);
           ctx.font = 'italic 8px Georgia'; ctx.fillStyle = '#6f6552';
-          ctx.fillText('Quest ' + (entry.idx + 1) + ' of ' + QUEST_COUNT + (milestone ? '  ·  ★ milestone' : ''), lx + 4, ey + 54);
+          ctx.fillText('Quest ' + (entry.idx + 1) + ' of ' + QUEST_COUNT + (milestone ? '  ·  ★ milestone' : ''), lx + 4, ey + 84);
         }
         c += eh;
       }
@@ -4140,7 +4142,7 @@ const Screens = {
       const milestone = def.tid === 'reach';
       const gateOk = def.gate.kind === 'level' ? Hero.level >= def.gate.at : (Hero.paragon || 0) >= def.gate.at;
       const full = journal.length >= QUEST_JOURNAL_MAX;
-      const rwText = 'Reward:  ' + questRewardText(offerIdx);
+      const rwText = 'Reward:  ' + questRewardText(offerIdx, true);
 
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
       ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
@@ -4151,7 +4153,9 @@ const Screens = {
       const dBot = wrapText(ctx, def.desc, lx, c - scrollY + 10, lw, 15, nr ? 3 : 2);
       c += (dBot - (c - scrollY + 10)) + 4;
       ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
-      ctx.fillText(this.fitText(ctx, rwText, lw), lx, c - scrollY + 8); c += 16;
+      // Wrapped (2 lines) so the offer's reward can never run off the column.
+      const rBot = wrapText(ctx, rwText, lx, c - scrollY + 8, lw, 12, 2);
+      c += (rBot - (c - scrollY + 8)) + 8;
       if (vis(c, 44)) {
         if (full) {
           UI.btn(ctx, lx, c - scrollY, lw, 40, 'JOURNAL FULL — ' + QUEST_JOURNAL_MAX + ' / ' + QUEST_JOURNAL_MAX,
