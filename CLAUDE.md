@@ -359,8 +359,12 @@ Script lives in the session scratchpad (intentionally not committed).
   mapBoss vs elite) · riftsCleared · salvagedCount (grantSalvage) · `gemsCombined`
   (combineGems) · `itemsCrafted` (craft/craftTorch/buyGem/craftGem) · `enchantsDone`
   (enchant) · `chestsOpened` (touchObjects). All persisted with snapshot parity.
-  **THE JOURNAL (v1.6.55, owner rule "up to 7 quests")**: `Hero.journal` =
-  [{idx, base}] (≤ `QUEST_JOURNAL_MAX`=7 concurrent), `Hero.questNext` = next
+  **THE JOURNAL (v1.6.55, owner rule "up to 7 quests"; v1.6.65: slots are PER
+  GIVER — 7 of Lukus's AND 7 of Addy's ride together, `Hero.journalCount(src)`
+  gates accepts/markers/dialog counts, applySnapshot caps per giver, and the
+  menu journal is GROUPED BY GIVER with colored stripes/bars — Addy violet,
+  Lukus gold — each section showing its own n/7 + ledger bar)**: `Hero.journal` =
+  [{idx, base[, src:'A']}] (≤ `QUEST_JOURNAL_MAX`=7 per giver), `Hero.questNext` = next
   fresh offer, `Hero.questRepool` = abandoned idxs (re-offered FIRST, lowest
   first — nothing is ever lost), `Hero.questLine` = quests TURNED IN (the
   ledger bar). API on Hero: `questProgress(entry)` / `questOffer()` /

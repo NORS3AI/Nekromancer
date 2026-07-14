@@ -610,7 +610,7 @@ const Game = {
     let mark = null, col = '#ffd76a';
     if (typeof QUEST_LINE !== 'undefined' && Hero.questProgress) {
       if ((Hero.journal || []).some(e => Hero.questProgress(e).done)) { mark = '✓'; col = '#4ade80'; }
-      else if (Hero.questOffer() >= 0 && (Hero.journal || []).length < QUEST_JOURNAL_MAX) mark = '!';
+      else if (Hero.questOffer() >= 0 && Hero.journalCount() < QUEST_JOURNAL_MAX) mark = '!';
     }
     if (mark) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -682,7 +682,7 @@ const Game = {
       let mark = null, col = '#c86adf';
       if (anyDone || dailyReady) { mark = '✓'; col = '#4ade80'; }
       else if ((!st.done && st.base === null) ||
-               (Hero.questOffer('A') >= 0 && (Hero.journal || []).length < QUEST_JOURNAL_MAX)) mark = '!';
+               (Hero.questOffer('A') >= 0 && Hero.journalCount('A') < QUEST_JOURNAL_MAX)) mark = '!';
       if (mark) {
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.font = 'bold 17px Georgia'; ctx.fillStyle = col;

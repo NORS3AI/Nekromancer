@@ -969,6 +969,10 @@ const Screens = {
   // The QUEST JOURNAL from the ☰ MENU — read your accepted quests anywhere.
   // Progress bars live-update; finished deeds say to see Lukus (turn-ins are
   // his), and unfinished ones can be dropped back to his queue from here.
+  // The QUEST JOURNAL from the ☰ MENU — every accepted quest, GROUPED BY
+  // GIVER (owner rule: Addy's quests SHOW DIFFERENTLY, and both Lukus's and
+  // Addy's quests ride together — 7 slots EACH). Lukus's deeds wear his
+  // gold; Addy's jobs wear Underworld violet with her stripe.
   journal(ctx, W, H) {
     this.dim(ctx, W, H);
     const jr = Hero.journal || [];
@@ -976,20 +980,23 @@ const Screens = {
     const px = W / 2 - pw / 2;
     const ph = Math.min(560, H - (Game.state === 'town' ? 170 : 24));
     const py = Math.max(10, Math.min(H / 2 - ph / 2, H - ph - (Game.state === 'town' ? 150 : 12)));
-    UI.panel(ctx, px, py, pw, ph, '📜 QUEST JOURNAL — ' + jr.length + ' / ' + QUEST_JOURNAL_MAX);
+    UI.panel(ctx, px, py, pw, ph, '📜 QUEST JOURNAL — ' + jr.length + ' / ' + QUEST_JOURNAL_MAX * 2);
 
-    // The ledger line.
-    const doneCount = clamp(Hero.questLine || 0, 0, QUEST_COUNT);
-    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
-    ctx.fillText('LEDGER OF LIGHT', px + 16, py + 54);
-    ctx.textAlign = 'right'; ctx.fillStyle = '#ffd76a';
-    ctx.fillText(doneCount + ' / ' + QUEST_COUNT + ' DONE', px + pw - 16, py + 54);
-    UI.bar(ctx, px + 16, py + 60, pw - 32, 5, doneCount / QUEST_COUNT, '#221d2e', '#8a6f2a');
+    const givers = [
+      { src: 'L', tag: '⚔  LUKUS, BRINGER OF LIGHT', color: '#ffd76a', nameCol: '#e8e0cc',
+        barCol: '#8a6f2a', bg: 'rgba(28,24,38,0.6)', see: 'see Lukus',
+        list: jr.filter(e => e.src !== 'A'),
+        done: clamp(Hero.questLine || 0, 0, QUEST_COUNT), total: QUEST_COUNT, show: true },
+      { src: 'A', tag: '🗡  ADDY, QUEEN OF THE UNDERWORLD', color: '#c86adf', nameCol: '#e8b3f2',
+        barCol: '#7a4a8f', bg: 'rgba(40,26,46,0.65)', see: 'see Addy',
+        list: jr.filter(e => e.src === 'A'),
+        done: clamp(Hero.addyLine || 0, 0, ADDY_QUEST_COUNT), total: ADDY_QUEST_COUNT,
+        show: Hero.level >= 70 || jr.some(e => e.src === 'A') || (Hero.addyLine || 0) > 0 }
+    ];
 
-    // Scrollable quest rows.
+    // Scrollable, sectioned list.
     const lx = px + 16, lw = pw - 32;
-    const listTop = py + 76, viewBot = py + ph - 14, viewH = Math.max(50, viewBot - listTop);
+    const listTop = py + 52, viewBot = py + ph - 14, viewH = Math.max(50, viewBot - listTop);
     const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
     UI.sel.scrollY = scrollY;
     UI.sel.scrollRegion = { x: lx - 4, y: listTop - 4, w: lw + 8, h: viewH + 8 };
@@ -998,69 +1005,88 @@ const Screens = {
     let c = listTop;
     const vis = (top, hh) => (top - scrollY + hh > listTop) && (top - scrollY < viewBot);
 
-    if (!jr.length) {
-      ctx.textAlign = 'left'; ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#6f6552';
-      ctx.fillText('The journal is empty.', lx, c - scrollY + 14);
-      ctx.fillText('Lukus, Bringer of Light, keeps the deeds in New Haven.', lx, c - scrollY + 32);
-      c += 44;
-    }
-    for (const entry of jr.slice()) {
-      const qp = Hero.questProgress(entry);
-      if (!qp.def) { Hero.abandonQuest(entry); continue; }
-      const def = qp.def, milestone = def.tid === 'reach';
-      const qKey = (entry.src === 'A' ? 'A' : 'L') + entry.idx;
-      const expanded = UI.sel.qInfo === qKey;
-      const yy = c - scrollY;
-      if (vis(c, 62)) {
-        ctx.fillStyle = expanded ? 'rgba(46,42,58,0.8)' : 'rgba(28,24,38,0.6)';
-        rr(ctx, lx - 4, yy, lw + 8, 58, 6); ctx.fill();
-        if (expanded) { ctx.strokeStyle = milestone ? '#b06adf' : '#8a6f2a'; ctx.lineWidth = 1.2; rr(ctx, lx - 4, yy, lw + 8, 58, 6); ctx.stroke(); }
+    for (const g of givers) {
+      if (!g.show) continue;
+      // Section header: the giver, their slots, and their ledger progress.
+      if (vis(c, 24)) {
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        ctx.font = 'bold 11px Georgia'; ctx.fillStyle = milestone ? '#b06adf' : '#e8e0cc';
-        ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name, lw - 60), lx + 4, yy + 14);
-        ctx.font = '9px Georgia'; ctx.fillStyle = '#8a8070';
-        ctx.fillText(this.fitText(ctx, def.desc, lw - 60), lx + 4, yy + 27);
-        UI.bar(ctx, lx + 4, yy + 33, lw - 64, 9, qp.prog / def.need, '#221d2e', qp.done ? '#4ade80' : '#8a6f2a');
-        ctx.font = '8px Georgia'; ctx.fillStyle = '#9a9080';
-        ctx.fillText(qp.prog + ' / ' + def.need + '  ·  tap for details', lx + 4, yy + 52);
-        // Tap the row body (left of the buttons) for full details + reward.
-        UI.register(lx - 4, yy, lw - 56, 58, () => { UI.sel.qInfo = expanded ? null : qKey; });
-        if (qp.done) {
-          ctx.textAlign = 'right'; ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#4ade80';
-          ctx.fillText('✔ READY', lx + lw - 2, yy + 30);
-          ctx.font = '8px Georgia'; ctx.fillStyle = '#7ab88a';
-          ctx.fillText('see Lukus', lx + lw - 2, yy + 42);
-        } else if (!def.abs) {
-          UI.btn(ctx, lx + lw - 50, yy + 18, 48, 22, 'DROP', () => {
-            Hero.abandonQuest(entry);
-            UI.toast('Returned to Lukus: ' + def.name, '#9a9080');
-          }, { size: 8, border: '#7a4a4a', color: '#c98a8a' });
-        }
+        ctx.font = 'bold 10px Georgia'; ctx.fillStyle = g.color;
+        ctx.fillText(this.fitText(ctx, g.tag, lw - 96), lx, c - scrollY + 10);
+        ctx.textAlign = 'right'; ctx.font = '9px Georgia'; ctx.fillStyle = '#9a9080';
+        ctx.fillText(g.list.length + '/' + QUEST_JOURNAL_MAX + ' · ' + g.done + '/' + g.total + ' done', lx + lw, c - scrollY + 10);
+        UI.bar(ctx, lx, c - scrollY + 16, lw, 3, g.done / g.total, '#221d2e', g.barCol);
       }
-      c += 64;
-      // Expanded detail card: full text, place in the line, and the EXACT
-      // reward it pays (rewards are fixed per quest — what you read is what
-      // you get, owner rule).
-      if (expanded) {
-        const eh = 110;
-        const ey = c - scrollY;
-        if (vis(c, eh)) {
-          ctx.fillStyle = 'rgba(18,14,26,0.85)';
-          rr(ctx, lx - 4, ey, lw + 8, eh - 6, 6); ctx.fill();
+      c += 28;
+      if (!g.list.length) {
+        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
+        ctx.fillText(g.src === 'A'
+          ? (Hero.level >= 70 ? 'No jobs from Addy right now.' : "Addy's ledger opens at level 70.")
+          : 'No deeds from Lukus right now.', lx, c - scrollY + 9);
+        c += 22;
+      }
+      for (const entry of g.list.slice()) {
+        const qp = Hero.questProgress(entry);
+        if (!qp.def) { Hero.abandonQuest(entry); continue; }
+        const def = qp.def, milestone = def.tid === 'reach';
+        const qKey = (entry.src === 'A' ? 'A' : 'L') + entry.idx;
+        const expanded = UI.sel.qInfo === qKey;
+        const yy = c - scrollY;
+        if (vis(c, 62)) {
+          ctx.fillStyle = expanded ? 'rgba(46,42,58,0.8)' : g.bg;
+          rr(ctx, lx - 4, yy, lw + 8, 58, 6); ctx.fill();
+          // The giver's colored stripe on the row's left edge.
+          ctx.fillStyle = g.color;
+          rr(ctx, lx - 4, yy, 3, 58, 2); ctx.fill();
+          if (expanded) { ctx.strokeStyle = milestone ? '#b06adf' : g.barCol; ctx.lineWidth = 1.2; rr(ctx, lx - 4, yy, lw + 8, 58, 6); ctx.stroke(); }
           ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-          ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
-          wrapText(ctx, def.desc, lx + 4, ey + 16, lw - 8, 14, 2);
-          ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#8a8070';
-          ctx.fillText('REWARD', lx + 4, ey + 52);
-          ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#ffd76a';
-          // Compact + wrapped (2 lines) so the reward can never run off the card.
-          wrapText(ctx, questRewardTextFor(entry, true), lx + 4, ey + 66, lw - 8, 13, 2);
-          ctx.font = 'italic 9px Georgia'; ctx.fillStyle = '#6f6552';
-          wrapText(ctx, (entry.src === 'A' ? "Addy's job " : 'Quest ') + (entry.idx + 1) + ' of ' + QUEST_COUNT +
-            (milestone ? ' · ★ milestone — tracks itself, cannot be dropped' : ''), lx + 4, ey + 94, lw - 8, 11, 1);
+          ctx.font = 'bold 11px Georgia'; ctx.fillStyle = milestone ? '#b06adf' : g.nameCol;
+          ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name, lw - 60), lx + 4, yy + 14);
+          ctx.font = '9px Georgia'; ctx.fillStyle = '#8a8070';
+          ctx.fillText(this.fitText(ctx, def.desc, lw - 60), lx + 4, yy + 27);
+          UI.bar(ctx, lx + 4, yy + 33, lw - 64, 9, qp.prog / def.need, '#221d2e', qp.done ? '#4ade80' : g.barCol);
+          ctx.font = '8px Georgia'; ctx.fillStyle = '#9a9080';
+          ctx.fillText(qp.prog + ' / ' + def.need + '  ·  tap for details', lx + 4, yy + 52);
+          // Tap the row body (left of the buttons) for full details + reward.
+          UI.register(lx - 4, yy, lw - 56, 58, () => { UI.sel.qInfo = expanded ? null : qKey; });
+          if (qp.done) {
+            ctx.textAlign = 'right'; ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#4ade80';
+            ctx.fillText('✔ READY', lx + lw - 2, yy + 30);
+            ctx.font = '8px Georgia'; ctx.fillStyle = '#7ab88a';
+            ctx.fillText(g.see, lx + lw - 2, yy + 42);
+          } else if (!def.abs) {
+            UI.btn(ctx, lx + lw - 50, yy + 18, 48, 22, 'DROP', () => {
+              Hero.abandonQuest(entry);
+              UI.toast('Returned to ' + (g.src === 'A' ? 'Addy' : 'Lukus') + ': ' + def.name, '#9a9080');
+            }, { size: 8, border: '#7a4a4a', color: '#c98a8a' });
+          }
         }
-        c += eh;
+        c += 64;
+        // Expanded detail card: full text, place in the line, and the EXACT
+        // reward it pays (rewards are fixed per quest — what you read is what
+        // you get, owner rule).
+        if (expanded) {
+          const eh = 110;
+          const ey = c - scrollY;
+          if (vis(c, eh)) {
+            ctx.fillStyle = 'rgba(18,14,26,0.85)';
+            rr(ctx, lx - 4, ey, lw + 8, eh - 6, 6); ctx.fill();
+            ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+            ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
+            wrapText(ctx, def.desc, lx + 4, ey + 16, lw - 8, 14, 2);
+            ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#8a8070';
+            ctx.fillText('REWARD', lx + 4, ey + 52);
+            ctx.font = 'bold 10px Georgia'; ctx.fillStyle = g.color;
+            // Compact + wrapped (2 lines) so the reward can never run off the card.
+            wrapText(ctx, questRewardTextFor(entry, true), lx + 4, ey + 66, lw - 8, 13, 2);
+            ctx.font = 'italic 9px Georgia'; ctx.fillStyle = '#6f6552';
+            wrapText(ctx, (entry.src === 'A' ? "Addy's job " : "Lukus's quest ") + (entry.idx + 1) + ' of ' + g.total +
+              (milestone ? ' · ★ milestone — tracks itself, cannot be dropped' : ''), lx + 4, ey + 94, lw - 8, 11, 1);
+          }
+          c += eh;
+        }
       }
+      c += 12;
     }
     ctx.restore();
     UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 6);
@@ -4317,7 +4343,7 @@ const Screens = {
 
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
-    ctx.fillText('JOURNAL — ' + (Hero.journal || []).length + ' / ' + QUEST_JOURNAL_MAX, lx, c - scrollY + 8);
+    ctx.fillText('JOURNAL — ' + journal.length + ' / ' + QUEST_JOURNAL_MAX + ' of mine', lx, c - scrollY + 8);
     c += 16;
     if (!journal.length) {
       ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
@@ -4389,7 +4415,7 @@ const Screens = {
       const def = QUEST_LINE[offerIdx];
       const milestone = def.tid === 'reach';
       const gateOk = def.gate.kind === 'level' ? Hero.level >= def.gate.at : (Hero.paragon || 0) >= def.gate.at;
-      const full = journal.length >= QUEST_JOURNAL_MAX;
+      const full = journal.length >= QUEST_JOURNAL_MAX;   // HIS slots only — Addy's ride separately
       const rwText = 'Reward:  ' + questRewardText(offerIdx, true);
 
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
@@ -4591,7 +4617,7 @@ const Screens = {
       // Her journal rows.
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
       ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
-      ctx.fillText('JOURNAL — ' + (Hero.journal || []).length + ' / ' + QUEST_JOURNAL_MAX, lx, c - scrollY + 8);
+      ctx.fillText('JOURNAL — ' + journal.length + ' / ' + QUEST_JOURNAL_MAX + ' of mine', lx, c - scrollY + 8);
       c += 16;
       if (!journal.length) {
         ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
@@ -4655,7 +4681,7 @@ const Screens = {
       c += 16;
       if (offerIdx >= 0) {
         const def = ADDY_QUEST_LINE[offerIdx];
-        const full = (Hero.journal || []).length >= QUEST_JOURNAL_MAX;
+        const full = journal.length >= QUEST_JOURNAL_MAX;   // HER slots only — Lukus's ride separately
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
         ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
         ctx.fillText('NEXT JOB', lx, c - scrollY + 6); c += 14;
