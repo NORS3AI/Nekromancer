@@ -999,10 +999,12 @@ const Screens = {
       const qp = Hero.questProgress(entry);
       if (!qp.def) { Hero.abandonQuest(entry); continue; }
       const def = qp.def, milestone = def.tid === 'reach';
+      const expanded = UI.sel.qInfo === entry.idx;
       const yy = c - scrollY;
       if (vis(c, 62)) {
-        ctx.fillStyle = 'rgba(28,24,38,0.6)';
+        ctx.fillStyle = expanded ? 'rgba(46,42,58,0.8)' : 'rgba(28,24,38,0.6)';
         rr(ctx, lx - 4, yy, lw + 8, 58, 6); ctx.fill();
+        if (expanded) { ctx.strokeStyle = milestone ? '#b06adf' : '#8a6f2a'; ctx.lineWidth = 1.2; rr(ctx, lx - 4, yy, lw + 8, 58, 6); ctx.stroke(); }
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
         ctx.font = 'bold 11px Georgia'; ctx.fillStyle = milestone ? '#b06adf' : '#e8e0cc';
         ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name, lw - 60), lx + 4, yy + 14);
@@ -1010,7 +1012,9 @@ const Screens = {
         ctx.fillText(this.fitText(ctx, def.desc, lw - 60), lx + 4, yy + 27);
         UI.bar(ctx, lx + 4, yy + 33, lw - 64, 9, qp.prog / def.need, '#221d2e', qp.done ? '#4ade80' : '#8a6f2a');
         ctx.font = '8px Georgia'; ctx.fillStyle = '#9a9080';
-        ctx.fillText(qp.prog + ' / ' + def.need, lx + 4, yy + 52);
+        ctx.fillText(qp.prog + ' / ' + def.need + '  ·  tap for details', lx + 4, yy + 52);
+        // Tap the row body (left of the buttons) for full details + reward.
+        UI.register(lx - 4, yy, lw - 56, 58, () => { UI.sel.qInfo = expanded ? null : entry.idx; });
         if (qp.done) {
           ctx.textAlign = 'right'; ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#4ade80';
           ctx.fillText('✔ READY', lx + lw - 2, yy + 30);
@@ -1024,6 +1028,28 @@ const Screens = {
         }
       }
       c += 64;
+      // Expanded detail card: full text, place in the line, and the EXACT
+      // reward it pays (rewards are fixed per quest — what you read is what
+      // you get, owner rule).
+      if (expanded) {
+        const eh = 96;
+        const ey = c - scrollY;
+        if (vis(c, eh)) {
+          ctx.fillStyle = 'rgba(18,14,26,0.85)';
+          rr(ctx, lx - 4, ey, lw + 8, eh - 6, 6); ctx.fill();
+          ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+          ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
+          wrapText(ctx, def.desc, lx + 4, ey + 16, lw - 8, 14, 2);
+          ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#8a8070';
+          ctx.fillText('REWARD', lx + 4, ey + 52);
+          ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#ffd76a';
+          ctx.fillText(this.fitText(ctx, questRewardText(entry.idx), lw - 8), lx + 4, ey + 66);
+          ctx.font = 'italic 9px Georgia'; ctx.fillStyle = '#6f6552';
+          ctx.fillText('Quest ' + (entry.idx + 1) + ' of ' + QUEST_COUNT +
+            (milestone ? '  ·  ★ milestone — tracks itself, cannot be dropped' : ''), lx + 4, ey + 82);
+        }
+        c += eh;
+      }
     }
     ctx.restore();
     UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 6);
@@ -4053,16 +4079,19 @@ const Screens = {
       const qp = Hero.questProgress(entry);
       if (!qp.def) { Hero.abandonQuest(entry); continue; }   // stale save entry
       const def = qp.def, milestone = def.tid === 'reach';
+      const expanded = UI.sel.qInfo === entry.idx;
       const yy = c - scrollY;
       if (vis(c, 46)) {
-        ctx.fillStyle = 'rgba(28,24,38,0.6)';
+        ctx.fillStyle = expanded ? 'rgba(46,42,58,0.8)' : 'rgba(28,24,38,0.6)';
         rr(ctx, lx - 4, yy, lw + 8, 42, 6); ctx.fill();
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
         ctx.font = 'bold 11px Georgia'; ctx.fillStyle = milestone ? '#b06adf' : '#e8e0cc';
         ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name, lw - 102), lx + 4, yy + 14);
         UI.bar(ctx, lx + 4, yy + 21, lw - 106, 9, qp.prog / def.need, '#221d2e', qp.done ? '#4ade80' : '#8a6f2a');
         ctx.font = '8px Georgia'; ctx.fillStyle = '#9a9080';
-        ctx.fillText(qp.prog + ' / ' + def.need, lx + 4, yy + 39);
+        ctx.fillText(qp.prog + ' / ' + def.need + '  ·  tap for details', lx + 4, yy + 39);
+        // Tap the row body (left of the buttons) for full details + reward.
+        UI.register(lx - 4, yy, lw - 96, 42, () => { UI.sel.qInfo = expanded ? null : entry.idx; });
         if (qp.done) {
           // Turn in right from the journal row.
           UI.btn(ctx, lx + lw - 94, yy + 4, 90, 34, '✔ TURN IN', () => {
@@ -4081,6 +4110,23 @@ const Screens = {
         }
       }
       c += 50;
+      // Expanded details: the full deed + the EXACT reward it will pay.
+      if (expanded) {
+        const eh = 62;
+        const ey = c - scrollY;
+        if (vis(c, eh)) {
+          ctx.fillStyle = 'rgba(18,14,26,0.85)';
+          rr(ctx, lx - 4, ey - 4, lw + 8, eh - 4, 6); ctx.fill();
+          ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+          ctx.font = '10px Georgia'; ctx.fillStyle = '#b5ab94';
+          wrapText(ctx, def.desc, lx + 4, ey + 10, lw - 8, 13, 2);
+          ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#ffd76a';
+          ctx.fillText(this.fitText(ctx, 'REWARD:  ' + questRewardText(entry.idx), lw - 8), lx + 4, ey + 42);
+          ctx.font = 'italic 8px Georgia'; ctx.fillStyle = '#6f6552';
+          ctx.fillText('Quest ' + (entry.idx + 1) + ' of ' + QUEST_COUNT + (milestone ? '  ·  ★ milestone' : ''), lx + 4, ey + 54);
+        }
+        c += eh;
+      }
     }
 
     // Divider, then the next deed on offer.
@@ -4091,12 +4137,10 @@ const Screens = {
 
     if (offerIdx >= 0) {
       const def = QUEST_LINE[offerIdx];
-      const rw = questReward(offerIdx);
       const milestone = def.tid === 'reach';
       const gateOk = def.gate.kind === 'level' ? Hero.level >= def.gate.at : (Hero.paragon || 0) >= def.gate.at;
       const full = journal.length >= QUEST_JOURNAL_MAX;
-      const rwText = 'Reward: ' + rw.gold.toLocaleString() + 'g · ' + rw.souls + ' soul' + (rw.souls > 1 ? 's' : '') +
-        ' · XP' + (rw.gem ? ' · a gem' : '');
+      const rwText = 'Reward:  ' + questRewardText(offerIdx);
 
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
       ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';

@@ -329,8 +329,14 @@ Script lives in the session scratchpad (intentionally not committed).
   by index — targets never change between loads). Quests 0–199 gate by LEVEL 1→70,
   200–499 by PARAGON →1000 (`questGate(i)`); every 25th is a ★ MILESTONE ("reach
   level/paragon X", `abs:true` — progress read absolutely, no base, not abandonable);
-  every 10th + milestones pay double gold, bonus souls and a gem (`questReward(i)`,
-  scales with hero level AND line depth). `QUEST_TEMPLATES` = 9 deeds on LIFETIME
+  every 10th + milestones pay double gold, bonus souls and a gem (`questReward(i)`
+  — **DETERMINISTIC PER QUEST since v1.6.59 (owner rule "rewards are real when
+  awarded")**: gold/souls/XP computed from the quest's own gate ("level
+  equivalent"), NEVER from Hero.level, so the shown reward === the paid reward;
+  `questRewardText(i)` is the shared one-line readout; `completeQuest` pays
+  `rw.xp` exactly, gear XP bonuses only add). **Tap a quest row (journal screen
+  AND Lukus dialog, v1.6.59)** → `UI.sel.qInfo` expands a detail card: full
+  deed text, "Quest n of 500", ★ milestone note, and the exact REWARD line. `QUEST_TEMPLATES` = 9 deeds on LIFETIME
   counters: totalKills · `Hero.eliteKills`/`bossKills` (Enemy.die — unique/def.boss/
   mapBoss vs elite) · riftsCleared · salvagedCount (grantSalvage) · `gemsCombined`
   (combineGems) · `itemsCrafted` (craft/craftTorch/buyGem/craftGem) · `enchantsDone`
