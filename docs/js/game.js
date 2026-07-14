@@ -100,6 +100,7 @@ const Game = {
     Hero.loadStash();   // shared vault first, so the character load won't reseed it
     Profiles.boot();    // load the roster and make the active hero current
     Hero.sanitize();
+    this.preloadArt();  // start the heavy paintings NOW (title screen = download time)
     World.generate(ZONES[0]);   // backdrop for the title screen
     Input.init(this.canvas);
     requestAnimationFrame(t => this.frame(t));
@@ -306,7 +307,7 @@ const Game = {
   },
 
   // Interaction pads + collision boxes traced over the New Haven painting
-  // (docs/art/town/newhaven.png, image-pixel coords).
+  // (docs/art/town/newhaven.webp, image-pixel coords).
   //   padX, padY, padR,  blockerCX,CY,W,H,  label, icon, color, kind[, slots, boost]
   TOWN_STATIONS: [
     [435, 395, 60,   420, 260, 240, 220, 'Jeweler',        '◆', '#4ecbe0', 'jeweler'],
@@ -349,9 +350,20 @@ const Game = {
   ],
   ALL_SLOTS: ['weapon', 'offhand', 'helm', 'chest', 'gloves', 'boots', 'shoulders', 'legs', 'amulet', 'ring1', 'ring2'],
 
+  // Kick off every heavy painting the moment the game boots, so on a slow
+  // connection they stream in during the title/roster screens instead of
+  // popping in late on first use (owner report).
+  preloadArt() {
+    this.townImg = this.townImg || (() => { const i = new Image(); i.src = 'art/town/newhaven.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1'); return i; })();
+    this.lukusImg('helmed'); this.lukusImg('idle');
+    this.addyImg(); this.lyssaImg();
+    if (typeof Screens !== 'undefined' && Screens.preloadShops) Screens.preloadShops();
+    if (typeof World !== 'undefined' && World.loadTiles) World.loadTiles();
+  },
+
   buildTown() {
     const S = 1254;
-    if (!this.townImg) { const img = new Image(); img.src = 'art/town/newhaven.png?v=' + (typeof BUILD !== 'undefined' ? BUILD : '1'); this.townImg = img; }
+    if (!this.townImg) { const img = new Image(); img.src = 'art/town/newhaven.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1'); this.townImg = img; }
     const interacts = [], blockers = [];
     const vendors = [];
     const mkVendor = (name, flavor, slots, boost) => {
@@ -494,6 +506,11 @@ const Game = {
       if (sw > 0 && sh > 0) ctx.drawImage(img, sx, sy, sw, sh, sx, sy, sw, sh);
     } else {
       ctx.fillStyle = '#171320'; ctx.fillRect(cam.x, cam.y, this.W, this.H);
+      // Slow connection: say so instead of leaving a mute dark screen.
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'italic 13px Georgia';
+      ctx.fillStyle = 'rgba(201,191,168,' + (0.45 + 0.25 * Math.sin(this.time * 3)).toFixed(2) + ')';
+      ctx.fillText('New Haven emerges from the dark…', cam.x + this.W / 2, cam.y + this.H * 0.45);
     }
 
     // Lukus, Bringer of Light — the painted knight at his post by the plaza,
@@ -560,7 +577,7 @@ const Game = {
     let img = this.lukusArt[mood];
     if (!img) {
       img = new Image();
-      img.src = 'art/npc/lukus_' + mood + '.png?v=' + (typeof BUILD !== 'undefined' ? BUILD : '1');
+      img.src = 'art/npc/lukus_' + mood + '.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
       this.lukusArt[mood] = img;
     }
     return img;
@@ -632,7 +649,7 @@ const Game = {
   addyImg() {
     if (!this.addyArt) {
       const img = new Image();
-      img.src = 'art/npc/addy_idle.png?v=' + (typeof BUILD !== 'undefined' ? BUILD : '1');
+      img.src = 'art/npc/addy_idle.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
       this.addyArt = img;
     }
     return this.addyArt;
@@ -705,7 +722,7 @@ const Game = {
   lyssaImg() {
     if (!this.lyssaArt) {
       const img = new Image();
-      img.src = 'art/npc/lyssa_idle.png?v=' + (typeof BUILD !== 'undefined' ? BUILD : '1');
+      img.src = 'art/npc/lyssa_idle.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
       this.lyssaArt = img;
     }
     return this.lyssaArt;

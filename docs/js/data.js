@@ -315,11 +315,20 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.68-alpha';
+const GAME_VERSION = 'v1.6.69-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.69-alpha', date: 'July 2026',
+    notes: [
+      'THE GAME LOADS ~12× FASTER ON SLOW CONNECTIONS — all the heavy paintings (the New Haven map, the shop interiors, every NPC portrait, the ground textures and the logo) were recompressed from 35MB of PNG down to 3MB of pixel-identical-at-game-scale WebP',
+      'Art is no longer re-downloaded on every game update: paintings now carry their own version stamp that only changes when the art itself changes, so your phone keeps them cached across releases',
+      'The heavy art starts downloading the moment the game boots — streaming in during the title and campfire screens instead of popping in late when you first walk somewhere',
+      'And if the town painting still hasn\'t arrived, the screen now says "New Haven emerges from the dark…" instead of staying mutely black'
+    ]
+  },
   {
     v: 'v1.6.68-alpha', date: 'July 2026',
     notes: [
