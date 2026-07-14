@@ -42,6 +42,7 @@ const Screens = {
   draw(ctx, W, H) {
     switch (UI.screen) {
       case 'radial': this.radial(ctx, W, H); break;
+      case 'sysmenu': this.sysmenu(ctx, W, H); break;
       case 'skills': this.skills(ctx, W, H); break;
       case 'skillChooser': this.skillChooser(ctx, W, H); break;
       case 'smith': this.smith(ctx, W, H); break;
@@ -850,12 +851,12 @@ const Screens = {
   // (closeAction sets UI.sel.inside), so browsing benches stays snappy.
   ARTISAN_INTROS: {
     smith: {
-      npc: 'HAEDRIG', color: '#ffb43a', welcome: 'WELCOME TO THE FORGE',
+      npc: 'THARN EMBERHAND', color: '#ffb43a', welcome: 'WELCOME TO THE FORGE',
       info: '"The coals never cool in New Haven. Bring me your battle-scrap and I\'ll break it down to parts, dust and crystal — or set the hammer to fresh steel: weapons, armor, and torches to carry the Light into the dark."',
       enter: 'STEP UP TO THE ANVIL'
     },
     jeweler: {
-      npc: 'COVETOUS SHEN', color: '#4ecbe0', welcome: 'WELCOME TO THE GEMWORKS',
+      npc: 'COVETOUS SHEN', color: '#4ecbe0', welcome: "WELCOME TO THE JEWELER'S",
       info: '"Every stone has a soul, friend — let me show you. I cut fresh gems, merge three of a kind into finer ones, set them snug into your sockets and pry them out again without a scratch. Tired of a stone? I pay honest gold."',
       enter: 'BROWSE THE STONES'
     },
@@ -930,6 +931,27 @@ const Screens = {
       ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
       ctx.fillText(this.fitText(ctx, desc, pw - 60), px + 30, y + rowH * 0.66);
       y += rowH;
+    }
+  },
+
+  // The ☰ MENU (owner rule): ONLY Skills & Passives, Inventory and Settings —
+  // everything else lives in New Haven's streets now.
+  sysmenu(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const rows = [
+      ['⚔   SKILLS & PASSIVES', 'skills', '#b06adf'],
+      ['🎒   INVENTORY', 'radial', '#6ff7c3'],
+      ['⚙   SETTINGS', 'settings', '#c9bfa8']
+    ];
+    const pw = Math.min(360, W - 24);
+    const px = W / 2 - pw / 2;
+    const ph = 70 + rows.length * 56 + 12;
+    const py = Math.max(10, Math.min(H / 2 - ph / 2, H - ph - (Game.state === 'town' ? 150 : 12)));
+    UI.panel(ctx, px, py, pw, ph, 'MENU');
+    let y = py + 62;
+    for (const [label, target, color] of rows) {
+      UI.btn(ctx, px + 16, y, pw - 32, 48, label, () => UI.open(target), { size: 14, color });
+      y += 56;
     }
   },
 
@@ -1538,10 +1560,10 @@ const Screens = {
       ctx.fillText('lvl ' + (z.mLvl + Hero.difficulty * 6), px + pw - 12, y + 35);
     });
 
-    UI.btn(ctx, px, 100 + ZONES.length * 58 + 6, pw, 40, '← BACK TO CAMP', () => { Game.state = 'camp'; }, { size: 13 });
+    UI.btn(ctx, px, 100 + ZONES.length * 58 + 6, pw, 40, '← BACK TO TOWN', () => { Game.enterTown(); }, { size: 13 });
     // Bounties is a full state, not an overlay — give it its own red ✕.
     const sfa = UI.safe || { top: 0, right: 0 };
-    this.closeX(ctx, W, { x: W - 26 - sfa.right, y: 26 + sfa.top, cb: () => { Game.state = 'camp'; } });
+    this.closeX(ctx, W, { x: W - 26 - sfa.right, y: 26 + sfa.top, cb: () => { Game.enterTown(); } });
   },
 
   // ------------------------------------------------- radial inventory
@@ -2618,7 +2640,7 @@ const Screens = {
 
   // BLACKSMITH — art-first hub with four benches (owner rule).
   smith(ctx, W, H) {
-    this.artisanHub(ctx, W, H, 'smith', 'HAEDRIG — BLACKSMITH',
+    this.artisanHub(ctx, W, H, 'smith', 'THARN EMBERHAND — BLACKSMITH',
       '"The forge is hot. What do you need?"', [
         ['⚒  SALVAGE', 'Break gear down into crafting materials', 'smithSalvage', '#ffb43a'],
         ['⚔  CRAFT WEAPON', 'Forge scythes and phylacteries', 'smithWeapon', '#e0724a'],
@@ -5039,7 +5061,7 @@ const Screens = {
       const bw = Math.min(250, W * 0.6);
       UI.btn(ctx, cx - bw / 2, cy + 66, bw, 42, 'RISE AT THE ENTRANCE', () => Game.respawn(),
         { size: 13, border: '#57b894', color: '#6ff7c3' });
-      UI.btn(ctx, cx - bw / 2, cy + 118, bw, 38, 'RETURN TO CAMP', () => Game.toCamp(), { size: 13 });
+      UI.btn(ctx, cx - bw / 2, cy + 118, bw, 38, 'RETURN TO TOWN', () => Game.toCamp(), { size: 13 });
     }
   },
 
@@ -5063,7 +5085,7 @@ const Screens = {
       ctx.fillText(ln[0], W / 2, py + 110 + i * 20);
     });
     const by = py + ph - 56;
-    UI.btn(ctx, px + 20, by, pw - 40, 42, 'RETURN TO CAMP', () => Game.toCamp(),
+    UI.btn(ctx, px + 20, by, pw - 40, 42, 'RETURN TO TOWN', () => Game.toCamp(),
       { size: 14, border: '#57b894', color: '#6ff7c3' });
   },
 

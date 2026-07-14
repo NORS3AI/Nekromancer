@@ -76,7 +76,7 @@ const Input = {
         else if (action === 'portal' && this.gameplayLive()) Game.castTownPortal();
       } else if (action === 'pause') {
         if (UI.screen) UI.closeAction()();
-        else if (Game.state === 'map') Game.state = 'camp';
+        else if (Game.state === 'map') Game.enterTown();
       }
 
       if (this.gameplayLive()) {

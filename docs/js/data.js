@@ -167,11 +167,19 @@ function questReward(i) {
   return { gold, souls, xpFrac: 0.4, gem: big };
 }
 
-const GAME_VERSION = 'v1.6.56-alpha';
+const GAME_VERSION = 'v1.6.57-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.57-alpha', date: 'July 2026',
+    notes: [
+      'THE BLACKSMITH HAS A NAME OF HIS OWN — THARN EMBERHAND now works the New Haven forge (no more borrowed names), and the Jeweler\'s door now reads "WELCOME TO THE JEWELER\'S"',
+      'THE ☰ MENU IS JUST A MENU NOW (owner rule): Skills & Passives · Inventory · Settings — nothing else. The old Survivor\'s Camp hub is retired; everything it held lives in New Haven\'s streets (artisans, stash, cube, waypoints)',
+      'Every road leads home: finishing a rift, act or bounty run, dying, or abandoning a run now returns you to NEW HAVEN (reward screens open right over the streets) — the bounty map\'s back button reads "BACK TO TOWN"'
+    ]
+  },
   {
     v: 'v1.6.56-alpha', date: 'July 2026',
     notes: [
