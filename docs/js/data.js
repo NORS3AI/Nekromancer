@@ -315,11 +315,18 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.67-alpha';
+const GAME_VERSION = 'v1.6.68-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.68-alpha', date: 'July 2026',
+    notes: [
+      'Lyssa\'s table no longer spells out the odds — fate keeps her secrets (the flavor line under the gamble slots is gone)',
+      'Addy speaks like she belongs in Sanctuary now: the daily is a DAILY QUEST (the button too), NEXT JOB is NEXT QUEST, and TAKE THE JOB is ACCEPT QUEST — quest wording throughout her dialog and the journal'
+    ]
+  },
   {
     v: 'v1.6.67-alpha', date: 'July 2026',
     notes: [

@@ -1050,7 +1050,7 @@ const Screens = {
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
         ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
         ctx.fillText(g.src === 'A'
-          ? (Hero.level >= 70 ? 'No jobs from Addy right now.' : "Addy's ledger opens at level 70.")
+          ? (Hero.level >= 70 ? 'No quests from Addy right now.' : "Addy's ledger opens at level 70.")
           : 'No deeds from Lukus right now.', lx, c - scrollY + 9);
         c += 22;
       }
@@ -1109,7 +1109,7 @@ const Screens = {
             // Compact + wrapped (2 lines) so the reward can never run off the card.
             wrapText(ctx, questRewardTextFor(entry, true), lx + 4, ey + 66, lw - 8, 13, 2);
             ctx.font = 'italic 9px Georgia'; ctx.fillStyle = '#6f6552';
-            wrapText(ctx, (entry.src === 'A' ? "Addy's job " : "Lukus's quest ") + (entry.idx + 1) + ' of ' + g.total +
+            wrapText(ctx, (entry.src === 'A' ? "Addy's quest " : "Lukus's quest ") + (entry.idx + 1) + ' of ' + g.total +
               (milestone ? ' · ★ milestone — tracks itself, cannot be dropped' : ''), lx + 4, ey + 94, lw - 8, 11, 1);
           }
           c += eh;
@@ -4562,7 +4562,7 @@ const Screens = {
     ctx.font = 'italic ' + (nr ? 12 : 13) + 'px Georgia'; ctx.fillStyle = '#e8e0cc';
     const greet = !lvl70
       ? '"Not yet, little corpse-raiser. The Underworld deals with professionals — come find me at level 70, and we\'ll talk business."'
-      : '"So the Light\'s errand-runner finally graduated. I keep a different ledger — five hundred jobs, paid better. And once a day, one special errand for one very special stone."';
+      : '"So the Light\'s errand-runner finally graduated. I keep a different ledger — five hundred quests, paid better. And each day, one special quest for one very special stone."';
     y = wrapText(ctx, greet, lx, y, lw, nr ? 16 : 19, nr ? 7 : 5);
     y += 14;
 
@@ -4599,7 +4599,7 @@ const Screens = {
       const dd = dailyDeed(st.date);
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
       ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
-      ctx.fillText("THE QUEEN'S ERRAND — DAILY", lx, c - scrollY + 8);
+      ctx.fillText(this.fitText(ctx, 'DAILY QUEST — "THE QUEEN\'S ERRAND"', lw), lx, c - scrollY + 8);
       c += 14;
       const dh = st.done ? 34 : st.base !== null ? 74 : 92;
       const dy2 = c - scrollY;
@@ -4635,7 +4635,7 @@ const Screens = {
           ctx.fillText(this.fitText(ctx, dd.desc, lw - 8), lx + 4, dy2 + 15);
           ctx.font = 'italic 9px Georgia'; ctx.fillStyle = '#b08ab8';
           wrapText(ctx, 'Pays: one random MARQUISE gem, plus a legendary — 90% plain, 6% 1–3★, 3% 4–5★, 1% ARTIFACT.', lx + 4, dy2 + 30, lw - 8, 12, 3);
-          UI.btn(ctx, lx, dy2 + 62, lw, 24, "TAKE TODAY'S ERRAND", () => {
+          UI.btn(ctx, lx, dy2 + 62, lw, 24, 'DAILY QUEST', () => {
             const acc = Hero.acceptDaily();
             if (acc) { UI.toast("The Queen's Errand: " + acc.desc, '#c86adf'); AudioSys.sfx('gold'); }
           }, { size: 11, border: '#7a4a8f', color: '#c86adf' });
@@ -4650,7 +4650,7 @@ const Screens = {
       c += 16;
       if (!journal.length) {
         ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
-        ctx.fillText('No jobs of mine in your book yet.', lx, c - scrollY + 9);
+        ctx.fillText('No quests of mine in your book yet.', lx, c - scrollY + 9);
         c += 20;
       }
       for (const entry of journal.slice()) {
@@ -4674,7 +4674,7 @@ const Screens = {
               const rw = Hero.completeQuest(entry);
               if (!rw) return;
               if (rw.gemGot) UI.toast('She flips you a gem: ' + gemName(rw.gemGot), GEM_TYPES[rw.gemGot.type].color);
-              UI.toast('Job done! +' + rw.gold.toLocaleString() + 'g, +' + rw.souls + ' souls  ·  ' + Hero.addyLine + '/' + ADDY_QUEST_COUNT, '#c86adf');
+              UI.toast('Quest complete! +' + rw.gold.toLocaleString() + 'g, +' + rw.souls + ' souls  ·  ' + Hero.addyLine + '/' + ADDY_QUEST_COUNT, '#c86adf');
               AudioSys.sfx('level');
             }, { size: 10, border: '#3a7a4a', color: '#4ade80' });
           } else {
@@ -4697,7 +4697,7 @@ const Screens = {
             ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#c86adf';
             wrapText(ctx, 'REWARD:  ' + questRewardTextFor(entry, true), lx + 4, ey + 42, lw - 8, 11, 3);
             ctx.font = 'italic 8px Georgia'; ctx.fillStyle = '#6f6552';
-            ctx.fillText('Job ' + (entry.idx + 1) + ' of ' + ADDY_QUEST_COUNT, lx + 4, ey + 84);
+            ctx.fillText('Quest ' + (entry.idx + 1) + ' of ' + ADDY_QUEST_COUNT, lx + 4, ey + 84);
           }
           c += eh;
         }
@@ -4713,7 +4713,7 @@ const Screens = {
         const full = journal.length >= QUEST_JOURNAL_MAX;   // HER slots only — Lukus's ride separately
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
         ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
-        ctx.fillText('NEXT JOB', lx, c - scrollY + 6); c += 14;
+        ctx.fillText('NEXT QUEST', lx, c - scrollY + 6); c += 14;
         ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#c86adf';
         ctx.fillText(this.fitText(ctx, def.name.toUpperCase(), lw), lx, c - scrollY + 10); c += 16;
         ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
@@ -4727,9 +4727,9 @@ const Screens = {
             UI.btn(ctx, lx, c - scrollY, lw, 40, 'JOURNAL FULL — ' + QUEST_JOURNAL_MAX + ' / ' + QUEST_JOURNAL_MAX,
               null, { size: 12, disabled: true, color: '#8a8070' });
           } else {
-            UI.btn(ctx, lx, c - scrollY, lw, 40, 'TAKE THE JOB', () => {
+            UI.btn(ctx, lx, c - scrollY, lw, 40, 'ACCEPT QUEST', () => {
               const acc = Hero.acceptQuest('A');
-              if (acc) { UI.toast('Job taken: ' + acc.name, '#c86adf'); AudioSys.sfx('gold'); }
+              if (acc) { UI.toast('Quest accepted: ' + acc.name, '#c86adf'); AudioSys.sfx('gold'); }
             }, { size: 13, border: '#7a4a8f', color: '#c86adf' });
           }
         }
@@ -4872,12 +4872,6 @@ const Screens = {
       }
       c += 38;
     }
-    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'italic 9px Georgia'; ctx.fillStyle = '#6f6552';
-    wrapText(ctx, 'Odds: mostly rares and epics — 1 in 10 hands turns legendary (finer stars in deeper Torment).',
-      lx, c - scrollY + 8, lw, 12, 3);
-    c += 34;
-
     ctx.restore();
     UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 8);
     ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
