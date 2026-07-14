@@ -315,11 +315,18 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.66-alpha';
+const GAME_VERSION = 'v1.6.67-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.67-alpha', date: 'July 2026',
+    notes: [
+      'THE CAMPFIRE ROSTER IS CLEANED UP — the two heroes flanking the fire keep their nameplates properly apart on phones (they used to print over each other), the whole scene rides higher on portrait screens so nothing collides with the selection plate, the fallen skeleton no longer strikes through anyone\'s name, and a soft dark scrim sits under the name + PLAY + DELETE controls so they read clean over the grass',
+      'On short landscape screens the flanking nameplates move ABOVE their heroes\' heads, the bottom controls compress to hug the edge, and the decorative subtitle steps aside'
+    ]
+  },
   {
     v: 'v1.6.66-alpha', date: 'July 2026',
     notes: [
