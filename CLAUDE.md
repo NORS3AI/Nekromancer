@@ -328,7 +328,14 @@ Script lives in the session scratchpad (intentionally not committed).
   `QUEST_LINE` (data.js) = 500 SEQUENTIAL quests, generated DETERMINISTICALLY (hashed
   by index — targets never change between loads). Quests 0–199 gate by LEVEL 1→70,
   200–499 by PARAGON →1000 (`questGate(i)`); every 25th is a ★ MILESTONE ("reach
-  level/paragon X", `abs:true` — progress read absolutely, no base, not abandonable);
+  level/paragon X", `abs:true` — progress read absolutely, no base, not abandonable).
+  **v1.6.61 owner rules — names & escalation**: ALL 500 names are UNIQUE and
+  NEVER numbered (no "Forged Anew VII") — each template carries 8 openers × 8
+  closers walked diagonally (64 combos/deed); the 20 milestones have their own
+  `MILESTONE_NAMES` pools (8 level + 12 paragon). Deeds are dealt from a
+  reshuffling 9-template bag (~53 recurrences each), and each deed's k-th
+  recurrence climbs a geometric min→max curve (exponent 0.7, friendly rounding)
+  FORCED strictly above its previous target — a deed's target never repeats;
   every 10th + milestones pay double gold, bonus souls and a gem (`questReward(i)`
   — **DETERMINISTIC PER QUEST since v1.6.59 (owner rule "rewards are real when
   awarded")**: gold/souls/XP computed from the quest's own gate ("level
