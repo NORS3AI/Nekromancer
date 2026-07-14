@@ -51,9 +51,18 @@ loot at the artisans. The hero is persistent (localStorage).
   4px across l<10, hole-filled by complement, 1.1px Gaussian feather. If the
   owner ships new avatar art on black, rerun that and bump ART_V. `Hero.gender`
   ('m'|'f', snapshot parity, chosen on the creation screen via ♂ MALE / ♀ FEMALE
-  buttons). `Game.heroImg(gender,side)` loads them; `Game.heroSprite(gender,side)`
-  just returns the loaded Image (no canvas, no file:// taint), warmed in
-  `preloadArt()`. In **Top Down view** `Player.draw` calls
+  buttons). **HAIR COLORS (v1.6.73, owner sheets)**: `HAIR_COLORS` (data.js,
+  9 entries) — index 0 Black = the original full-res paintings, 1–8 =
+  `{m,f}_{front,back}_h1..8.webp` sliced from the owner's two 8×2 sheets
+  (female top row, male bottom; scratchpad `hairsheet.py`: the figures TOUCH
+  at the hands, so a min-cost vertical SEAM is carved between neighbors —
+  fixed grid cells bleed neighbor arms, plain connectivity merges all 8).
+  `Hero.hair` (0–8, snapshot parity, legacy saves default 0/black) feeds
+  `Game.heroImg(gender,side,hair)` / `heroSprite(gender,side,hair)`; the
+  creation screen's swatch row is HAIR COLOR (replaced GLOWING EYES, owner
+  rule — `Hero.eyeColor` still exists for staff/aura tints), and the walking
+  model + campfire roster (`snap.hair`) show the variant art. `preloadArt()`
+  warms the base four + each roster hero's variant; the rest load lazily. In **Top Down view** `Player.draw` calls
   `drawAvatarModel(ctx, front, back, bob)` (entities.js): back art when walking
   up, front art mirrored + sheared (`ctx.transform` −0.14) for left/right as a
   cheap ¾ turn, and the painting drawn as a base pass + **three phase-shifted

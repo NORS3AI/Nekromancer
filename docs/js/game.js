@@ -358,6 +358,16 @@ const Game = {
     this.lukusImg('helmed'); this.lukusImg('idle');
     this.addyImg(); this.lyssaImg();
     for (const gd of ['m', 'f']) { this.heroImg(gd, 'front'); this.heroImg(gd, 'back'); }
+    // Warm each roster hero's hair-variant art (campfire + play); the rest of
+    // the hair ladder loads lazily when browsed on the creation screen.
+    if (typeof Profiles !== 'undefined' && Profiles.slots) {
+      for (const s of Profiles.slots) {
+        if (s && s.hair) {
+          const gd = s.gender === 'f' ? 'f' : 'm';
+          this.heroImg(gd, 'front', s.hair); this.heroImg(gd, 'back', s.hair);
+        }
+      }
+    }
     if (typeof Screens !== 'undefined' && Screens.preloadShops) Screens.preloadShops();
     if (typeof World !== 'undefined' && World.loadTiles) World.loadTiles();
   },
@@ -720,8 +730,9 @@ const Game = {
   // views, chroma-keyed and driven by Player.drawAvatarModel as the walking
   // top-down model (layered slices fake articulation/depth).
   heroArt: {},
-  heroImg(gender, side) {
-    const key = (gender === 'f' ? 'f' : 'm') + '_' + side;
+  heroImg(gender, side, hair) {
+    const hc = (typeof HAIR_COLORS !== 'undefined' && HAIR_COLORS[hair | 0]) || { art: '' };
+    const key = (gender === 'f' ? 'f' : 'm') + '_' + side + hc.art;
     let img = this.heroArt[key];
     if (!img) {
       img = new Image();
@@ -734,8 +745,8 @@ const Game = {
   // the backdrop, so runtime chroma-keying hollowed the body out — the cutout
   // is done offline instead). No canvas work, no file:// taint: the sprite IS
   // the image once it's loaded.
-  heroSprite(gender, side) {
-    const img = this.heroImg(gender, side);
+  heroSprite(gender, side, hair) {
+    const img = this.heroImg(gender, side, hair);
     return (img.complete && img.naturalWidth) ? img : null;
   },
 

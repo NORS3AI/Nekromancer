@@ -389,8 +389,9 @@ class Player {
       // The owner's PAINTED AVATAR (male/female) walks the world when its art
       // is loaded; the procedural upright figure stands in until then.
       const gd = (typeof Hero !== 'undefined' && Hero.gender) || 'm';
-      const front = Game.heroSprite ? Game.heroSprite(gd, 'front') : null;
-      const back = Game.heroSprite ? Game.heroSprite(gd, 'back') : null;
+      const hair = (typeof Hero !== 'undefined' && Hero.hair) || 0;
+      const front = Game.heroSprite ? Game.heroSprite(gd, 'front', hair) : null;
+      const back = Game.heroSprite ? Game.heroSprite(gd, 'back', hair) : null;
       if (front && back) this.drawAvatarModel(ctx, front, back, bob);
       else this.drawUpright(ctx, bob);
     } else {

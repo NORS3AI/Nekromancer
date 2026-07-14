@@ -315,11 +315,19 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.72-alpha';
+const GAME_VERSION = 'v1.6.73-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.73-alpha', date: 'July 2026',
+    notes: [
+      'HAIR COLOR — character creation now offers NINE hair colors from the owner\'s new art sheets (Black, Ember, Blood, Violet, White, Silver, Gold, Green, Blue), replacing the glowing-eye color picker',
+      'Your chosen hair is real painted art, not a tint: each color is its own avatar painting, front and back, male and female — the creation preview, the walking hero in the world, and the campfire roster all show it',
+      'Old saves keep their look: heroes made before this update default to the original black-haired paintings'
+    ]
+  },
   {
     v: 'v1.6.72-alpha', date: 'July 2026',
     notes: [
@@ -2710,6 +2718,21 @@ const EYE_COLORS = [
   { name: 'Black',  hex: '#2a2a30' },
   { name: 'Purple', hex: '#b06adf' },
   { name: 'Pink',   hex: '#ff8fd0' }
+];
+
+// Hair colors (owner art sheets): index = Hero.hair. `art` is the filename
+// suffix for docs/art/hero/{m,f}_{front,back}<art>.webp — '' (index 0, Black)
+// is the original full-res painting; _h1.._h8 are the sheet variants.
+const HAIR_COLORS = [
+  { name: 'Black',  hex: '#23202a', art: '' },
+  { name: 'Ember',  hex: '#d96a1c', art: '_h1' },
+  { name: 'Blood',  hex: '#9c1f1f', art: '_h2' },
+  { name: 'Violet', hex: '#5f2a8f', art: '_h3' },
+  { name: 'White',  hex: '#e4e0d4', art: '_h4' },
+  { name: 'Silver', hex: '#a9adb5', art: '_h5' },
+  { name: 'Gold',   hex: '#c9990f', art: '_h6' },
+  { name: 'Green',  hex: '#2c7a2a', art: '_h7' },
+  { name: 'Blue',   hex: '#2c3f7d', art: '_h8' }
 ];
 
 const ELITE_PREFIX = ['Blood', 'Grave', 'Doom', 'Plague', 'Dread', 'Bone'];

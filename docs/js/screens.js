@@ -619,7 +619,7 @@ const Screens = {
       // The hero's PAINTED AVATAR rests by the fire (male/female per the
       // save; old saves without a gender default to male). The procedural
       // hooded figure stands in until the art loads.
-      const spr = Game.heroSprite ? Game.heroSprite(snap.gender === 'f' ? 'f' : 'm', 'front') : null;
+      const spr = Game.heroSprite ? Game.heroSprite(snap.gender === 'f' ? 'f' : 'm', 'front', snap.hair || 0) : null;
       if (spr) this.drawRosterAvatar(ctx, sp.x, sp.y, scale, spr, sp.i);
       else this.drawNecroFigure(ctx, sp.x, sp.y, scale, snap.eyeColor || '#6ff7c3', false);
       // Selection / delete ring.
@@ -804,13 +804,13 @@ const Screens = {
     // owner rule), gently striding in place; glowing eyes tint a soft aura.
     const cx = W / 2;
     const gd = Hero.gender || 'm';
-    const spr = Game.heroSprite ? Game.heroSprite(gd, 'front') : null;
-    const eye = Hero.eyeColor || '#6ff7c3';
+    const spr = Game.heroSprite ? Game.heroSprite(gd, 'front', Hero.hair || 0) : null;
+    const eye = (HAIR_COLORS[Hero.hair || 0] || HAIR_COLORS[0]).hex;
     // Everything below the preview has a fixed cost; whatever headroom is left
     // goes to the avatar so short landscape phones still fit the whole panel.
     const cols = ph < 560 ? 10 : 5, gap = 8;
     const sw = (pw - 32 - (cols - 1) * gap) / cols;
-    const swRows = Math.ceil(EYE_COLORS.length / cols);
+    const swRows = Math.ceil(HAIR_COLORS.length / cols);
     const pvH = Math.max(64, Math.min(150, ph - 230 - swRows * (sw + 20)));
     const pvFeet = py + 40 + pvH;
     if (spr) {
@@ -820,7 +820,7 @@ const Screens = {
       // here (owner rule: "subtle movements, not dancing images").
       const breath = Math.sin(t * 1.6);
       ctx.save();
-      // eye-colored aura behind the figure
+      // hair-tinted aura behind the figure
       ctx.fillStyle = eye + '22';
       ctx.beginPath(); ctx.ellipse(cx, pvFeet - pvH * 0.5, pw2 * 0.9, pvH * 0.55, 0, 0, TAU); ctx.fill();
       ctx.fillStyle = 'rgba(0,0,0,0.5)';
@@ -853,15 +853,16 @@ const Screens = {
     }, { size: 14, border: '#6b5f80', color: '#e8e0cc' });
     y += 58;
 
-    // Eye-colour swatches.
+    // Hair-colour swatches (owner rule: hair color instead of glowing eyes) —
+    // each picks the matching avatar art variant, shown live in the preview.
     ctx.textAlign = 'left';
     ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#9a9080';
-    ctx.fillText('GLOWING EYES', px + 16, y);
+    ctx.fillText('HAIR COLOR', px + 16, y);
     y += 12;
-    EYE_COLORS.forEach((c, i) => {
+    HAIR_COLORS.forEach((c, i) => {
       const bx = px + 16 + (i % cols) * (sw + gap);
       const by = y + Math.floor(i / cols) * (sw + 20);
-      const sel = (Hero.eyeColor || '#6ff7c3').toLowerCase() === c.hex.toLowerCase();
+      const sel = (Hero.hair || 0) === i;
       ctx.fillStyle = '#16121d';
       rr(ctx, bx, by, sw, sw, 8); ctx.fill();
       ctx.fillStyle = c.hex;
@@ -874,9 +875,9 @@ const Screens = {
       ctx.fillStyle = sel ? '#f2ecd8' : '#8a8070';
       ctx.font = '9px Georgia'; ctx.textAlign = 'center';
       ctx.fillText(c.name, bx + sw / 2, by + sw + 9);
-      UI.register(bx, by, sw, sw + 14, () => { Hero.eyeColor = c.hex; });
+      UI.register(bx, by, sw, sw + 14, () => { Hero.hair = i; });
     });
-    y += Math.ceil(EYE_COLORS.length / cols) * (sw + 20) + 6;
+    y += Math.ceil(HAIR_COLORS.length / cols) * (sw + 20) + 6;
 
     // Begin — the new hero joins the roster at the campfire.
     UI.btn(ctx, px + 16, py + ph - 46, pw - 32, 36, 'BEGIN THE JOURNEY', () => {
