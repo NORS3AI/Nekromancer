@@ -588,7 +588,8 @@ const Game = {
   drawTownPlate(ctx, it, on) {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const y = it.y - 92;
-    const img = (typeof UI !== 'undefined' && UI.plateImg) ? UI.plateImg() : null;
+    // Street signs idle dark; the theme glow lights the one you stand at.
+    const img = (typeof UI !== 'undefined' && UI.plateImg) ? UI.plateImg(on) : null;
     if (img) {
       // The owner's painted plate as the street sign, Trajan-style caps.
       const txt = it.label.toUpperCase();

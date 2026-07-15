@@ -202,11 +202,13 @@ const UI = {
       { panel: '#4a4356', title: '#c9bfa8', btn: '#6b5f80' };
   },
 
-  // The active theme's painted button plate (falls back to the neutral one).
-  plateImg() {
+  // Plates idle DARK (the neutral art); the theme's colored glow shows only
+  // on mouse hover (owner rule). hover=true resolves the themed recolor.
+  plateImg(hover) {
     if (typeof Game === 'undefined' || !Game.uiImg) return null;
     const th = this.theme();
-    return (th.plate && Game.uiImg('button_' + th.plate)) || Game.uiImg('button');
+    if (hover && th.plate) return Game.uiImg('button_' + th.plate) || Game.uiImg('button');
+    return Game.uiImg('button') || (th.plate && Game.uiImg('button_' + th.plate));
   },
 
   btn(ctx, x, y, w, h, label, cb, o = {}) {
@@ -564,7 +566,11 @@ const UI = {
   // Cinzel (Trajan-style, self-hosted). Falls back to UI.btn until the art
   // loads. Source fractions measured off the sliced sheet.
   btnPlate(ctx, x, y, w, h, label, cb, o = {}) {
-    const img = this.plateImg();
+    // Hover (mouse only) lights the plate with the theme's glow.
+    const mp = (typeof Input !== 'undefined' && !Input.touchMode) ? Input.mousePos : null;
+    const hover = !!(mp && cb && !o.disabled &&
+      mp.x >= x && mp.x <= x + w && mp.y >= y && mp.y <= y + h);
+    const img = this.plateImg(hover);
     if (!img) return this.btn(ctx, x, y, w, h, label, cb, o);
     const sw = img.width, sh = img.height;
     const capF = 0.15, sk0 = 0.455, sk1 = 0.545;
