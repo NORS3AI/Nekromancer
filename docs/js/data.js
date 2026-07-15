@@ -321,11 +321,17 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.88-alpha';
+const GAME_VERSION = 'v1.6.89-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.89-alpha', date: 'July 2026',
+    notes: [
+      'Plate buttons now rest DARK — the theme\'s colored glow only ignites under the mouse (and on the town street sign you\'re standing at). Your chosen theme decides the glow color, not the resting look'
+    ]
+  },
   {
     v: 'v1.6.88-alpha', date: 'July 2026',
     notes: [

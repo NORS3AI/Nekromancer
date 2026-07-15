@@ -316,8 +316,10 @@ loot at the artisans. The hero is persistent (localStorage).
   `THEMES` (data.js) is now SIX entries — Void (default) · Bone White ·
   Blood · Ocean · Jungle · Ember — each with a `plate` key naming its glow recolor
   (`docs/art/ui/button_<plate>.webp`, all 1532×385 = same 5-slice fractions
-  as the neutral plate). `UI.plateImg()` resolves the active theme's plate
-  (fallback: neutral `button.webp`); `btnPlate` + `drawTownPlate` use it.
+  as the neutral plate). `UI.plateImg(hover)` resolves the plate: **plates
+  idle DARK (neutral `button.webp`); the theme's glow recolor shows ONLY on
+  mouse hover (v1.6.89 owner rule — `btnPlate` checks `Input.mousePos`,
+  never in touch mode); town street plates glow when standing at the pad.**
   Legacy theme ids map in `UI.theme()`: arcane/violet→void, royal→ember.
   **v1.6.85: 'Violet' is renamed VOID (id 'void', plate art key stays
   'violet') and is the DEFAULT theme (Settings default 'void').**
