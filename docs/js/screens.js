@@ -865,10 +865,22 @@ const Screens = {
       const sel = (Hero.hair || 0) === i;
       ctx.fillStyle = '#16121d';
       rr(ctx, bx, by, sw, sw, 8); ctx.fill();
-      ctx.fillStyle = c.hex;
-      ctx.shadowColor = c.hex; ctx.shadowBlur = sel ? 12 : 4;
-      ctx.beginPath(); ctx.arc(bx + sw / 2, by + sw / 2, sw * 0.28, 0, TAU); ctx.fill();
-      ctx.shadowBlur = 0;
+      // The chip is the HEAD BUST in that hair color (owner rule — busts,
+      // not the whole body); a plain color dot stands in until it loads.
+      const bust = Game.heroBust ? Game.heroBust(gd, i) : null;
+      if (bust) {
+        const s = Math.min((sw - 4) / bust.width, (sw - 4) / bust.height);
+        const dw = bust.width * s, dh = bust.height * s;
+        ctx.save();
+        rr(ctx, bx + 1, by + 1, sw - 2, sw - 2, 7); ctx.clip();
+        ctx.drawImage(bust, bx + (sw - dw) / 2, by + sw - dh - 2, dw, dh);
+        ctx.restore();
+      } else {
+        ctx.fillStyle = c.hex;
+        ctx.shadowColor = c.hex; ctx.shadowBlur = sel ? 12 : 4;
+        ctx.beginPath(); ctx.arc(bx + sw / 2, by + sw / 2, sw * 0.28, 0, TAU); ctx.fill();
+        ctx.shadowBlur = 0;
+      }
       ctx.strokeStyle = sel ? '#f2ecd8' : '#3a3448';
       ctx.lineWidth = sel ? 3 : 1.5;
       rr(ctx, bx, by, sw, sw, 8); ctx.stroke();

@@ -749,6 +749,18 @@ const Game = {
     const img = this.heroImg(gender, side, hair);
     return (img.complete && img.naturalWidth) ? img : null;
   },
+  // Head bust for the HAIR COLOR picker chips (owner sheets, front view;
+  // bust_{m,f}0 is cropped from the base painting). Lazy: null until loaded.
+  heroBust(gender, hair) {
+    const key = 'bust_' + (gender === 'f' ? 'f' : 'm') + (hair | 0);
+    let img = this.heroArt[key];
+    if (!img) {
+      img = new Image();
+      img.src = 'art/hero/' + key + '.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
+      this.heroArt[key] = img;
+    }
+    return (img.complete && img.naturalWidth) ? img : null;
+  },
 
   // ---- Lyssa, Mistress of Fate — the OWNER'S PAINTED GAMBLER, keyed onto the
   // map at the rift pavilion steps. Rift and Season bosses breathe out
