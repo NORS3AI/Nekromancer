@@ -407,8 +407,8 @@ const UI = {
         const s = this.safe || { top: 0, left: 0 };
         this.btn(ctx, 12 + s.left, 40 + s.top, 92, 30, '☰ MENU', () => UI.open('sysmenu'),
           { size: 12, color: '#c9bfa8', border: '#5a544a' });
-        this.btn(ctx, 110 + s.left, 40 + s.top, 44, 30, '🎒', () => UI.open('radial'),
-          { size: 14, color: '#6ff7c3', border: '#3a7a6a' });
+        // (The 🎒 inventory shortcut beside MENU was deleted — owner rule;
+        // Inventory lives in the ☰ MENU.)
         if (Game.townPrompt) this.drawTownEnter(ctx, W, H, false);
       }
       this.drawToasts(ctx, W);

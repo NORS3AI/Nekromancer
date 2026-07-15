@@ -220,11 +220,11 @@ const Screens = {
     }
 
     // Delete / cancel toggle, lower-left (its own row, clear of PLAY / YES-NO).
-    UI.btnPlate(ctx, 16, H - 40, 150, 30, delMode ? 'CANCEL' : 'DELETE HERO', () => {
+    UI.btnPlate(ctx, 10, H - 30, 104, 22, delMode ? 'CANCEL' : 'DELETE HERO', () => {
       UI.sel.delMode = !delMode;
       UI.sel.delConfirm = undefined;
       if (!delMode) UI.sel.pick = null;   // entering delete mode clears the play selection
-    }, { size: 12, border: delMode ? '#6b5f80' : '#8a4550', color: delMode ? '#c9bfa8' : '#e04a5a' });
+    }, { size: 9, color: delMode ? '#c9bfa8' : '#e04a5a' });
 
     // Still, low-lying fog drifts across the foreground.
     this.drawForegroundFog(ctx, W, H, t);
@@ -1716,11 +1716,9 @@ const Screens = {
     const avail = (py + ph - 24) - y;
     const rowH = clamp(avail / rows.length, 44, 58);
     for (const [label, desc, col, cb] of rows) {
-      UI.btnPlate(ctx, px + 16, y + 2, pw - 32, rowH - 24, label, cb, { size: 14, disabled: !cb });
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'italic 9px Georgia';
-      ctx.fillStyle = cb ? '#9a9080' : '#453f52';
-      ctx.fillText(this.fitText(ctx, desc, pw - 60), px + pw / 2, y + rowH - 10);
+      // No flavor line beneath (owner rule) — the plate name says it all;
+      // the description survives as the desktop hover tip.
+      UI.btnPlate(ctx, px + 16, y + 2, pw - 32, rowH - 18, label, cb, { size: 14, disabled: !cb, tip: desc });
       y += rowH;
     }
     // Keys footer — each shown only once earned; nothing here otherwise.
