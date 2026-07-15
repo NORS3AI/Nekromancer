@@ -321,11 +321,23 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.83-alpha';
+const GAME_VERSION = 'v1.6.84-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.84-alpha', date: 'July 2026',
+    notes: [
+      'MORE PAINTED PLATES — Accept Quest and Drop (Lukus, Addy and the Journal), Campfire (Character sheet), Choose Skills, the Actives/Passives tabs, and every bench button at the Smithy, Jeweler and Enchantress',
+      'Gated quests share one plate with live text — "REQUIRES LEVEL X" written on the plate, no thousand baked images',
+      'The ☰ MENU\'s plates are properly spaced now — no more touching panels',
+      'ALL headings wear the chosen look: Cinzel caps in parchment gold — the purple MENU title and the bright-colored section headers (Character, Inventory, Stash, Journal, Achievements, Settings, Skills & Passives) are gone',
+      'Menu flow: closing a menu page (Achievements, Inventory…) returns to the ☰ MENU so the other options stay in reach; closing the menu itself returns to the game',
+      'DURABILITY (Diablo-3-style) — armor and weapons now wear down: hits taken grind your armor, casting grinds your weapon and phylactery, and dying costs 10% of every piece\'s maximum. Gear shows "Durability 21/21"; at 0 the item is BROKEN and gives NOTHING (stats, gems, set pieces, legendary powers all switch off) until repaired. Jewelry never wears, exactly as in D3',
+      'THE SMITHY REPAIRS — a new Repair bench lists every damaged piece with its gold price, one tap per item or REPAIR ALL on a plate. TRAIN buttons at all three artisans are plates now too'
+    ]
+  },
   {
     v: 'v1.6.83-alpha', date: 'July 2026',
     notes: [

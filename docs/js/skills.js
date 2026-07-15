@@ -902,6 +902,10 @@ const Skills = {
     }
     if (result) {
       p.essence -= cost;
+      // Weapon wear (D3-style): every 60th successful cast grinds 1
+      // durability off the weapon and phylactery (armor wears in Player.hurt).
+      this._wearCasts = (this._wearCasts || 0) + 1;
+      if (this._wearCasts >= 60) { this._wearCasts = 0; Items.wearEquipped(1, 'weapon'); }
       if (result === 'cdSet') {
         // the skill set its own cooldown
       } else if (s.charges) {

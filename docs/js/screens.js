@@ -49,6 +49,7 @@ const Screens = {
       case 'skillChooser': this.skillChooser(ctx, W, H); break;
       case 'smith': this.smith(ctx, W, H); break;
       case 'smithSalvage': this.smithSalvage(ctx, W, H); break;
+      case 'smithRepair': this.smithRepair(ctx, W, H); break;
       case 'smithWeapon': this.smithWeapon(ctx, W, H); break;
       case 'smithArmor': this.smithArmor(ctx, W, H); break;
       case 'torches': this.torches(ctx, W, H); break;
@@ -1012,14 +1013,15 @@ const Screens = {
     ctx.fillText(this.fitText(ctx, npcLine, pw - 30), W / 2, py + 52);
     let y = py + 66;
     if (showTrain) { this.artisanRow(ctx, px, pw, y + 8, trainKey.k, trainKey.label); y += 34; }
-    for (const [label, desc, target, color] of buttons) {
+    // Bench rows are painted PLATES (owner rule — Jeweler / Enchantress /
+    // Smithy get the plate treatment); the bench's one-line description sits
+    // beneath the plate in small italics.
+    for (const [label, desc, target] of buttons) {
       const cb = typeof target === 'function' ? target : () => UI.open(target);
-      UI.btn(ctx, px + 14, y, pw - 28, rowH - 8, '', cb);
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 15px Georgia'; ctx.fillStyle = color;
-      ctx.fillText(label, px + 30, y + rowH * 0.32);
-      ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
-      ctx.fillText(this.fitText(ctx, desc, pw - 60), px + 30, y + rowH * 0.66);
+      UI.btnPlate(ctx, px + 14, y + 2, pw - 28, rowH - 24, String(label).replace(/^[^A-Za-z]*/, ''), cb, { size: 14, tip: desc });
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'italic 9px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.fillText(this.fitText(ctx, desc, pw - 60), px + pw / 2, y + rowH - 11);
       y += rowH;
     }
   },
@@ -1047,11 +1049,13 @@ const Screens = {
       : 'Bounty';
     const pw = Math.min(360, W - 24);
     const px = W / 2 - pw / 2;
-    // Compact rows on short (landscape phone) screens so all rows fit.
+    // Compact rows on short (landscape phone) screens so all rows fit. The
+    // plate art overhangs its rect ~21% top and bottom, so rows need real
+    // breathing room or the plates touch (owner rule: space them out).
     const nRows = rows.length + (inRun ? 1 : 0);
-    const rowH = H < (inRun ? 570 : 520) ? 40 : 56;
-    const btnH = rowH - 8;
-    const ph = 64 + nRows * rowH + 10;
+    const rowH = H < (inRun ? 600 : 550) ? 46 : 62;
+    const btnH = rowH - 20;
+    const ph = 64 + nRows * rowH + 14;
     const py = Math.max(8, Math.min(H / 2 - ph / 2, H - ph - (Game.state === 'town' ? 150 : 12)));
     UI.panel(ctx, px, py, pw, ph, 'MENU');
     let y = py + 56;
@@ -1111,7 +1115,7 @@ const Screens = {
       // Section header: the giver, their slots, and their ledger progress.
       if (vis(c, 24)) {
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        ctx.font = 'bold 10px Georgia'; ctx.fillStyle = g.color;
+        ctx.font = '600 10px Cinzel, Georgia'; ctx.fillStyle = '#d8c5a0';
         ctx.fillText(this.fitText(ctx, g.tag, lw - 96), lx, c - scrollY + 10);
         ctx.textAlign = 'right'; ctx.font = '9px Georgia'; ctx.fillStyle = '#9a9080';
         ctx.fillText(g.list.length + '/' + QUEST_JOURNAL_MAX + ' · ' + g.done + '/' + g.total + ' done', lx + lw, c - scrollY + 10);
@@ -1156,7 +1160,7 @@ const Screens = {
             ctx.font = '8px Georgia'; ctx.fillStyle = '#7ab88a';
             ctx.fillText(g.see, lx + lw - 2, yy + 42);
           } else if (!def.abs) {
-            UI.btn(ctx, lx + lw - 50, yy + 18, 48, 22, 'DROP', () => {
+            UI.btnPlate(ctx, lx + lw - 50, yy + 18, 48, 22, 'DROP', () => {
               Hero.abandonQuest(entry);
               UI.toast('Returned to ' + (g.src === 'A' ? 'Addy' : 'Lukus') + ': ' + def.name, '#9a9080');
             }, { size: 8, border: '#7a4a4a', color: '#c98a8a' });
@@ -2307,7 +2311,7 @@ const Screens = {
     let y = 18 + (sfa.top || 0);
 
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold 16px Georgia'; ctx.fillStyle = '#c9bfa8';
+    ctx.font = '600 16px Cinzel, Georgia'; ctx.fillStyle = '#dcc9a2';
     ctx.fillText('INVENTORY', px, y);
     ctx.textAlign = 'right'; ctx.font = '11px Georgia'; ctx.fillStyle = '#6ff7c3';
     ctx.fillText(Hero.bagUsed() + ' / ' + Hero.BAG_SIZE + ' in bag', px + pw, y);
@@ -2438,9 +2442,9 @@ const Screens = {
       // Group header.
       if (vis(c, 20)) {
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#6ff7c3';
+        ctx.font = '600 11px Cinzel, Georgia'; ctx.fillStyle = '#d8c5a0';
         ctx.fillText(groupLabel(s).toUpperCase(), px + 2, c - scrollY + 13);
-        ctx.strokeStyle = 'rgba(111,247,195,0.22)'; ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(216,197,160,0.25)'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(px, c - scrollY + 18); ctx.lineTo(px + pw, c - scrollY + 18); ctx.stroke();
       }
       c += 24;
@@ -2676,10 +2680,10 @@ const Screens = {
     // Roomier on desktop (mouse), tighter on phones.
     const pw = Math.min(UI.desktop ? 860 : 600, W - 16);
     const px = W / 2 - pw / 2;
-    UI.btn(ctx, px, 40, pw / 2 - 4, 32, 'ACTIVES', () => { UI.sel.tab = 'actives'; UI.sel.info = null; },
-      { bg: UI.sel.tab === 'actives' ? 'rgba(60,52,78,0.95)' : undefined, size: 13 });
-    UI.btn(ctx, px + pw / 2 + 4, 40, pw / 2 - 4, 32, 'PASSIVES', () => { UI.sel.tab = 'passives'; UI.sel.info = null; },
-      { bg: UI.sel.tab === 'passives' ? 'rgba(60,52,78,0.95)' : undefined, size: 13 });
+    UI.btnPlate(ctx, px, 40, pw / 2 - 8, 32, 'ACTIVES', () => { UI.sel.tab = 'actives'; UI.sel.info = null; },
+      { size: 13, color: UI.sel.tab === 'actives' ? '#f0dcae' : '#8a8070' });
+    UI.btnPlate(ctx, px + pw / 2 + 8, 40, pw / 2 - 8, 32, 'PASSIVES', () => { UI.sel.tab = 'passives'; UI.sel.info = null; },
+      { size: 13, color: UI.sel.tab === 'passives' ? '#f0dcae' : '#8a8070' });
 
     if (UI.sel.tab === 'actives') this.skillsActives(ctx, W, H, px, pw);
     else this.skillsPassives(ctx, W, H, px, pw);
@@ -2776,7 +2780,7 @@ const Screens = {
     // selected slot (skills browsable by category, with their runes).
     const slot = UI.sel.slotIdx == null ? 0 : UI.sel.slotIdx;
     const by = cyc + cr + 26;
-    UI.btn(ctx, px + pw * 0.12, by, pw * 0.76, 44, '⚑  CHOOSE SKILLS & RUNES',
+    UI.btnPlate(ctx, px + pw * 0.12, by, pw * 0.76, 44, 'CHOOSE SKILLS',
       () => Screens.openChooser(slot, Hero.loadout[slot], null),
       { size: 15, color: '#6ff7c3', border: '#3a7a6a' });
     ctx.textAlign = 'center'; ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#6f6552';
@@ -3119,7 +3123,8 @@ const Screens = {
         ['⚒  SALVAGE', 'Break gear down into crafting materials', 'smithSalvage', '#ffb43a'],
         ['⚔  CRAFT WEAPON', 'Forge scythes and phylacteries', 'smithWeapon', '#e0724a'],
         ['🛡  CRAFT ARMOR', 'Forge armor, boots, rings and amulets', 'smithArmor', '#8fb0e8'],
-        ['🔥  CRAFT TORCHES', 'Recipe-built lights against the dark', 'torches', '#ffb24a']
+        ['🔥  CRAFT TORCHES', 'Recipe-built lights against the dark', 'torches', '#ffb24a'],
+        ['🛠  REPAIR', 'Mend battle-worn gear for gold', 'smithRepair', '#4ade80']
       ], { k: 'smith', label: 'FORGE' });
   },
 
@@ -3145,6 +3150,58 @@ const Screens = {
       { size: 12, border: '#8a5a2a', color: legOk ? '#ff8c2a' : '#7a5f45', disabled: !legOk });
     ctx.textAlign = 'center'; ctx.font = '10px Georgia'; ctx.fillStyle = '#6f6552';
     ctx.fillText(this.fitText(ctx, 'Single items always salvage free from the Inventory wheel, any rarity.', pw - 24), px + pw / 2, 258);
+  },
+
+  // REPAIR (owner spec v1.6.84, D3-style): every damaged piece — worn or
+  // bagged — listed with its aaa/bbb durability and gold price; broken gear
+  // glows red. REPAIR ALL sits on a plate at the top.
+  smithRepair(ctx, W, H) {
+    this.shopBackdrop(ctx, W, H, 'smith');
+    const pw = Math.min(560, W - 20);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 56, 430);
+    UI.panel(ctx, px, 46, pw, ph, 'REPAIR');
+    ctx.textAlign = 'right'; ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#ffd76a';
+    ctx.fillText(Hero.gold + ' g', px + pw - 16, 92);
+    const list = Items.damagedGear();
+    const total = Items.repairAllCost();
+    UI.btnPlate(ctx, px + 16, 104, pw - 32, 34,
+      total > 0 ? 'REPAIR ALL  (' + total + 'g)' : 'NOTHING NEEDS REPAIR',
+      total > 0 ? () => Items.repairAll() : null,
+      { size: 13, disabled: total <= 0 });
+    // Scrolling rows.
+    const listTop = 152, viewBot = 46 + ph - 14, viewH = Math.max(40, viewBot - listTop);
+    const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
+    UI.sel.scrollY = scrollY;
+    UI.sel.scrollRegion = { x: px, y: listTop - 4, w: pw, h: viewH + 8 };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(px, listTop - 4, pw, viewH + 8); ctx.clip();
+    let c = listTop;
+    for (const it of list) {
+      const yy = c - scrollY;
+      if (yy + 40 > listTop && yy < viewBot) {
+        const broken = it.dur <= 0;
+        ctx.fillStyle = broken ? 'rgba(60,20,26,0.92)' : 'rgba(28,24,38,0.92)';
+        rr(ctx, px + 12, yy, pw - 24, 36, 6); ctx.fill();
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.font = 'bold 12px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
+        ctx.fillText(this.fitText(ctx, it.name, pw - 220), px + 22, yy + 12);
+        ctx.font = '10px Georgia'; ctx.fillStyle = broken ? '#e04a5a' : '#9a9080';
+        ctx.fillText((broken ? 'BROKEN — ' : '') + 'Durability ' + it.dur + '/' + it.durMax, px + 22, yy + 26);
+        const cost = Items.repairCost(it);
+        UI.btn(ctx, px + pw - 118, yy + 5, 100, 26, cost + 'g',
+          Hero.gold >= cost ? () => Items.repairItem(it) : null,
+          { size: 11, disabled: Hero.gold < cost, border: '#57b894', color: '#6ff7c3' });
+      }
+      c += 42;
+    }
+    if (!list.length) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText('Every buckle shines. Come back after a real fight.', px + pw / 2, listTop + 30);
+    }
+    ctx.restore();
+    UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 6);
   },
 
   // The shared craft bench body — quality toggle + a slot grid.
@@ -3310,7 +3367,7 @@ const Screens = {
     this.artisanHub(ctx, W, H, 'jeweler', 'ORREN GILDSTONE — JEWELER',
       '"Every stone has a soul. Let me show you."', [
         ['◆  SOCKET A GEM', 'Set a gem into an empty socket', 'jewSocket', '#4ecbe0'],
-        ['◇  UNSOCKET', 'Pull gems back out — always free', 'jewUnsocket', '#b06adf'],
+        ['◇  UNSOCKET A GEM', 'Pull gems back out — always free', 'jewUnsocket', '#b06adf'],
         ['⬘  MERGE GEMS', 'Combine 3 matching gems into a finer one', 'jewMerge', '#4ade80'],
         ['⬖  SELL GEMS', 'Trade gems for gold', 'jewSell', '#ffd76a'],
         ['✧  CRAFT A GEM', 'Cut a brand-new gem of your chosen type', 'jewCraft', '#c88bf0']
@@ -3585,9 +3642,9 @@ const Screens = {
     ctx.fillText(label + '  ·  LEVEL ' + lvl + ' / 10' + (lvl >= 10 ? '  (MAX)' : ''), px + 16, y + 8);
     if (lvl < 10) {
       const cost = Items.trainCost(which);
-      UI.btn(ctx, px + pw - 156, y - 6, 140, 26, `TRAIN  (${cost}g)`,
+      UI.btnPlate(ctx, px + pw - 156, y - 6, 140, 26, `TRAIN  (${cost}g)`,
         Hero.gold >= cost ? () => Items.train(which) : null,
-        { size: 10, disabled: Hero.gold < cost, border: '#8a6f4a', color: '#ffd76a' });
+        { size: 10, disabled: Hero.gold < cost });
     }
     return y + 22;
   },
@@ -3924,10 +3981,12 @@ const Screens = {
       ctx.fillText(value, x + colW, yv);
       return yv + 19 * k;
     };
-    const header = (x, yv, txt, color) => {
+    const header = (x, yv, txt) => {
+      // Section headings share the plate style: Cinzel caps in parchment gold
+      // (owner rule — no more garish per-section colors).
       ctx.textAlign = 'left';
-      ctx.font = 'bold ' + (12 * k) + 'px Georgia';
-      ctx.fillStyle = color;
+      ctx.font = '600 ' + (12 * k) + 'px Cinzel, Georgia';
+      ctx.fillStyle = '#d8c5a0';
       ctx.fillText(txt, x, yv);
       return yv + 18 * k;
     };
@@ -4031,7 +4090,7 @@ const Screens = {
         Hero.save(); Game.state = 'menu'; UI.open('select');
       }, { size: 12, border: '#c8722a', color: '#ffb24a' });
     } else {
-      UI.btn(ctx, px + 16, fbY, fbW, 30, '⌂  CAMPFIRE — CHANGE HERO', () => {
+      UI.btnPlate(ctx, px + 16, fbY, fbW, 30, 'CAMPFIRE', () => {
         Hero.save(); Game.state = 'menu'; UI.open('select');
       }, { size: 12, border: '#c8722a', color: '#ffb24a' });
     }
@@ -4208,7 +4267,7 @@ const Screens = {
     // Header: totals + capacity.
     const total = Hero.stash.filter(it => it && !it.torch).length;
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold 16px Georgia'; ctx.fillStyle = '#c9bfa8';
+    ctx.font = '600 16px Cinzel, Georgia'; ctx.fillStyle = '#dcc9a2';
     ctx.fillText('STASH', px, y);
     // Right-aligned clear of the red ✕ in the corner.
     ctx.textAlign = 'right'; ctx.font = '11px Georgia'; ctx.fillStyle = '#8fb0e8';
@@ -4293,7 +4352,7 @@ const Screens = {
       // Group header.
       if (vis(c, 20)) {
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#8fb0e8';
+        ctx.font = '600 11px Cinzel, Georgia'; ctx.fillStyle = '#d8c5a0';
         ctx.fillText(g.label.toUpperCase(), px + 2, c - scrollY + 13);
         ctx.textAlign = 'right'; ctx.font = '10px Georgia'; ctx.fillStyle = '#6f6552';
         ctx.fillText(g.items.length + '', px + pw - 2, c - scrollY + 13);
@@ -4491,7 +4550,7 @@ const Screens = {
           }, { size: 10, border: '#3a7a4a', color: '#4ade80' });
         } else if (!def.abs) {
           // Dropping returns the quest to Lukus's queue — nothing is lost.
-          UI.btn(ctx, lx + lw - 50, yy + 10, 46, 22, 'DROP', () => {
+          UI.btnPlate(ctx, lx + lw - 50, yy + 10, 46, 22, 'DROP', () => {
             Hero.abandonQuest(entry);
             UI.toast('Returned to Lukus: ' + def.name, '#9a9080');
           }, { size: 8, border: '#7a4a4a', color: '#c98a8a' });
@@ -4548,14 +4607,16 @@ const Screens = {
           UI.btn(ctx, lx, c - scrollY, lw, 40, 'JOURNAL FULL — ' + QUEST_JOURNAL_MAX + ' / ' + QUEST_JOURNAL_MAX,
             null, { size: 12, disabled: true, color: '#8a8070' });
         } else if (gateOk) {
-          UI.btn(ctx, lx, c - scrollY, lw, 40, 'ACCEPT QUEST', () => {
+          UI.btnPlate(ctx, lx, c - scrollY, lw, 40, 'ACCEPT QUEST', () => {
             const acc = Hero.acceptQuest();
             if (acc) { UI.toast('Quest accepted: ' + acc.name, '#ffd76a'); AudioSys.sfx('gold'); }
           }, { size: 13, border: '#8a6f2a', color: '#ffd76a' });
         } else {
-          UI.btn(ctx, lx, c - scrollY, lw, 40,
+          // Gated quests share ONE plate with live text (owner rule — no
+          // thousand baked images, just "REQUIRES LEVEL X" on the plate).
+          UI.btnPlate(ctx, lx, c - scrollY, lw, 40,
             'REQUIRES ' + (def.gate.kind === 'level' ? 'LEVEL ' : 'PARAGON ') + def.gate.at,
-            null, { size: 12, disabled: true, color: '#8a8070' });
+            null, { size: 12, disabled: true });
         }
       }
       c += 48;
@@ -4766,7 +4827,7 @@ const Screens = {
               AudioSys.sfx('level');
             }, { size: 10, border: '#3a7a4a', color: '#4ade80' });
           } else {
-            UI.btn(ctx, lx + lw - 50, yy + 10, 46, 22, 'DROP', () => {
+            UI.btnPlate(ctx, lx + lw - 50, yy + 10, 46, 22, 'DROP', () => {
               Hero.abandonQuest(entry);
               UI.toast('Returned to Addy: ' + def.name, '#9a9080');
             }, { size: 8, border: '#7a4a4a', color: '#c98a8a' });
@@ -4815,7 +4876,7 @@ const Screens = {
             UI.btn(ctx, lx, c - scrollY, lw, 40, 'JOURNAL FULL — ' + QUEST_JOURNAL_MAX + ' / ' + QUEST_JOURNAL_MAX,
               null, { size: 12, disabled: true, color: '#8a8070' });
           } else {
-            UI.btn(ctx, lx, c - scrollY, lw, 40, 'ACCEPT QUEST', () => {
+            UI.btnPlate(ctx, lx, c - scrollY, lw, 40, 'ACCEPT QUEST', () => {
               const acc = Hero.acceptQuest('A');
               if (acc) { UI.toast('Quest accepted: ' + acc.name, '#c86adf'); AudioSys.sfx('gold'); }
             }, { size: 13, border: '#7a4a8f', color: '#c86adf' });
@@ -5258,8 +5319,8 @@ const Screens = {
     const colW = twoCol ? (pw - 44) / 2 : pw - 32;
     let ay = py + 92 - sc;
     ctx.textAlign = 'left';
-    ctx.font = 'bold 12px Georgia';
-    ctx.fillStyle = '#57b894';
+    ctx.font = '600 12px Cinzel, Georgia';
+    ctx.fillStyle = '#d8c5a0';
     ctx.fillText('— AUDIO —', px + 16, ay);
     ay += 14;
     for (const [chan, label] of chans) {
@@ -5295,8 +5356,8 @@ const Screens = {
     let gx = twoCol ? px + 28 + colW : px + 16;
     let gy = twoCol ? py + 106 - sc : ay + 24;   // clear the last audio slider
     ctx.textAlign = 'left';
-    ctx.font = 'bold 12px Georgia';
-    ctx.fillStyle = '#57b894';
+    ctx.font = '600 12px Cinzel, Georgia';
+    ctx.fillStyle = '#d8c5a0';
     ctx.fillText('— GAMEPLAY —', gx, gy - 14);
     // Elective Mode — allow more than one skill from a category on the action
     // bar. Toggling it re-sanitizes the loadout under the new rule.
