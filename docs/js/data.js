@@ -321,11 +321,17 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.86-alpha';
+const GAME_VERSION = 'v1.6.87-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.87-alpha', date: 'July 2026',
+    notes: [
+      'The title screen\'s CHOOSE YOUR HERO button is the painted plate now — the last plain green button is gone'
+    ]
+  },
   {
     v: 'v1.6.86-alpha', date: 'July 2026',
     notes: [
