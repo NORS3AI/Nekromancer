@@ -332,8 +332,8 @@ const Game = {
   //   padX, padY, padR,  blockerCX,CY,W,H,  label, icon, color, kind[, slots, boost]
   TOWN_STATIONS: [
     [435, 395, 60,   420, 260, 240, 220, 'Jeweler',        '◆', '#4ecbe0', 'jeweler'],
-    [720, 375, 60,   745, 240, 180, 190, 'Mystic',         '✦', '#b06adf', 'mystic'],
-    [305, 745, 60,   250, 650, 210, 150, 'Blacksmith',     '⚒', '#ffb43a', 'smith'],
+    [720, 375, 60,   745, 240, 180, 190, 'Enchantress',    '✦', '#b06adf', 'mystic'],
+    [305, 745, 60,   250, 650, 210, 150, 'Smithy',         '⚒', '#ffb43a', 'smith'],
     [835, 725, 60,   885, 615, 180, 130, "Horadric's Cube", '◈', '#ff5a4a', 'cube'],
     [150, 485, 55,    95, 415, 180, 110, 'Weapons',        '⚔', '#e0724a', 'vendor', ['weapon', 'offhand']],
     [435, 955, 60,   370, 860, 230, 160, 'Armor',          '🛡', '#8fb0e8', 'vendor', ['helm', 'chest', 'gloves', 'boots', 'shoulders', 'legs']],
@@ -379,7 +379,11 @@ const Game = {
     this.lukusImg('helmed'); this.lukusImg('idle');
     this.addyImg(); this.lyssaImg();
     for (const gd of ['m', 'f']) { this.heroImg(gd, 'front'); this.heroImg(gd, 'back'); this.heroImg(gd, 'side'); }
-    for (const k of ['panel', 'close', 'globe_red', 'globe_blue']) this.uiImg(k);
+    for (const k of ['panel', 'close', 'globe_red', 'globe_blue', 'button']) this.uiImg(k);
+    // Warm the Trajan-style plate font so canvas text picks it up quickly.
+    if (document.fonts && document.fonts.load) {
+      document.fonts.load('600 20px Cinzel').catch(() => {});
+    }
     // Warm each roster hero's hair-variant art (campfire + play); the rest of
     // the hair ladder loads lazily when browsed on the creation screen.
     if (typeof Profiles !== 'undefined' && Profiles.slots) {
@@ -578,10 +582,32 @@ const Game = {
 
   drawTownPlate(ctx, it, on) {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const y = it.y - 92;
+    const img = this.uiImg ? this.uiImg('button') : null;
+    if (img) {
+      // The owner's painted plate as the street sign, Trajan-style caps.
+      const txt = it.label.toUpperCase();
+      ctx.font = '600 12px Cinzel, Georgia';
+      const tw = ctx.measureText(txt).width;
+      const h = 24, w = Math.max(tw + 46, h * 3.2);
+      const dh = h * 1.42, dy = y - dh / 2;
+      const sw = img.width, sh = img.height;
+      const capF = 0.15;
+      const capW = Math.min(sw * capF * (dh / sh), w * 0.24);
+      ctx.globalAlpha = on ? 1 : 0.85;
+      ctx.drawImage(img, 0, 0, sw * capF, sh, it.x - w / 2, dy, capW, dh);
+      ctx.drawImage(img, sw * (capF + 0.06), 0, sw * 0.08, sh, it.x - w / 2 + capW, dy, w - 2 * capW, dh);
+      ctx.drawImage(img, sw * (1 - capF), 0, sw * capF, sh, it.x + w / 2 - capW, dy, capW, dh);
+      ctx.fillStyle = 'rgba(0,0,0,0.65)';
+      ctx.fillText(txt, it.x, y + 1.5);
+      ctx.fillStyle = on ? '#f0e2bc' : '#d5c49e';
+      ctx.fillText(txt, it.x, y);
+      ctx.globalAlpha = 1;
+      return;
+    }
     ctx.font = 'bold 12px Georgia';
     const txt = it.icon + '  ' + it.label;
     const w = ctx.measureText(txt).width + 20;
-    const y = it.y - 92;
     ctx.globalAlpha = on ? 1 : 0.82;
     ctx.fillStyle = 'rgba(12,9,16,0.82)';
     rr(ctx, it.x - w / 2, y - 12, w, 22, 6); ctx.fill();

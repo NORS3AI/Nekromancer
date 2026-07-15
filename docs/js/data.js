@@ -315,11 +315,19 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.80-alpha';
+const GAME_VERSION = 'v1.6.81-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.81-alpha', date: 'July 2026',
+    notes: [
+      'PAINTED PLATE BUTTONS — the owner\'s skull-crested button plate now carries PLAY, CREATE CHARACTER, the whole ☰ MENU (Character, Inventory, Journal, Skills & Passives, Achievements, Settings, Abandon), and the artisan welcome buttons (Step Up to the Anvil, Browse the Stones, Part the Veil)',
+      'All plate buttons letter in CINZEL, the Trajan-style face (self-hosted, 26KB) — the classic Diablo look',
+      'The town street signs are painted plates too, and two artisans go by their proper trades now: the Blacksmith\'s is the SMITHY, and the Mystic is the ENCHANTRESS'
+    ]
+  },
   {
     v: 'v1.6.80-alpha', date: 'July 2026',
     notes: [

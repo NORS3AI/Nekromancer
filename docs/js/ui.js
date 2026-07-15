@@ -517,6 +517,52 @@ const UI = {
     }
   },
 
+  // The owner's painted PLATE BUTTON (UI kit): spiked finial caps, skull
+  // crest at centre, cracked-leather bar — drawn as a 5-slice so any width
+  // works (caps and crest stay 1:1, the bar runs stretch). Labels render in
+  // Cinzel (Trajan-style, self-hosted). Falls back to UI.btn until the art
+  // loads. Source fractions measured off the sliced sheet.
+  btnPlate(ctx, x, y, w, h, label, cb, o = {}) {
+    const img = (typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg('button') : null;
+    if (!img) return this.btn(ctx, x, y, w, h, label, cb, o);
+    const sw = img.width, sh = img.height;
+    const capF = 0.15, sk0 = 0.455, sk1 = 0.545;
+    // The crest overhangs the bar band (bar ≈ 2/3 of source height): draw the
+    // art taller than the logical button so the BAR matches the button rect.
+    const dh = h * 1.42, dy = y - (dh - h) / 2;
+    const scale = dh / sh;
+    let capW = sw * capF * scale, skW = sw * (sk1 - sk0) * scale;
+    const k = Math.min(1, (w * 0.72) / (capW * 2 + skW));
+    capW *= k; skW *= k;
+    const runW = Math.max(0, (w - 2 * capW - skW) / 2);
+    if (o.disabled) ctx.globalAlpha = 0.45;
+    let dx = x;
+    ctx.drawImage(img, 0, 0, sw * capF, sh, dx, dy, capW, dh); dx += capW;
+    ctx.drawImage(img, sw * (capF + 0.06), 0, sw * 0.08, sh, dx, dy, runW, dh); dx += runW;
+    ctx.drawImage(img, sw * sk0, 0, sw * (sk1 - sk0), sh, dx, dy, skW, dh); dx += skW;
+    ctx.drawImage(img, sw * (1 - capF - 0.14), 0, sw * 0.08, sh, dx, dy, runW, dh); dx += runW;
+    ctx.drawImage(img, sw * (1 - capF), 0, sw * capF, sh, dx, dy, capW, dh);
+    // Label — Trajan-style caps, gold on the dark leather.
+    let size = o.size || 15;
+    const maxW = w - capW * 2 - 16;
+    const text = String(label).toUpperCase();
+    ctx.font = `600 ${size}px Cinzel, Georgia`;
+    while (size > 9 && ctx.measureText(text).width > maxW) {
+      size--; ctx.font = `600 ${size}px Cinzel, Georgia`;
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.fillText(text, x + w / 2, y + h / 2 + 2.5);
+    ctx.fillStyle = o.disabled ? '#6f6552' : (o.color || '#dcc9a2');
+    ctx.fillText(text, x + w / 2, y + h / 2 + 1);
+    ctx.globalAlpha = 1;
+    if (!o.disabled && cb) {
+      this.register(x, y, w, h, cb);
+      this.hits[this.hits.length - 1].label = label;
+      if (o.tip !== false) this.tip(x, y, w, h, o.tipTitle || label, o.tip || '');
+    }
+  },
+
   // 9-slice a painted frame over a rect: corners 1:1, THIN text-free strips
   // (not the full spans, which carry baked-in content) stretched for edges.
   drawNine(ctx, img, x, y, w, h, c) {
