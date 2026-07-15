@@ -187,9 +187,19 @@ const UI = {
   // A standard chunky button; draws and registers in one call.
   // The active UI theme (Mystic ▸ Themes). Falls back to Bone before data loads.
   theme() {
-    const id = (typeof Settings !== 'undefined' && Settings.g && Settings.g.theme) || 'bone';
+    let id = (typeof Settings !== 'undefined' && Settings.g && Settings.g.theme) || 'bone';
+    // Legacy theme ids from before the painted-plate set (v1.6.83).
+    if (id === 'arcane') id = 'violet';
+    if (id === 'royal') id = 'ember';
     return (typeof THEMES !== 'undefined' && (THEMES[id] || THEMES.bone)) ||
       { panel: '#4a4356', title: '#c9bfa8', btn: '#6b5f80' };
+  },
+
+  // The active theme's painted button plate (falls back to the neutral one).
+  plateImg() {
+    if (typeof Game === 'undefined' || !Game.uiImg) return null;
+    const th = this.theme();
+    return (th.plate && Game.uiImg('button_' + th.plate)) || Game.uiImg('button');
   },
 
   btn(ctx, x, y, w, h, label, cb, o = {}) {
@@ -543,7 +553,7 @@ const UI = {
   // Cinzel (Trajan-style, self-hosted). Falls back to UI.btn until the art
   // loads. Source fractions measured off the sliced sheet.
   btnPlate(ctx, x, y, w, h, label, cb, o = {}) {
-    const img = (typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg('button') : null;
+    const img = this.plateImg();
     if (!img) return this.btn(ctx, x, y, w, h, label, cb, o);
     const sw = img.width, sh = img.height;
     const capF = 0.15, sk0 = 0.455, sk1 = 0.545;

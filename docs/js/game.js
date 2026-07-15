@@ -380,6 +380,11 @@ const Game = {
     this.addyImg(); this.lyssaImg();
     for (const gd of ['m', 'f']) { this.heroImg(gd, 'front'); this.heroImg(gd, 'back'); this.heroImg(gd, 'side'); }
     for (const k of ['panel', 'close', 'globe_red', 'globe_blue', 'button', 'enter', 'exit', 'talk']) this.uiImg(k);
+    // Warm the active theme's plate (the rest load lazily in the theme picker).
+    if (typeof THEMES !== 'undefined' && typeof Settings !== 'undefined' && Settings.g) {
+      const th = THEMES[Settings.g.theme] || THEMES.bone;
+      if (th && th.plate) this.uiImg('button_' + th.plate);
+    }
     // Warm the Trajan-style plate font so canvas text picks it up quickly.
     if (document.fonts && document.fonts.load) {
       document.fonts.load('600 20px Cinzel').catch(() => {});
@@ -583,7 +588,7 @@ const Game = {
   drawTownPlate(ctx, it, on) {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const y = it.y - 92;
-    const img = this.uiImg ? this.uiImg('button') : null;
+    const img = (typeof UI !== 'undefined' && UI.plateImg) ? UI.plateImg() : null;
     if (img) {
       // The owner's painted plate as the street sign, Trajan-style caps.
       const txt = it.label.toUpperCase();

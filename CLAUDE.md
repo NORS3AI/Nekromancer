@@ -312,7 +312,15 @@ loot at the artisans. The hero is persistent (localStorage).
   3-slice). **Artisan renames (owner list): street plate + hub title
   'Blacksmith'→'SMITHY', 'Mystic'→'ENCHANTRESS'** (internal keys stay
   smith/mystic; NPC names Tharn/Vessa unchanged). `UI.btnPlate` falls back to
-  `UI.btn` until the art loads.
+  `UI.btn` until the art loads. **THEMED PLATES (v1.6.83, owner art)**:
+  `THEMES` (data.js) is now SIX entries — Bone White · Violet · Blood ·
+  Ocean · Jungle · Ember — each with a `plate` key naming its glow recolor
+  (`docs/art/ui/button_<plate>.webp`, all 1532×385 = same 5-slice fractions
+  as the neutral plate). `UI.plateImg()` resolves the active theme's plate
+  (fallback: neutral `button.webp`); `btnPlate` + `drawTownPlate` use it.
+  Legacy theme ids map in `UI.theme()`: arcane→violet, royal→ember.
+  `preloadArt` warms the active theme's plate; the rest lazy-load in the
+  Enchantress's theme picker.
 - **DOOR + TALK MEDALLIONS (v1.6.82, owner art)**: the round ENTER/EXIT
   button (`UI.drawTownEnter`) draws the owner's painted medallions —
   `docs/art/ui/enter.webp` (doorway spilling light) when standing at a
