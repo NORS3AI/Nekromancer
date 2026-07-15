@@ -53,11 +53,17 @@ const WINGS = {
   shadowWings: { name: 'Shadow Wings',   color: '#6b4a8f', glow: 'rgba(107,74,143,0.35)' },
   emberWings:  { name: 'Ember Wings',    color: '#ff8c2a', glow: 'rgba(255,140,42,0.35)' }
 };
+// UI themes (owner art, v1.6.83): each theme carries its own PAINTED BUTTON
+// PLATE (docs/art/ui/button_<plate>.webp — the owner's glow recolors) plus
+// matching panel/title/button accent colors. Legacy ids 'arcane'/'royal'
+// map to violet/ember in UI.theme().
 const THEMES = {
-  bone:   { name: 'Bone',   panel: '#4a4356', title: '#c9bfa8', btn: '#6b5f80' },
-  blood:  { name: 'Blood',  panel: '#7a3040', title: '#e8b0b8', btn: '#8a4550' },
-  arcane: { name: 'Arcane', panel: '#5a3a7a', title: '#d8b4f0', btn: '#7a4a8f' },
-  royal:  { name: 'Royal',  panel: '#8a6f2a', title: '#ffd76a', btn: '#8a6f4a' }
+  bone:   { name: 'Bone White', panel: '#6a655c', title: '#e8e2d0', btn: '#8a8478', plate: 'bone' },
+  violet: { name: 'Violet',     panel: '#5a3a7a', title: '#d8b4f0', btn: '#7a4a8f', plate: 'violet' },
+  blood:  { name: 'Blood',      panel: '#7a3040', title: '#e8b0b8', btn: '#8a4550', plate: 'blood' },
+  ocean:  { name: 'Ocean',      panel: '#2a4a7a', title: '#8fd0ff', btn: '#3a5a8f', plate: 'ocean' },
+  jungle: { name: 'Jungle',     panel: '#2a6a30', title: '#a8e8b0', btn: '#3a7a45', plate: 'jungle' },
+  ember:  { name: 'Ember',      panel: '#8a5a2a', title: '#ffcf8a', btn: '#8a6f4a', plate: 'ember' }
 };
 // Lukus, Bringer of Light — the knight quest-giver in New Haven.
 // THE QUEST LINE (owner request): 500 sequential quests spanning character
@@ -315,11 +321,18 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.82-alpha';
+const GAME_VERSION = 'v1.6.83-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.83-alpha', date: 'July 2026',
+    notes: [
+      'SIX PAINTED THEMES — the Enchantress\'s theme wardrobe is now the owner\'s glowing plate set: Bone White, Violet, Blood, Ocean, Jungle and Ember. Your chosen theme recolors every plate button and street sign in the game with its own painted glow, plus matching panel and title accents',
+      'Old saves that wore Arcane or Royal are dressed in Violet and Ember respectively'
+    ]
+  },
   {
     v: 'v1.6.82-alpha', date: 'July 2026',
     notes: [
