@@ -315,11 +315,19 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.77-alpha';
+const GAME_VERSION = 'v1.6.78-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.78-alpha', date: 'July 2026',
+    notes: [
+      'REAL WALKING — the avatar\'s legs are now spliced at the hip and swing in opposition: a true stride in profile, a soft step facing the camera, torso riding smoothly on top. No more skating across the ground',
+      'FIXED: cosmetic wings sprouted from the hero\'s LEGS on the tall painted model (they were anchored for the old small sprite) — they now sit properly at the shoulders, scaled to the model',
+      'FIXED (iPad/tablet): dragging down on the movement stick could yank the game out of full screen — that\'s an iPad system swipe the page cannot block, so the game now snaps RIGHT BACK into full screen on your next touch whenever it gets knocked out accidentally (turning full screen off via the toggle still works normally)'
+    ]
+  },
   {
     v: 'v1.6.77-alpha', date: 'July 2026',
     notes: [

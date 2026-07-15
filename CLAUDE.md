@@ -86,9 +86,21 @@ loot at the artisans. The hero is persistent (localStorage).
   overlay slices** (legs sy 0.54 / torso 0.24–0.58 counter-sway / head top 0.26)
   so it strides with depth ("layer the image to make it 3d" — owner rule).
   Falls back to the procedural `drawUpright` until both sides load; Bird's-Eye
-  keeps the classic rotating sprite. **Motion is SUBTLE (v1.6.72 owner rule
-  "subtle movements, not dancing images"): slice offsets < 1px, gentle bob/sway
-  only — big offsets read as a body sliced in half.** `Screens.create` shows a
+  keeps the classic rotating sprite. **WALK CYCLE (v1.6.78, owner rule "splice
+  the legs and make them move, not skating"): while moving, the painting is
+  split at the hip line (legY 0.52) into TWO leg halves, each rotating about
+  its own hip on an opposed sine (profile ±0.15 rad stride; front/back ±0.06
+  + a 1.1px stepping-foot lift), torso+head drawn as one piece overlapping the
+  seam (legY+0.05) with a gentle counter-sway; standing draws the whole
+  painting unsliced. Angles stay SMALL (v1.6.72 owner rule "subtle movements,
+  not dancing images"). Cosmetic wings anchor at the SHOULDERS of the tall
+  model (`translate(0, feet−HT·0.66)` + 1.15× before `drawWings(ctx,false)`)
+  — the raw birds-eye anchor sat at the origin = LEG height (v1.6.78 fix).**
+  **iPad fullscreen (v1.6.78)**: iPadOS exits element fullscreen on any
+  downward swipe (system gesture, unblockable) — joystick drags triggered it.
+  `Game.toggleFullscreen` sets `fsWant`; `fullscreenchange` arms `fsRearm`
+  when fullscreen drops while wanted; the next canvas touchend calls
+  `Game.refullscreen()` (a user gesture) to snap back in. `Screens.create` shows a
   calm breathing idle (NO walk slices; eye-color aura, adaptive `pvH`, swatches
   go 10-wide on short panels), and the CAMPFIRE ROSTER (`drawRosterAvatar`)
   shows each save's painted avatar by the fire (gender from the snapshot,
