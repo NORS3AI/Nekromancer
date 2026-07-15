@@ -63,12 +63,14 @@ loot at the artisans. The hero is persistent (localStorage).
   male head-swap)**: `HAIR_COLORS` (data.js, 9 entries) — index 0 Black = the
   base full-model paintings, 1–8 = `{m,f}_{front,back,side}_h1..8.webp`.
   FEMALE variants come from the new-costume 8×(side,front,side2,back) sheet
-  (scratchpad `newfemhair.py`). **MALE variants are COMPOSITES (owner rule
-  "same model, just different hair"): the new male body beheaded at
-  `figTop+0.155·figH` with the old bust-sheet head (side/front/back per
-  color) scaled to `headW×1.06` and pasted at the head bbox (scratchpad
-  `malehead.py`, ART_V 6)** — every gender+hair now has a true side profile,
-  `Player.draw` requests side art unconditionally. The creation preview sits
+  (scratchpad `newfemhair.py`). **MALE variants are MASKED CROSS-FADE
+  composites (owner rule v1.6.79 "don't put one image on top of another —
+  mask and fade the head to the torso"): the body's own head fades OUT over
+  a ~RAMP(1.2% figH) gradient above the neck line (figTop+0.155·figH), and
+  the bust-sheet head (scaled to `headW×1.0`) fades its neck/shoulder stump
+  INTO the torso across the seam — no hard beheading cut, no shoulder line
+  (scratchpad `malehead2.py`, ART_V 7)** — every gender+hair has a true side
+  profile, `Player.draw` requests side art unconditionally. The creation preview sits
   on PLAIN BLACK — no hair-tinted aura (owner rule v1.6.76).
   `Hero.hair` (0–8, snapshot parity, legacy saves default 0/black) feeds
   `Game.heroImg(gender,side,hair)` / `heroSprite(gender,side,hair)`; the

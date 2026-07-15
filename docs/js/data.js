@@ -315,11 +315,17 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.78-alpha';
+const GAME_VERSION = 'v1.6.79-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.79-alpha', date: 'July 2026',
+    notes: [
+      'The male hair-color models were rebuilt — the colored head is now MASKED AND FADED into the torso (a smooth cross-fade at the neck and collar) instead of pasted on top, so the hair melts naturally into the shoulders in every view: front, back and profile'
+    ]
+  },
   {
     v: 'v1.6.78-alpha', date: 'July 2026',
     notes: [
