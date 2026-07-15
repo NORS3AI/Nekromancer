@@ -313,12 +313,14 @@ loot at the artisans. The hero is persistent (localStorage).
   'Blacksmith'→'SMITHY', 'Mystic'→'ENCHANTRESS'** (internal keys stay
   smith/mystic; NPC names Tharn/Vessa unchanged). `UI.btnPlate` falls back to
   `UI.btn` until the art loads. **THEMED PLATES (v1.6.83, owner art)**:
-  `THEMES` (data.js) is now SIX entries — Bone White · Violet · Blood ·
-  Ocean · Jungle · Ember — each with a `plate` key naming its glow recolor
+  `THEMES` (data.js) is now SIX entries — Void (default) · Bone White ·
+  Blood · Ocean · Jungle · Ember — each with a `plate` key naming its glow recolor
   (`docs/art/ui/button_<plate>.webp`, all 1532×385 = same 5-slice fractions
   as the neutral plate). `UI.plateImg()` resolves the active theme's plate
   (fallback: neutral `button.webp`); `btnPlate` + `drawTownPlate` use it.
-  Legacy theme ids map in `UI.theme()`: arcane→violet, royal→ember.
+  Legacy theme ids map in `UI.theme()`: arcane/violet→void, royal→ember.
+  **v1.6.85: 'Violet' is renamed VOID (id 'void', plate art key stays
+  'violet') and is the DEFAULT theme (Settings default 'void').**
   `preloadArt` warms the active theme's plate; the rest lazy-load in the
   Enchantress's theme picker.
 - **PLATES EVERYWHERE + CINZEL HEADINGS (v1.6.84, owner rules)**: `btnPlate`
