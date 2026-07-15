@@ -334,7 +334,7 @@ const Game = {
     [435, 395, 60,   420, 260, 240, 220, 'Jeweler',        '◆', '#4ecbe0', 'jeweler'],
     [720, 375, 60,   745, 240, 180, 190, 'Enchantress',    '✦', '#b06adf', 'mystic'],
     [305, 745, 60,   250, 650, 210, 150, 'Smithy',         '⚒', '#ffb43a', 'smith'],
-    [835, 725, 60,   885, 615, 180, 130, "Horadric's Cube", '◈', '#ff5a4a', 'cube'],
+    [835, 725, 60,   885, 615, 180, 130, "Soul Crucible", '◈', '#ff5a4a', 'cube'],
     [150, 485, 55,    95, 415, 180, 110, 'Weapons',        '⚔', '#e0724a', 'vendor', ['weapon', 'offhand']],
     [435, 955, 60,   370, 860, 230, 160, 'Armor',          '🛡', '#8fb0e8', 'vendor', ['helm', 'chest', 'gloves', 'boots', 'shoulders', 'legs']],
     [1100, 765, 60, 1130, 680, 190, 140, 'Apothecary',     '⚗', '#9fd88a', 'vendor', null],   // closed for now (owner rule) — sells nothing
@@ -345,8 +345,8 @@ const Game = {
     [718, 668, 55,     0, 0, 0, 0, 'Lukus',                '⚔', '#ffd76a', 'lukus'],   // the knight quest-giver
     [1150, 515, 55,    0, 0, 0, 0, 'Addy',                 '🗡', '#c86adf', 'addy'],   // the rogue queen, by the crates east of the rift pavilion (owner-placed)
     [880, 500, 55,     0, 0, 0, 0, 'Lyssa',                '✦', '#c88bf0', 'lyssa'],   // the fate-gambler at the rift pavilion steps (Amidrassi Orbs)
-    [183, 195, 62,     0, 0, 0, 0, 'The Wilds Waypoint',   '✧', '#8fd0ff', 'waypoint-blue'],    // bounties · acts · adventure
-    [1020, 350, 66,    0, 0, 0, 0, 'The Void Portal',      '✧', '#c88bf0', 'waypoint-purple'],  // rifts · greater rifts · seasons
+    [183, 195, 62,     0, 0, 0, 0, 'Waygate',              '✧', '#8fd0ff', 'waypoint-blue'],    // bounties · acts · adventure
+    [1020, 350, 66,    0, 0, 0, 0, 'The Shroud',           '✧', '#c88bf0', 'waypoint-purple'],  // rifts · greater rifts · seasons
     [585, 1120, 70,    0, 0, 0, 0, 'Return to the Wilds',  '↩', '#8fd0ff', 'gate']              // only while visiting via portal
   ],
   // Scenery blockers with no interaction (fountain, landmarks) PLUS the town's
@@ -1016,21 +1016,21 @@ const Game = {
   startRift(kind = 'greater') {
     if (kind === 'greater' || kind === 'season') {
       if (Hero.level < MAX_LEVEL) {
-        UI.toast('Nephalem Rifts open at level 70', '#9a9080');
+        UI.toast('The Abyss opens at level 70', '#9a9080');
         AudioSys.sfx('denied');
         return;
       }
     }
     if (kind === 'greater') {
       if (Hero.riftKeys < 1) {
-        UI.toast('You need a Nephalem Rift Key — normal Rift Guardians drop them', '#9a9080');
+        UI.toast('You need a Crypt Key — Ossuary Guardians drop them', '#9a9080');
         AudioSys.sfx('denied');
         return;
       }
       Hero.riftKeys--; Hero.save();
     } else if (kind === 'season') {
       if (Hero.masterKeys < 1) {
-        UI.toast('You need a Master Nephalem Rift Key — Nephalem Guardians drop them', '#9a9080');
+        UI.toast('You need an Ashen Key — Abyss Guardians drop them', '#9a9080');
         AudioSys.sfx('denied');
         return;
       }
@@ -1350,7 +1350,7 @@ const Game = {
       Hero.riftsCleared++;
       // Track how many keys THIS guardian dropped, for the reward summary.
       this.riftKeysDropped = 0;
-      this.riftKeyLabel = (kind === 'greater' || kind === 'season') ? 'Master Nephalem Rift Key' : 'Nephalem Rift Key';
+      this.riftKeyLabel = (kind === 'greater' || kind === 'season') ? 'Ashen Key' : 'Crypt Key';
       // Guaranteed loot.
       const pu = new Pickup(boss.x, boss.y, 'item');
       pu.item = Items.generate(mLvl, 0.3);
@@ -1361,11 +1361,11 @@ const Game = {
       if (kind === 'normal') {
         const n = randInt(1, 3);
         this.riftKeysDropped = n;
-        Hero.riftKeys += n; UI.toast('◈ ' + n + ' Nephalem Rift Key' + (n > 1 ? 's' : '') + '! (' + Hero.riftKeys + ' held)', '#b06adf');
+        Hero.riftKeys += n; UI.toast('◈ ' + n + ' Crypt Key' + (n > 1 ? 's' : '') + '! (' + Hero.riftKeys + ' held)', '#b06adf');
       } else if (kind === 'greater') {
         const n = randInt(0, 1);
         this.riftKeysDropped = n;
-        if (n) { Hero.masterKeys += n; UI.toast('◈ Master Nephalem Rift Key! (' + Hero.masterKeys + ' held)', '#d8b4f0'); }
+        if (n) { Hero.masterKeys += n; UI.toast('◈ Ashen Key! (' + Hero.masterKeys + ' held)', '#d8b4f0'); }
       }
       // Legendary chance scales with Torment: 5% at T1 → 30% at T16.
       const torment = diff.torment || 0;
@@ -1420,7 +1420,7 @@ const Game = {
           this.zone.boss + ' falls — a portal opens to the next hunt', 3.4);
       } else {
         this.showBanner(this.bountyPart ? 'FINAL BOUNTY CLEARED' : 'BOUNTY COMPLETE',
-          this.bountyPart ? 'The hunt is done — claim the Horadric Stash beyond'
+          this.bountyPart ? 'The hunt is done — claim the Forgotten Reliquary beyond'
                           : 'A portal tears open — step through', 3.4);
         // The Act 1 boss (the first land's unique) can drop The Royal Grandeur.
         if (this.zoneIdx === 0 && Math.random() < 0.4) {
@@ -1471,7 +1471,7 @@ const Game = {
     }
     Hero.save();
     const mulLabel = (cacheMul % 1 ? cacheMul.toFixed(1) : cacheMul) + '×';
-    UI.toast('◈ Depth ' + depth + ' cache — ' + mulLabel + ' Horadric  ·  ' + souls + ' souls · ' + gems + ' gems', '#8fb0e8');
+    UI.toast('◈ Depth ' + depth + ' cache — ' + mulLabel + ' Reliquary  ·  ' + souls + ' souls · ' + gems + ' gems', '#8fb0e8');
     AudioSys.sfx('setdrop');
   },
 
@@ -1550,7 +1550,7 @@ const Game = {
       // yields it here — a guaranteed drop (owner rule).
       if (act === 3 && !Hero.hasCube) {
         Hero.hasCube = true;
-        lines.push(['✦ The Horadric\'s Cube', RARITIES[6].color]);
+        lines.push(['✦ The Soul Crucible', RARITIES[6].color]);
         AudioSys.sfx('setdrop');
       }
       lines.push([act === 3 ? 'Act III complete — the Sand Wyrm is slain'
