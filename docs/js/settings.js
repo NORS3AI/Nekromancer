@@ -56,7 +56,7 @@ const Settings = {
     weather:  { v: 0.6, mute: true }
   },
   g: {
-    theme: 'bone',        // UI chrome theme (THEMES in data.js) — set at the Mystic
+    theme: 'void',        // UI chrome theme (THEMES in data.js) — set at the Enchantress; Void is the default
     electiveMode: false,  // allow more than one skill per category on the action bar
     invGrouped: false,    // inventory layout: false = radial wheel · true = grouped list
     leftHanded: false,    // mirror the touch controls (cluster left, movement right)

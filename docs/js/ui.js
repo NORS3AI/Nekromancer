@@ -193,11 +193,12 @@ const UI = {
   // A standard chunky button; draws and registers in one call.
   // The active UI theme (Mystic ▸ Themes). Falls back to Bone before data loads.
   theme() {
-    let id = (typeof Settings !== 'undefined' && Settings.g && Settings.g.theme) || 'bone';
-    // Legacy theme ids from before the painted-plate set (v1.6.83).
-    if (id === 'arcane') id = 'violet';
+    let id = (typeof Settings !== 'undefined' && Settings.g && Settings.g.theme) || 'void';
+    // Legacy theme ids: pre-plate (arcane/royal) and the v1.6.83 'violet'
+    // (renamed Void in v1.6.85, the new default).
+    if (id === 'arcane' || id === 'violet') id = 'void';
     if (id === 'royal') id = 'ember';
-    return (typeof THEMES !== 'undefined' && (THEMES[id] || THEMES.bone)) ||
+    return (typeof THEMES !== 'undefined' && (THEMES[id] || THEMES.void)) ||
       { panel: '#4a4356', title: '#c9bfa8', btn: '#6b5f80' };
   },
 

@@ -382,7 +382,7 @@ const Game = {
     for (const k of ['panel', 'close', 'globe_red', 'globe_blue', 'button', 'enter', 'exit', 'talk']) this.uiImg(k);
     // Warm the active theme's plate (the rest load lazily in the theme picker).
     if (typeof THEMES !== 'undefined' && typeof Settings !== 'undefined' && Settings.g) {
-      const th = THEMES[Settings.g.theme] || THEMES.bone;
+      const th = THEMES[Settings.g.theme] || THEMES.void;
       if (th && th.plate) this.uiImg('button_' + th.plate);
     }
     // Warm the Trajan-style plate font so canvas text picks it up quickly.

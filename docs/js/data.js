@@ -58,8 +58,8 @@ const WINGS = {
 // matching panel/title/button accent colors. Legacy ids 'arcane'/'royal'
 // map to violet/ember in UI.theme().
 const THEMES = {
+  void:   { name: 'Void',       panel: '#5a3a7a', title: '#d8b4f0', btn: '#7a4a8f', plate: 'violet' },
   bone:   { name: 'Bone White', panel: '#6a655c', title: '#e8e2d0', btn: '#8a8478', plate: 'bone' },
-  violet: { name: 'Violet',     panel: '#5a3a7a', title: '#d8b4f0', btn: '#7a4a8f', plate: 'violet' },
   blood:  { name: 'Blood',      panel: '#7a3040', title: '#e8b0b8', btn: '#8a4550', plate: 'blood' },
   ocean:  { name: 'Ocean',      panel: '#2a4a7a', title: '#8fd0ff', btn: '#3a5a8f', plate: 'ocean' },
   jungle: { name: 'Jungle',     panel: '#2a6a30', title: '#a8e8b0', btn: '#3a7a45', plate: 'jungle' },
@@ -321,11 +321,17 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.84-alpha';
+const GAME_VERSION = 'v1.6.85-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.85-alpha', date: 'July 2026',
+    notes: [
+      'The Violet theme is now called VOID, and it is the game\'s default look — new players start with the void-glow plates; anyone who picked a theme keeps their choice'
+    ]
+  },
   {
     v: 'v1.6.84-alpha', date: 'July 2026',
     notes: [
