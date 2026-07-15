@@ -321,11 +321,19 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.89-alpha';
+const GAME_VERSION = 'v1.6.90-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.90-alpha', date: 'July 2026',
+    notes: [
+      'Character select: DELETE HERO shrank to a small corner plate, well away from PLAY',
+      'The red 🎒 inventory shortcut beside the town ☰ MENU is gone — Inventory lives in the menu',
+      'The Waygate and Shroud menus dropped their flavor lines — just the mode plates now (the description still appears as a desktop hover tip)'
+    ]
+  },
   {
     v: 'v1.6.89-alpha', date: 'July 2026',
     notes: [
