@@ -131,6 +131,7 @@ const Items = {
     const item = { slot, rarity, name, stats, mLvl, sockets, gems: [] };
     if (stars) item.stars = stars;
     if (trash) item.trash = true;
+    this.ensureDur(item);   // fresh gear arrives at full durability (aaa/bbb = max/max)
     return item;
   },
 
@@ -211,6 +212,7 @@ const Items = {
       stats, mLvl, sockets: 1, gems: []
     };
     if (stars) item.stars = stars;
+    this.ensureDur(item);
     return item;
   },
 
@@ -384,6 +386,12 @@ const Items = {
       return ['🔥 Lights the darkness (radius ' + T.radius + ')', '⏳ ' + mins + ' min of fuel remaining'];
     }
     const lines = Object.entries(item.stats).map(([k, v]) => AFFIX_ROLLS[k].label(v));
+    if (this.hasDurability(item)) {
+      this.ensureDur(item);
+      lines.unshift(item.dur <= 0
+        ? '🛠 Durability 0/' + item.durMax + ' — BROKEN (no stats until repaired)'
+        : '🛠 Durability ' + item.dur + '/' + item.durMax);
+    }
     if (item.power) {
       const P = LEGENDARY_POWERS[item.power];
       lines.push('★ ' + P.desc);
@@ -415,11 +423,109 @@ const Items = {
     return lines;
   },
 
+  // ---- DURABILITY (owner spec v1.6.84, matched to Diablo 3) ----
+  // Armor and weapons carry durability; jewelry does not (as in D3), and
+  // torches burn out on their own timer instead. Wear comes from taking hits
+  // (armor), casting (weapon/offhand), and death (−10% of max, D3-style).
+  // At 0 the item is BROKEN: still worn, but contributes NOTHING — no stats,
+  // no gems, no set piece, no legendary power — until repaired at the Smithy.
+  DUR_SLOTS: ['helm', 'shoulders', 'chest', 'gloves', 'legs', 'boots', 'weapon', 'offhand'],
+  hasDurability(it) {
+    return !!it && !it.torch && this.DUR_SLOTS.includes(it.slot);
+  },
+  durMaxFor(it) {
+    // Low-level commons land around ~20; endgame artifacts near ~900.
+    return Math.round(14 + (it.mLvl || 1) * 2.2 + (it.rarity || 0) * 30 + (it.stars || 0) * 90);
+  },
+  ensureDur(it) {
+    if (!this.hasDurability(it)) return;
+    if (!it.durMax) { it.durMax = this.durMaxFor(it); it.dur = it.durMax; }
+    if (it.dur == null || it.dur > it.durMax) it.dur = it.durMax;
+  },
+  isBroken(it) {
+    if (!this.hasDurability(it)) return false;
+    this.ensureDur(it);
+    return it.dur <= 0;
+  },
+  // D3 repair pricing: gold per missing point, scaling with item level/rarity.
+  repairCost(it) {
+    this.ensureDur(it);
+    const missing = (it.durMax || 0) - (it.dur || 0);
+    return Math.ceil(missing * (0.5 + (it.mLvl || 1) * 0.06 + (it.rarity || 0) * 0.4));
+  },
+  damagedGear() {
+    const out = [];
+    for (const slot of this.DUR_SLOTS) {
+      const it = Hero.equipped[slot];
+      if (this.hasDurability(it)) { this.ensureDur(it); if (it.dur < it.durMax) out.push(it); }
+    }
+    for (const it of Hero.bag) {
+      if (this.hasDurability(it)) { this.ensureDur(it); if (it.dur < it.durMax) out.push(it); }
+    }
+    return out;
+  },
+  repairItem(it) {
+    const cost = this.repairCost(it);
+    if (cost <= 0) return false;
+    if (Hero.gold < cost) { UI.toast('Not enough gold — ' + cost + 'g to repair', '#e04a5a'); AudioSys.sfx('denied'); return false; }
+    Hero.gold -= cost;
+    it.dur = it.durMax;
+    AudioSys.sfx('craft');
+    if (Game.player) this.apply();
+    Hero.save();
+    return true;
+  },
+  repairAllCost() {
+    return this.damagedGear().reduce((s, it) => s + this.repairCost(it), 0);
+  },
+  repairAll() {
+    const cost = this.repairAllCost();
+    if (cost <= 0) return false;
+    if (Hero.gold < cost) { UI.toast('Not enough gold — ' + cost + 'g to repair all', '#e04a5a'); AudioSys.sfx('denied'); return false; }
+    Hero.gold -= cost;
+    for (const it of this.damagedGear()) it.dur = it.durMax;
+    UI.toast('All gear repaired', '#4ade80');
+    AudioSys.sfx('craft');
+    if (Game.player) this.apply();
+    Hero.save();
+    return true;
+  },
+  // kind: 'armor' wears the six armor slots (hits taken), 'weapon' wears
+  // weapon+offhand (casting). Breaking a piece re-applies stats immediately.
+  wearEquipped(n, kind) {
+    const slots = kind === 'weapon' ? ['weapon', 'offhand']
+      : ['helm', 'shoulders', 'chest', 'gloves', 'legs', 'boots'];
+    let broke = false;
+    for (const slot of slots) {
+      const it = Hero.equipped[slot];
+      if (!this.hasDurability(it)) continue;
+      this.ensureDur(it);
+      if (it.dur <= 0) continue;
+      it.dur = Math.max(0, it.dur - n);
+      if (it.dur === 0) { broke = true; UI.toast(it.name + ' BROKE — repair it at the Smithy', '#e04a5a'); }
+    }
+    if (broke && Game.player) { this.apply(); AudioSys.sfx('denied'); }
+  },
+  // Death costs 10% of every equipped piece's MAX durability (D3 rule).
+  wearOnDeath() {
+    let broke = false;
+    for (const slot of this.DUR_SLOTS) {
+      const it = Hero.equipped[slot];
+      if (!this.hasDurability(it)) continue;
+      this.ensureDur(it);
+      const was = it.dur;
+      it.dur = Math.max(0, it.dur - Math.ceil(it.durMax * 0.10));
+      if (was > 0 && it.dur === 0) broke = true;
+    }
+    if (broke) UI.toast('Gear broke in death — see the Smithy', '#e04a5a');
+    if (Game.player) this.apply();
+  },
+
   setCount() {
     let n = 0;
     for (const slot of Object.keys(ITEM_SLOTS)) {
       const it = Hero.equipped[slot];
-      if (it && it.set === 'inarius') n++;
+      if (it && it.set === 'inarius' && !this.isBroken(it)) n++;
     }
     return n;
   },
@@ -428,7 +534,7 @@ const Items = {
     const p = {};
     for (const slot of Object.keys(ITEM_SLOTS)) {
       const it = Hero.equipped[slot];
-      if (it && it.power) p[it.power] = true;
+      if (it && it.power && !this.isBroken(it)) p[it.power] = true;
     }
     // Cube: up to 3 EXTRACTED legendary powers the hero has switched on apply
     // even without the item equipped (Kanai-style).
@@ -1266,6 +1372,9 @@ const Items = {
     const at70 = Hero.level >= MAX_LEVEL;
     const gather = (it, slot) => {
       if (!it) return;
+      // BROKEN gear (durability 0) contributes nothing until repaired —
+      // exactly as if the piece were taken off (owner rule, D3 behavior).
+      if (this.isBroken(it)) return;
       dmg += it.stats.dmg || 0;
       hp += it.stats.hp || 0;
       crit += it.stats.crit || 0;

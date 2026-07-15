@@ -304,6 +304,10 @@ class Player {
     this.hp -= dmg;
     this.flash = 1;
     this.invuln = 0.35;
+    // Battle wear (D3-style): every 10th hit taken grinds 1 durability off
+    // the worn armor pieces (weapons wear from casting, in Skills.tryUse).
+    this._wearHits = (this._wearHits || 0) + 1;
+    if (this._wearHits >= 10) { this._wearHits = 0; Items.wearEquipped(1, 'armor'); }
     fxBlood(this.x, this.y, 8);
     Particles.shake(4);
     AudioSys.sfx('hurt');

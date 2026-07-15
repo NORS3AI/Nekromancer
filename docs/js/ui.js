@@ -169,11 +169,17 @@ const UI = {
     if (this.screen === 'recipes') return () => this.open('cube');
     if (this.screen === 'skillChooser') return () => this.open('skills');
     if (this.screen === 'storyacts') return () => this.open('wilds');
+    // ☰ MENU children step back to the ROOT MENU so the other options stay in
+    // reach; closing the menu itself exits to the playable screen (owner rule
+    // v1.6.84 — supersedes the close-straight-to-game behavior of v1.6.77).
+    if (['character', 'radial', 'invGrouped', 'journal', 'skills',
+         'achievements', 'settings', 'paragon'].includes(this.screen))
+      return () => this.open('sysmenu');
     // Artisan sub-screens step back to their HUB (the shop interior stays up —
     // owner rule: closing a bench shows the background art again). Arriving
     // FROM a bench skips the welcome splash (sel.inside) — you're already in.
     const backToHub = hub => () => { this.open(hub); this.sel.inside = true; };
-    if (['smithSalvage', 'smithWeapon', 'smithArmor', 'torches'].includes(this.screen)) return backToHub('smith');
+    if (['smithSalvage', 'smithWeapon', 'smithArmor', 'torches', 'smithRepair'].includes(this.screen)) return backToHub('smith');
     if (['jewSocket', 'jewUnsocket', 'jewMerge', 'jewSell', 'jewCraft'].includes(this.screen)) return backToHub('jeweler');
     if (['mysEnchant', 'mysPet', 'mysWings', 'mysTheme'].includes(this.screen)) return backToHub('mystic');
     return () => this.close();
@@ -253,10 +259,14 @@ const UI = {
       rr(ctx, x, y, w, h, 12); ctx.stroke();
     }
     if (title) {
-      ctx.fillStyle = th.title;
-      ctx.font = 'bold 17px Georgia';
+      // Panel titles wear the plate style everywhere: Cinzel caps in
+      // parchment gold (owner rule — never the theme's colored font).
+      ctx.font = '600 17px Cinzel, Georgia';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(title, x + w / 2, y + 22);
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillText(String(title).toUpperCase(), x + w / 2, y + 23.5);
+      ctx.fillStyle = '#dcc9a2';
+      ctx.fillText(String(title).toUpperCase(), x + w / 2, y + 22);
       ctx.strokeStyle = '#3a3448';
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(x + 16, y + 38); ctx.lineTo(x + w - 16, y + 38); ctx.stroke();

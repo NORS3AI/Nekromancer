@@ -1612,6 +1612,8 @@ const Game = {
 
   onPlayerDeath() {
     this.playerDeadT = 0.01;
+    // Death costs 10% of every equipped piece's max durability (D3 rule).
+    Items.wearOnDeath();
     Hero.save();
   },
 

@@ -321,6 +321,33 @@ loot at the artisans. The hero is persistent (localStorage).
   Legacy theme ids map in `UI.theme()`: arcane→violet, royal→ember.
   `preloadArt` warms the active theme's plate; the rest lazy-load in the
   Enchantress's theme picker.
+- **PLATES EVERYWHERE + CINZEL HEADINGS (v1.6.84, owner rules)**: `btnPlate`
+  also carries Accept Quest / Drop (Lukus, Addy, Journal), Campfire
+  (character sheet), Choose Skills, the ACTIVES/PASSIVES tabs (selected =
+  bright gold, unselected dim), every artisan BENCH row (labels stripped of
+  emoji; description in small italics beneath), the TRAIN buttons, and gated
+  quests ("REQUIRES LEVEL X" as live text on ONE plate — never baked images).
+  ☰ MENU rows got real spacing (rowH 46/62, btnH −20 — the 1.42× overhang
+  made touching plates). ALL headings are Cinzel parchment-gold `#d8c5a0`
+  (UI.panel titles incl. MENU, character sheet sections, stash/invGrouped
+  group headers + titles, settings — AUDIO/GAMEPLAY —, journal giver tags)
+  — never the theme color, never bright greens/purples. **MENU NAVIGATION
+  (supersedes v1.6.77): ✕/Escape on a ☰ child (character/radial/invGrouped/
+  journal/skills/achievements/settings/paragon) returns to 'sysmenu'; ✕ on
+  sysmenu exits to the playable screen** (closeAction).
+- **DURABILITY + REPAIR (v1.6.84, owner spec, D3-matched)**: `Items.DUR_SLOTS`
+  = the 6 armor slots + weapon/offhand — jewelry NEVER wears (D3 rule),
+  torches burn instead. `durMax = 14 + mLvl·2.2 + rarity·30 + stars·90`
+  (~20 low-level, ~900 artifact-5★); fresh gear = max/max; legacy items get
+  durability lazily via `ensureDur` (no migration). Wear: every 10th hit
+  taken → armor −1 (`Player.hurt`), every 60th successful cast → weapon+
+  offhand −1 (`Skills.tryUse`), death → −10% of durMax on all (D3,
+  `Game.onPlayerDeath` → `Items.wearOnDeath`). At 0 the item is BROKEN:
+  `computeStats` gather, `setCount` and `equippedPowers` all skip it (still
+  worn visually) until repaired. `statLines` prepends "🛠 Durability a/b".
+  Repair: `repairCost = missing·(0.5 + mLvl·0.06 + rarity·0.4)` gold;
+  `Screens.smithRepair` (Smithy's 5th bench) lists equipped+bag damaged
+  gear, broken rows red, REPAIR ALL plate; `Items.repairItem/repairAll`.
 - **DOOR + TALK MEDALLIONS (v1.6.82, owner art)**: the round ENTER/EXIT
   button (`UI.drawTownEnter`) draws the owner's painted medallions —
   `docs/art/ui/enter.webp` (doorway spilling light) when standing at a
