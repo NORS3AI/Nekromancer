@@ -315,11 +315,19 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.75-alpha';
+const GAME_VERSION = 'v1.6.76-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.76-alpha', date: 'July 2026',
+    notes: [
+      'NEW FEMALE HAIR MODELS — all eight female hair colors were repainted on the new full-model costume, and every one now includes a TRUE SIDE PROFILE for walking left and right (male hair variants are in the works)',
+      'Character creation shows the hero on a plain black backdrop while picking hair — the colored glow behind the figure is gone (owner rule)',
+      'All avatar art renders at one uniform size, matched to the new models'
+    ]
+  },
   {
     v: 'v1.6.75-alpha', date: 'July 2026',
     notes: [
