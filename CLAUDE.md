@@ -313,6 +313,13 @@ loot at the artisans. The hero is persistent (localStorage).
   'Blacksmith'→'SMITHY', 'Mystic'→'ENCHANTRESS'** (internal keys stay
   smith/mystic; NPC names Tharn/Vessa unchanged). `UI.btnPlate` falls back to
   `UI.btn` until the art loads.
+- **DOOR + TALK MEDALLIONS (v1.6.82, owner art)**: the round ENTER/EXIT
+  button (`UI.drawTownEnter`) draws the owner's painted medallions —
+  `docs/art/ui/enter.webp` (doorway spilling light) when standing at a
+  doorway (gentle breathing pulse), `exit.webp` (dark doorway) while a
+  doorway screen is open, and `talk.webp` (speech-bubble ring) at the NPCs
+  (Lukus/Addy/Lyssa). Label (ENTER/EXIT/TALK) beneath in Cinzel.
+  Procedural circle fallback until the art loads.
 - **Dev panel**: tap the developer credit on the title screen → confirm toggle →
   cheats (god, infinite essence — session-only on `Game.cheats`; grants save).
   Game version label (bottom-right of title) opens `PATCH_NOTES`.

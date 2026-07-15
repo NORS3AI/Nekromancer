@@ -379,7 +379,7 @@ const Game = {
     this.lukusImg('helmed'); this.lukusImg('idle');
     this.addyImg(); this.lyssaImg();
     for (const gd of ['m', 'f']) { this.heroImg(gd, 'front'); this.heroImg(gd, 'back'); this.heroImg(gd, 'side'); }
-    for (const k of ['panel', 'close', 'globe_red', 'globe_blue', 'button']) this.uiImg(k);
+    for (const k of ['panel', 'close', 'globe_red', 'globe_blue', 'button', 'enter', 'exit', 'talk']) this.uiImg(k);
     // Warm the Trajan-style plate font so canvas text picks it up quickly.
     if (document.fonts && document.fonts.load) {
       document.fonts.load('600 20px Cinzel').catch(() => {});

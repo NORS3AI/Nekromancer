@@ -315,11 +315,18 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.81-alpha';
+const GAME_VERSION = 'v1.6.82-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.82-alpha', date: 'July 2026',
+    notes: [
+      'The round ENTER and EXIT buttons are now the owner\'s painted DOOR MEDALLIONS — a doorway spilling warm light when you can step inside, and the same door gone dark when it\'s time to leave (the label sits beneath in Cinzel)',
+      'Walking up to Lukus, Addy or Lyssa shows the painted SPEECH-BUBBLE medallion — TALK has its own ring now'
+    ]
+  },
   {
     v: 'v1.6.81-alpha', date: 'July 2026',
     notes: [

@@ -443,6 +443,29 @@ const UI = {
     const cx = lefty ? 66 + (s.left || 0) : W - 66 - s.right;
     const cy = H - 92 - (s.bottom || 0);
     const it = Game.townPrompt;
+    // NPCs get a speech verb instead of a doorway verb (owner rule: walking up
+    // to Lukus turns the button into "Talk to Lukus").
+    const talk = !inside && it && (it.kind === 'lukus' || it.kind === 'addy' || it.kind === 'lyssa');
+    const lbl = inside ? 'EXIT' : talk ? 'TALK' : 'ENTER';
+    const art = (typeof Game !== 'undefined' && Game.uiImg)
+      ? Game.uiImg(inside ? 'exit' : talk ? 'talk' : 'enter') : null;
+    if (art) {
+      // The owner's painted medallions: lit doorway = ENTER, dark = EXIT,
+      // speech-bubble ring = TALK (NPCs).
+      const breathe = inside ? 1 : (0.94 + 0.06 * Math.sin(Game.time * 4));
+      const d = r * 2.45 * breathe;
+      ctx.save();
+      ctx.drawImage(art, cx - d / 2, cy - d / 2, d, d);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '600 12px Cinzel, Georgia';
+      ctx.fillStyle = 'rgba(0,0,0,0.8)';
+      ctx.fillText(lbl, cx, cy + r + 12 + 1.5);
+      ctx.fillStyle = inside ? '#e0a24a' : '#f0dcae';
+      ctx.fillText(lbl, cx, cy + r + 12);
+      ctx.restore();
+      this.register(cx - r - 8, cy - r - 8, r * 2 + 16, r * 2 + 16, () => Game.townEnter());
+      return;
+    }
     const color = inside ? '#e0a24a' : (it ? it.color : '#6ff7c3');
     const pulse = 0.75 + 0.25 * Math.sin(Game.time * 4);
     ctx.save();
@@ -452,13 +475,10 @@ const UI = {
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
     ctx.globalAlpha = 1;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    // NPCs get a speech verb instead of a doorway verb (owner rule: walking up
-    // to Lukus turns the button into "Talk to Lukus").
-    const talk = !inside && it && (it.kind === 'lukus' || it.kind === 'addy' || it.kind === 'lyssa');
     ctx.font = '20px Georgia'; ctx.fillStyle = color;
     ctx.fillText(inside ? '⏏' : talk ? '💬' : (it ? it.icon : '➜'), cx, cy - 9);
     ctx.font = 'bold 11px Georgia';
-    ctx.fillText(inside ? 'EXIT' : talk ? 'TALK' : 'ENTER', cx, cy + 13);
+    ctx.fillText(lbl, cx, cy + 13);
     // (no grey label under the button — the building's name plate says it, owner rule)
     ctx.restore();
     this.register(cx - r - 8, cy - r - 8, r * 2 + 16, r * 2 + 16, () => Game.townEnter());
