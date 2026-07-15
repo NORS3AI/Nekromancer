@@ -357,7 +357,7 @@ const Game = {
     this.townImg = this.townImg || (() => { const i = new Image(); i.src = 'art/town/newhaven.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1'); return i; })();
     this.lukusImg('helmed'); this.lukusImg('idle');
     this.addyImg(); this.lyssaImg();
-    for (const gd of ['m', 'f']) { this.heroImg(gd, 'front'); this.heroImg(gd, 'back'); }
+    for (const gd of ['m', 'f']) { this.heroImg(gd, 'front'); this.heroImg(gd, 'back'); this.heroImg(gd, 'side'); }
     // Warm each roster hero's hair-variant art (campfire + play); the rest of
     // the hair ladder loads lazily when browsed on the creation screen.
     if (typeof Profiles !== 'undefined' && Profiles.slots) {

@@ -41,8 +41,16 @@ loot at the artisans. The hero is persistent (localStorage).
   heavy download at the title screen; `drawTown` shows "New Haven emerges from
   the dark…" until the map arrives. Small art (gems/icons/runes/ui) is still
   PNG with `?v=BUILD`.
-- **PAINTED HERO AVATARS (v1.6.70, owner art; v1.6.71 BAKED ALPHA)**:
-  `docs/art/hero/{m,f}_{front,back}.webp` — male & female Nekromancer paintings.
+- **PAINTED HERO AVATARS (v1.6.70, owner art; v1.6.71 BAKED ALPHA; v1.6.75
+  NEW FULL MODELS + REAL SIDE PROFILES)**:
+  `docs/art/hero/{m,f}_{front,back,side}.webp` — male & female Nekromancer
+  paintings (v1.6.75 repaints, scratchpad `malemodel.py`; the side sheets held
+  two left-facing profiles each — the FIRST is kept). `drawAvatarModel` takes
+  `(ctx, front, back, side, bob)`: when moving sideways the base (hair 0) look
+  draws the true LEFT-facing profile (mirrored via `ctx.scale(fx>0?-1:1,1)` to
+  lead the walk); hair variants (no side art — never request `*_side_h*`) keep
+  the mirrored+sheared front. `bust_{m,f}0` are recut from the new fronts.
+  ART_V went 3→4 with this repaint (existing files changed).
   **These four WebPs carry a real alpha channel** (RGBA, cut out OFFLINE): the
   costumes are as black as the backdrop, so the NPC-style runtime chroma-key
   hollowed out ~2/3 of the body — do NOT chroma-key hero art at runtime. The
