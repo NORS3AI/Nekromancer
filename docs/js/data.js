@@ -315,11 +315,19 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.74-alpha';
+const GAME_VERSION = 'v1.6.75-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.75-alpha', date: 'July 2026',
+    notes: [
+      'NEW FULL-MODEL AVATARS — the owner repainted both Nekromancers head to toe: richer skull-bound leathers, front AND back, male and female',
+      'REAL SIDE PROFILES — walking left or right now shows a true painted profile view (base look) instead of the old mirrored-and-sheared front; the profile mirrors to lead whichever way you walk',
+      'The black-hair picker busts were recut from the new paintings so the chip matches the model'
+    ]
+  },
   {
     v: 'v1.6.74-alpha', date: 'July 2026',
     notes: [

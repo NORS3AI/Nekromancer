@@ -392,7 +392,10 @@ class Player {
       const hair = (typeof Hero !== 'undefined' && Hero.hair) || 0;
       const front = Game.heroSprite ? Game.heroSprite(gd, 'front', hair) : null;
       const back = Game.heroSprite ? Game.heroSprite(gd, 'back', hair) : null;
-      if (front && back) this.drawAvatarModel(ctx, front, back, bob);
+      // A true painted PROFILE exists for the base (black-hair) look only —
+      // hair variants fall back to the mirrored/sheared front art.
+      const side = (Game.heroSprite && !hair) ? Game.heroSprite(gd, 'side', 0) : null;
+      if (front && back) this.drawAvatarModel(ctx, front, back, side, bob);
       else this.drawUpright(ctx, bob);
     } else {
       // Classic Bird's-Eye sprite (rotates to face movement; eyes read as the
@@ -486,23 +489,26 @@ class Player {
   // SLICES — legs, torso, head — swaying on phase-shifted curves so the
   // painting reads as an articulated, dimensional figure rather than a
   // sliding card (owner rule: "animate it to walk… layer the image").
-  drawAvatarModel(ctx, front, back, bob) {
+  drawAvatarModel(ctx, front, back, side, bob) {
     const fx = Math.cos(this.facing), fy = Math.sin(this.facing);
     const useBack = fy < -0.25 && Math.abs(fy) > Math.abs(fx) * 0.7;
-    const img = useBack ? back : front;
+    const sideways = !useBack && Math.abs(fx) > 0.45;
+    const img = useBack ? back : (sideways && side ? side : front);
     const HT = 58;                                  // world height of the figure
     const w = HT * (img.width / img.height);
     const moving = this.moving;
     const ph = this.anim * 1.9;
     const bobY = moving ? Math.abs(Math.sin(ph)) * 1.5 : Math.sin((Game.time || 0) * 1.8) * 0.6;
-    const sideways = !useBack && Math.abs(fx) > 0.45;
-    const flip = fx < 0 ? -1 : 1;
 
     ctx.save();
     ctx.translate(0, -bobY);
     if (this.flash > 0.4) ctx.globalAlpha = 0.65;   // hurt blink
-    if (sideways) {
-      ctx.scale(flip, 1);                            // profile leads the walk
+    if (sideways && side) {
+      // Real painted PROFILE (faces LEFT) — mirror it when walking right.
+      ctx.scale(fx > 0 ? -1 : 1, 1);
+      ctx.rotate(moving ? Math.sin(ph) * 0.03 + 0.02 : 0.015);  // lean into the stride
+    } else if (sideways) {
+      ctx.scale(fx < 0 ? -1 : 1, 1);                 // profile leads the walk
       ctx.transform(1, 0, -0.14, 1, 0, 0);           // shear = cheap 3/4 turn
       ctx.scale(0.9, 1);                             // profile narrows the body
       ctx.rotate(moving ? Math.sin(ph) * 0.03 + 0.03 : 0.02);   // lean into the stride
