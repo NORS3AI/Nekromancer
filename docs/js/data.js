@@ -315,11 +315,18 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.73-alpha';
+const GAME_VERSION = 'v1.6.74-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.74-alpha', date: 'July 2026',
+    notes: [
+      'The HAIR COLOR picker now shows painted HEAD BUSTS instead of color dots — each chip is the owner\'s portrait of that hair color, male or female to match your chosen body',
+      'Black hair gets a bust too, cropped from the original painting, so all nine chips read the same way'
+    ]
+  },
   {
     v: 'v1.6.73-alpha', date: 'July 2026',
     notes: [

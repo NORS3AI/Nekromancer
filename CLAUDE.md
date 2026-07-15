@@ -61,7 +61,11 @@ loot at the artisans. The hero is persistent (localStorage).
   `Game.heroImg(gender,side,hair)` / `heroSprite(gender,side,hair)`; the
   creation screen's swatch row is HAIR COLOR (replaced GLOWING EYES, owner
   rule — `Hero.eyeColor` still exists for staff/aura tints), and the walking
-  model + campfire roster (`snap.hair`) show the variant art. `preloadArt()`
+  model + campfire roster (`snap.hair`) show the variant art. **The picker
+  chips are painted HEAD BUSTS (v1.6.74, owner sheets — one 8×(side/front/back)
+  bust sheet per gender, front view kept; scratchpad `busts.py`):**
+  `bust_{m,f}0..8.webp` (`bust_*0` = head crop of the base painting) drawn via
+  `Game.heroBust(gender,hair)` with a color-dot fallback until loaded. `preloadArt()`
   warms the base four + each roster hero's variant; the rest load lazily. In **Top Down view** `Player.draw` calls
   `drawAvatarModel(ctx, front, back, bob)` (entities.js): back art when walking
   up, front art mirrored + sheared (`ctx.transform` −0.14) for left/right as a
