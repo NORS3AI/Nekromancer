@@ -1533,11 +1533,12 @@ const Screens = {
     ctx.fillStyle = '#a06adf';
     ctx.fillText('~ A Sanctuary of the Dead ~', cx, lyC + lhpx / 2 + 22);
 
-    const bw = Math.min(260, W * 0.7);
+    const bw = Math.min(300, W * 0.78);
     const by = H * 0.56;
     const has = Profiles.count() > 0;
-    UI.btn(ctx, cx - bw / 2, by, bw, 46, has ? 'CHOOSE YOUR HERO' : 'BEGIN',
-      () => UI.open('select'), { size: 16, border: '#57b894', color: '#6ff7c3' });
+    // The owner's painted plate carries the title-screen call to action.
+    UI.btnPlate(ctx, cx - bw / 2, by, bw, 46, has ? 'CHOOSE YOUR HERO' : 'BEGIN',
+      () => UI.open('select'), { size: 16 });
     if (has) {
       ctx.font = '11px Georgia'; ctx.fillStyle = '#6f6552'; ctx.textAlign = 'center';
       ctx.fillText(Profiles.count() + ' / ' + Profiles.MAX + ' Nekromancers by the fire', cx, by + 62);
