@@ -211,20 +211,11 @@ const Screens = {
       ctx.fillText(this.fitText(ctx, snap.name || 'The Nekromancer', W - 40), W / 2, H - (short ? 94 : 118));
       ctx.font = (short ? 11 : 12) + 'px Georgia'; ctx.fillStyle = '#9a8f7a';
       ctx.fillText('Level ' + (snap.level || 1) + ' Necromancer', W / 2, H - (short ? 79 : 100));
-      const bw = Math.min(220, W - 70), bh = short ? 32 : 40, bx = W / 2 - bw / 2, byy = H - (short ? 66 : 86);
-      const pulse = 0.5 + 0.5 * Math.sin(Game.time * 4);
-      ctx.save();
-      ctx.shadowColor = '#4ade80'; ctx.shadowBlur = 10 + pulse * 16;
-      ctx.fillStyle = 'rgba(26,54,34,0.96)';
-      rr(ctx, bx, byy, bw, bh, 12); ctx.fill();
-      ctx.restore();
-      ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2 + pulse * 1.6;
-      rr(ctx, bx, byy, bw, bh, 12); ctx.stroke();
-      ctx.fillStyle = '#aef7c8'; ctx.font = 'bold 18px Georgia'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('▶  PLAY', W / 2, byy + bh / 2);
+      const bw = Math.min(240, W - 70), bh = short ? 34 : 42, bx = W / 2 - bw / 2, byy = H - (short ? 66 : 86);
       // PLAY lands you in New Haven — the town is the first map after
-      // character load/creation (owner rule).
-      UI.register(bx, byy, bw, bh, () => { Profiles.select(pick); Game.enterTown(); });
+      // character load/creation (owner rule). Painted plate button (owner kit).
+      UI.btnPlate(ctx, bx, byy, bw, bh, 'PLAY',
+        () => { Profiles.select(pick); Game.enterTown(); }, { size: 18, color: '#e6d4a8' });
     }
 
     // Delete / cancel toggle, lower-left (its own row, clear of PLAY / YES-NO).
@@ -890,12 +881,12 @@ const Screens = {
     y += Math.ceil(HAIR_COLORS.length / cols) * (sw + 20) + 6;
 
     // Begin — the new hero joins the roster at the campfire.
-    UI.btn(ctx, px + 16, py + ph - 46, pw - 32, 36, 'BEGIN THE JOURNEY', () => {
+    UI.btnPlate(ctx, px + 16, py + ph - 48, pw - 32, 38, 'CREATE CHARACTER', () => {
       if (!Hero.name) Hero.name = 'The Nekromancer';
       if (!Hero.eyeColor) Hero.eyeColor = '#6ff7c3';
       Hero.save();
       UI.open('select');
-    }, { size: 15, border: '#57b894', color: '#6ff7c3' });
+    }, { size: 15 });
   },
 
   dim(ctx, W, H) {
@@ -995,8 +986,8 @@ const Screens = {
     wrapText(ctx, I.info, W / 2 - iw / 2, iy, iw, 17, 5);
 
     const pulse = 0.6 + 0.4 * Math.sin(Game.time * 3.5);
-    UI.btn(ctx, bx, by, bw, 40, I.enter, () => { UI.sel.inside = true; AudioSys.sfx('gold'); },
-      { size: 13, border: I.color, color: I.color });
+    UI.btnPlate(ctx, bx, by, bw, 40, I.enter, () => { UI.sel.inside = true; AudioSys.sfx('gold'); },
+      { size: 13 });
     ctx.textAlign = 'center'; ctx.font = '9px Georgia';
     ctx.fillStyle = 'rgba(201,191,168,' + (0.35 + 0.3 * pulse).toFixed(2) + ')';
     ctx.fillText('tap anywhere to step inside', W / 2, by + 52);
@@ -1064,13 +1055,15 @@ const Screens = {
     const py = Math.max(8, Math.min(H / 2 - ph / 2, H - ph - (Game.state === 'town' ? 150 : 12)));
     UI.panel(ctx, px, py, pw, ph, 'MENU');
     let y = py + 56;
-    for (const [label, target, color] of rows) {
-      UI.btn(ctx, px + 16, y, pw - 32, btnH, label, () => UI.open(target), { size: H < 520 ? 12 : 14, color });
+    for (const [label, target] of rows) {
+      // Painted plate buttons (owner kit) — clean Trajan caps, no emoji.
+      UI.btnPlate(ctx, px + 16, y, pw - 32, btnH, label.replace(/^[^A-Z]*/, ''), () => UI.open(target),
+        { size: H < 520 ? 13 : 15 });
       y += rowH;
     }
     if (inRun) {
-      UI.btn(ctx, px + 16, y, pw - 32, btnH, '⏏   ABANDON ' + mode.toUpperCase(), () => Game.toCamp(),
-        { size: H < 520 ? 12 : 14, border: '#8a4550', color: '#e04a5a' });
+      UI.btnPlate(ctx, px + 16, y, pw - 32, btnH, 'ABANDON ' + mode.toUpperCase(), () => Game.toCamp(),
+        { size: H < 520 ? 13 : 15, color: '#e04a5a' });
     }
   },
 
@@ -1613,9 +1606,9 @@ const Screens = {
       ['INVENTORY', () => UI.open('radial'), '#e8e0cc'],
       ['SKILLS & PASSIVES', () => UI.open('skills'), '#e8e0cc'],
       ['STASH', () => UI.open('stash'), '#8fb0e8'],
-      ['BLACKSMITH', () => UI.open('smith'), '#ffb43a'],
+      ['SMITHY', () => UI.open('smith'), '#ffb43a'],
       ['JEWELER', () => UI.open('jeweler'), '#b06adf'],
-      ['MYSTIC', () => UI.open('mystic'), '#4ecbe0'],
+      ['ENCHANTRESS', () => UI.open('mystic'), '#4ecbe0'],
       ['SETTINGS', () => UI.open('settings'), '#9a9080']
     ];
     // The Horadric's Cube joins the hub (before the Blacksmith) once found.
@@ -3121,7 +3114,7 @@ const Screens = {
 
   // BLACKSMITH — art-first hub with four benches (owner rule).
   smith(ctx, W, H) {
-    this.artisanHub(ctx, W, H, 'smith', 'THARN EMBERHAND — BLACKSMITH',
+    this.artisanHub(ctx, W, H, 'smith', 'THARN EMBERHAND — SMITHY',
       '"The forge is hot. What do you need?"', [
         ['⚒  SALVAGE', 'Break gear down into crafting materials', 'smithSalvage', '#ffb43a'],
         ['⚔  CRAFT WEAPON', 'Forge scythes and phylacteries', 'smithWeapon', '#e0724a'],
@@ -3618,7 +3611,7 @@ const Screens = {
 
   // MYSTIC — art-first hub: enchanting plus the cosmetic wardrobe (owner rule).
   mystic(ctx, W, H) {
-    this.artisanHub(ctx, W, H, 'mystic', 'VESSA NIGHTWEAVE — MYSTIC',
+    this.artisanHub(ctx, W, H, 'mystic', 'VESSA NIGHTWEAVE — ENCHANTRESS',
       '"The threads of fate can always be rewoven."', [
         ['✦  ENCHANT GEAR', 'Reroll a chosen property on an item', 'mysEnchant', '#b06adf'],
         ['🐾  PETS', 'Choose a companion to walk beside you', 'mysPet', '#6ff7c3'],

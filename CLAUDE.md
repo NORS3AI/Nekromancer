@@ -297,6 +297,22 @@ loot at the artisans. The hero is persistent (localStorage).
   clipped by the action bar). All have procedural fallbacks until loaded.
   REMAINING KIT (not yet applied): action-bar frame, crafting-panel layouts,
   small orbs, chat bubble, minimap diamond.
+- **PLATE BUTTONS + CINZEL (v1.6.81, owner art + rule)**: the owner's skull-
+  crested button plate (`docs/art/ui/button.webp`, sliced from its own sheet)
+  drawn by `UI.btnPlate` — a 5-slice (finial caps 15% each end + center skull
+  crest 45.5–54.5% stay 1:1; two clean bar runs stretch; art drawn 1.42× the
+  logical height so the BAR matches the button rect, crest overhangs). Labels
+  are UPPERCASE in **Cinzel** (Trajan-style, OFL, self-hosted at
+  `docs/fonts/cinzel.woff2` 26KB variable 400–900; @font-face in style.css,
+  warmed via `document.fonts.load` in preloadArt; canvas font string
+  `600 Npx Cinzel, Georgia`). APPLIED TO: campfire PLAY, create-screen
+  CREATE CHARACTER (renamed from BEGIN THE JOURNEY), all ☰ MENU rows (emoji
+  dropped) + ABANDON, artisan intro enters (Step Up to the Anvil / Browse the
+  Stones / Part the Veil), and the town STREET PLATES (`drawTownPlate`, mini
+  3-slice). **Artisan renames (owner list): street plate + hub title
+  'Blacksmith'→'SMITHY', 'Mystic'→'ENCHANTRESS'** (internal keys stay
+  smith/mystic; NPC names Tharn/Vessa unchanged). `UI.btnPlate` falls back to
+  `UI.btn` until the art loads.
 - **Dev panel**: tap the developer credit on the title screen → confirm toggle →
   cheats (god, infinite essence — session-only on `Game.cheats`; grants save).
   Game version label (bottom-right of title) opens `PATCH_NOTES`.

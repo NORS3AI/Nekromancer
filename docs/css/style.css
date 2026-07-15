@@ -1,3 +1,11 @@
+@font-face {
+  /* Cinzel (OFL) — the Trajan-style face for painted plate buttons. */
+  font-family: 'Cinzel';
+  src: url('../fonts/cinzel.woff2') format('woff2');
+  font-weight: 400 900;
+  font-display: swap;
+}
+
 :root {
   --sa-top: env(safe-area-inset-top, 0px);
   --sa-right: env(safe-area-inset-right, 0px);
