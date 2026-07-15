@@ -321,11 +321,17 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.85-alpha';
+const GAME_VERSION = 'v1.6.86-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.86-alpha', date: 'July 2026',
+    notes: [
+      'Lukus, Addy and Lyssa\'s dialogs start at the very top of the screen on mobile — the big empty gap above the conversation is gone, so the quest column gets all that room back'
+    ]
+  },
   {
     v: 'v1.6.85-alpha', date: 'July 2026',
     notes: [

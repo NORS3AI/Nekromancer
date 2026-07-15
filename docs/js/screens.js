@@ -4455,8 +4455,8 @@ const Screens = {
     }
 
     // LEFT column, vertically centered.
-    const contentH = nr ? 380 : 340;   // approximate block height
-    let y = Math.max(26, H / 2 - contentH / 2);
+    // Text starts at the very top (owner rule: no wasted space on mobile).
+    let y = 30 + ((UI.safe && UI.safe.top) || 0);
     const journal = (Hero.journal || []).filter(e => e.src !== 'A');   // Lukus's own deeds only
     const doneCount = clamp(Hero.questLine || 0, 0, QUEST_COUNT);
     const offerIdx = Hero.questOffer();
@@ -4684,8 +4684,8 @@ const Screens = {
       ctx.drawImage(img, px2, py2 + bob, w, h);
     }
 
-    const contentH = nr ? 400 : 360;
-    let y = Math.max(26, H / 2 - contentH / 2);
+    // Text starts at the very top (owner rule: no wasted space on mobile).
+    let y = 30 + ((UI.safe && UI.safe.top) || 0);
     const lvl70 = Hero.level >= 70;
     const journal = (Hero.journal || []).filter(e => e.src === 'A');
     const doneCount = clamp(Hero.addyLine || 0, 0, ADDY_QUEST_COUNT);
@@ -4941,8 +4941,8 @@ const Screens = {
       ctx.drawImage(img, px2, py2 + bob, w, h);
     }
 
-    const contentH = nr ? 400 : 360;
-    let y = Math.max(26, H / 2 - contentH / 2);
+    // Text starts at the very top (owner rule: no wasted space on mobile).
+    let y = 30 + ((UI.safe && UI.safe.top) || 0);
 
     // Name — full title only HERE (the street plate says just "Lyssa").
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
