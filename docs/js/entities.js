@@ -392,12 +392,9 @@ class Player {
       const hair = (typeof Hero !== 'undefined' && Hero.hair) || 0;
       const front = Game.heroSprite ? Game.heroSprite(gd, 'front', hair) : null;
       const back = Game.heroSprite ? Game.heroSprite(gd, 'back', hair) : null;
-      // True painted PROFILES: the female has side art for EVERY hair color
-      // (v1.6.76 sheet); the male only for the base black look so far — his
-      // hair variants fall back to the mirrored/sheared front art (never
-      // request m_side_h* — those files don't exist yet).
-      const hasSide = gd === 'f' || !hair;
-      const side = (Game.heroSprite && hasSide) ? Game.heroSprite(gd, 'side', hair) : null;
+      // True painted PROFILES exist for every gender and hair color (female
+      // from the v1.6.76 sheet; male via the v1.6.77 head-swap composites).
+      const side = Game.heroSprite ? Game.heroSprite(gd, 'side', hair) : null;
       if (front && back) this.drawAvatarModel(ctx, front, back, side, bob);
       else this.drawUpright(ctx, bob);
     } else {

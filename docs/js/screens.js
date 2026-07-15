@@ -1045,18 +1045,32 @@ const Screens = {
       ['🏆   ACHIEVEMENTS', 'achievements', '#8fd0a0'],
       ['⚙   SETTINGS', 'settings', '#c9bfa8']
     ];
+    // This same menu serves the dungeons (owner rule — rifts, seasons,
+    // bounties, acts and Adventure use the ☰ MENU, not a separate pause
+    // screen); there it grows an ABANDON row so a run can still be quit.
+    const inRun = Game.state === 'playing';
+    const mode = !inRun ? '' : Game.story ? 'Story Mode'
+      : Game.riftMode ? ((Game.zone && Game.zone.riftKind === 'season') ? 'Set Dungeon'
+        : (Game.zone && Game.zone.riftKind === 'greater') ? 'Nephalem Rift' : 'Rift')
+      : (Game.bountyPart === 0 && Game.journeyIdx === null) ? 'Adventure Mode'
+      : 'Bounty';
     const pw = Math.min(360, W - 24);
     const px = W / 2 - pw / 2;
-    // Compact rows on short (landscape phone) screens so all six rows fit.
-    const rowH = H < 520 ? 40 : 56;
+    // Compact rows on short (landscape phone) screens so all rows fit.
+    const nRows = rows.length + (inRun ? 1 : 0);
+    const rowH = H < (inRun ? 570 : 520) ? 40 : 56;
     const btnH = rowH - 8;
-    const ph = 64 + rows.length * rowH + 10;
+    const ph = 64 + nRows * rowH + 10;
     const py = Math.max(8, Math.min(H / 2 - ph / 2, H - ph - (Game.state === 'town' ? 150 : 12)));
     UI.panel(ctx, px, py, pw, ph, 'MENU');
     let y = py + 56;
     for (const [label, target, color] of rows) {
       UI.btn(ctx, px + 16, y, pw - 32, btnH, label, () => UI.open(target), { size: H < 520 ? 12 : 14, color });
       y += rowH;
+    }
+    if (inRun) {
+      UI.btn(ctx, px + 16, y, pw - 32, btnH, '⏏   ABANDON ' + mode.toUpperCase(), () => Game.toCamp(),
+        { size: H < 520 ? 12 : 14, border: '#8a4550', color: '#e04a5a' });
     }
   },
 
@@ -1641,7 +1655,7 @@ const Screens = {
     const ph = Math.min(H - 16, 540);
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph,
-      wp === 'blue' ? '✧ EXPEDITION WAYPOINT' : wp === 'purple' ? '✧ RIFT WAYPOINT' : '⛰ THE WILDS');
+      wp === 'blue' ? '✧ THE WILDS WAYPOINT' : wp === 'purple' ? '✧ THE VOID PORTAL' : '⛰ THE WILDS');
 
     // Global difficulty stepper — set it once here for every mode below. The
     // arrows grey out at the bounds (Normal has nothing lower; the top Torment

@@ -324,8 +324,8 @@ const Game = {
     [718, 668, 55,     0, 0, 0, 0, 'Lukus',                '⚔', '#ffd76a', 'lukus'],   // the knight quest-giver
     [1150, 515, 55,    0, 0, 0, 0, 'Addy',                 '🗡', '#c86adf', 'addy'],   // the rogue queen, by the crates east of the rift pavilion (owner-placed)
     [880, 500, 55,     0, 0, 0, 0, 'Lyssa',                '✦', '#c88bf0', 'lyssa'],   // the fate-gambler at the rift pavilion steps (Amidrassi Orbs)
-    [183, 195, 62,     0, 0, 0, 0, 'Expedition Waypoint',  '✧', '#8fd0ff', 'waypoint-blue'],    // bounties · acts · adventure
-    [1020, 350, 66,    0, 0, 0, 0, 'Rift Waypoint',        '✧', '#c88bf0', 'waypoint-purple'],  // rifts · greater rifts · seasons
+    [183, 195, 62,     0, 0, 0, 0, 'The Wilds Waypoint',   '✧', '#8fd0ff', 'waypoint-blue'],    // bounties · acts · adventure
+    [1020, 350, 66,    0, 0, 0, 0, 'The Void Portal',      '✧', '#c88bf0', 'waypoint-purple'],  // rifts · greater rifts · seasons
     [585, 1120, 70,    0, 0, 0, 0, 'Return to the Wilds',  '↩', '#8fd0ff', 'gate']              // only while visiting via portal
   ],
   // Scenery blockers with no interaction (fountain, landmarks) PLUS the town's
