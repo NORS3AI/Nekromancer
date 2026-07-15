@@ -91,8 +91,14 @@ const Game = {
     this.installFontScale(this.ctx);
     window.addEventListener('resize', () => this.resize());
     // Entering/leaving fullscreen changes the viewport → re-fit the canvas.
-    document.addEventListener('fullscreenchange', () => this.resize());
-    document.addEventListener('webkitfullscreenchange', () => this.resize());
+    // If fullscreen drops while the player still wants it (iPadOS swipe-down
+    // system gesture, triggered by joystick drags), arm a one-touch re-entry.
+    const onFsChange = () => {
+      this.resize();
+      if (!this.fullscreenEl() && this.fsWant) this.fsRearm = true;
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    document.addEventListener('webkitfullscreenchange', onFsChange);
     this.resize();
     Settings.load();
     this.applyCursor();
@@ -207,26 +213,41 @@ const Game = {
     // attempt it (toggleFullscreen explains gracefully if the browser refuses).
     return (navigator.maxTouchPoints || 0) > 0 || ('ontouchstart' in window);
   },
+  enterFullscreen() {
+    // Prefer the whole page; fall back to the canvas for element-only iOS WebKit.
+    const el = (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
+      ? document.documentElement : this.canvas;
+    let r;
+    if (el && el.requestFullscreen) r = el.requestFullscreen({ navigationUI: 'hide' });
+    else if (el && el.webkitRequestFullscreen) r = el.webkitRequestFullscreen();
+    else return false;
+    if (r && r.catch) r.catch(() => {});
+    return true;
+  },
   toggleFullscreen() {
     try {
       if (!this.fullscreenEl()) {
-        // Prefer the whole page; fall back to the canvas for element-only iOS WebKit.
-        const el = (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
-          ? document.documentElement : this.canvas;
-        let r;
-        if (el && el.requestFullscreen) r = el.requestFullscreen({ navigationUI: 'hide' });
-        else if (el && el.webkitRequestFullscreen) r = el.webkitRequestFullscreen();
-        else {
+        if (!this.enterFullscreen()) {
           UI.toast('This browser blocks full screen for web pages — Add to Home Screen for a chrome-free launch', '#ffd76a');
           AudioSys.sfx('denied');
           return;
         }
-        if (r && r.catch) r.catch(() => {});
+        this.fsWant = true;    // the player CHOSE full screen — keep them there
       } else {
+        this.fsWant = false;   // deliberate exit via the toggle
         const exit = document.exitFullscreen || document.webkitExitFullscreen;
         if (exit) exit.call(document);
       }
     } catch (e) { /* browser refused — ignore */ }
+  },
+  // iPadOS exits element fullscreen on ANY downward swipe — a system gesture
+  // the page cannot block, so a joystick drag can accidentally pull the game
+  // out of full screen. Self-heal: when fullscreen drops while the player
+  // still wants it, the NEXT touch (a user gesture) puts it straight back.
+  refullscreen() {
+    if (!this.fsRearm || this.fullscreenEl()) return;
+    this.fsRearm = false;
+    try { this.enterFullscreen(); } catch (e) { /* ignore */ }
   },
 
   // Combat multiplier from diving "ONWARD" — 1.2× compounding per linked-map dive.

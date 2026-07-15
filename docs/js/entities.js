@@ -515,29 +515,45 @@ class Player {
     } else {
       ctx.rotate(moving ? Math.sin(ph) * 0.025 : 0); // gentle idle/walk sway
     }
-    // Cosmetic wings ride behind the painting.
-    this.drawWings(ctx, false);
-
     const sw = img.width, sh = img.height;
     const feet = 8;                                  // feet line (matches the shadow)
-    // Base pass — the whole painting, so slice seams never show skin.
-    ctx.drawImage(img, -w / 2, feet - HT, w, HT);
+    // Cosmetic wings ride behind the painting, pinned to the SHOULDERS of the
+    // tall model (the birds-eye anchor sat at the origin = leg height).
+    if (Hero.wings) {
+      ctx.save();
+      ctx.translate(0, feet - HT * 0.66);
+      ctx.scale(1.15, 1.15);
+      this.drawWings(ctx, false);
+      ctx.restore();
+    }
     if (moving) {
-      // SUBTLE slice offsets — under a pixel each, enough to suggest the hips
-      // and shoulders working without ever reading as a cut body (owner rule:
-      // "subtle movements, not dancing images").
-      const stride = Math.sin(ph);
-      // LEGS (bottom 46%): the strongest sway.
-      const legY = 0.54;
-      ctx.drawImage(img, 0, sh * legY, sw, sh * (1 - legY),
-        -w / 2 + stride * 0.7, feet - HT + HT * legY, w, HT * (1 - legY));
-      // TORSO (24%–58%): counter-sways against the hips.
-      const tY = 0.24, tH = 0.34;
-      ctx.drawImage(img, 0, sh * tY, sw, sh * tH,
-        -w / 2 - stride * 0.45, feet - HT + HT * tY, w, HT * tH);
-      // HEAD (top 26%): nearly steady, the slightest counter-nod.
-      ctx.drawImage(img, 0, 0, sw, sh * 0.26,
-        -w / 2 + stride * 0.2, feet - HT, w, HT * 0.26);
+      // REAL WALK CYCLE (owner rule "splice the legs and make them move"):
+      // the painting is split at the hip line into two leg halves, each
+      // swinging smoothly about its own hip — an actual stride in profile, a
+      // soft scissor-step facing the camera — with the torso riding on top
+      // covering the seam. Angles stay small (subtle, never dancing).
+      const swing = Math.sin(ph);
+      const legY = 0.52;                             // hip line (fraction of figure)
+      const hipYpx = feet - HT + HT * legY;          // hip line in local coords
+      const profile = sideways && side;
+      const amp = profile ? 0.15 : 0.06;             // stride angle (radians)
+      const lift = profile ? 0 : 1.1;                // front/back: stepping-foot lift
+      for (const [half, dir] of [[0, 1], [1, -1]]) {
+        const hipX = -w / 2 + (half + 0.5) * (w / 2);   // centre of this half
+        ctx.save();
+        ctx.translate(hipX, hipYpx);
+        ctx.rotate(swing * amp * dir);
+        if (lift) ctx.translate(0, -Math.max(0, swing * dir) * lift);
+        ctx.drawImage(img, half * sw / 2, sh * legY, sw / 2, sh * (1 - legY),
+          -w / 4, 0, w / 2, HT * (1 - legY));
+        ctx.restore();
+      }
+      // Torso + head as one piece, overlapping the hip seam, gentle counter-sway.
+      ctx.drawImage(img, 0, 0, sw, sh * (legY + 0.05),
+        -w / 2 - swing * 0.45, feet - HT, w, HT * (legY + 0.05));
+    } else {
+      // Standing: the whole painting in one piece (breathing bob only).
+      ctx.drawImage(img, -w / 2, feet - HT, w, HT);
     }
     ctx.restore();
     ctx.globalAlpha = 1;

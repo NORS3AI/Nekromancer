@@ -93,7 +93,13 @@ const Input = {
     const opts = { passive: false };
     canvas.addEventListener('touchstart', e => { e.preventDefault(); this.onTouchStart(e); }, opts);
     canvas.addEventListener('touchmove', e => { e.preventDefault(); this.onTouchMove(e); }, opts);
-    canvas.addEventListener('touchend', e => { e.preventDefault(); this.onTouchEnd(e); }, opts);
+    canvas.addEventListener('touchend', e => {
+      e.preventDefault(); this.onTouchEnd(e);
+      // A finished touch is a user gesture — snap back into full screen if an
+      // iPad system swipe just knocked us out of it (Game.refullscreen no-ops
+      // unless that exact situation is armed).
+      if (typeof Game !== 'undefined' && Game.refullscreen) Game.refullscreen();
+    }, opts);
     canvas.addEventListener('touchcancel', e => { e.preventDefault(); this.onTouchEnd(e); }, opts);
     // Desktop mouse-wheel scrolls the radial inventory bag list.
     canvas.addEventListener('wheel', e => {
