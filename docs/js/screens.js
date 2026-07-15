@@ -805,7 +805,6 @@ const Screens = {
     const cx = W / 2;
     const gd = Hero.gender || 'm';
     const spr = Game.heroSprite ? Game.heroSprite(gd, 'front', Hero.hair || 0) : null;
-    const eye = (HAIR_COLORS[Hero.hair || 0] || HAIR_COLORS[0]).hex;
     // Everything below the preview has a fixed cost; whatever headroom is left
     // goes to the avatar so short landscape phones still fit the whole panel.
     const cols = ph < 560 ? 10 : 5, gap = 8;
@@ -820,9 +819,8 @@ const Screens = {
       // here (owner rule: "subtle movements, not dancing images").
       const breath = Math.sin(t * 1.6);
       ctx.save();
-      // hair-tinted aura behind the figure
-      ctx.fillStyle = eye + '22';
-      ctx.beginPath(); ctx.ellipse(cx, pvFeet - pvH * 0.5, pw2 * 0.9, pvH * 0.55, 0, 0, TAU); ctx.fill();
+      // Plain black behind the figure (owner rule: no colored background
+      // while picking hair) — just a soft ground shadow at the feet.
       ctx.fillStyle = 'rgba(0,0,0,0.5)';
       ctx.beginPath(); ctx.ellipse(cx, pvFeet - 2, pw2 * 0.4, 7, 0, 0, TAU); ctx.fill();
       ctx.translate(cx, pvFeet);

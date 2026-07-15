@@ -59,12 +59,18 @@ loot at the artisans. The hero is persistent (localStorage).
   4px across l<10, hole-filled by complement, 1.1px Gaussian feather. If the
   owner ships new avatar art on black, rerun that and bump ART_V. `Hero.gender`
   ('m'|'f', snapshot parity, chosen on the creation screen via ♂ MALE / ♀ FEMALE
-  buttons). **HAIR COLORS (v1.6.73, owner sheets)**: `HAIR_COLORS` (data.js,
-  9 entries) — index 0 Black = the original full-res paintings, 1–8 =
-  `{m,f}_{front,back}_h1..8.webp` sliced from the owner's two 8×2 sheets
-  (female top row, male bottom; scratchpad `hairsheet.py`: the figures TOUCH
-  at the hands, so a min-cost vertical SEAM is carved between neighbors —
-  fixed grid cells bleed neighbor arms, plain connectivity merges all 8).
+  buttons). **HAIR COLORS (v1.6.73, owner sheets; v1.6.76 FEMALE REPAINT)**:
+  `HAIR_COLORS` (data.js, 9 entries) — index 0 Black = the base full-model
+  paintings, 1–8 = `{m,f}_{front,back}_h1..8.webp`. **FEMALE variants come
+  from the NEW-costume 8×(side,front,side2,back) sheet (v1.6.76, scratchpad
+  `newfemhair.py`, ART_V 5) and include `f_side_h1..8.webp` true profiles —
+  in `Player.draw`, `hasSide = gd==='f' || !hair` (male hair variants have NO
+  side art yet; NEVER request `m_side_h*` — the owner is painting that set).**
+  MALE variants are still from the old 8×2 sheet (scratchpad `hairsheet.py`:
+  the figures TOUCH at the hands, so a min-cost vertical SEAM is carved
+  between neighbors — fixed grid cells bleed neighbor arms, plain
+  connectivity merges all 8). The creation preview sits on PLAIN BLACK —
+  no hair-tinted aura (owner rule v1.6.76).
   `Hero.hair` (0–8, snapshot parity, legacy saves default 0/black) feeds
   `Game.heroImg(gender,side,hair)` / `heroSprite(gender,side,hair)`; the
   creation screen's swatch row is HAIR COLOR (replaced GLOWING EYES, owner
