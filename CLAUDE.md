@@ -283,6 +283,20 @@ loot at the artisans. The hero is persistent (localStorage).
   Waypoint", purple = "The Void Portal" (headers in `Screens.wilds` match).
 - **Torches (v1.6.77)**: Wood 75 (+25%, owner rule) · Iron 120 · Wyrm-bound
   192 · Nephalem 264 · Master's Light 365 · Nekromancer's 520.
+- **PAINTED UI KIT (v1.6.80, owner sheet — phase one)**: the owner shipped a
+  full Diablo-style UI sheet (panels/globes/action bar/✕ plates), sliced
+  offline (scratchpad `uikit.py`) into `docs/art/ui/{panel,close,globe_red,
+  globe_blue}.webp`, loaded via `Game.uiImg(key)` (warmed in preloadArt).
+  `UI.panel` draws the frame via `UI.drawNine` — a 9-slice whose EDGE STRIPS
+  are thin samples from clean border runs (`tx=0.28·sw`, `ly=0.55·sh` — the
+  full spans carry baked title text + mid-edge gem ornaments; the CENTER is a
+  flat dark fill, never stretched art). `Screens.closeX` draws the painted ✕
+  plate. Desktop `UI.drawGlobe` takes an artKey ('globe_red'/'globe_blue') —
+  dim pass = empty glass, bright pass clipped to the fill fraction;
+  `globe_blue` is a channel-swap of the red (the sheet's blue globe is
+  clipped by the action bar). All have procedural fallbacks until loaded.
+  REMAINING KIT (not yet applied): action-bar frame, crafting-panel layouts,
+  small orbs, chat bubble, minimap diamond.
 - **Dev panel**: tap the developer credit on the title screen → confirm toggle →
   cheats (god, infinite essence — session-only on `Game.cheats`; grants save).
   Game version label (bottom-right of title) opens `PATCH_NOTES`.
