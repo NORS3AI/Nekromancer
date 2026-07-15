@@ -357,6 +357,16 @@ loot at the artisans. The hero is persistent (localStorage).
   doorway screen is open, and `talk.webp` (speech-bubble ring) at the NPCs
   (Lukus/Addy/Lyssa). Label (ENTER/EXIT/TALK) beneath in Cinzel.
   Procedural circle fallback until the art loads.
+- **THE GREAT RENAMING (v1.6.88, owner list — DISPLAY names only, all internal
+  keys/ids unchanged)**: Story Mode→CAMPAIGN · Adventure Mode→EXPEDITIONS ·
+  Bounties→HARVESTS · The Rift→THE OSSUARY · Nephalem Rift→THE ABYSS ·
+  Seasons→BLOOD MOON · The Wilds Waypoint→WAYGATE · The Void Portal→THE
+  SHROUD · Nephalem (Rift) Keys→CRYPT KEYS (`Hero.riftKeys`) · Master
+  Keys→ASHEN KEYS (`Hero.masterKeys`) · Horadric's Cube→SOUL CRUCIBLE
+  (`Hero.hasCube`, screen id 'cube') · Horadric cache/Stash→FORGOTTEN
+  RELIQUARY · difficulties: Normal→APPRENTICESHIP, Hard→DISCIPLE,
+  Expert→ADEPT, Torment→ASCENDANT I–XVI (`tormentTier` etc. keep their
+  names). Waypoint mode rows + select-screen DELETE HERO are plates.
 - **Dev panel**: tap the developer credit on the title screen → confirm toggle →
   cheats (god, infinite essence — session-only on `Game.cheats`; grants save).
   Game version label (bottom-right of title) opens `PATCH_NOTES`.

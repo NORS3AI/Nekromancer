@@ -220,7 +220,7 @@ const Screens = {
     }
 
     // Delete / cancel toggle, lower-left (its own row, clear of PLAY / YES-NO).
-    UI.btn(ctx, 16, H - 40, 140, 30, delMode ? '‹ CANCEL' : '☠ DELETE HERO', () => {
+    UI.btnPlate(ctx, 16, H - 40, 150, 30, delMode ? 'CANCEL' : 'DELETE HERO', () => {
       UI.sel.delMode = !delMode;
       UI.sel.delConfirm = undefined;
       if (!delMode) UI.sel.pick = null;   // entering delete mode clears the play selection
@@ -1042,11 +1042,11 @@ const Screens = {
     // bounties, acts and Adventure use the ☰ MENU, not a separate pause
     // screen); there it grows an ABANDON row so a run can still be quit.
     const inRun = Game.state === 'playing';
-    const mode = !inRun ? '' : Game.story ? 'Story Mode'
-      : Game.riftMode ? ((Game.zone && Game.zone.riftKind === 'season') ? 'Set Dungeon'
-        : (Game.zone && Game.zone.riftKind === 'greater') ? 'Nephalem Rift' : 'Rift')
-      : (Game.bountyPart === 0 && Game.journeyIdx === null) ? 'Adventure Mode'
-      : 'Bounty';
+    const mode = !inRun ? '' : Game.story ? 'Campaign'
+      : Game.riftMode ? ((Game.zone && Game.zone.riftKind === 'season') ? 'Blood Moon'
+        : (Game.zone && Game.zone.riftKind === 'greater') ? 'The Abyss' : 'The Ossuary')
+      : (Game.bountyPart === 0 && Game.journeyIdx === null) ? 'Expedition'
+      : 'Harvest';
     const pw = Math.min(360, W - 24);
     const px = W / 2 - pw / 2;
     // Compact rows on short (landscape phone) screens so all rows fit. The
@@ -1316,7 +1316,7 @@ const Screens = {
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 24, 470);
     const py = Math.max(12, H / 2 - ph / 2);
-    UI.panel(ctx, px, py, pw, ph, 'HORADRIC\'S CUBE');
+    UI.panel(ctx, px, py, pw, ph, 'SOUL CRUCIBLE');
 
     // The floating cube glyph.
     const cx = W / 2, cyc = py + 108, t = Game.time;
@@ -1617,7 +1617,7 @@ const Screens = {
       ['SETTINGS', () => UI.open('settings'), '#9a9080']
     ];
     // The Horadric's Cube joins the hub (before the Blacksmith) once found.
-    if (Hero.hasCube) items.splice(4, 0, ['HORADRIC\'S CUBE', () => UI.open('cube'), '#ff5a4a']);
+    if (Hero.hasCube) items.splice(4, 0, ['SOUL CRUCIBLE', () => UI.open('cube'), '#ff5a4a']);
     const cols = W > 560 ? 2 : 1;
     const bw = cols === 2 ? (pw - 12) / 2 : pw;
     const rowH = cols === 1 ? Math.min(52, (H - (56 + panelH) - 46) / items.length) : 56;
@@ -1659,7 +1659,7 @@ const Screens = {
     const ph = Math.min(H - 16, 540);
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph,
-      wp === 'blue' ? '✧ THE WILDS WAYPOINT' : wp === 'purple' ? '✧ THE VOID PORTAL' : '⛰ THE WILDS');
+      wp === 'blue' ? '✧ WAYGATE' : wp === 'purple' ? '✧ THE SHROUD' : '⛰ THE WILDS');
 
     // Global difficulty stepper — set it once here for every mode below. The
     // arrows grey out at the bounds (Normal has nothing lower; the top Torment
@@ -1691,20 +1691,20 @@ const Screens = {
     const lvl = Hero.level;
     const rows = [];
     const show = tag => !wp || wp === tag;    // waypoint filter (null = show all)
-    if (show('blue')) rows.push(['STORY MODE', 'Continue your campaign, or replay a cleared Act', '#ff8c2a',
+    if (show('blue')) rows.push(['CAMPAIGN', 'Continue your campaign, or replay a cleared Act', '#ff8c2a',
       () => UI.open('storyacts')]);
-    if (show('purple')) rows.push(['THE RIFT', 'Survive the onslaught and kill the Guardian', '#b06adf',
+    if (show('purple')) rows.push(['THE OSSUARY', 'Survive the onslaught and kill the Guardian', '#b06adf',
       () => { UI.close(); Game.startRift('normal'); }]);
-    if (show('blue') && lvl >= 20) rows.push(['BOUNTIES', 'Hunt each land\'s unique boss thrice for a reward', '#6ff7c3',
+    if (show('blue') && lvl >= 20) rows.push(['HARVESTS', 'Hunt each land\'s unique boss thrice for a reward', '#6ff7c3',
       () => { UI.close(); Game.state = 'map'; }]);
-    if (show('blue') && lvl >= 60) rows.push(['ADVENTURE MODE', 'A randomized land at your level, new every visit', '#ffd76a',
+    if (show('blue') && lvl >= 60) rows.push(['EXPEDITIONS', 'A randomized land at your level, new every visit', '#ffd76a',
       () => { UI.close(); Game.startAdventure(); }]);
-    if (show('purple') && lvl >= MAX_LEVEL) rows.push(['NEPHALEM RIFT', Hero.riftKeys > 0
-      ? 'Uses a Nephalem Rift Key'
-      : 'Requires a Nephalem Rift Key — normal Rift Guardians drop them', '#4ade80',
+    if (show('purple') && lvl >= MAX_LEVEL) rows.push(['THE ABYSS', Hero.riftKeys > 0
+      ? 'Uses a Crypt Key'
+      : 'Requires a Crypt Key — Ossuary Guardians drop them', '#4ade80',
       Hero.riftKeys > 0 ? () => { UI.close(); Game.startRift('greater'); } : null]);
     if ((Hero.masterKeys || 0) > 0) Hero.seasonUnlocked = true;   // latch once earned
-    if (show('purple') && Hero.seasonUnlocked) rows.push(['SEASONS', SEASON.name, '#4ade80',
+    if (show('purple') && Hero.seasonUnlocked) rows.push(['BLOOD MOON', SEASON.name, '#4ade80',
       () => UI.open('season')]);
     if (!rows.length) {   // e.g. purple waypoint before level 1 has The Rift — never true, but guard
       ctx.textAlign = 'center'; ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#6f6552';
@@ -1716,20 +1716,17 @@ const Screens = {
     const avail = (py + ph - 24) - y;
     const rowH = clamp(avail / rows.length, 44, 58);
     for (const [label, desc, col, cb] of rows) {
-      UI.btn(ctx, px + 16, y, pw - 32, rowH - 5, '', cb, { disabled: !cb });
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 14px Georgia';
-      ctx.fillStyle = cb ? col : '#5c5569';
-      ctx.fillText(label, px + 30, y + rowH * 0.33);
-      ctx.font = '11px Georgia';
+      UI.btnPlate(ctx, px + 16, y + 2, pw - 32, rowH - 24, label, cb, { size: 14, disabled: !cb });
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'italic 9px Georgia';
       ctx.fillStyle = cb ? '#9a9080' : '#453f52';
-      ctx.fillText(this.fitText(ctx, desc, pw - 60), px + 30, y + rowH * 0.66);
+      ctx.fillText(this.fitText(ctx, desc, pw - 60), px + pw / 2, y + rowH - 10);
       y += rowH;
     }
     // Keys footer — each shown only once earned; nothing here otherwise.
     const foot = [];
-    if ((Hero.riftKeys || 0) > 0) foot.push(['◈ Nephalem Keys: ' + Hero.riftKeys, '#b06adf']);
-    if ((Hero.masterKeys || 0) > 0) foot.push(['◈ Master Keys: ' + Hero.masterKeys, '#d8b4f0']);
+    if ((Hero.riftKeys || 0) > 0) foot.push(['◈ Crypt Keys: ' + Hero.riftKeys, '#b06adf']);
+    if ((Hero.masterKeys || 0) > 0) foot.push(['◈ Ashen Keys: ' + Hero.masterKeys, '#d8b4f0']);
     if (foot.length) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 12px Georgia';
       const joined = foot.map(f => f[0]).join('     ');
@@ -1748,7 +1745,7 @@ const Screens = {
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 24, 500);
     const py = Math.max(12, H / 2 - ph / 2);
-    UI.panel(ctx, px, py, pw, ph, 'STORY MODE');
+    UI.panel(ctx, px, py, pw, ph, 'CAMPAIGN');
 
     const cleared = Hero.actsCleared || 0;
     const nextAct = Math.min(100, cleared + 1);
@@ -1818,7 +1815,7 @@ const Screens = {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 24px Georgia';
     ctx.fillStyle = '#c9bfa8';
-    ctx.fillText('BOUNTIES OF SANCTUARY', W / 2, 30);
+    ctx.fillText('HARVESTS OF SANCTUARY', W / 2, 30);
 
     // Difficulty stepper — arrows grey out at Normal / T16.
     const maxDiff = Hero.level >= MAX_LEVEL ? DIFFICULTIES.length - 1 : 3;
@@ -5833,8 +5830,8 @@ const Screens = {
     section('Keys & Storage');
     row('Max Stash upgrades', () => { Hero.stashTier = STASH_PER_SLOT.length - 1; Hero.saveStash(); Hero.save(); UI.toast('Stash maxed — ' + Hero.stashPerSlot().toLocaleString() + '/slot', '#8fb0e8'); }, { color: '#8fb0e8', border: '#5f7ab0' });
     row('+100k inventory space', () => { Hero.bagBonus = (Hero.bagBonus || 0) + 100000; Hero.applyBagSize(); Hero.save(); UI.toast('Inventory expanded to ' + Hero.BAG_SIZE.toLocaleString() + ' slots', '#ffd76a'); }, { color: '#ffd76a', border: '#8a6f4a' });
-    row('+5 Master Keys', () => { Hero.masterKeys += 5; UI.toast('+5 Master Nephalem Rift Keys (' + Hero.masterKeys + ')', '#d8b4f0'); Hero.save(); }, { color: '#d8b4f0', border: '#5a3a7a' });
-    row('+5 Nephalem Keys', () => { Hero.riftKeys += 5; UI.toast('+5 Nephalem Rift Keys (' + Hero.riftKeys + ')', '#b06adf'); Hero.save(); }, { color: '#b06adf', border: '#5a3a7a' });
+    row('+5 Ashen Keys', () => { Hero.masterKeys += 5; UI.toast('+5 Ashen Keys (' + Hero.masterKeys + ')', '#d8b4f0'); Hero.save(); }, { color: '#d8b4f0', border: '#5a3a7a' });
+    row('+5 Crypt Keys', () => { Hero.riftKeys += 5; UI.toast('+5 Crypt Keys (' + Hero.riftKeys + ')', '#b06adf'); Hero.save(); }, { color: '#b06adf', border: '#5a3a7a' });
 
     // ---- GEAR & LEGENDARIES ----
     section('Gear & Legendaries');
@@ -5865,8 +5862,8 @@ const Screens = {
     row('Max level Jeweler (10)', () => { Hero.artisans.jeweler = 10; UI.toast('Jeweler mastered', '#4ecbe0'); Hero.save(); }, { color: '#4ecbe0' });
 
     // ---- HORADRIC'S CUBE ----
-    section("Horadric's Cube");
-    row('◈ Grant Horadric\'s Cube', () => { Hero.hasCube = true; Hero.save(); UI.toast('Horadric\'s Cube granted — see it in town', '#ff5a4a'); AudioSys.sfx('setdrop'); }, { color: '#ff5a4a', border: '#a03a2a' });
+    section("Soul Crucible");
+    row('◈ Grant Soul Crucible', () => { Hero.hasCube = true; Hero.save(); UI.toast('Soul Crucible granted — see it in town', '#ff5a4a'); AudioSys.sfx('setdrop'); }, { color: '#ff5a4a', border: '#a03a2a' });
     row('✦ Grant Golden Mirror', () => { if (!Hero.orbAutoPickup) { Hero.goldenMirror = true; Hero.save(); UI.toast('Golden Mirror granted — transmute it in the Cube', '#ffd76a'); AudioSys.sfx('setdrop'); } else UI.toast('Already transmuted', '#9a9080'); }, { color: '#ffd76a', border: '#8a6f2a' });
 
     // Footer note (scrolls with the content).
@@ -6024,13 +6021,13 @@ const Screens = {
     const hasMaster = Hero.masterKeys > 0;
     UI.btn(ctx, px + 16, footerTop + 10, pw - 32, 40,
       hasMaster ? `◈ START MASTER RIFT`
-        : '◈ NEED A MASTER NEPHALEM RIFT KEY',
+        : '◈ NEED AN ASHEN KEY',
       hasMaster ? () => { UI.close(); Game.startRift('season'); } : null,
       { size: 13, disabled: !hasMaster, border: '#3a7a4a', color: '#4ade80' });
     ctx.textAlign = 'center';
     ctx.font = '10px Georgia';
     ctx.fillStyle = '#6f6552';
-    ctx.fillText(this.fitText(ctx, '◈ Master Keys: ' + Hero.masterKeys + '  ·  Nephalem Guardians drop them & set pieces', pw - 24), W / 2, footerTop + 60);
+    ctx.fillText(this.fitText(ctx, '◈ Ashen Keys: ' + Hero.masterKeys + '  ·  Abyss Guardians drop them & set pieces', pw - 24), W / 2, footerTop + 60);
   },
 
   // ------------------------------------------------------ pause / death
@@ -6053,11 +6050,11 @@ const Screens = {
     y += 50;
     UI.btn(ctx, cx, y, bw, 40, 'SETTINGS', () => UI.open('settings'), { size: 13 });
     y += 50;
-    const mode = Game.story ? 'Story Mode'
-      : Game.riftMode ? ((Game.zone && Game.zone.riftKind === 'season') ? 'Set Dungeon'
-        : (Game.zone && Game.zone.riftKind === 'greater') ? 'Nephalem Rift' : 'Rift')
-      : (Game.bountyPart === 0 && Game.journeyIdx === null) ? 'Adventure Mode'
-      : 'Bounty';
+    const mode = Game.story ? 'Campaign'
+      : Game.riftMode ? ((Game.zone && Game.zone.riftKind === 'season') ? 'Blood Moon'
+        : (Game.zone && Game.zone.riftKind === 'greater') ? 'The Abyss' : 'The Ossuary')
+      : (Game.bountyPart === 0 && Game.journeyIdx === null) ? 'Expedition'
+      : 'Harvest';
     UI.btn(ctx, cx, y, bw, 40, 'ABANDON ' + mode.toUpperCase(), () => Game.toCamp(), { size: 13, border: '#8a4550', color: '#e04a5a' });
   },
 
@@ -6096,7 +6093,7 @@ const Screens = {
     ctx.fillText(Game.zone ? Game.zone.boss + '  slain' : 'The bounty is done', W / 2, py + 60);
     ctx.font = '13px Georgia';
     ctx.fillStyle = '#c9bfa8';
-    ctx.fillText(Game.rewardTitle === 'SEASON COMPLETE' ? 'Season cache:' : 'Horadric cache:', W / 2, py + 86);
+    ctx.fillText(Game.rewardTitle === 'SEASON COMPLETE' ? 'Season cache:' : 'Forgotten Reliquary:', W / 2, py + 86);
     (Game.rewardLines || []).forEach((ln, i) => {
       ctx.fillStyle = ln[1];
       ctx.font = 'bold 13px Georgia';

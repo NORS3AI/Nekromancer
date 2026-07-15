@@ -303,7 +303,7 @@ const ACHIEVEMENTS = [
   { name: "Lukus's Right Hand",      desc: "Complete 100 of Lukus's quests",     need: 100,    cur: () => Hero.questLine || 0 },
   { name: 'The Ledger Closed',       desc: 'Complete all 500 quests',            need: 500,    cur: () => Hero.questLine || 0 },
   { name: 'Landfall',                desc: 'Clear all 5 lands',                  need: 5,      cur: () => Hero.zonesCleared || 0 },
-  { name: 'The Cube Restored',       desc: "Find the Horadric's Cube",           need: 1,      cur: () => Hero.hasCube ? 1 : 0 }
+  { name: 'The Cube Restored',       desc: "Find the Soul Crucible",           need: 1,      cur: () => Hero.hasCube ? 1 : 0 }
 ];
 
 // Reward readout, shared by the journal, both NPC dialogs and offers. `short`
@@ -321,11 +321,20 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.87-alpha';
+const GAME_VERSION = 'v1.6.88-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.88-alpha', date: 'July 2026',
+    notes: [
+      'THE GREAT RENAMING — the game\'s systems take on their own names: Story Mode is the CAMPAIGN, Adventure Mode is EXPEDITIONS, Bounties are HARVESTS, the Rift is THE OSSUARY, the Nephalem Rift is THE ABYSS, and Seasons ride the BLOOD MOON',
+      'The town waypoints follow: the blue gate is the WAYGATE and the purple one is THE SHROUD. Nephalem Keys are CRYPT KEYS, Master Keys are ASHEN KEYS, the Horadric\'s Cube is the SOUL CRUCIBLE, and the Horadric cache is the FORGOTTEN RELIQUARY',
+      'Difficulties ranked anew: Apprenticeship · Disciple · Adept · Master, and beyond them ASCENDANT I–XVI (formerly Torment)',
+      'The waypoint mode rows and the character-select DELETE HERO button are painted plates now'
+    ]
+  },
   {
     v: 'v1.6.87-alpha', date: 'July 2026',
     notes: [
@@ -2308,8 +2317,8 @@ const ITEM_SLOTS = {
 // Nephalem Rift Guardians once the hero reaches max level.
 
 const SEASON = {
-  name: 'Season of the Grace of Inarius',
-  desc: 'Requires a Master Nephalem Rift Key — slay Nephalem Rift Guardians to earn one. Gather 1000 points across the linked maps, then claim all six pieces of the Grace of Inarius.'
+  name: 'Blood Moon of the Grace of Inarius',
+  desc: 'Requires an Ashen Key — slay Abyss Guardians to earn one. Gather 1000 points across the linked maps, then claim all six pieces of the Grace of Inarius.'
 };
 
 const INARIUS_SET = {
@@ -2913,12 +2922,12 @@ const ROMANS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI
 // enemyMult scales how many monsters spawn: +10% per base tier, then +35% per
 // Torment tier (compounding) — so Torment XVI is a wild, swarming meat grinder.
 const DIFFICULTIES = [
-  { name: 'Normal', mult: 1.0, reward: 1.0, legBonus: 0, enemyMult: 1.0 },
-  { name: 'Hard',   mult: 1.6, reward: 1.35, legBonus: 0, enemyMult: 1.1 },
-  { name: 'Expert', mult: 2.6, reward: 1.8, legBonus: 0, enemyMult: 1.2 },
+  { name: 'Apprenticeship', mult: 1.0, reward: 1.0, legBonus: 0, enemyMult: 1.0 },
+  { name: 'Disciple', mult: 1.6, reward: 1.35, legBonus: 0, enemyMult: 1.1 },
+  { name: 'Adept', mult: 2.6, reward: 1.8, legBonus: 0, enemyMult: 1.2 },
   { name: 'Master', mult: 4.2, reward: 2.4, legBonus: 0, enemyMult: 1.3 }
 ].concat(ROMANS.map((numeral, i) => ({
-  name: 'Torment ' + numeral,
+  name: 'Ascendant ' + numeral,
   mult: +(7.0 * Math.pow(1.45, i)).toFixed(1),
   reward: +(3.2 * Math.pow(1.17, i)).toFixed(2),
   legBonus: +(0.01 + (0.333 - 0.01) * (i / 15)).toFixed(4),
