@@ -315,11 +315,21 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.76-alpha';
+const GAME_VERSION = 'v1.6.77-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.77-alpha', date: 'July 2026',
+    notes: [
+      'MALE HAIR COLORS ON THE NEW BODY — every male hair variant is now the new full model wearing that color\'s head (same model, different hair), with true side profiles for all eight, matching the female set',
+      'ONE MENU EVERYWHERE — rifts, seasons, bounties, acts and Adventure Mode now open the same ☰ MENU as town (with an ABANDON row while in a run); the old pause screen is retired',
+      'The round EXIT button is gone from the pure menu screens — Character, Inventory, Journal, Skills & Passives, Achievements, Settings, the ☰ Menu and both waypoint menus close with the red ✕ or Escape, straight back to the game',
+      'RENAMED: the Rift Waypoint is now THE VOID PORTAL, and the Expedition Waypoint is THE WILDS WAYPOINT',
+      'Wood Torch shines 25% farther (radius 60 → 75), and every finer torch got a small push too (Iron 120 · Wyrm-bound 192 · Nephalem 264 · Master\'s 365 · Nekromancer\'s 520)'
+    ]
+  },
   {
     v: 'v1.6.76-alpha', date: 'July 2026',
     notes: [
@@ -2074,12 +2084,12 @@ const MATERIALS = {
 // Uncommon, Magic, Rare, Epic, Legendary — is finer than the gear rarity list.
 // `rarity` is the numeric order (sorting); `tier`/`tierColor` drive the label.
 const TORCH_TYPES = {
-  wood:        { name: 'Wood Torch',           minutes: 12,  radius: 60,  color: '#ffb24a', rarity: 0, tier: 'Common',    tierColor: '#f4f4f4', recipe: { lumber: 10 } },
-  iron:        { name: 'Iron Torch',           minutes: 37,  radius: 110, color: '#ffcf6a', rarity: 1, tier: 'Uncommon',  tierColor: '#4ade80', recipe: { lumber: 10, rivets: 15 } },
-  wyrmbound:   { name: 'Wyrm-bound Torch',     minutes: 55,  radius: 180, color: '#7fe0ff', rarity: 2, tier: 'Magic',     tierColor: '#6a9aff', recipe: { lumber: 5, rivets: 10, wyrmscale: 5 } },
-  nephalem:    { name: 'Nephalem Torch',       minutes: 75,  radius: 250, color: '#d8b4f0', rarity: 3, tier: 'Rare',      tierColor: '#ffd76a', recipe: { lumber: 15, rivets: 30, heartstring: 3 } },
-  masterlight: { name: "Master's Light Torch", minutes: 110, radius: 350, color: '#ffe6a0', rarity: 4, tier: 'Epic',      tierColor: '#b06adf', recipe: { rivets: 50, heartstring: 5, brain: 1 } },
-  nekromancer: { name: "Nekromancer's Torch",  minutes: 180, radius: 500, color: '#c58bff', rarity: 5, tier: 'Legendary', tierColor: '#ff8c2a', recipe: { rathmasoul: 3 } }
+  wood:        { name: 'Wood Torch',           minutes: 12,  radius: 75,  color: '#ffb24a', rarity: 0, tier: 'Common',    tierColor: '#f4f4f4', recipe: { lumber: 10 } },
+  iron:        { name: 'Iron Torch',           minutes: 37,  radius: 120, color: '#ffcf6a', rarity: 1, tier: 'Uncommon',  tierColor: '#4ade80', recipe: { lumber: 10, rivets: 15 } },
+  wyrmbound:   { name: 'Wyrm-bound Torch',     minutes: 55,  radius: 192, color: '#7fe0ff', rarity: 2, tier: 'Magic',     tierColor: '#6a9aff', recipe: { lumber: 5, rivets: 10, wyrmscale: 5 } },
+  nephalem:    { name: 'Nephalem Torch',       minutes: 75,  radius: 264, color: '#d8b4f0', rarity: 3, tier: 'Rare',      tierColor: '#ffd76a', recipe: { lumber: 15, rivets: 30, heartstring: 3 } },
+  masterlight: { name: "Master's Light Torch", minutes: 110, radius: 365, color: '#ffe6a0', rarity: 4, tier: 'Epic',      tierColor: '#b06adf', recipe: { rivets: 50, heartstring: 5, brain: 1 } },
+  nekromancer: { name: "Nekromancer's Torch",  minutes: 180, radius: 520, color: '#c58bff', rarity: 5, tier: 'Legendary', tierColor: '#ff8c2a', recipe: { rathmasoul: 3 } }
 };
 // The lit/reveal radius (px) with no torch at all — deliberately tiny so the
 // dark presses right in until you craft one. Torches widen it (see TORCH_TYPES).

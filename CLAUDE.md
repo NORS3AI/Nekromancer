@@ -59,18 +59,17 @@ loot at the artisans. The hero is persistent (localStorage).
   4px across l<10, hole-filled by complement, 1.1px Gaussian feather. If the
   owner ships new avatar art on black, rerun that and bump ART_V. `Hero.gender`
   ('m'|'f', snapshot parity, chosen on the creation screen via ♂ MALE / ♀ FEMALE
-  buttons). **HAIR COLORS (v1.6.73, owner sheets; v1.6.76 FEMALE REPAINT)**:
-  `HAIR_COLORS` (data.js, 9 entries) — index 0 Black = the base full-model
-  paintings, 1–8 = `{m,f}_{front,back}_h1..8.webp`. **FEMALE variants come
-  from the NEW-costume 8×(side,front,side2,back) sheet (v1.6.76, scratchpad
-  `newfemhair.py`, ART_V 5) and include `f_side_h1..8.webp` true profiles —
-  in `Player.draw`, `hasSide = gd==='f' || !hair` (male hair variants have NO
-  side art yet; NEVER request `m_side_h*` — the owner is painting that set).**
-  MALE variants are still from the old 8×2 sheet (scratchpad `hairsheet.py`:
-  the figures TOUCH at the hands, so a min-cost vertical SEAM is carved
-  between neighbors — fixed grid cells bleed neighbor arms, plain
-  connectivity merges all 8). The creation preview sits on PLAIN BLACK —
-  no hair-tinted aura (owner rule v1.6.76).
+  buttons). **HAIR COLORS (v1.6.73 sheets; v1.6.76 female repaint; v1.6.77
+  male head-swap)**: `HAIR_COLORS` (data.js, 9 entries) — index 0 Black = the
+  base full-model paintings, 1–8 = `{m,f}_{front,back,side}_h1..8.webp`.
+  FEMALE variants come from the new-costume 8×(side,front,side2,back) sheet
+  (scratchpad `newfemhair.py`). **MALE variants are COMPOSITES (owner rule
+  "same model, just different hair"): the new male body beheaded at
+  `figTop+0.155·figH` with the old bust-sheet head (side/front/back per
+  color) scaled to `headW×1.06` and pasted at the head bbox (scratchpad
+  `malehead.py`, ART_V 6)** — every gender+hair now has a true side profile,
+  `Player.draw` requests side art unconditionally. The creation preview sits
+  on PLAIN BLACK — no hair-tinted aura (owner rule v1.6.76).
   `Hero.hair` (0–8, snapshot parity, legacy saves default 0/black) feeds
   `Game.heroImg(gender,side,hair)` / `heroSprite(gender,side,hair)`; the
   creation screen's swatch row is HAIR COLOR (replaced GLOWING EYES, owner
@@ -257,6 +256,19 @@ loot at the artisans. The hero is persistent (localStorage).
   checked via `p.powers` (bloodtide in deathNova, krysbin/corrodedFang in Enemy.hurt).
 - Patch notes screen shows FULL wrapped note text with ▲/▼ scrolling — never
   ellipsize or clip notes (owner rule).
+- **ONE MENU EVERYWHERE (v1.6.77, owner rule)**: dungeons (rifts/seasons/
+  bounties/acts/Adventure) open the SAME `Screens.sysmenu` as town — the HUD
+  menu button and Escape open 'sysmenu', never 'pause' (`Screens.pause` is
+  dead code); in a run the menu grows a red "⏏ ABANDON <mode>" row
+  (`Game.toCamp`). **Pure MENU screens have NO round EXIT button** —
+  `UI.MENU_SCREENS` (sysmenu/character/radial/invGrouped/journal/skills/
+  skillChooser/achievements/settings/paragon/wilds/storyacts) suppresses
+  `drawTownEnter` in town; the red ✕/Escape closes them STRAIGHT to the
+  playable screen. Doorway screens (shops, stash, vendors, NPC dialogs) keep
+  the EXIT button. **Town stations renamed (v1.6.77)**: blue = "The Wilds
+  Waypoint", purple = "The Void Portal" (headers in `Screens.wilds` match).
+- **Torches (v1.6.77)**: Wood 75 (+25%, owner rule) · Iron 120 · Wyrm-bound
+  192 · Nephalem 264 · Master's Light 365 · Nekromancer's 520.
 - **Dev panel**: tap the developer credit on the title screen → confirm toggle →
   cheats (god, infinite essence — session-only on `Game.cheats`; grants save).
   Game version label (bottom-right of title) opens `PATCH_NOTES`.

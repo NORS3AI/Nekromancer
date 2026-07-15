@@ -155,6 +155,12 @@ const UI = {
     this.sel = {};
   },
 
+  // Screens that are pure MENUS (owner rule): the red ✕ / Escape is the only
+  // way out (straight back to the playable screen) — no round EXIT button.
+  MENU_SCREENS: ['sysmenu', 'character', 'radial', 'invGrouped', 'journal',
+    'skills', 'skillChooser', 'achievements', 'settings', 'paragon',
+    'wilds', 'storyacts'],
+
   // The navigation for the red ✕ / Escape on the CURRENT screen. Most screens
   // just close, but a few step back to a parent menu instead:
   //  · recipes → Cube, skillChooser → skills, storyacts → wilds
@@ -358,7 +364,10 @@ const UI = {
         this.overlayBarrier = this.hits.length;
         Screens.draw(ctx, W, H);
         this.drawGlobalClose(ctx, W);
-        this.drawTownEnter(ctx, W, H, true);   // EXIT — registered above the barrier
+        // Pure MENU screens rely on the red ✕ alone (owner rule — no round
+        // EXIT button); doorway screens (shops, stash, NPCs) keep it.
+        if (!this.MENU_SCREENS.includes(this.screen))
+          this.drawTownEnter(ctx, W, H, true);   // EXIT — registered above the barrier
       } else {
         if (!this.desktop) this.drawJoystick(ctx);
         // Top-left: ☰ MENU (camp hub: skills/paragon/character/settings) + 🎒.
@@ -1151,7 +1160,7 @@ const UI = {
     }
     ctx.globalAlpha = 1;
     this.register(b.x - b.r - 4, b.y - b.r - 4, b.r * 2 + 8, b.r * 2 + 8,
-      () => { UI.screen === 'pause' ? UI.close() : UI.open('pause'); });
+      () => { UI.screen === 'sysmenu' ? UI.close() : UI.open('sysmenu'); });
   },
 
   drawBanner(ctx, W, H) {
