@@ -315,11 +315,20 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.79-alpha';
+const GAME_VERSION = 'v1.6.80-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.80-alpha', date: 'July 2026',
+    notes: [
+      'THE OWNER\'S PAINTED UI ARRIVES (phase one) — every menu panel in the game now wears the hand-drawn dark frame with its ornamental corners, sliced straight from the new UI kit',
+      'The red ✕ close button is the kit\'s painted plate on every screen',
+      'Desktop: the health and essence globes are now the kit\'s spiked orbs — the liquid drains and fills inside the painted glass',
+      'More of the kit (action bar, crafting screens) lands in later phases'
+    ]
+  },
   {
     v: 'v1.6.79-alpha', date: 'July 2026',
     notes: [

@@ -227,11 +227,21 @@ const UI = {
   panel(ctx, x, y, w, h, title) {
     (this.panelRects = this.panelRects || []).push({ x, y, w, h });
     const th = this.theme();
-    ctx.fillStyle = 'rgba(10,7,14,0.94)';
-    rr(ctx, x, y, w, h, 12); ctx.fill();
-    ctx.strokeStyle = th.panel;
-    ctx.lineWidth = 2;
-    rr(ctx, x, y, w, h, 12); ctx.stroke();
+    const art = (typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg('panel') : null;
+    if (art) {
+      // The owner's painted frame, 9-sliced: ornamental corners stay 1:1,
+      // edge strips stretch, the middle is a flat dark fill (never stretch
+      // the painted interior — it carries baked-in content).
+      ctx.fillStyle = 'rgba(9,7,12,0.94)';
+      rr(ctx, x + 6, y + 6, w - 12, h - 12, 10); ctx.fill();
+      this.drawNine(ctx, art, x, y, w, h, 46);
+    } else {
+      ctx.fillStyle = 'rgba(10,7,14,0.94)';
+      rr(ctx, x, y, w, h, 12); ctx.fill();
+      ctx.strokeStyle = th.panel;
+      ctx.lineWidth = 2;
+      rr(ctx, x, y, w, h, 12); ctx.stroke();
+    }
     if (title) {
       ctx.fillStyle = th.title;
       ctx.font = 'bold 17px Georgia';
@@ -470,8 +480,8 @@ const UI = {
     const hg = this.hpGlobe, eg = this.essGlobe;
     const hpF = clamp((p.hpDisplay === undefined ? p.hp : p.hpDisplay) / p.maxHp, 0, 1);
     const esF = clamp((p.essDisplay === undefined ? p.essence : p.essDisplay) / p.maxEssence, 0, 1);
-    this.drawGlobe(ctx, hg, hpF, '#4a0c14', '#e0402f', Math.ceil(Math.max(0, p.hp)));
-    this.drawGlobe(ctx, eg, esF, '#0d2e38', '#4ecbe0', Math.floor(p.essence));
+    this.drawGlobe(ctx, hg, hpF, '#4a0c14', '#e0402f', Math.ceil(Math.max(0, p.hp)), 'globe_red');
+    this.drawGlobe(ctx, eg, esF, '#0d2e38', '#4ecbe0', Math.floor(p.essence), 'globe_blue');
 
     // Shield ripple over the health globe.
     if (p.shield > 0) {
@@ -507,7 +517,51 @@ const UI = {
     }
   },
 
-  drawGlobe(ctx, g, frac, dark, bright, label) {
+  // 9-slice a painted frame over a rect: corners 1:1, THIN text-free strips
+  // (not the full spans, which carry baked-in content) stretched for edges.
+  drawNine(ctx, img, x, y, w, h, c) {
+    const sw = img.width, sh = img.height;
+    const cs = Math.round(Math.min(sw, sh) * 0.17);
+    c = Math.max(14, Math.min(c, w * 0.3, h * 0.3));
+    const st = 22;
+    // Strip sample points chosen from CLEAN border runs (away from the baked
+    // title text and the mid-edge gem ornaments).
+    const tx = Math.round(sw * 0.28), ly = Math.round(sh * 0.55);
+    ctx.drawImage(img, tx, 0, st, cs, x + c, y, w - 2 * c, c);                 // top
+    ctx.drawImage(img, tx, sh - cs, st, cs, x + c, y + h - c, w - 2 * c, c);   // bottom
+    ctx.drawImage(img, 0, ly, cs, st, x, y + c, c, h - 2 * c);                 // left
+    ctx.drawImage(img, sw - cs, ly, cs, st, x + w - c, y + c, c, h - 2 * c);   // right
+    ctx.drawImage(img, 0, 0, cs, cs, x, y, c, c);                              // corners
+    ctx.drawImage(img, sw - cs, 0, cs, cs, x + w - c, y, c, c);
+    ctx.drawImage(img, 0, sh - cs, cs, cs, x, y + h - c, c, c);
+    ctx.drawImage(img, sw - cs, sh - cs, cs, cs, x + w - c, y + h - c, c, c);
+  },
+
+  drawGlobe(ctx, g, frac, dark, bright, label, artKey) {
+    const img = (artKey && typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg(artKey) : null;
+    if (img) {
+      // The painted spiked globe: dim pass = empty glass, then the liquid
+      // revealed from the bottom by clipping the bright pass to the fill.
+      const s = (g.r * 2.35) / Math.max(img.width, img.height);
+      const dw = img.width * s, dh = img.height * s;
+      ctx.save();
+      ctx.globalAlpha = 0.32;
+      ctx.drawImage(img, g.x - dw / 2, g.y - dh / 2, dw, dh);
+      ctx.globalAlpha = 1;
+      const top = g.y + g.r - 2 * g.r * frac;
+      ctx.beginPath();
+      ctx.rect(g.x - dw / 2, top, dw, g.y + dh / 2 + 2 - top);
+      ctx.clip();
+      ctx.drawImage(img, g.x - dw / 2, g.y - dh / 2, dw, dh);
+      ctx.restore();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 14px Georgia';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+      ctx.strokeText(label, g.x, g.y + g.r * 0.4);
+      ctx.fillText(label, g.x, g.y + g.r * 0.4);
+      return;
+    }
     ctx.save();
     ctx.beginPath(); ctx.arc(g.x, g.y, g.r, 0, TAU);
     ctx.fillStyle = '#0a070c'; ctx.fill();

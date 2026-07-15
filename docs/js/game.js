@@ -379,6 +379,7 @@ const Game = {
     this.lukusImg('helmed'); this.lukusImg('idle');
     this.addyImg(); this.lyssaImg();
     for (const gd of ['m', 'f']) { this.heroImg(gd, 'front'); this.heroImg(gd, 'back'); this.heroImg(gd, 'side'); }
+    for (const k of ['panel', 'close', 'globe_red', 'globe_blue']) this.uiImg(k);
     // Warm each roster hero's hair-variant art (campfire + play); the rest of
     // the hair ladder loads lazily when browsed on the creation screen.
     if (typeof Profiles !== 'undefined' && Profiles.slots) {
@@ -750,6 +751,20 @@ const Game = {
   // ---- The PLAYER'S PAINTED AVATAR (owner art): male/female, front & back
   // views, chroma-keyed and driven by Player.drawAvatarModel as the walking
   // top-down model (layered slices fake articulation/depth).
+  // ---- UI-kit art (owner sheet, sliced offline): painted panel frame,
+  // red ✕ plate, health/essence globes. Null until loaded (procedural
+  // fallbacks draw in the meantime).
+  uiArt: {},
+  uiImg(key) {
+    let img = this.uiArt[key];
+    if (!img) {
+      img = new Image();
+      img.src = 'art/ui/' + key + '.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
+      this.uiArt[key] = img;
+    }
+    return (img.complete && img.naturalWidth) ? img : null;
+  },
+
   heroArt: {},
   heroImg(gender, side, hair) {
     const hc = (typeof HAIR_COLORS !== 'undefined' && HAIR_COLORS[hair | 0]) || { art: '' };

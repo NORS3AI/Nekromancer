@@ -1260,18 +1260,24 @@ const Screens = {
     const x = opts.x !== undefined ? opts.x : W - 26;
     const y = opts.y !== undefined ? opts.y : 26;
     const cb = opts.cb || (() => UI.close());
-    ctx.fillStyle = '#7a1220';
-    ctx.beginPath(); ctx.arc(x, y, 16, 0, TAU); ctx.fill();
-    ctx.strokeStyle = '#e04a5a';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(x, y, 16, 0, TAU); ctx.stroke();
-    ctx.strokeStyle = '#ffe0e4';
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(x - 6, y - 6); ctx.lineTo(x + 6, y + 6);
-    ctx.moveTo(x + 6, y - 6); ctx.lineTo(x - 6, y + 6);
-    ctx.stroke();
+    const img = (typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg('close') : null;
+    if (img) {
+      // The owner's painted red ✕ plate (UI kit).
+      ctx.drawImage(img, x - 17, y - 17, 34, 34);
+    } else {
+      ctx.fillStyle = '#7a1220';
+      ctx.beginPath(); ctx.arc(x, y, 16, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#e04a5a';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x, y, 16, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = '#ffe0e4';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(x - 6, y - 6); ctx.lineTo(x + 6, y + 6);
+      ctx.moveTo(x + 6, y - 6); ctx.lineTo(x - 6, y + 6);
+      ctx.stroke();
+    }
     UI.register(x - 24, y - 24, 48, 48, cb);
   },
 
