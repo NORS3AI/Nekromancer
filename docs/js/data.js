@@ -672,11 +672,17 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.19-alpha';
+const GAME_VERSION = 'v1.7.20-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.20-alpha', date: 'July 2026',
+    notes: [
+      'Choose Your Hero breathes — the vista behind it is title-free now, and the "CHOOSE YOUR HERO" plate is its OWN painted piece that scales to the screen: big on desktop, trimmer on tablets, smaller still on phones, instead of one giant baked banner'
+    ]
+  },
   {
     v: 'v1.7.19-alpha', date: 'July 2026',
     notes: [
