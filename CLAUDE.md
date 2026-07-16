@@ -410,6 +410,22 @@ loot at the artisans. The hero is persistent (localStorage).
   the Jeweler's `gemStackList` chips moved gothic→SIMPLE plate (owner
   correction). Character footer: PARAGON + **CAMPFIRE** (renamed from
   CHANGE HERO) on the simple plate.
+- **v1.7.13 — GHOST FULLY BANISHED + MASSIVE FRAMES + BLOOD-RED HOVER
+  (owner rules)**: (1) `slot_frame.webp` recut — the v1.7.12 erase left a
+  faint ghost remnant on claimed frames; now EVERYTHING inside the arch is
+  scrubbed to pure black (protect = bright components connected to the
+  ring band ∪ components fully contained in the top-centre crest box —
+  the skull medallion + gem hang free of the ring; centroid/threshold
+  tricks alone either kept ghost highlights or ate the skull). ART_V 8→9.
+  (2) Frames are MASSIVE: `y0 = max(0.17H, 58)`, `fh = H−96−y0` (cap 640),
+  filling title→PLAY; when width-bound (portrait) the row drops back to
+  `0.55H − fh/2` so the baked vista title stays clear; unselected frame
+  alpha 0.88→0.97 (opaque interior would bleed vista); the RETIRE header
+  rides at `y0−12`. (3) HOVER = BLOOD RED on the CONTENT, never a pale
+  plate-wide glow: claimed frames outline the hero avatar itself
+  (`rgba(168,18,26,.95)` shadow, double-draw), empty frames outline the
+  plus plate (alpha 0.25→0.45 + same red rim). Frame art itself never
+  glows.
 - **v1.7.12 — REPAINTED HERO FRAME (owner art)**: `slot_frame.webp` is the
   owner's new thorned arch, cut offline with the interior KEPT OPAQUE BLACK
   (owner rule "keep the interior black background") — the v1.7.9/1.7.10

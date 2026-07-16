@@ -399,11 +399,18 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.12-alpha';
+const GAME_VERSION = 'v1.7.13-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.13-alpha', date: 'July 2026',
+    notes: [
+      'Choose Your Hero, commanded: the frames are MASSIVE now — they fill the stage from the title down to PLAY. A created hero fully banishes the ghost (its faint remnant no longer haunts claimed frames — the arch interior is scrubbed to pure black)',
+      'Hover speaks in BLOOD: pointing at a hero outlines the Nekromancer themself in deep red — never a pale glow around the whole plate — and on an empty vessel the plus plate takes the same crimson rim and stirs awake'
+    ]
+  },
   {
     v: 'v1.7.12-alpha', date: 'July 2026',
     notes: [
