@@ -158,6 +158,8 @@ const Hero = {
   playSeconds: 0, deaths: 0, repairsDone: 0, gemsSold: 0,
   torchesCrafted: 0, gamblesRolled: 0, fountainTosses: 0,
   shrinesTouched: 0, legendariesFound: 0, artifactsFound: 0,
+  relicsFound: 0, ancientsFound: 0, mythicsFound: 0,
+  themesTried: [], petsTried: [], wingsTried: [],
   goldEarned: 0, potionsDrunk: 0, portalsUsed: 0,
   np: 0,            // unspent Nekromancer Points
   para: {},         // allocated paragon points, keyed by PARAGON_STATS id
@@ -230,6 +232,8 @@ const Hero = {
     this.playSeconds = 0; this.deaths = 0; this.repairsDone = 0; this.gemsSold = 0;
     this.torchesCrafted = 0; this.gamblesRolled = 0; this.fountainTosses = 0;
     this.shrinesTouched = 0; this.legendariesFound = 0; this.artifactsFound = 0;
+    this.relicsFound = 0; this.ancientsFound = 0; this.mythicsFound = 0;
+    this.themesTried = []; this.petsTried = []; this.wingsTried = [];
     this.goldEarned = 0; this.potionsDrunk = 0; this.portalsUsed = 0;
     this.mats = { parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0, wyrmscale: 0, brain: 0, rathmasoul: 0 };
     this.gems = [];
@@ -310,6 +314,11 @@ const Hero = {
       gemsSold: this.gemsSold, torchesCrafted: this.torchesCrafted, gamblesRolled: this.gamblesRolled,
       fountainTosses: this.fountainTosses, shrinesTouched: this.shrinesTouched,
       legendariesFound: this.legendariesFound, artifactsFound: this.artifactsFound,
+      relicsFound: this.relicsFound, ancientsFound: this.ancientsFound,
+      mythicsFound: this.mythicsFound,
+      themesTried: (this.themesTried || []).slice(),
+      petsTried: (this.petsTried || []).slice(),
+      wingsTried: (this.wingsTried || []).slice(),
       goldEarned: this.goldEarned, potionsDrunk: this.potionsDrunk, portalsUsed: this.portalsUsed,
       gems: this.gems, bag: this.bag, equipped: this.equipped,
       loadout: this.loadout, passives: this.passives,
@@ -378,6 +387,11 @@ const Hero = {
       gemsSold: d.gemsSold || 0, torchesCrafted: d.torchesCrafted || 0, gamblesRolled: d.gamblesRolled || 0,
       fountainTosses: d.fountainTosses || 0, shrinesTouched: d.shrinesTouched || 0,
       legendariesFound: d.legendariesFound || 0, artifactsFound: d.artifactsFound || 0,
+      relicsFound: d.relicsFound || 0, ancientsFound: d.ancientsFound || 0,
+      mythicsFound: d.mythicsFound || 0,
+      themesTried: (d.themesTried || []).slice(),
+      petsTried: (d.petsTried || []).slice(),
+      wingsTried: (d.wingsTried || []).slice(),
       goldEarned: d.goldEarned || 0, potionsDrunk: d.potionsDrunk || 0, portalsUsed: d.portalsUsed || 0,
       para: (d.para && typeof d.para === 'object') ? Object.assign({}, d.para) : {},
       paraOrder: Array.isArray(d.paraOrder) ? d.paraOrder.slice() : [],
@@ -799,6 +813,33 @@ const Hero = {
     if (typeof Items !== 'undefined') Items.apply();
     AudioSys.sfx('gem');
     this.save();
+  },
+
+  // Spend up to n points at once (v1.7.16: shift-click +10, ctrl-click +100,
+  // shift+ctrl +1000 on the Renown plus) — one apply/save for the whole batch.
+  spendParagonN(key, n) {
+    const st = PARAGON_STATS[key];
+    if (!st) return;
+    this.syncParaOrder();
+    let spent = 0;
+    while (spent < n && (this.np || 0) > 0 && !(st.max && (this.para[key] || 0) >= st.max)) {
+      this.para[key] = (this.para[key] || 0) + 1;
+      this.paraOrder.push(key);
+      this.np--; spent++;
+    }
+    if (!spent) { AudioSys.sfx('denied'); return; }
+    if (typeof Items !== 'undefined') Items.apply();
+    AudioSys.sfx('gem');
+    this.save();
+  },
+
+  // Cosmetic curiosity tallies (v1.7.16 achievements): remember every theme /
+  // pet / wing THIS character has worn.
+  noteCosmetic(kind, id) {
+    if (!id) return;
+    const k = kind + 'Tried';
+    this[k] = this[k] || [];
+    if (!this[k].includes(id)) { this[k].push(id); this.save(); }
   },
 
   // Undo the most recently spent point (returns it to the NP pool).

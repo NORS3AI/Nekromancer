@@ -2638,7 +2638,10 @@ class Pickup {
         });
         AudioSys.sfx('gem');
       } else if (this.kind === 'item') {
-        if (this.item.rarity >= 6) Hero.artifactsFound = (Hero.artifactsFound || 0) + 1;
+        if (this.item.rarity === 9) Hero.mythicsFound = (Hero.mythicsFound || 0) + 1;
+        else if (this.item.rarity === 8) Hero.ancientsFound = (Hero.ancientsFound || 0) + 1;
+        else if (this.item.rarity === 7) Hero.relicsFound = (Hero.relicsFound || 0) + 1;
+        else if (this.item.rarity === 6) Hero.artifactsFound = (Hero.artifactsFound || 0) + 1;
         else if (this.item.rarity >= 4) Hero.legendariesFound = (Hero.legendariesFound || 0) + 1;
         Items.pickup(this.item);
       } else if (this.kind === 'gem') {

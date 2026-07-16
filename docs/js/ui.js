@@ -1262,6 +1262,15 @@ const UI = {
   // remembers which pane it started in.
   startDragScroll(x, y, id) {
     const inR = r => r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+    // A visible SCROLLBAR (v1.7.16, achievements): dragging its track moves
+    // the content directly — the screen sets UI.sel.scrollBar each frame as
+    // {x, y, w, h, ratio} where ratio maps track-pixels → content-pixels.
+    const sb = this.sel.scrollBar;
+    if (inR(sb)) {
+      this.dragScroll = { id, sx: x, sy: y, start: this.sel.scrollY || 0, moved: false,
+        yKey: 'scrollY', maxKey: 'scrollMax', bar: true, ratio: sb.ratio || 1 };
+      return true;
+    }
     let key = null;
     if (inR(this.sel.scrollRegion2)) key = 2;
     else if (inR(this.sel.scrollRegion)) key = 1;
@@ -1274,7 +1283,8 @@ const UI = {
   moveDragScroll(x, y) {
     const d = this.dragScroll; if (!d) return;
     if (Math.abs(y - d.sy) > 6 || Math.abs(x - d.sx) > 6) d.moved = true;
-    this.sel[d.yKey] = clamp(d.start - (y - d.sy), 0, this.sel[d.maxKey] || 0);
+    const dy = y - d.sy;
+    this.sel[d.yKey] = clamp(d.start + (d.bar ? dy * d.ratio : -dy), 0, this.sel[d.maxKey] || 0);
   },
   endDragScroll(x, y) {
     const d = this.dragScroll; if (!d) return;

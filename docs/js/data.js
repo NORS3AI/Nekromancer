@@ -301,88 +301,361 @@ function questRewardSrc(src, i) {
 function questReward(i) { return questRewardSrc('L', i); }
 
 // ------------------------------ achievements -------------------------------
-// Earned state is computed LIVE from the hero's persistent lifetime counters —
-// no separate save data needed (the counters already snapshot).
-// ---------------------------------------------------------- achievements
-// THE LEDGER OF DEEDS (owner spec v1.7.7): ~5,700 achievements, generated
-// deterministically as escalating CHAINS grouped by category/subcategory.
-// EVERY achievement bears a UNIQUE NAME (owner rule: never the same name
-// numbered I…VI) — names are dealt from a 40×40×30 combinatorial pool
-// (48,000 possible), two-part first, then "… of …" three-part forms.
-const ACH_A = ['Pale', 'Grim', 'Silent', 'Hollow', 'Crimson', 'Ashen', 'Veiled', 'Broken',
-  'Endless', 'Withered', 'Gilded', 'Sombre', 'Howling', 'Buried', 'Frozen', 'Rotten',
-  'Shattered', 'Nameless', 'Wicked', 'Solemn', 'Dread', 'Mournful', 'Blighted', 'Thorned',
-  'Umbral', 'Ancient', 'Restless', 'Fallen', 'Cursed', 'Wretched', 'Ghostly', 'Ravenous',
-  'Bleak', 'Haunted', 'Sunken', 'Forsaken', 'Marrow', 'Deathly', 'Iron', 'Obsidian'];
-const ACH_B = ['Tally', 'Harvest', 'Vigil', 'Reckoning', 'Procession', 'Litany', 'Toll', 'Covenant',
-  'Requiem', 'Threshold', 'Dirge', 'Offering', 'Dominion', 'Communion', 'Passage', 'Lament',
-  'Bounty', 'Tribute', 'Descent', 'Awakening', 'Crown', 'Oath', 'Hunger', 'Shroud',
-  'Chorus', 'March', 'Silence', 'Embrace', 'Verdict', 'Path', 'Hymn', 'Burden',
-  'Feast', 'Watch', 'Calling', 'Grasp', 'Sermon', 'Debt', 'Trial', 'Legacy'];
-const ACH_C = ['Bone', 'Ash', 'Dust', 'Blood', 'Sorrow', 'Night', 'Graves', 'Worms',
-  'Echoes', 'Cinders', 'Thorns', 'Whispers', 'Ruin', 'Shadow', 'Marrow', 'Rust',
-  'Salt', 'Embers', 'Hunger', 'Stone', 'Mist', 'Chains', 'Crows', 'Roots',
-  'Frost', 'Smoke', 'Teeth', 'Tears', 'Depths', 'Cold'];
-function achName(g) {
-  const a = ACH_A[g % 40], b = ACH_B[Math.floor(g / 40) % 40];
-  if (g < 1600) return a + ' ' + b;
-  return a + ' ' + b + ' of ' + ACH_C[Math.floor(g / 1600) % 30];
-}
-
-// Chains: [category, subcategory, steps, lo, hi, 'linear'?, desc template, cur].
-// Geometric ladders for open-ended tallies; LINEAR for hard-capped tracks
-// (level, paragon, acts, crypt tiers, the two 500-quest ledgers).
-const ACH_CHAINS = [
-  ['Slaughter', 'Monsters',    350, 10, 50000000, 0, 'Slay # monsters',                 () => Hero.totalKills || 0],
-  ['Slaughter', 'Elites',      250, 5,  2000000,  0, 'Slay # elite monsters',           () => Hero.eliteKills || 0],
-  ['Slaughter', 'Bosses',      250, 1,  200000,   0, 'Slay # bosses',                   () => Hero.bossKills || 0],
-  ['Slaughter', 'Hard Lessons', 75, 1,  2000,     0, 'Fall in battle # times',          () => Hero.deaths || 0],
-  ['Leveling',  'Character',    70, 1,  70,       1, 'Reach level #',                   () => Hero.level || 1],
-  ['Leveling',  'Renown',      350, 10, 3500,     1, 'Reach Renown #',                  () => Hero.paragon || 0],
-  ['Gameplay',  'Rifts',       250, 1,  100000,   0, 'Clear # rifts',                   () => Hero.riftsCleared || 0],
-  ['Gameplay',  'Campaign',    100, 1,  100,      1, 'Finish # Story Acts',             () => Hero.actsCleared || 0],
-  ['Gameplay',  'The Crypt',   250, 1,  250,      1, 'Slay a Guardian at Crypt Tier #', () => Hero.cryptBest || 0],
-  ['Gameplay',  'Shrines',     175, 1,  20000,    0, 'Touch # shrines',                 () => Hero.shrinesTouched || 0],
-  ['Gameplay',  'Portals',     125, 1,  10000,    0, 'Open # town portals',             () => Hero.portalsUsed || 0],
-  ['Gameplay',  'Potions',     125, 1,  25000,    0, 'Drink # potions',                 () => Hero.potionsDrunk || 0],
-  ['Gameplay',  'Play Time',   350, 10, 900000,   0, 'Play for # minutes',              () => Math.floor((Hero.playSeconds || 0) / 60)],
-  ['Fortune',   'Gambling',    175, 1,  30000,    0, "Gamble # of Lyssa's hands",       () => Hero.gamblesRolled || 0],
-  ['Fortune',   'The Fountain',125, 1,  5000,     0, 'Toss # coins into the fountain',  () => Hero.fountainTosses || 0],
-  ['Collecting','Gold',        250, 100, 1000000000000, 0, 'Gather # gold',             () => Hero.goldEarned || 0],
-  ['Collecting','Chests',      225, 1,  100000,   0, 'Open # chests',                   () => Hero.chestsOpened || 0],
-  ['Collecting','Legendaries', 250, 1,  50000,    0, 'Claim # legendary items',         () => Hero.legendariesFound || 0],
-  ['Collecting','Artifacts',   175, 1,  10000,    0, 'Claim # Artifacts',               () => Hero.artifactsFound || 0],
-  ['Quests',    'Ledger of Light',     250, 2, 500, 1, "Complete # of Lukus's deeds",   () => Hero.questLine || 0],
-  ['Quests',    'Underworld Ledger',   250, 2, 500, 1, "Complete # of Addy's jobs",     () => Hero.addyLine || 0],
-  ['Smithy',    'Salvaging',   250, 1,  200000,   0, 'Salvage # items',                 () => Hero.salvagedCount || 0],
-  ['Smithy',    'Crafting',    225, 1,  50000,    0, 'Craft # items',                   () => Hero.itemsCrafted || 0],
-  ['Smithy',    'Repairing',   150, 1,  20000,    0, 'Repair # pieces of gear',         () => Hero.repairsDone || 0],
-  ['Smithy',    'Torches',      75, 1,  2000,     0, 'Craft # torches',                 () => Hero.torchesCrafted || 0],
-  ['Jeweler',   'Combining',   225, 1,  50000,    0, 'Combine # gems',                  () => Hero.gemsCombined || 0],
-  ['Jeweler',   'Selling',     150, 1,  30000,    0, 'Sell # gems',                     () => Hero.gemsSold || 0],
-  ['Enchantress','Enchanting', 225, 1,  50000,    0, 'Reroll # properties',             () => Hero.enchantsDone || 0]
-];
-
+// THE LEDGER OF DEEDS, CURATED (owner spec v1.7.16): the 5,700-strong
+// generated ladder is GONE — every achievement is hand-authored, uniquely
+// named, and worth POINTS (the leaderboard currency). Earned state is
+// computed LIVE from the hero's persistent lifetime counters, so it is
+// CHARACTER progression, never account progression.
+// Subs in ACH_SUB_GATES stay hidden until the character first qualifies.
 const ACHIEVEMENTS = [];
 {
-  // The Forgotten Crypt stands first, alone and named for itself.
+  // rows: [name, desc, need, pts]
+  const A = (cat, sub, cur, rows) => {
+    for (const [name, desc, need, pts] of rows)
+      ACHIEVEMENTS.push({ cat, sub, name, desc, need, pts, cur });
+  };
+
+  // ---- GAMEPLAY ----
   ACHIEVEMENTS.push({ cat: 'Gameplay', sub: 'The Crypt', name: 'The Forgotten Crypt',
-    desc: 'Wear six Artifacts at once', need: 1, cur: () => Hero.cryptUnlocked ? 1 : 0 });
-  let g = 0;
-  for (const [cat, sub, steps, lo, hi, lin, tmpl, cur] of ACH_CHAINS) {
-    let prev = 0;
-    for (let i = 0; i < steps; i++) {
-      let need = steps === 1 ? hi
-        : lin ? Math.round(lo + (hi - lo) * i / (steps - 1))
-        : Math.round(lo * Math.pow(hi / lo, i / (steps - 1)));
-      if (need <= prev) need = prev + 1;
-      prev = need;
-      ACHIEVEMENTS.push({ cat, sub, name: achName(g++),
-        desc: tmpl.replace('#', need.toLocaleString()), need, cur });
-    }
+    desc: 'Wear six Artifacts at once', need: 1, pts: 50, cur: () => Hero.cryptUnlocked ? 1 : 0 });
+  A('Gameplay', 'The Crypt', () => Hero.cryptBest || 0, [
+    ['First Step Below', 'Slay a Guardian at Crypt Tier 1', 1, 5],
+    ['Ten Stones Deep', 'Slay a Guardian at Crypt Tier 10', 10, 10],
+    ['The Quiet Quarter', 'Slay a Guardian at Crypt Tier 25', 25, 15],
+    ['Fifty Fathoms', 'Slay a Guardian at Crypt Tier 50', 50, 20],
+    ['A Hundred Doors Down', 'Slay a Guardian at Crypt Tier 100', 100, 30],
+    ['Where Echoes Die', 'Slay a Guardian at Crypt Tier 150', 150, 40],
+    ['The Blackest Vein', 'Slay a Guardian at Crypt Tier 200', 200, 50],
+    ['Bottom of the World', 'Slay a Guardian at Crypt Tier 250', 250, 100]
+  ]);
+  A('Gameplay', 'The Ossuary', () => Hero.riftsCleared || 0, [
+    ["Bonebreaker's Debut", 'Clear your first rift', 1, 1],
+    ["Grave Robber's Rhythm", 'Clear 5 rifts', 5, 5],
+    ['Marrow Miner', 'Clear 15 rifts', 15, 10],
+    ['The Ossuary Knows Your Name', 'Clear 40 rifts', 40, 15],
+    ['Centurion of the Charnel House', 'Clear 100 rifts', 100, 30],
+    ['Deathless Routine', 'Clear 250 rifts', 250, 50],
+    ['Six Hundred Skulls', 'Clear 600 rifts', 600, 75],
+    ['Lord of the Ossuary', 'Clear 1,500 rifts', 1500, 100]
+  ]);
+  {
+    const acts = () => Hero.actsCleared || 0;
+    const AR = [];
+    for (let i = 1; i <= 10; i++)
+      AR.push(['Finish Story Act ' + i, 'Complete Act ' + i + ' of the campaign', i, 1]);
+    for (let d = 1; d <= 10; d++)
+      AR.push(['Finished Acts ' + (d * 10 - 9) + ' through ' + (d * 10),
+        'Complete every act up to Act ' + (d * 10), d * 10, 10]);
+    AR.push(['Finished All Acts', 'Complete all 100 Story Acts', 100, 50]);
+    A('Gameplay', 'Campaign', acts, AR);
   }
+  A('Gameplay', 'Shrines', () => Hero.shrinesTouched || 0, [
+    ['Touch 1 Shrine', 'Feel a shrine\u2019s blessing for the first time', 1, 1],
+    ['Touched 15 Shrines', 'Take 15 shrine blessings', 15, 5],
+    ['Touched 50 Shrines', 'Take 50 shrine blessings', 50, 10],
+    ['Touched 100 Shrines', 'Take 100 shrine blessings', 100, 15],
+    ['Touched 500 Shrines', 'Take 500 shrine blessings', 500, 30],
+    ['Touched 1000 Shrines', 'Take 1,000 shrine blessings', 1000, 50]
+  ]);
+  A('Gameplay', 'Play Time', () => Math.floor(Hero.playSeconds || 0), [
+    ['The First Hour', 'Play for 1 hour', 3600, 1],
+    ['Five Candles Burned', 'Play for 5 hours', 18000, 5],
+    ['A Day in the Dark', 'Play for 24 hours', 86400, 10],
+    ['One Week Undead', 'Play for 7 days', 604800, 15],
+    ['A Month Among Graves', 'Play for 30 days', 2592000, 30],
+    ['Half a Year of Night', 'Play for 6 months', 15768000, 50],
+    ['One Year in Ghallia', 'Play for 12 months', 31536000, 100]
+  ]);
+
+  // ---- SLAUGHTER ----
+  A('Slaughter', 'Monsters', () => Hero.totalKills || 0, [
+    ['Ten Little Corpses', 'Slay 10 monsters', 10, 1],
+    ['A Hundred Fall', 'Slay 100 monsters', 100, 5],
+    ['Thousandfold Harvest', 'Slay 1,000 monsters', 1000, 10],
+    ["Death's Bookkeeper", 'Slay 10,000 monsters', 10000, 15],
+    ['The Hundred-Thousand March', 'Slay 100,000 monsters', 100000, 30],
+    ['Millionfold Silence', 'Slay 1,000,000 monsters', 1000000, 50],
+    ['Extinction Event', 'Slay 10,000,000 monsters', 10000000, 75],
+    ['The Last Census', 'Slay 50,000,000 monsters', 50000000, 100]
+  ]);
+  A('Slaughter', 'Elites', () => Hero.eliteKills || 0, [
+    ["Champion's Bane", 'Slay 5 elite monsters', 5, 1],
+    ['Fifty Crowns Broken', 'Slay 50 elites', 50, 5],
+    ['Five Hundred Banners Burned', 'Slay 500 elites', 500, 10],
+    ['Elite No More', 'Slay 5,000 elites', 5000, 15],
+    ['Purple Reign Ended', 'Slay 50,000 elites', 50000, 30],
+    ['Half a Million Heads', 'Slay 500,000 elites', 500000, 50],
+    ['Two Million Tyrants', 'Slay 2,000,000 elites', 2000000, 100]
+  ]);
+  A('Slaughter', 'Bosses', () => Hero.bossKills || 0, [
+    ['The First Head', 'Slay your first boss', 1, 1],
+    ['Ten Thrones Toppled', 'Slay 10 bosses', 10, 5],
+    ['Hundred-Crown Collector', 'Slay 100 bosses', 100, 10],
+    ['A Thousand Kings Cold', 'Slay 1,000 bosses', 1000, 15],
+    ['Ten Thousand Titans', 'Slay 10,000 bosses', 10000, 30],
+    ['The Throne Stands Empty', 'Slay 100,000 bosses', 100000, 50],
+    ["God-Slayer's Ledger", 'Slay 200,000 bosses', 200000, 100]
+  ]);
+  A('Slaughter', 'Hard Lessons', () => Hero.deaths || 0, [
+    ['First Fall', 'Die once', 1, 1],
+    ['Ten Times Humbled', 'Die 10 times', 10, 5],
+    ['Fifty Funerals of You', 'Die 50 times', 50, 10],
+    ['Century of Dirt', 'Die 100 times', 100, 15],
+    ['Five Hundred Second Chances', 'Die 500 times', 500, 30],
+    ['The Unkillable Habit', 'Die 1,000 times', 1000, 50]
+  ]);
+
+  // ---- LEVELING ----
+  A('Leveling', 'Character', () => Hero.level || 1, [
+    ['Apprentice of the Grave', 'Reach level 10', 10, 1],
+    ['Twenty Winters', 'Reach level 20', 20, 5],
+    ['Thirty and Thriving', 'Reach level 30', 30, 10],
+    ['Fortified at Forty', 'Reach level 40', 40, 15],
+    ['Fifty Rings of Bone', 'Reach level 50', 50, 20],
+    ['Sixty Seasons Cold', 'Reach level 60', 60, 30],
+    ['The Ascendant Hour', 'Reach level 70', 70, 50]
+  ]);
+  A('Leveling', 'Renown', () => Hero.paragon || 0, [
+    ['Renown Whispers', 'Reach Renown 10', 10, 1],
+    ['A Name in the Dust', 'Reach Renown 25', 25, 2],
+    ['Fifty Fires Lit', 'Reach Renown 50', 50, 5],
+    ['The Hundred-Name Hymn', 'Reach Renown 100', 100, 10],
+    ['Talk of the Taverns', 'Reach Renown 150', 150, 10],
+    ['Twice a Century', 'Reach Renown 200', 200, 15],
+    ['The Steep Path Starts', 'Reach Renown 250', 250, 15],
+    ['Three Hundred Torches', 'Reach Renown 300', 300, 20],
+    ['Four Hundred Vigils', 'Reach Renown 400', 400, 20],
+    ['Five Hundred Strong', 'Reach Renown 500', 500, 25],
+    ['The Six Hundred Steps', 'Reach Renown 600', 600, 25],
+    ['Seven Hundred Sorrows', 'Reach Renown 700', 700, 30],
+    ['Eight Hundred Embers', 'Reach Renown 800', 800, 30],
+    ['Nine Hundred Nights', 'Reach Renown 900', 900, 35],
+    ['A Thousand Legends', 'Reach Renown 1000', 1000, 40],
+    ['Beyond the Thousand', 'Reach Renown 1250', 1250, 40],
+    ['Fifteen Hundred Fables', 'Reach Renown 1500', 1500, 45],
+    ['The Long Climb', 'Reach Renown 1750', 1750, 45],
+    ['Two Thousand Tales', 'Reach Renown 2000', 2000, 50],
+    ['Myth in the Making', 'Reach Renown 2250', 2250, 50],
+    ['Twenty-Five Hundred Crowns', 'Reach Renown 2500', 2500, 60],
+    ['The Rarefied Dark', 'Reach Renown 2750', 2750, 60],
+    ['Three Thousand Thrones', 'Reach Renown 3000', 3000, 75],
+    ['The Penultimate Peak', 'Reach Renown 3250', 3250, 75],
+    ['Renown Eternal', 'Reach Renown 3500', 3500, 100]
+  ]);
+
+  // ---- FORTUNE ----
+  A('Fortune', "Lyssa's Hands", () => Hero.gamblesRolled || 0, [
+    ['First Hand Dealt', "Gamble one of Lyssa's hands", 1, 1],
+    ['Ten Twists of Fate', 'Gamble 10 hands', 10, 5],
+    ["Gambler's Callus", 'Gamble 50 hands', 50, 10],
+    ['The House Remembers You', 'Gamble 100 hands', 100, 15],
+    ['Five Hundred Wagers', 'Gamble 500 hands', 500, 30],
+    ['A Thousand Cuts of Chance', 'Gamble 1,000 hands', 1000, 50],
+    ["Fate's Favorite Fool", 'Gamble 5,000 hands', 5000, 100]
+  ]);
+  A('Fortune', 'The Fountain', () => Hero.fountainTosses || 0, [
+    ['One Coin Down', 'Toss a coin into the fountain', 1, 1],
+    ['Ten Wishes Deep', 'Toss 10 coins', 10, 5],
+    ['Fifty Ripples', 'Toss 50 coins', 50, 10],
+    ['The Water Knows You', 'Toss 100 coins', 100, 15],
+    ['Five Hundred Splashes', 'Toss 500 coins', 500, 30],
+    ['Well of Fortune', 'Toss 1,000 coins', 1000, 50]
+  ]);
+
+  // ---- COLLECTING ----
+  A('Collecting', 'Gold', () => Hero.goldEarned || 0, [
+    ['First Purse', 'Gather 1,000 gold', 1000, 1],
+    ['Ten Thousand Glints', 'Gather 10,000 gold', 10000, 5],
+    ['The Vault Begins', 'Gather 100,000 gold', 100000, 10],
+    ['Millionaire of the Dead', 'Gather 1,000,000 gold', 1000000, 15],
+    ['Ten Million Tithes', 'Gather 10,000,000 gold', 10000000, 30],
+    ['Hundred-Million Hoard', 'Gather 100,000,000 gold', 100000000, 50],
+    ['The Billion-Bone Bank', 'Gather 1,000,000,000 gold', 1000000000, 75],
+    ["Dragon's Envy", 'Gather 1,000,000,000,000 gold', 1000000000000, 100]
+  ]);
+  A('Collecting', 'Legendaries', () => Hero.legendariesFound || 0, [
+    ['The First Orange Beam', 'Claim a legendary item', 1, 1],
+    ['Ten Burning Beams', 'Claim 10 legendaries', 10, 5],
+    ['Fifty Storied Arms', 'Claim 50 legendaries', 50, 10],
+    ['The Hundred Legends', 'Claim 100 legendaries', 100, 15],
+    ['Five Hundred Sagas', 'Claim 500 legendaries', 500, 30],
+    ['A Thousand Tales Held', 'Claim 1,000 legendaries', 1000, 50],
+    ['Museum of the Impossible', 'Claim 5,000 legendaries', 5000, 100]
+  ]);
+  A('Collecting', 'Artifacts', () => Hero.artifactsFound || 0, [
+    ['The First Red Star', 'Claim an Artifact', 1, 5],
+    ['Five Crimson Wonders', 'Claim 5 Artifacts', 5, 10],
+    ['Ten Scarlet Sigils', 'Claim 10 Artifacts', 10, 15],
+    ['Twenty-Five Red Dawns', 'Claim 25 Artifacts', 25, 20],
+    ['Fifty Artifacts Claimed', 'Claim 50 Artifacts', 50, 30],
+    ['The Crimson Collection', 'Claim 100 Artifacts', 100, 50],
+    ['Vault of the Red Gods', 'Claim 250 Artifacts', 250, 100]
+  ]);
+  A('Collecting', 'Relics', () => Hero.relicsFound || 0, [
+    ['The First Blue Fire', 'Claim a Relic', 1, 10],
+    ['Five Sapphire Secrets', 'Claim 5 Relics', 5, 15],
+    ['Ten Cerulean Crowns', 'Claim 10 Relics', 10, 20],
+    ['Twenty-Five Blue Beacons', 'Claim 25 Relics', 25, 30],
+    ['Fifty Relics Risen', 'Claim 50 Relics', 50, 50],
+    ['The Azure Armory', 'Claim 100 Relics', 100, 100]
+  ]);
+  A('Collecting', 'Ancients', () => Hero.ancientsFound || 0, [
+    ['The First Teal Light', 'Claim an Ancient', 1, 15],
+    ['Five Elder Echoes', 'Claim 5 Ancients', 5, 20],
+    ['Ten Ancient Answers', 'Claim 10 Ancients', 10, 30],
+    ['Twenty-Five Primordials', 'Claim 25 Ancients', 25, 50],
+    ['Fifty Ancients Awoken', 'Claim 50 Ancients', 50, 75],
+    ['The Eldest Hoard', 'Claim 100 Ancients', 100, 100]
+  ]);
+  A('Collecting', 'Mythics', () => Hero.mythicsFound || 0, [
+    ['The First Gold Thunder', 'Claim a Mythic', 1, 20],
+    ['Five Mythic Mornings', 'Claim 5 Mythics', 5, 30],
+    ['Ten Golden Gospels', 'Claim 10 Mythics', 10, 50],
+    ['Twenty-Five Living Legends', 'Claim 25 Mythics', 25, 75],
+    ['Fifty Myths Made Real', 'Claim 50 Mythics', 50, 100],
+    ['The Pantheon Complete', 'Claim 100 Mythics', 100, 150]
+  ]);
+
+  // ---- QUESTS ----
+  A('Quests', 'Lukus', () => Hero.questLine || 0, [
+    ['The First Deed Done', "Complete a deed for Lukus", 1, 1],
+    ['Five for the Light', 'Complete 5 deeds', 5, 2],
+    ['Ten Errands of Dawn', 'Complete 10 deeds', 10, 5],
+    ['Twenty-Five Candles', 'Complete 25 deeds', 25, 10],
+    ['Fifty Oaths Kept', 'Complete 50 deeds', 50, 15],
+    ['The Hundredth Page', 'Complete 100 deeds', 100, 20],
+    ['Two Hundred Testimonies', 'Complete 200 deeds', 200, 30],
+    ['Three Hundred Blessings', 'Complete 300 deeds', 300, 40],
+    ['Four Hundred Dawns', 'Complete 400 deeds', 400, 50],
+    ['The Ledger Closes', 'Complete all 500 deeds', 500, 100]
+  ]);
+  A('Quests', 'Addy', () => Hero.addyLine || 0, [
+    ['First Job for the Queen', "Complete a job for Addy", 1, 1],
+    ['Five Favors Owed', 'Complete 5 jobs', 5, 2],
+    ['Ten Debts Collected', 'Complete 10 jobs', 10, 5],
+    ['Twenty Whispered Contracts', 'Complete 20 jobs', 20, 10],
+    ['Thirty Shadows Paid', 'Complete 30 jobs', 30, 10],
+    ['Fifty Marks Crossed Out', 'Complete 50 jobs', 50, 15],
+    ['Seventy-Five Secrets', 'Complete 75 jobs', 75, 15],
+    ["The Queen's Hundred", 'Complete 100 jobs', 100, 20],
+    ['Deeper in Her Debt', 'Complete 125 jobs', 125, 20],
+    ['A Hundred Fifty Knives', 'Complete 150 jobs', 150, 25],
+    ['The Underworld Payroll', 'Complete 175 jobs', 175, 25],
+    ['Two Hundred Tolls', 'Complete 200 jobs', 200, 30],
+    ['Half the Black Book', 'Complete 250 jobs', 250, 30],
+    ['Three Hundred Silences', 'Complete 300 jobs', 300, 40],
+    ['The Long Contract', 'Complete 350 jobs', 350, 40],
+    ['Four Hundred Vows Below', 'Complete 400 jobs', 400, 50],
+    ['Nearly Square with Addy', 'Complete 450 jobs', 450, 50],
+    ['The Last Few Pages', 'Complete 475 jobs', 475, 60],
+    ['Ten Jobs from Freedom', 'Complete 490 jobs', 490, 75],
+    ['The Black Book Closes', 'Complete all 500 jobs', 500, 100]
+  ]);
+
+  // ---- SMITHY ----
+  A('Smithy', 'Salvaging', () => Hero.salvagedCount || 0, [
+    ['First Scrap', 'Salvage an item', 1, 1],
+    ['Ten to the Furnace', 'Salvage 10 items', 10, 5],
+    ['A Hundred Meltdowns', 'Salvage 100 items', 100, 10],
+    ['Five Hundred Sparks', 'Salvage 500 items', 500, 15],
+    ['The Thousandth Ingot', 'Salvage 1,000 items', 1000, 30],
+    ['Five Thousand Furnace Songs', 'Salvage 5,000 items', 5000, 50],
+    ['Nothing Wasted, Ever', 'Salvage 10,000 items', 10000, 100]
+  ]);
+  A('Smithy', 'Crafting', () => Hero.itemsCrafted || 0, [
+    ['First Forging', 'Craft an item', 1, 1],
+    ['Ten from the Anvil', 'Craft 10 items', 10, 5],
+    ['Fifty Hammer Falls', 'Craft 50 items', 50, 10],
+    ['The Hundredth Blade', 'Craft 100 items', 100, 15],
+    ['Five Hundred Masterworks', 'Craft 500 items', 500, 30],
+    ['A Thousand Anvils Rung', 'Craft 1,000 items', 1000, 50],
+    ["Tharn's True Rival", 'Craft 5,000 items', 5000, 100]
+  ]);
+  A('Smithy', 'Repairing', () => Hero.repairsDone || 0, [
+    ['First Mending', 'Repair a piece of gear', 1, 1],
+    ['Ten Dents Undone', 'Repair 10 pieces', 10, 5],
+    ['Fifty Fixes', 'Repair 50 pieces', 50, 10],
+    ['The Hundredth Patch', 'Repair 100 pieces', 100, 15],
+    ['Five Hundred Second Lives', 'Repair 500 pieces', 500, 30],
+    ['Wear Never Wins', 'Repair 1,000 pieces', 1000, 50]
+  ]);
+  A('Smithy', 'Torches', () => Hero.torchesCrafted || 0, [
+    ['First Flame', 'Craft a torch', 1, 1],
+    ['Five Fires Bound', 'Craft 5 torches', 5, 5],
+    ['Ten Torches Tall', 'Craft 10 torches', 10, 10],
+    ['Twenty-Five Lights Lit', 'Craft 25 torches', 25, 15],
+    ['Fifty Suns in Miniature', 'Craft 50 torches', 50, 30],
+    ['Keeper of the Hundred Flames', 'Craft 100 torches', 100, 50]
+  ]);
+
+  // ---- JEWELER ----
+  A('Jeweler', 'Combining', () => Hero.gemsCombined || 0, [
+    ['First Fusion', 'Combine gems once', 1, 1],
+    ['Ten Stones Sung Together', 'Combine 10 gems', 10, 5],
+    ['A Hundred Facets', 'Combine 100 gems', 100, 10],
+    ['Five Hundred Cuts', 'Combine 500 gems', 500, 15],
+    ['The Thousandth Shine', 'Combine 1,000 gems', 1000, 30],
+    ['Five Thousand Brilliants', 'Combine 5,000 gems', 5000, 50],
+    ["Orren's Equal", 'Combine 10,000 gems', 10000, 100]
+  ]);
+  A('Jeweler', 'Selling', () => Hero.gemsSold || 0, [
+    ['First Sale', 'Sell a gem', 1, 1],
+    ['Ten Gems Traded', 'Sell 10 gems', 10, 5],
+    ['A Hundred Bargains', 'Sell 100 gems', 100, 10],
+    ['Five Hundred Receipts', 'Sell 500 gems', 500, 15],
+    ['The Thousand-Gem Fortune', 'Sell 1,000 gems', 1000, 30],
+    ['Market Maker of New Haven', 'Sell 5,000 gems', 5000, 100]
+  ]);
+
+  // ---- ENCHANTRESS ----
+  A('Enchantress', 'Enchanting', () => Hero.enchantsDone || 0, [
+    ['First Reroll', 'Reroll a property', 1, 1],
+    ['Ten Threads Rewoven', 'Reroll 10 properties', 10, 5],
+    ['Fifty Fates Unpicked', 'Reroll 50 properties', 50, 10],
+    ['The Hundredth Weave', 'Reroll 100 properties', 100, 15],
+    ['Two Hundred Fifty Charms', 'Reroll 250 properties', 250, 20],
+    ['Five Hundred Spells Respun', 'Reroll 500 properties', 500, 30],
+    ['A Thousand Alterations', 'Reroll 1,000 properties', 1000, 40],
+    ['Twenty-Five Hundred Wefts', 'Reroll 2,500 properties', 2500, 50],
+    ['Five Thousand Enchantments', 'Reroll 5,000 properties', 5000, 75],
+    ["Vessa's Masterpiece", 'Reroll 10,000 properties', 10000, 100]
+  ]);
+  A('Enchantress', 'Themes', () => (Hero.themesTried || []).length, [
+    ['First Impressions', 'Dress the menus in a theme', 1, 1],
+    ['Two Faces of the Dark', 'Try 2 different themes', 2, 5],
+    ["Third Time's the Charm", 'Try 3 different themes', 3, 10],
+    ['Five Moods of Ghallia', 'Try 5 different themes', 5, 15],
+    ['Every Color of Midnight', 'Try all 7 themes', 7, 30]
+  ]);
+  A('Enchantress', 'Pets', () => (Hero.petsTried || []).length, [
+    ['A Friend in Death', 'Walk with a pet', 1, 1],
+    ['Two by Your Side', 'Try 2 different pets', 2, 5],
+    ['Third Companion', 'Try 3 different pets', 3, 10],
+    ['Five Familiar Spirits', 'Try 5 different pets', 5, 15],
+    ['The Whole Menagerie', 'Try all 7 pets', 7, 30]
+  ]);
+  A('Enchantress', 'Wings', () => (Hero.wingsTried || []).length, [
+    ['First Flight', 'Wear a pair of wings', 1, 5],
+    ['A Second Pair', 'Try 2 different wings', 2, 10],
+    ['Three Ways to Hover', 'Try 3 different wings', 3, 15],
+    ['The Full Aviary', 'Try all 4 wings', 4, 30]
+  ]);
 }
 
+// Hidden until the character first qualifies (owner rule v1.7.16).
+const ACH_SUB_GATES = {
+  'Collecting|Artifacts': () => (Hero.artifactsFound || 0) > 0,
+  'Collecting|Relics': () => (Hero.relicsFound || 0) > 0,
+  'Collecting|Ancients': () => (Hero.ancientsFound || 0) > 0,
+  'Collecting|Mythics': () => (Hero.mythicsFound || 0) > 0
+};
+
+// Total ACHIEVEMENT POINTS this character has earned (leaderboard currency).
+function achPoints() {
+  let p = 0;
+  for (const a of ACHIEVEMENTS) if (a.cur() >= a.need) p += a.pts || 0;
+  return p;
+}
 
 // Reward readout, shared by the journal, both NPC dialogs and offers. `short`
 // compacts "gold" to "g" so narrow phone columns can WRAP it instead of
@@ -399,11 +672,23 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.15-alpha';
+const GAME_VERSION = 'v1.7.16-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.16-alpha', date: 'July 2026',
+    notes: [
+      'CLICK TO MOVE (desktop) — hold the left button and the Nekromancer follows your cursor, Diablo-style; point at a monster and you attack it instead. WASD stays on as an optional scheme under the new Settings ▸ MOVEMENT toggle',
+      'THE LEDGER OF DEEDS, CURATED — the 5,700 generated achievements are gone. Every achievement is now hand-authored and worth POINTS (the future leaderboard currency): campaign act ladders, shrine counts, crypt-tier feats, renown milestones to 3500, and fresh Enchantress deeds for trying THEMES, PETS and WINGS. Artifact, Relic, Ancient and Mythic collections only reveal themselves once you claim your first',
+      'The Achievements screen shows your POINT total in the title, filters three ways (show all · hide earned · hide unearned), carries a real draggable scrollbar, and Play Time keeps a live clock ticking under its milestones. Your points also show on the Character sheet',
+      'KEYS: J opens the JOURNAL now (Space remains primary attack), Y opens ACHIEVEMENTS, Escape reads "Menu / back". Pressing T or Q in town explains itself instead of doing nothing',
+      'RENOWN, faster: shift-click the plus for +10, ctrl-click for +100, shift+ctrl for +1000',
+      'MASTERWORK reforged (owner spec): 65% Rare · 25% Epic · 10% LEGENDARY',
+      'Desktop polish: all text starts at font size 16 (change it in Settings), the character sheet tucks its numbers inside the plate with reagent names beside their icons, and the fountain\\u2019s TOSS 200 GOLD rides a small centered plate'
+    ]
+  },
   {
     v: 'v1.7.15-alpha', date: 'July 2026',
     notes: [

@@ -16,18 +16,20 @@ const KEY_ACTIONS = [
   ['portal', 'Town portal'],
   ['inventory', 'Inventory'], ['skills', 'Skills'],
   ['passives', 'Passives'], ['character', 'Character'],
-  ['pause', 'Pause / back'], ['mute', 'Mute audio']
+  ['journal', 'Journal'], ['achievements', 'Achievements'],
+  ['pause', 'Menu / back'], ['mute', 'Mute audio']
 ];
 
 const KEY_DEFAULTS = {
   moveUp: ['KeyW', 'ArrowUp'], moveDown: ['KeyS', 'ArrowDown'],
   moveLeft: ['KeyA', 'ArrowLeft'], moveRight: ['KeyD', 'ArrowRight'],
-  primary: ['Space', 'KeyJ'],
+  primary: ['Space'],                       // J belongs to the Journal (owner rule v1.7.16)
   skill1: ['Digit1'], skill2: ['Digit2'], skill3: ['Digit3'], skill4: ['Digit4'],
   potion: ['KeyQ'],
   portal: ['KeyT'],
   inventory: ['KeyI', 'KeyB'], skills: ['KeyK'],
   passives: ['KeyP'], character: ['KeyC'],
+  journal: ['KeyJ'], achievements: ['KeyY'],
   pause: ['Escape'], mute: ['KeyM']
 };
 
@@ -57,6 +59,7 @@ const Settings = {
   },
   g: {
     theme: 'void',        // UI chrome theme (THEMES in data.js) — set at the Enchantress; Void is the default
+    wasdMove: true,       // MOVEMENT (desktop, v1.7.16): WASD keys move; click-to-move is always available
     electiveMode: true,   // allow more than one skill per category on the action bar (default ON, owner rule)
     invGrouped: true,     // inventory layout: false = radial wheel · true = grouped list (default GROUPED, owner rule)
     leftHanded: false,    // mirror the touch controls (cluster left, movement right)
@@ -91,6 +94,7 @@ const Settings = {
           if (d.audio && d.audio[k]) Object.assign(this.audio[k], d.audio[k]);
         }
         if (d.g) Object.assign(this.g, d.g);
+        this._hadFontSize = !!(d.g && d.g.fontSize);
         this.keys = JSON.parse(JSON.stringify(KEY_DEFAULTS));
         if (d.keys) {
           for (const a of Object.keys(KEY_DEFAULTS)) {
@@ -112,6 +116,24 @@ const Settings = {
         if (!this.keys[a].includes(code)) this.keys[a].push(code);
       }
     }
+    // v1.7.16 migrations (owner rules): J belongs to the JOURNAL (it used to
+    // double as primary attack) and Y opens ACHIEVEMENTS.
+    const taken = code => Object.values(this.keys).some(arr => Array.isArray(arr) && arr.includes(code));
+    if (!Array.isArray(this.keys.journal)) this.keys.journal = [];
+    if (!Array.isArray(this.keys.achievements)) this.keys.achievements = [];
+    if ((this.keys.primary || []).includes('KeyJ')) {
+      this.keys.primary = this.keys.primary.filter(c => c !== 'KeyJ');
+      if (!this.keys.journal.length) this.keys.journal.push('KeyJ');
+    }
+    if (!this.keys.journal.length && !taken('KeyJ')) this.keys.journal.push('KeyJ');
+    if (!this.keys.achievements.length && !taken('KeyY')) this.keys.achievements.push('KeyY');
+    // Desktop reads BIGGER by default (owner rule v1.7.16): players who never
+    // picked a font size start at 16 on fine-pointer wide screens.
+    try {
+      if (!this._hadFontSize && typeof window !== 'undefined' &&
+          window.matchMedia && window.matchMedia('(pointer: fine)').matches &&
+          window.innerWidth >= 900) this.g.fontSize = 16;
+    } catch (e) { /* keep 13 */ }
     this.rebuildKeyMap();
   },
 
