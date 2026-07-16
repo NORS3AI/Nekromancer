@@ -399,11 +399,17 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.11-alpha';
+const GAME_VERSION = 'v1.7.12-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.12-alpha', date: 'July 2026',
+    notes: [
+      'A NEW HERO FRAME — the owner\'s repainted thorned arch replaces the old one on Choose Your Hero: the black inside the arch is part of the painting now (nothing pokes past the borders), the waiting ghost stands a little smaller so the crown stays clear, and the name and level sit neatly beneath the skull\'s hanging gem. The plus plate still marks an empty vessel'
+    ]
+  },
   {
     v: 'v1.7.11-alpha', date: 'July 2026',
     notes: [

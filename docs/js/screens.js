@@ -136,10 +136,14 @@ const Screens = {
     const FA = frame && frame.naturalWidth ? frame.width / frame.height : 0.60;
     const short = H < 480;
     const gap = Math.max(10, W * 0.02);
-    const gutter = 46;                   // side room reserved for the arrows
+    // On narrow screens the side gutters would starve the frames — the
+    // arrows move DOWN beside the page dots instead (v1.7.12).
+    const narrow = W < 640;
+    const gutter = narrow ? 0 : 46;      // side room reserved for the arrows
     let fh = Math.min(H * (short ? 0.46 : 0.52), 430);
     let fw = fh * FA;
-    if (fw * 3 + gap * 2 > W - 8 - gutter * 2) { fw = (W - 8 - gutter * 2 - gap * 2) / 3; fh = fw / FA; }
+    const avail = W - (narrow ? 20 : 8 + gutter * 2);
+    if (fw * 3 + gap * 2 > avail) { fw = (avail - gap * 2) / 3; fh = fw / FA; }
     const y0 = H * (short ? 0.50 : 0.56) - fh / 2;
     const pages = Math.ceil((Profiles.MAX || 3) / 3);
     if (UI.sel.selPage === undefined) {
@@ -153,25 +157,10 @@ const Screens = {
       const x0 = W / 2 - (fw * 3 + gap * 2) / 2 + k * (fw + gap);
       const snap = Profiles.slots[i];
       const selected = !delMode && UI.sel.pick === i && !!snap;
-      // A black backing INSIDE the frame so the hero reads clearly
-      // (owner rule v1.7.5) — shaped to the arch's MEASURED opening
-      // (v1.7.9 fix: it used to poke past the frame): the interior runs
-      // y 0.11–0.965 and narrows to x 0.21–0.79 up top, so the backing
-      // gets big top corners and starts below the arch crown.
-      {
-        const bx = x0 + fw * 0.10, bw2 = fw * 0.80;
-        const by = y0 + fh * 0.125, bh2 = fh * 0.825;
-        const rt = fw * 0.30, rb = fw * 0.07;   // top / bottom corner radii
-        ctx.fillStyle = 'rgba(2,1,4,0.88)';
-        ctx.beginPath();
-        ctx.moveTo(bx + rt, by);
-        ctx.arcTo(bx + bw2, by, bx + bw2, by + bh2, rt);
-        ctx.arcTo(bx + bw2, by + bh2, bx, by + bh2, rb);
-        ctx.arcTo(bx, by + bh2, bx, by, rb);
-        ctx.arcTo(bx, by, bx + bw2, by, rt);
-        ctx.closePath();
-        ctx.fill();
-      }
+      // (v1.7.12 owner art: the frame painting carries its own OPAQUE BLACK
+      // interior now — the procedural arch-shaped backing is gone. The baked
+      // ghost was erased offline and lives on as the separate ghost.webp so
+      // claimed frames stay clean for the name and level.)
       const mpf = (typeof Input !== 'undefined' && !Input.touchMode) ? Input.mousePos : null;
       const fhov = !!(mpf && mpf.x >= x0 && mpf.x <= x0 + fw && mpf.y >= y0 && mpf.y <= y0 + fh);
       // The frame (procedural arch until the art loads).
@@ -197,14 +186,15 @@ const Screens = {
         } else {
           this.drawNecroFigure(ctx, x0 + fw / 2, y0 + fh * 0.86, fh / 420, '#8fb0e8', false, false);
         }
-        // Name + level up by the frame's divider line.
+        // Name + level under the skull medallion's hanging gem (the new
+        // frame's crown reaches ~0.16 of the height — sit just below it).
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.font = '600 ' + Math.max(9, Math.round(fw * 0.062)) + 'px Cinzel, Georgia';
         ctx.fillStyle = selected ? '#ffd76a' : '#cfc8b8';
-        ctx.fillText(this.fitText(ctx, (snap.name || 'Nekromancer').toUpperCase(), fw - 26), x0 + fw / 2, y0 + fh * 0.145);
+        ctx.fillText(this.fitText(ctx, (snap.name || 'Nekromancer').toUpperCase(), fw - 26), x0 + fw / 2, y0 + fh * 0.185);
         ctx.font = Math.max(8, Math.round(fw * 0.052)) + 'px Cinzel, Georgia';
         ctx.fillStyle = '#9a8f7a';
-        ctx.fillText('Level ' + (snap.level || 1), x0 + fw / 2, y0 + fh * 0.195);
+        ctx.fillText('Level ' + (snap.level || 1), x0 + fw / 2, y0 + fh * 0.232);
         if (selected) {
           // Soft teal breath around the plinth for the chosen one.
           const pl = 0.25 + 0.12 * Math.sin(t * 2.4);
@@ -216,13 +206,14 @@ const Screens = {
           ? () => { UI.sel.delConfirm = i; }
           : () => { UI.sel.pick = i; });
       } else {
-        // An unclaimed vessel — the ghost waits; the plus plate (25%
-        // opacity, owner spec) is the CREATE button.
+        // An unclaimed vessel — the ghost waits (drawn SMALLER than the
+        // baked original, owner rule v1.7.12, so the crown stays clear);
+        // the plus plate (25% opacity, owner spec) is the CREATE button.
         if (ghost && ghost.complete && ghost.naturalWidth) {
-          const gh2 = fh * 0.58;
+          const gh2 = fh * 0.62;
           const gw2 = gh2 * (ghost.width / ghost.height);
           ctx.globalAlpha = 0.85 + 0.1 * Math.sin(t * 1.1 + i * 2);
-          ctx.drawImage(ghost, x0 + fw / 2 - gw2 / 2, y0 + fh * 0.875 - gh2, gw2, gh2);
+          ctx.drawImage(ghost, x0 + fw / 2 - gw2 / 2, y0 + fh * 0.90 - gh2, gw2, gh2);
           ctx.globalAlpha = 1;
         }
         if (plus && plus.complete && plus.naturalWidth) {
@@ -243,14 +234,17 @@ const Screens = {
       }
     }
 
-    // ---- page arrows (painted plates) + page dots ----
+    // ---- page arrows (painted plates) + page dots. Wide screens: arrows
+    // flank the frame row; narrow screens: arrows sit below, beside the dots ----
     if (pages > 1) {
       const rowL = W / 2 - (fw * 3 + gap * 2) / 2;
-      const ayc = y0 + fh / 2;
+      const abw = narrow ? 40 : Math.min(44, gutter - 4);
+      const ayc = narrow ? y0 + fh + 24 : y0 + fh / 2;
+      const dotY = narrow ? ayc : y0 + fh + (short ? 8 : 12);
       const drawArrow = (key, glyph, ax, cb) => {
         const img = Game.uiImg(key);
         if (img) {
-          const abw = Math.min(44, gutter - 4), abh = Math.round(abw * (img.height / img.width));
+          const abh = Math.round(abw * (img.height / img.width));
           const mpa = (typeof Input !== 'undefined' && !Input.touchMode) ? Input.mousePos : null;
           const hov = !!(mpa && mpa.x >= ax && mpa.x <= ax + abw && mpa.y >= ayc - abh && mpa.y <= ayc + abh);
           ctx.save();
@@ -264,12 +258,13 @@ const Screens = {
           UI.btn(ctx, ax, ayc - 18, 38, 36, glyph, cb, { size: 16 });
         }
       };
-      drawArrow('arrow_left', '◀', Math.max(2, rowL - gutter + 2),
+      drawArrow('arrow_left', '◀',
+        narrow ? W / 2 - 84 - abw / 2 : Math.max(2, rowL - gutter + 2),
         () => { UI.sel.selPage = (page + pages - 1) % pages; AudioSys.sfx('click'); });
-      drawArrow('arrow_right', '▶', Math.min(W - 2 - Math.min(44, gutter - 4), rowL + fw * 3 + gap * 2 + 2),
+      drawArrow('arrow_right', '▶',
+        narrow ? W / 2 + 84 - abw / 2 : Math.min(W - 2 - abw, rowL + fw * 3 + gap * 2 + 2),
         () => { UI.sel.selPage = (page + 1) % pages; AudioSys.sfx('click'); });
-      // Page dots beneath the frames — the current page burns bone-bright.
-      const dotY = y0 + fh + (short ? 8 : 12);
+      // Page dots — the current page burns bone-bright.
       for (let d = 0; d < pages; d++) {
         ctx.fillStyle = d === page ? '#cfc8b8' : 'rgba(207,200,184,0.28)';
         ctx.beginPath(); ctx.arc(W / 2 + (d - (pages - 1) / 2) * 18, dotY, d === page ? 3.4 : 2.4, 0, TAU); ctx.fill();
