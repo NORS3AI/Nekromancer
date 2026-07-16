@@ -58,6 +58,10 @@ const WINGS = {
 // matching panel/title/button accent colors. Legacy ids 'arcane'/'royal'
 // map to violet/ember in UI.theme().
 const THEMES = {
+  // 'Default' = the original untinted look (v1.6.96 owner rule: "no color
+  // choice, just blank") — no plate glow recolor, plain panel greys.
+  none:   { name: 'Default',    panel: '#4a4356', title: '#c9bfa8', btn: '#6b5f80', plate: null,
+            desc: 'The original look — no color, just the dark.' },
   void:   { name: 'Void',       panel: '#5a3a7a', title: '#d8b4f0', btn: '#7a4a8f', plate: 'violet' },
   bone:   { name: 'Bone White', panel: '#6a655c', title: '#e8e2d0', btn: '#8a8478', plate: 'bone' },
   blood:  { name: 'Blood',      panel: '#7a3040', title: '#e8b0b8', btn: '#8a4550', plate: 'blood' },
@@ -321,11 +325,22 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.95-alpha';
+const GAME_VERSION = 'v1.6.96-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.96-alpha', date: 'July 2026',
+    notes: [
+      'The SIMPLE PLATE (owner art — diamond finials, no skull crest) arrives: death screen, artisan bench rows, quest DROP buttons, and the Settings tabs / Save Hero / Export & Import Code / Reset to Defaults all wear it — the ornate skull plate stays on the ☰ MENU and in town',
+      'Inventory and Skills & Passives now sit in the painted panel frame, matching the Character sheet',
+      'The Journal\'s quest stripe now wears your chosen theme color',
+      'New "Default" theme at the Enchantress — the original untinted look',
+      '"Save to Current Hero" is now simply SAVE HERO',
+      'Six themed glow variants of the simple plate are sliced and stored for later use'
+    ]
+  },
   {
     v: 'v1.6.95-alpha', date: 'July 2026',
     notes: [
