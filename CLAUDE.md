@@ -408,6 +408,22 @@ loot at the artisans. The hero is persistent (localStorage).
   the Jeweler's `gemStackList` chips moved gothic→SIMPLE plate (owner
   correction). Character footer: PARAGON + **CAMPFIRE** (renamed from
   CHANGE HERO) on the simple plate.
+- **v1.7.3 — CHARACTER SELECT REBORN (owner art)**: `Screens.select` no
+  longer draws the campfire scene (those helpers are dead code) — it
+  draws `docs/art/ui/select_bg.webp` (painted "CHOOSE YOUR HERO — the
+  battle for Ghallia begins" vista, BAKED title: landscape = cover-fit,
+  portrait = width-fit anchored TOP so the title survives), THREE gothic
+  `slot_frame.webp` frames centered (interior alpha'd out so the vista
+  shows through; plinth + teal glow kept), a `ghost.webp` silhouette on
+  each empty plinth with the `plus` plate at 25% opacity as the CREATE
+  button (tap frame → `Profiles.create(i)` + open 'create'), and claimed
+  frames showing the hero's painted avatar (breathing) with name/level
+  by the divider (~0.145/0.195 of frame h) and a teal ellipse breath
+  when selected. PLAY / DELETE HERO / retire-confirm flow unchanged.
+  `Screens.create` draws `create_bg.webp` ("CREATE YOUR NEKROMANCER —
+  The dead obey.", baked title) behind its panel, same portrait rule.
+  All four warm in preloadArt; frame/ghost cut with the flat-black
+  recipe (frame WITHOUT hole-fill so its interior is transparent).
 - **v1.7.2 (owner list)**: (1) **✕ IN THE TITLE BAR** — `drawGlobalClose`
   anchors the plate at `panelRects[0].x+w-30, y+22`, inside the header
   band. (2) **GLOBAL RENAME: Rathma → Bellmahath** (capital-R display

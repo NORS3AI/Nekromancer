@@ -94,110 +94,130 @@ const Screens = {
   // with pseudo-3D depth. Tap a hero to select it, then the green PLAY button
   // to enter. "Delete Hero" toggles a retire flow. Empty spots create.
   select(ctx, W, H) {
-    // Fire sits nearer the viewer (foreground); heroes gather behind/around it.
-    // On PORTRAIT phones the scene rides higher so the seat nameplates stay
-    // well clear of the selection plate + PLAY at the bottom.
-    const fx = W / 2, fy = (W < H ? 0.52 : 0.64) * H;
+    // THE HALL OF HEROES (v1.7.3 owner art): the painted CHOOSE YOUR HERO
+    // vista fills the screen; three gothic slot frames stand centered, each
+    // holding a ghostly unclaimed vessel — the plus plate at 25% opacity on
+    // an empty vessel is the CREATE button. Claimed frames show the hero.
     const t = Game.time || 0;
-    // Night sky — deep blue-black at the top, warming toward the horizon.
-    const sky = ctx.createLinearGradient(0, 0, 0, H);
-    sky.addColorStop(0, '#070610');
-    sky.addColorStop(0.55, '#0c0a16');
-    sky.addColorStop(1, '#140d0a');
-    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
-
-    // Full moon (upper-left) with a soft halo and a couple of stars.
-    const mx = W * 0.24, my = H * 0.2;
-    const halo = ctx.createRadialGradient(mx, my, 4, mx, my, 90);
-    halo.addColorStop(0, 'rgba(210,220,240,0.5)');
-    halo.addColorStop(1, 'rgba(150,170,210,0)');
-    ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(mx, my, 90, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#e8ecf6'; ctx.beginPath(); ctx.arc(mx, my, 34, 0, TAU); ctx.fill();
-    ctx.fillStyle = 'rgba(180,190,210,0.4)';   // craters
-    ctx.beginPath(); ctx.arc(mx - 10, my - 6, 6, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(mx + 9, my + 8, 4.5, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(mx + 4, my - 12, 3, 0, TAU); ctx.fill();
-    ctx.fillStyle = 'rgba(230,235,250,0.7)';
-    for (let i = 0; i < 7; i++) {
-      const sx = (i * 137.5) % W, sy = (i * 61.7) % (H * 0.42);
-      ctx.globalAlpha = 0.3 + 0.5 * Math.abs(Math.sin(t * 0.7 + i));
-      ctx.fillRect(sx, sy, 1.5, 1.5);
+    const bg = Game.uiImg('select_bg');
+    ctx.fillStyle = '#050408'; ctx.fillRect(0, 0, W, H);
+    if (bg && bg.complete && bg.naturalWidth) {
+      if (W < H) {
+        // Portrait: width-fit anchored TOP so the baked title survives; the
+        // frames stand over the dark lower half.
+        const cf = W / bg.width;
+        ctx.drawImage(bg, 0, 0, bg.width * cf, bg.height * cf);
+      } else {
+        const cf = Math.max(W / bg.width, H / bg.height);
+        ctx.drawImage(bg, (W - bg.width * cf) / 2, (H - bg.height * cf) / 2, bg.width * cf, bg.height * cf);
+      }
+    } else {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '600 24px Cinzel, Georgia'; ctx.fillStyle = '#d8c5a0';
+      ctx.fillText('CHOOSE YOUR HERO', W / 2, H * 0.10);
     }
-    ctx.globalAlpha = 1;
-
-    // Far dragons of assorted colours glide across the distant sky, breathing fire.
-    this.drawDragons(ctx, W, H, t);
-    // A little village nestles on the back-right horizon, windows warmly lit.
-    this.drawVillage(ctx, W, H);
-    // A few bats flap PAST the sky (some crossing in front of the moon).
-    this.drawBats(ctx, W, H, t);
-
-    // Warm ground plane + firelight pool for depth (kept dim so it doesn't blow out).
-    const floor = ctx.createLinearGradient(0, fy - 120, 0, H);
-    floor.addColorStop(0, 'rgba(20,14,10,0)');
-    floor.addColorStop(1, 'rgba(48,26,12,0.5)');
-    ctx.fillStyle = floor; ctx.fillRect(0, fy - 120, W, H - (fy - 120));
-    const glow = ctx.createRadialGradient(fx, fy, 10, fx, fy, Math.max(W, H) * 0.52);
-    const gf = 0.10 + 0.025 * Math.sin(t * 8) + 0.015 * Math.sin(t * 17); // softer firelight
-    glow.addColorStop(0, `rgba(255,150,60,${gf.toFixed(3)})`);
-    glow.addColorStop(0.42, 'rgba(200,90,30,0.045)');
-    glow.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
-    // Ground litter + a wind-swept grass field around the fire.
-    this.drawGroundLitter(ctx, fx, fy, W, H, t);
-    // A fallen adventurer's bones rest in the foreground grass — dropped a
-    // little lower on portrait so they never strike through the nameplates.
-    this.drawFallenSkeleton(ctx, W * 0.16, fy + (W < H ? 150 : 96), clamp(W / 900, 0.7, 1.1), t);
 
     const delMode = !!UI.sel.delMode;
-    // Pre-select the active hero so PLAY is ready (unless we're deleting).
     if (!delMode && UI.sel.pick === undefined) {
       UI.sel.pick = Profiles.slots[Profiles.active] ? Profiles.active : null;
     }
-
-    // The heading rides the simple plate (owner rule v1.7.1).
-    const ttW = Math.min(360, W * 0.8);
-    UI.btnPlate2(ctx, W / 2 - ttW / 2, H * 0.1 - 20, ttW, 40,
-      delMode ? 'RETIRE A HERO' : 'CHOOSE YOUR HERO', null,
-      { size: Math.min(19, W * 0.045), color: delMode ? '#e04a5a' : '#e8d8b0' });
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    // (The "up to 3 Nekromancers" subtitle is DELETED, owner rule — only the
-    // delete-mode hint remains.)
     if (delMode) {
-      ctx.font = '12px Cinzel, Georgia'; ctx.fillStyle = '#9a8f7a';
-      ctx.fillText('Tap the hero you wish to retire', W / 2, H * 0.1 + 26);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '600 13px Cinzel, Georgia'; ctx.fillStyle = '#e04a5a';
+      ctx.fillText('RETIRE A HERO — tap the hero you wish to retire', W / 2, H * 0.285);
     }
 
-    // One hero stands behind the fire (higher & smaller); two flank it up close.
-    // The flank spread never drops below 96px so the two nameplates (≤150px
-    // wide each) can NEVER collide, even on narrow portrait phones.
-    const s = clamp(W / 760, 0.72, 1.05);
-    const spread = Math.max(W * 0.12, 96);
-    const spots = [
-      { i: 0, x: fx,          y: fy - 118 * s, scale: 0.74 * s, front: false },  // behind the fire
-      { i: 1, x: fx - spread, y: fy + 20 * s,  scale: 1.06 * s, front: true },
-      { i: 2, x: fx + spread, y: fy + 20 * s,  scale: 1.06 * s, front: true }
-    ];
-    const back = spots.find(sp => !sp.front);
-    this.drawRosterSpot(ctx, back, back.scale, delMode);
-    this.drawCampfire(ctx, fx, fy, s * 1.12);
-    for (const sp of spots) if (sp.front) this.drawRosterSpot(ctx, sp, sp.scale, delMode);
+    // ---- three slot frames, centered ----
+    const frame = Game.uiImg('slot_frame');
+    const ghost = Game.uiImg('ghost');
+    const plus = Game.uiImg('plus');
+    const FA = frame && frame.naturalWidth ? frame.width / frame.height : 0.60;
+    const short = H < 480;
+    const gap = Math.max(10, W * 0.02);
+    let fh = Math.min(H * (short ? 0.46 : 0.52), 430);
+    let fw = fh * FA;
+    if (fw * 3 + gap * 2 > W - 20) { fw = (W - 20 - gap * 2) / 3; fh = fw / FA; }
+    const y0 = H * (short ? 0.50 : 0.56) - fh / 2;
+    for (let i = 0; i < (Profiles.MAX || 3); i++) {
+      const x0 = W / 2 - (fw * 3 + gap * 2) / 2 + i * (fw + gap);
+      const snap = Profiles.slots[i];
+      const selected = !delMode && UI.sel.pick === i && !!snap;
+      // The frame (procedural arch until the art loads).
+      if (frame && frame.complete && frame.naturalWidth) {
+        ctx.globalAlpha = selected ? 1 : 0.88;
+        ctx.drawImage(frame, x0, y0, fw, fh);
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.strokeStyle = selected ? '#cfc8b8' : '#3a3448'; ctx.lineWidth = 2;
+        rr(ctx, x0, y0, fw, fh, 12); ctx.stroke();
+      }
+      if (snap) {
+        // A claimed vessel — the hero's painted avatar on the plinth.
+        const img = Game.heroImg(snap.gender || 'm', 'front', snap.hair || 0);
+        const gh2 = fh * 0.60;
+        if (img && img.complete && img.naturalWidth) {
+          const gw2 = gh2 * (img.width / img.height);
+          const breath = Math.sin(t * 1.6 + i) * 1.2;
+          ctx.drawImage(img, x0 + fw / 2 - gw2 / 2, y0 + fh * 0.875 - gh2 - breath, gw2, gh2 + breath);
+        } else {
+          this.drawNecroFigure(ctx, x0 + fw / 2, y0 + fh * 0.86, fh / 420, '#8fb0e8', false, false);
+        }
+        // Name + level up by the frame's divider line.
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = '600 ' + Math.max(9, Math.round(fw * 0.062)) + 'px Cinzel, Georgia';
+        ctx.fillStyle = selected ? '#ffd76a' : '#cfc8b8';
+        ctx.fillText(this.fitText(ctx, (snap.name || 'The Nekromancer').toUpperCase(), fw - 26), x0 + fw / 2, y0 + fh * 0.145);
+        ctx.font = Math.max(8, Math.round(fw * 0.052)) + 'px Cinzel, Georgia';
+        ctx.fillStyle = '#9a8f7a';
+        ctx.fillText('Level ' + (snap.level || 1), x0 + fw / 2, y0 + fh * 0.195);
+        if (selected) {
+          // Soft teal breath around the plinth for the chosen one.
+          const pl = 0.25 + 0.12 * Math.sin(t * 2.4);
+          ctx.strokeStyle = 'rgba(120,220,215,' + pl.toFixed(3) + ')';
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.ellipse(x0 + fw / 2, y0 + fh * 0.885, fw * 0.30, fh * 0.035, 0, 0, TAU); ctx.stroke();
+        }
+        UI.register(x0, y0, fw, fh, delMode
+          ? () => { UI.sel.delConfirm = i; }
+          : () => { UI.sel.pick = i; });
+      } else {
+        // An unclaimed vessel — the ghost waits; the plus plate (25%
+        // opacity, owner spec) is the CREATE button.
+        if (ghost && ghost.complete && ghost.naturalWidth) {
+          const gh2 = fh * 0.58;
+          const gw2 = gh2 * (ghost.width / ghost.height);
+          ctx.globalAlpha = 0.85 + 0.1 * Math.sin(t * 1.1 + i * 2);
+          ctx.drawImage(ghost, x0 + fw / 2 - gw2 / 2, y0 + fh * 0.875 - gh2, gw2, gh2);
+          ctx.globalAlpha = 1;
+        }
+        if (plus && plus.complete && plus.naturalWidth) {
+          const pw2 = fw * 0.52, ph2 = pw2 * (plus.height / plus.width);
+          ctx.globalAlpha = 0.25;
+          ctx.drawImage(plus, x0 + fw / 2 - pw2 / 2, y0 + fh * 0.56 - ph2 / 2, pw2, ph2);
+          ctx.globalAlpha = 1;
+        } else {
+          ctx.globalAlpha = 0.25;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.font = '600 ' + Math.round(fw * 0.22) + 'px Cinzel, Georgia'; ctx.fillStyle = '#e8e2d0';
+          ctx.fillText('+', x0 + fw / 2, y0 + fh * 0.56);
+          ctx.globalAlpha = 1;
+        }
+        if (!delMode) UI.register(x0, y0, fw, fh, () => {
+          if (Profiles.create(i)) UI.open('create');
+        });
+      }
+    }
 
     // ---- bottom controls ----
-    // A soft scrim so the selection plate + buttons read cleanly over the
-    // grass, litter and bones (owner: "clean this page up"). On short
-    // landscape screens the whole stack compresses to hug the bottom edge.
-    const short = H < 480;
-    const scrimH = short ? 120 : 190;
+    const scrimH = short ? 110 : 150;
     const scrim = ctx.createLinearGradient(0, H - scrimH, 0, H);
     scrim.addColorStop(0, 'rgba(5,4,10,0)');
-    scrim.addColorStop(0.45, 'rgba(5,4,10,0.6)');
+    scrim.addColorStop(0.45, 'rgba(5,4,10,0.55)');
     scrim.addColorStop(1, 'rgba(5,4,10,0.85)');
     ctx.fillStyle = scrim; ctx.fillRect(0, H - scrimH, W, scrimH);
     const pick = UI.sel.pick;
     const delId = UI.sel.delConfirm;
     if (delMode && delId !== undefined && Profiles.slots[delId]) {
-      // Confirm retire.
       const nm = Profiles.slots[delId].name || 'this hero';
       ctx.textAlign = 'center'; ctx.font = 'bold 15px Cinzel, Georgia'; ctx.fillStyle = '#e8e0cc';
       ctx.fillText(this.fitText(ctx, 'Retire ' + nm + '? Are you sure? :(', W - 40), W / 2, H - 100);
@@ -208,29 +228,18 @@ const Screens = {
       }, { size: 13, color: '#e04a5a' });
       UI.btnPlate2(ctx, W / 2 + 6, H - 84, bw, 36, 'NO, KEEP', () => { UI.sel.delConfirm = undefined; }, { size: 13 });
     } else if (!delMode && pick !== undefined && pick !== null && Profiles.slots[pick]) {
-      // Selected hero → name/level + a green pulsing PLAY button.
-      const snap = Profiles.slots[pick];
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold ' + (short ? 15 : 18) + 'px Cinzel, Georgia'; ctx.fillStyle = '#ffd76a';
-      ctx.fillText(this.fitText(ctx, snap.name || 'The Nekromancer', W - 40), W / 2, H - (short ? 94 : 118));
-      ctx.font = (short ? 11 : 12) + 'px Cinzel, Georgia'; ctx.fillStyle = '#9a8f7a';
-      ctx.fillText('Level ' + (snap.level || 1) + ' Necromancer', W / 2, H - (short ? 79 : 100));
-      const bw = Math.min(240, W - 70), bh = short ? 34 : 42, bx = W / 2 - bw / 2, byy = H - (short ? 66 : 86);
-      // PLAY lands you in New Haven — the town is the first map after
-      // character load/creation (owner rule). Painted plate button (owner kit).
+      const bw = Math.min(240, W - 70), bh = short ? 34 : 42, bx = W / 2 - bw / 2, byy = H - (short ? 60 : 74);
+      // PLAY lands you in New Haven (owner rule).
       UI.btnPlate(ctx, bx, byy, bw, bh, 'PLAY',
         () => { Profiles.select(pick); Game.enterTown(); }, { size: 18, color: '#e6d4a8' });
     }
 
-    // Delete / cancel toggle, lower-left (its own row, clear of PLAY / YES-NO).
+    // Delete / cancel toggle, lower-left.
     UI.btnPlate3(ctx, 14, H - 42, 150, 28, delMode ? 'CANCEL' : 'DELETE HERO', () => {
       UI.sel.delMode = !delMode;
       UI.sel.delConfirm = undefined;
-      if (!delMode) UI.sel.pick = null;   // entering delete mode clears the play selection
+      if (!delMode) UI.sel.pick = null;
     }, { size: 11, color: delMode ? '#c9bfa8' : '#e04a5a' });
-
-    // Still, low-lying fog drifts across the foreground.
-    this.drawForegroundFog(ctx, W, H, t);
   },
 
   // A ragged dark forest treeline silhouette across the given horizon y.
@@ -788,7 +797,20 @@ const Screens = {
   // Character creation: name your Nekromancer and choose your glowing-eye
   // colour. Opened from the title screen when starting a new hero.
   create(ctx, W, H) {
-    this.dim(ctx, W, H);
+    // The painted CREATE YOUR NEKROMANCER vista (owner art v1.7.3, baked
+    // title) fills the screen behind the creation panel.
+    const cbg = Game.uiImg('create_bg');
+    ctx.fillStyle = '#050408'; ctx.fillRect(0, 0, W, H);
+    if (cbg && cbg.complete && cbg.naturalWidth) {
+      if (W < H) {
+        const cf = W / cbg.width;
+        ctx.drawImage(cbg, 0, 0, cbg.width * cf, cbg.height * cf);
+      } else {
+        const cf = Math.max(W / cbg.width, H / cbg.height);
+        ctx.drawImage(cbg, (W - cbg.width * cf) / 2, (H - cbg.height * cf) / 2, cbg.width * cf, cbg.height * cf);
+      }
+      ctx.fillStyle = 'rgba(3,2,6,0.35)'; ctx.fillRect(0, 0, W, H);
+    }
     const pw = Math.min(460, W - 20);
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 16, 620);
