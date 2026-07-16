@@ -1782,8 +1782,9 @@ const Game = {
       } else if (o.type === 'shrine' && d < 42) {
         o.used = true;
         AudioSys.sfx('shrine');
-        const names = { empowered: 'Empowered: essence surges', frenzied: 'Frenzied: +25% damage', blessed: 'Blessed: -25% damage taken', fortune: 'Fortune: +100% gold find' };
-        p.shrine = { buff: o.buff, t: 60 };
+        const names = { empowered: 'Empowered: essence surges', frenzied: 'Frenzied: +25% damage', blessed: 'Blessed: -25% damage taken', fortune: 'Fortune: +100% gold find', fleetfoot: 'Fleetfoot: +100% move speed' };
+        // Fleetfoot burns bright and brief on a map (owner rule: 30s).
+        p.shrine = { buff: o.buff, t: o.buff === 'fleetfoot' ? 30 : 60 };
         if (o.buff === 'empowered') p.essence = p.maxEssence;
         UI.toast(names[o.buff], '#6ff7c3');
         Particles.ring(o.x, o.y, 90, '#6ff7c3', 5, 0.6);

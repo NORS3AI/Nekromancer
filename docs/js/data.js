@@ -329,11 +329,23 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.0-alpha';
+const GAME_VERSION = 'v1.7.1-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.1-alpha', date: 'July 2026',
+    notes: [
+      'Every remaining PNG (20 rune stones, 21 skill icons) is now WebP — 1.6MB of art shrunk to 272KB',
+      'MOVE SPEED IS CAPPED AT 25% game-wide (boots, paragon, everything counts toward it). The ONLY way past it: the new FLEETFOOT blessing — +100% move speed from a map shrine (30 seconds) or the wishing fountain (10 minutes)',
+      'Paragon rebalanced: everything caps at 50 points (movement included); Maximum Mana is now MAXIMUM ESSENCE; Intelligence & Vitality stay uncapped but grow +0.5% per point',
+      'The Character sheet is one wide scrolling column — no more cramped twin columns',
+      'PATCH NOTES no longer lag: entries collapse to one line (tap to expand, newest open), grouped by month, and off-screen text is never drawn',
+      'Campfire: CHOOSE YOUR HERO rides the simple plate, YES RETIRE / NO KEEP are simple plates, and the stray ✕ is gone',
+      'Settings: the Keys explainer sits on two centered lines; SAVE HERO no longer spans the whole panel'
+    ]
+  },
   {
     v: 'v1.7.0-alpha', date: 'July 2026',
     notes: [
@@ -2300,6 +2312,7 @@ const NO_TORCH_RADIUS = 20;
 // idea what Essence Surges means"). Shared by the fountain screen and the
 // character sheet readout.
 const FOUNTAIN_BUFFS = {
+  fleetfoot: 'Fleetfoot — +100% move speed, past every cap',
   empowered: 'Empowered — essence refills & regenerates twice as fast',
   frenzied:  'Frenzied — you deal +25% damage',
   blessed:   'Blessed — you take 25% less damage',
@@ -3075,27 +3088,30 @@ const MAX_LEVEL = 70;
 // (owner rule). PARAGON_CATS doubles as both the tab order and the rotation.
 const PARAGON_CATS = ['Core', 'Defense', 'Offense', 'Utility'];
 const PARAGON_ROTATION = PARAGON_CATS;
+// v1.7.1 owner caps: EVERYTHING caps at 50 points except Intelligence /
+// Vitality / Life% (uncapped, but Int & Vit slow to 0.5%/pt). Maximum
+// Mana is renamed MAXIMUM ESSENCE.
 const PARAGON_STATS = {
   // Core
-  vitality:     { cat: 'Core',    label: 'Vitality',           per: 0.02,  max: 0,   fmt: 'pct', note: 'Life' },
-  intelligence: { cat: 'Core',    label: 'Intelligence',       per: 0.02,  max: 0,   fmt: 'pct', note: 'Damage' },
-  moveSpeed:    { cat: 'Core',    label: 'Movement Speed',     per: 0.005, max: 200, fmt: 'pct', note: 'Move Speed' },
-  maxMana:      { cat: 'Core',    label: 'Maximum Mana',       per: 0.02,  max: 200, fmt: 'pct', note: 'Max Essence' },
+  vitality:     { cat: 'Core',    label: 'Vitality',           per: 0.005, max: 0,  fmt: 'pct', note: 'Life' },
+  intelligence: { cat: 'Core',    label: 'Intelligence',       per: 0.005, max: 0,  fmt: 'pct', note: 'Damage' },
+  moveSpeed:    { cat: 'Core',    label: 'Movement Speed',     per: 0.005, max: 50, fmt: 'pct', note: 'Move Speed' },
+  maxMana:      { cat: 'Core',    label: 'Maximum Essence',    per: 0.02,  max: 50, fmt: 'pct', note: 'Max Essence' },
   // Offense
-  attackSpeed:  { cat: 'Offense', label: 'Attack Speed',       per: 0.005, max: 200, fmt: 'pct', note: 'Attack Speed' },
-  paraCritDmg:  { cat: 'Offense', label: 'Crit Hit Damage',    per: 0.002, max: 200, fmt: 'pct', note: 'Crit Damage' },
-  paraCritChance:{ cat: 'Offense', label: 'Crit Hit Chance',   per: 0.005, max: 200, fmt: 'pct', note: 'Crit Chance' },
-  paraCdr:      { cat: 'Offense', label: 'Cooldown Reduction', per: 0.005, max: 200, fmt: 'pct', note: 'Cooldowns' },
+  attackSpeed:  { cat: 'Offense', label: 'Attack Speed',       per: 0.005, max: 50, fmt: 'pct', note: 'Attack Speed' },
+  paraCritDmg:  { cat: 'Offense', label: 'Crit Hit Damage',    per: 0.002, max: 50, fmt: 'pct', note: 'Crit Damage' },
+  paraCritChance:{ cat: 'Offense', label: 'Crit Hit Chance',   per: 0.005, max: 50, fmt: 'pct', note: 'Crit Chance' },
+  paraCdr:      { cat: 'Offense', label: 'Cooldown Reduction', per: 0.005, max: 50, fmt: 'pct', note: 'Cooldowns' },
   // Defense
-  paraArmor:    { cat: 'Defense', label: 'Armor',              per: 0.01,  max: 200, fmt: 'pct', note: 'Armor' },
-  lifePct:      { cat: 'Defense', label: 'Life %',             per: 0.02,  max: 0,   fmt: 'pct', note: 'Life' },
-  paraResAll:   { cat: 'Defense', label: 'All Resistance',     per: 0.005, max: 200, fmt: 'pct', note: 'Resist' },
-  lifeRegen:    { cat: 'Defense', label: 'Life per Second',    per: 0.01,  max: 200, fmt: 'pct', note: 'Regen (of max Life/s)' },
+  paraArmor:    { cat: 'Defense', label: 'Armor',              per: 0.01,  max: 50, fmt: 'pct', note: 'Armor' },
+  lifePct:      { cat: 'Defense', label: 'Life %',             per: 0.02,  max: 0,  fmt: 'pct', note: 'Life' },
+  paraResAll:   { cat: 'Defense', label: 'All Resistance',     per: 0.005, max: 50, fmt: 'pct', note: 'Resist' },
+  lifeRegen:    { cat: 'Defense', label: 'Life per Second',    per: 0.01,  max: 50, fmt: 'pct', note: 'Regen (of max Life/s)' },
   // Utility
-  paraArea:     { cat: 'Utility', label: 'Area Damage',        per: 0.005, max: 200, fmt: 'pct', note: 'Area Damage' },
-  paraLph:      { cat: 'Utility', label: 'Life per Hit',       per: 0.01,  max: 500, fmt: 'pct', note: 'Life on Hit (of max Life)' },
-  paraRcr:      { cat: 'Utility', label: 'Resource Cost',      per: 0.005, max: 200, fmt: 'pct', note: 'Cost Reduction' },
-  pickup:       { cat: 'Utility', label: 'Pickup Radius',      per: 0.002, max: 200, fmt: 'pct', note: 'Pickup Radius' }
+  paraArea:     { cat: 'Utility', label: 'Area Damage',        per: 0.005, max: 50, fmt: 'pct', note: 'Area Damage' },
+  paraLph:      { cat: 'Utility', label: 'Life per Hit',       per: 0.01,  max: 50, fmt: 'pct', note: 'Life on Hit (of max Life)' },
+  paraRcr:      { cat: 'Utility', label: 'Resource Cost',      per: 0.005, max: 50, fmt: 'pct', note: 'Cost Reduction' },
+  pickup:       { cat: 'Utility', label: 'Pickup Radius',      per: 0.002, max: 50, fmt: 'pct', note: 'Pickup Radius' }
 };
 // XP to earn the NEXT paragon level — a level-70's worth, creeping up per level.
 const PARAGON_XP = plevel => Math.round(XP_CURVE(70) * (1 + plevel * 0.05));

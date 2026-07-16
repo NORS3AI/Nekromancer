@@ -147,6 +147,9 @@ class Player {
       const mx = Input.move.x, my = Input.move.y;
       this.moving = (mx !== 0 || my !== 0) && this.stun <= 0;   // chained = rooted in place
       let moveMul = (this.speedBuffT > 0 ? 1.2 : 1);
+      // FLEETFOOT (owner rule v1.7.1): the only thing allowed past the 25%
+      // move cap — +100% speed while the blessing lasts.
+      if (this.shrine && this.shrine.buff === 'fleetfoot') moveMul *= (2 * 180) / this.speed;
       if (this.harvestT > 0) moveMul += 0.01 * this.harvestStacks;   // Bone Armor · Harvest
       if (Hero.rune('decrepify') === 'opportunist') {                 // +3% move per cursed foe
         let cursed = 0; for (const e of Game.enemies) if (!e.dead && e.curse) cursed++;
@@ -476,7 +479,7 @@ class Player {
       ctx.beginPath(); ctx.arc(this.x, this.y - 2, 38 + 4 * Math.sin(t), 0, TAU); ctx.stroke();
     }
     if (this.shrine) {
-      const cols = { empowered: '#4ecbe0', frenzied: '#ff8c5a', blessed: '#ffd76a', fortune: '#4ade80' };
+      const cols = { empowered: '#4ecbe0', frenzied: '#ff8c5a', blessed: '#ffd76a', fortune: '#4ade80', fleetfoot: '#8fd0ff' };
       ctx.fillStyle = cols[this.shrine.buff];
       ctx.beginPath(); ctx.arc(this.x, this.y - 34, 3, 0, TAU); ctx.fill();
     }

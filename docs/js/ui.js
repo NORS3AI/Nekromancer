@@ -163,7 +163,7 @@ const UI = {
     'wilds', 'storyacts',
     // The Enchantress's benches shed the round EXIT too (owner rule v1.7.0)
     // — their ✕ rides the panel corner and Escape returns to the hub.
-    'mysEnchant', 'mysPet', 'mysWings', 'mysTheme'],
+    'mysEnchant', 'mysPet', 'mysWings', 'mysTheme', 'patchnotes'],
 
   // The navigation for the red ✕ / Escape on the CURRENT screen. Most screens
   // just close, but a few step back to a parent menu instead:
@@ -519,7 +519,7 @@ const UI = {
   // (some panels used to paint over their own close button on phones).
   // Screens whose ✕ was removed outright (owner list v1.7.0): the Crucible
   // and the three NPC dialogs keep only Escape / the round EXIT medallion.
-  NO_CLOSE_X: ['cube', 'lukus', 'addy', 'lyssa'],
+  NO_CLOSE_X: ['cube', 'lukus', 'addy', 'lyssa', 'select'],
 
   drawGlobalClose(ctx, W) {
     if (this.NO_CLOSE_X.includes(this.screen)) return;

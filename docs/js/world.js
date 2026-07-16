@@ -479,7 +479,7 @@ const World = {
     }
     for (let i = 0; i < shrines; i++) {
       const pt = pointFn();
-      this.objects.push({ type: 'shrine', x: pt.x, y: pt.y, used: false, seed: Math.random(), buff: pick(['empowered', 'frenzied', 'blessed', 'fortune']) });
+      this.objects.push({ type: 'shrine', x: pt.x, y: pt.y, used: false, seed: Math.random(), buff: pick(['empowered', 'frenzied', 'blessed', 'fortune', 'fleetfoot']) });
     }
     for (let i = 0; i < urns; i++) {
       const pt = pointFn();

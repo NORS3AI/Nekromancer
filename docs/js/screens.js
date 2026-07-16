@@ -155,10 +155,12 @@ const Screens = {
       UI.sel.pick = Profiles.slots[Profiles.active] ? Profiles.active : null;
     }
 
+    // The heading rides the simple plate (owner rule v1.7.1).
+    const ttW = Math.min(360, W * 0.8);
+    UI.btnPlate2(ctx, W / 2 - ttW / 2, H * 0.1 - 20, ttW, 40,
+      delMode ? 'RETIRE A HERO' : 'CHOOSE YOUR HERO', null,
+      { size: Math.min(19, W * 0.045), color: delMode ? '#e04a5a' : '#e8d8b0' });
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold ' + Math.min(30, W * 0.07) + 'px Cinzel, Georgia';
-    ctx.fillStyle = delMode ? '#e04a5a' : '#e8d8b0';
-    ctx.fillText(delMode ? 'RETIRE A HERO' : 'CHOOSE YOUR HERO', W / 2, H * 0.1);
     // (The "up to 3 Nekromancers" subtitle is DELETED, owner rule — only the
     // delete-mode hint remains.)
     if (delMode) {
@@ -200,11 +202,11 @@ const Screens = {
       ctx.textAlign = 'center'; ctx.font = 'bold 15px Cinzel, Georgia'; ctx.fillStyle = '#e8e0cc';
       ctx.fillText(this.fitText(ctx, 'Retire ' + nm + '? Are you sure? :(', W - 40), W / 2, H - 100);
       const bw = Math.min(150, (W - 48) / 2);
-      UI.btn(ctx, W / 2 - bw - 6, H - 84, bw, 36, 'YES, RETIRE', () => {
+      UI.btnPlate2(ctx, W / 2 - bw - 6, H - 84, bw, 36, 'YES, RETIRE', () => {
         Profiles.remove(delId);
         UI.sel.delConfirm = undefined; UI.sel.delMode = false; UI.sel.pick = undefined;
-      }, { size: 13, border: '#c22843', color: '#e04a5a' });
-      UI.btn(ctx, W / 2 + 6, H - 84, bw, 36, 'NO, KEEP', () => { UI.sel.delConfirm = undefined; }, { size: 13 });
+      }, { size: 13, color: '#e04a5a' });
+      UI.btnPlate2(ctx, W / 2 + 6, H - 84, bw, 36, 'NO, KEEP', () => { UI.sel.delConfirm = undefined; }, { size: 13 });
     } else if (!delMode && pick !== undefined && pick !== null && Profiles.slots[pick]) {
       // Selected hero → name/level + a green pulsing PLAY button.
       const snap = Profiles.slots[pick];
@@ -1432,7 +1434,7 @@ const Screens = {
       afford ? 'TOSS 200 GOLD' : 'NEED 200 GOLD',
       afford ? () => {
         Hero.gold -= this.FOUNTAIN_COST;
-        const buff = pick(['empowered', 'frenzied', 'blessed', 'fortune']);
+        const buff = pick(['empowered', 'frenzied', 'blessed', 'fortune', 'fleetfoot']);
         Game.fountainBuff = { buff, t: 600 };
         if (Game.player) {
           Game.player.shrine = { buff, t: 600 };
@@ -4062,10 +4064,11 @@ const Screens = {
     const s = Items.computeStats();
     // Tablet/desktop: scale the whole sheet up (fonts + row spacing) via k.
     const big = W >= 760, k = big ? 1.35 : 1;
-    const pw = Math.min(big ? 680 : 560, W - 20);
+    // ONE wide scrolling column (owner rule v1.7.1 — no more two columns).
+    const pw = Math.min(big ? 720 : 600, W - 20);
     const px = W / 2 - pw / 2;
-    const twoCol = pw >= 420;
-    const ph = Math.min(H - 16, twoCol ? (big ? 560 : 470) : 620);
+    const twoCol = false;
+    const ph = Math.min(H - 16, 640);
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, this.fitText(ctx, Hero.name.toUpperCase() + '  ·  LVL ' + Hero.level + (Hero.paragon ? '  ·  P' + Hero.paragon : ''), pw - 60));
     const colW = twoCol ? (pw - 44) / 2 : pw - 32;
@@ -5665,8 +5668,9 @@ const Screens = {
 
   savesTab(ctx, W, H, px, py, pw, ph) {
     const saves = Saves.list();
-    // "Save Hero" (renamed from Save to Current Hero, v1.6.96) on the simple plate.
-    UI.btnPlate2(ctx, px + 16, py + 76, pw - 32, 34,
+    // "Save Hero" — narrower than the panel, centered (owner rule v1.7.1).
+    const shw = Math.min(300, pw * 0.62);
+    UI.btnPlate2(ctx, px + pw / 2 - shw / 2, py + 76, shw, 34,
       saves.length >= Saves.MAX ? 'ALL 20 SLOTS FULL' : 'SAVE HERO  (' + saves.length + ' / ' + Saves.MAX + ')',
       saves.length >= Saves.MAX ? null : () => Saves.add(),
       { size: 13, disabled: saves.length >= Saves.MAX, color: '#a8d9be' });
@@ -5715,13 +5719,13 @@ const Screens = {
 
   keysTab(ctx, W, H, px, py, pw, ph) {
     const narrow = pw < 480;
-    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    // Two centered lines — never clipped (owner rule v1.7.1).
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
     ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-    ctx.fillText(narrow ? 'Keyboard controls (desktop).'
-      : 'Keyboard controls (desktop) — tap a key to remove it, ＋ to add one.',
-      px + 16, py + 86);
+    ctx.fillText('Keyboard controls (desktop)', px + pw / 2, py + 82);
+    ctx.fillText('Tap a key to remove it · ＋ to add one', px + pw / 2, py + 97);
 
-    const listTop = py + 104;
+    const listTop = py + 110;
     const listBot = py + ph - 44;
     const cols = narrow ? 1 : 2;
     const gap = 12;
@@ -6019,50 +6023,71 @@ const Screens = {
   // scrolls inside the panel via the ▲/▼ buttons when it overflows.
   patchnotes(ctx, W, H) {
     this.dim(ctx, W, H);
-    // (red ✕ drawn globally by UI.draw, above all content)
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 16, 520);
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, 'PATCH NOTES');
 
+    // v1.7.1 (owner rules): entries are COLLAPSED by default (newest open),
+    // grouped by date — and off-screen rows are never measured or drawn,
+    // which is what killed the old screen's framerate.
+    if (!UI.sel.pnOpen) { UI.sel.pnOpen = {}; if (PATCH_NOTES[0]) UI.sel.pnOpen[PATCH_NOTES[0].v] = true; }
     if (UI.sel.scrollY === undefined) UI.sel.scrollY = 0;
     const top = py + 48;
     const viewH = ph - 60;
-    // Scroll by MOUSE WHEEL (desktop) or DRAG (touch) — no arrow buttons. Wiring
-    // comes free from the shared scroll system (UI.wheelScroll / UI.moveDragScroll).
     UI.sel.scrollRegion = { x: px + 4, y: top, w: pw - 8, h: viewH };
-
-    // Clip the scrolling content to the panel.
     ctx.save();
-    ctx.beginPath();
-    ctx.rect(px + 4, top, pw - 8, viewH);
-    ctx.clip();
+    ctx.beginPath(); ctx.rect(px + 4, top, pw - 8, viewH); ctx.clip();
 
+    const vis = (yy, hh) => yy + hh > top && yy < top + viewH;
     let y = top + 8 - UI.sel.scrollY;
+    let lastDate = null;
     for (const patch of PATCH_NOTES) {
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 14px Cinzel, Georgia';
-      ctx.fillStyle = '#57b894';
-      ctx.fillText(patch.v + '   —   ' + patch.date, px + 16, y);
-      y += 22;
-      ctx.font = '11px Cinzel, Georgia';
-      for (const n of patch.notes) {
-        ctx.fillStyle = '#b5ab94';
-        // Generous line budget: never ellipsize a note.
-        y = wrapText(ctx, '• ' + n, px + 22, y, pw - 60, 14, 30) + 4;
+      // Date group header whenever the month changes.
+      if (patch.date !== lastDate) {
+        lastDate = patch.date;
+        if (vis(y, 20)) {
+          ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+          ctx.font = '600 12px Cinzel, Georgia'; ctx.fillStyle = '#d8c5a0';
+          ctx.fillText('— ' + patch.date.toUpperCase() + ' —', px + 16, y + 8);
+        }
+        y += 24;
       }
-      y += 14;
+      const open = !!UI.sel.pnOpen[patch.v];
+      if (vis(y, 24)) {
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.font = 'bold 13px Cinzel, Georgia';
+        ctx.fillStyle = open ? '#57b894' : '#8a8070';
+        ctx.fillText((open ? '▾  ' : '▸  ') + patch.v + '   (' + patch.notes.length + ')', px + 22, y + 9);
+        UI.register(px + 8, y - 2, pw - 16, 22, ((v) => () => {
+          UI.sel.pnOpen[v] = !UI.sel.pnOpen[v];
+        })(patch.v));
+      }
+      y += 24;
+      if (open) {
+        ctx.font = '11px Cinzel, Georgia';
+        for (const n of patch.notes) {
+          // Only MEASURE + WRAP notes that could be on screen (a wrapped
+          // note tops out around 30 lines ≈ 420px).
+          if (vis(y, 440)) {
+            ctx.fillStyle = '#b5ab94';
+            y = wrapText(ctx, '• ' + n, px + 30, y + 6, pw - 70, 14, 30) + 6;
+          } else {
+            // Cheap estimated height keeps the scroll extent stable enough.
+            y += 20 + Math.ceil(n.length / 60) * 14;
+          }
+        }
+        y += 8;
+      }
     }
     ctx.restore();
 
-    // Publish the scroll extent (clamp the wheel/drag position to it).
     const contentH = (y + UI.sel.scrollY) - (top + 8);
     const maxScroll = Math.max(0, contentH - viewH + 16);
     UI.sel.scrollMax = maxScroll;
     UI.sel.scrollY = clamp(UI.sel.scrollY, 0, maxScroll);
     if (maxScroll > 0) {
-      // A slim scrollbar indicator (thumb tracks the scroll position).
       ctx.fillStyle = '#3a3448';
       ctx.fillRect(px + pw - 18, top + 6, 4, viewH - 12);
       ctx.fillStyle = '#57b894';

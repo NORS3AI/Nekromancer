@@ -1465,7 +1465,7 @@ const Items = {
       maxEssence: Math.round((100 + (Hero.hasPassive('overwhelming') ? 40 : 0)) * paraManaMul),
       armor: Math.round(armor),
       armorDR,
-      moveSpeed: clamp(move, 0, 1.5),   // boots move affix + paragon
+      moveSpeed: clamp(move, 0, 0.25),  // boots + paragon — HARD CAP 25% (owner rule v1.7.1; only Fleetfoot passes it)
       xpBonus,
       deathNovaBonus: dnova,
       areaDamage: clamp(area, 0, 2),
