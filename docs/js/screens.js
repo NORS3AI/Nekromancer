@@ -5910,16 +5910,8 @@ const Screens = {
       gy += rowStep;
     }
 
-    // Camera view — Bird's Eye (classic straight-down) vs Top Down (a closer,
-    // Diablo-3-style tilted-down angle, more personal with monsters & bosses).
-    ctx.textAlign = 'left'; ctx.font = '12px Cinzel, Georgia'; ctx.fillStyle = '#c9bfa8';
-    ctx.fillText('Camera view', gx, gy + 14);
-    UI.chip(ctx, gx + colW - 118, gy + 1, 118, 26, Settings.g.viewMode === 'topdown' ? 'TOP DOWN' : "BIRD'S EYE", () => {
-      Settings.g.viewMode = Settings.g.viewMode === 'topdown' ? 'birdseye' : 'topdown';
-      Settings.save();
-      UI.toast(Settings.g.viewMode === 'topdown' ? 'Top Down — closer, tilted (Diablo-style)' : "Bird's Eye — classic straight-down", '#6ff7c3');
-    }, { size: 12, border: '#5f7ab0', color: '#8fb0e8' });
-    gy += 30;
+    // (The Camera-view chip is GONE — v1.7.9 owner rule: Top Down is the only
+    // camera; Game.topDown() is hard-wired true.)
 
     // Loot announcement — position and layout style.
     const lpos = ['bottom', 'middle', 'top'];

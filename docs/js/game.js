@@ -13,10 +13,10 @@ const MAX_LINK_DEPTH = 12;
 // is a brutal 40× the surface.
 const DEPTH_MULT = [1, 2, 3, 4, 6, 8, 10, 13, 16, 19, 25, 30, 40];
 
-// Camera view modes. BIRD'S EYE is the classic straight-down view (zoom 1, no
-// tilt). TOP DOWN is a closer, Diablo-3-style angle: zoomed in for a more
-// personal feel with the monsters/bosses, plus a gentle vertical foreshorten
-// that fakes a tilted-down camera. Tunable.
+// The camera: TOP DOWN is THE ONLY view (owner rule v1.7.9 — Bird's Eye is
+// retired). A closer, Diablo-3-style angle: zoomed in for a more personal
+// feel with the monsters/bosses, plus a gentle vertical foreshorten that
+// fakes a tilted-down camera. Tunable.
 const TOPDOWN_ZOOM = 1.4;
 const TOPDOWN_TILT = 0.66;   // ground foreshorten ratio (vertical/horizontal); sprites stay upright
 
@@ -255,9 +255,11 @@ const Game = {
     return DEPTH_MULT[clamp(this.linkDepth || 0, 0, MAX_LINK_DEPTH)];
   },
 
-  // ---- Camera view mode (Bird's Eye vs Top Down) ----
+  // ---- Camera view: TOP DOWN, always (owner rule v1.7.9). The function
+  // stays so every branch keeps working; a saved 'birdseye' viewMode from an
+  // old settings blob is simply ignored. ----
   topDown() {
-    return typeof Settings !== 'undefined' && Settings.g && Settings.g.viewMode === 'topdown';
+    return true;
   },
   // Is a world point still under the fog of war? (Town has no fog.) Enemies
   // in fog are hidden and never wake (owner rule: they can't attack until
