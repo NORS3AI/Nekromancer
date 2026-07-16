@@ -329,11 +329,22 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.4-alpha';
+const GAME_VERSION = 'v1.7.5-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.5-alpha', date: 'July 2026',
+    notes: [
+      'Creation screen polish: hair color now TINTS THE SHOWCASE MODEL live, the fog is gone, the about panel is wider (no more clipped lore), a BACK plate returns to the campfire, and the stray ✕ is gone',
+      'Names are letters only — max 12 characters, no spaces, numbers or specials; the default is simply NEKROMANCER',
+      'Choose Your Hero: each frame now has a black backing so your hero reads clearly; the sad face is gone from retirement',
+      'Mouse hover glows bone white across the campfire and creation menus — plates, medallions, busts, frames and the gear all breathe when pointed at',
+      'Settings is ONE padded column — nothing spans edge to edge anymore',
+      'Confirmed: every art file in the game is WebP'
+    ]
+  },
   {
     v: 'v1.7.4-alpha', date: 'July 2026',
     notes: [

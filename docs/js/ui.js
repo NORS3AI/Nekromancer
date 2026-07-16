@@ -524,7 +524,7 @@ const UI = {
   // (some panels used to paint over their own close button on phones).
   // Screens whose ✕ was removed outright (owner list v1.7.0): the Crucible
   // and the three NPC dialogs keep only Escape / the round EXIT medallion.
-  NO_CLOSE_X: ['cube', 'lukus', 'addy', 'lyssa', 'select'],
+  NO_CLOSE_X: ['cube', 'lukus', 'addy', 'lyssa', 'select', 'create'],
 
   drawGlobalClose(ctx, W) {
     if (this.NO_CLOSE_X.includes(this.screen)) return;
@@ -652,6 +652,8 @@ const UI = {
     const mp = (typeof Input !== 'undefined' && !Input.touchMode) ? Input.mousePos : null;
     const hover = !!(mp && cb && !o.disabled &&
       mp.x >= x && mp.x <= x + w && mp.y >= y && mp.y <= y + h);
+    // Bone-white hover glow on the campfire/creation menus (owner rule).
+    if (hover && (this.screen === 'create' || this.screen === 'select')) this.boneGlow(ctx, x, y, w, h);
     const sw = img.width, sh = img.height;
     const capF = 0.14;
     const dh = h * 1.08, dy = y - (dh - h) / 2;
@@ -684,6 +686,18 @@ const UI = {
     return true;
   },
 
+  // A soft bone-white glow behind a hovered control (creation/campfire
+  // menus, owner rule v1.7.5).
+  boneGlow(ctx, x, y, w, h, r = 10) {
+    ctx.save();
+    ctx.shadowColor = 'rgba(232,226,208,0.75)';
+    ctx.shadowBlur = 22;
+    ctx.fillStyle = 'rgba(232,226,208,0.07)';
+    rr(ctx, x, y, w, h, r); ctx.fill();
+    rr(ctx, x, y, w, h, r); ctx.fill();
+    ctx.restore();
+  },
+
   // The GOTHIC plate (v1.6.98 owner art, `plate3.webp`): spiked thorn caps,
   // a small skull crest at the top AND bottom of centre, cracked-stone bar.
   // Same 5-slice discipline as the ornate plate — caps and crest stay 1:1,
@@ -695,6 +709,7 @@ const UI = {
     const mp = (typeof Input !== 'undefined' && !Input.touchMode) ? Input.mousePos : null;
     const hover = !!(mp && cb && !o.disabled &&
       mp.x >= x && mp.x <= x + w && mp.y >= y && mp.y <= y + h);
+    if (hover && (this.screen === 'create' || this.screen === 'select')) this.boneGlow(ctx, x, y, w, h);
     const sw = img.width, sh = img.height;
     const capF = 0.14, sk0 = 0.45, sk1 = 0.55;
     const dh = h * 1.48, dy = y - (dh - h) / 2;
