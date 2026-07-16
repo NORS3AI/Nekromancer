@@ -2087,7 +2087,7 @@ const Screens = {
 
     // Panel sized to its content.
     const rowH = 54;
-    const cryptRow = (Hero.cryptUnlocked && Hero.difficulty >= DIFFICULTIES.length - 1) ? 70 : 0;
+    const cryptRow = (Hero.cryptUnlocked && Hero.difficulty >= DIFFICULTIES.length - 1) ? 84 : 0;
     const ph = Math.min(H - 16, 132 + cryptRow + Math.max(1, rows.length) * rowH + (foot.length ? 34 : 14));
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph,
@@ -2135,11 +2135,14 @@ const Screens = {
 
     // ---- FORGOTTEN CRYPT tier picker (owner spec v1.7.6): unlocked by six
     // worn Artifacts, live only at Ascendant XVI. Tier 0 = closed.
+    // v1.7.8: tiers open in BANDS — finish Tier 1 for 2–7, finish Tier 7 for
+    // five more, and so on to 250 (Items.cryptMaxTier reads Hero.cryptBest).
     let cryptH = 0;
     if (Hero.cryptUnlocked && Hero.difficulty >= DIFFICULTIES.length - 1) {
-      cryptH = 70;
+      cryptH = 84;
       const cy2 = py + 136;
-      Hero.cryptTier = clamp(Hero.cryptTier || 0, 0, 250);
+      const maxT = Items.cryptMaxTier();
+      Hero.cryptTier = clamp(Hero.cryptTier || 0, 0, maxT);
       const ctv = Hero.cryptTier;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = '#cfc8b8';
@@ -2147,8 +2150,11 @@ const Screens = {
       ctx.font = 'bold 14px Cinzel, Georgia';
       ctx.fillStyle = ctv > 0 ? '#e8e2d0' : '#6f6552';
       ctx.fillText(ctv > 0 ? 'Tier ' + ctv + '   ·   monsters ×' + (Math.pow(1.5, ctv) >= 1e6 ? Math.pow(1.5, ctv).toExponential(1) : Math.round(Math.pow(1.5, ctv) * 10) / 10) : 'CLOSED', W / 2, cy2 + 24);
+      ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText(maxT >= 250 ? 'All 250 tiers stand open'
+        : 'Open to Tier ' + maxT + ' — slay a boss at Tier ' + maxT + ' to descend further', W / 2, cy2 + 40);
       const step = (dx2, lbl, d2) => UI.chip(ctx, W / 2 + dx2 - 26, cy2 + 12, 52, 24, lbl,
-        () => { Hero.cryptTier = clamp((Hero.cryptTier || 0) + d2, 0, 250); Hero.save(); }, { size: 11 });
+        () => { Hero.cryptTier = clamp((Hero.cryptTier || 0) + d2, 0, Items.cryptMaxTier()); Hero.save(); }, { size: 11 });
       step(-pw / 2 + 58, '−10', -10); step(-pw / 2 + 116, '−1', -1);
       step(pw / 2 - 116, '+1', 1); step(pw / 2 - 58, '+10', 10);
     }
@@ -3070,6 +3076,15 @@ const Screens = {
     const rareName = torchT ? torchT.tier : RARITIES[item.rarity].name;
     ctx.fillStyle = 'rgba(20,17,28,0.94)';
     rr(ctx, x, y, w, h, 6); ctx.fill();
+    // Artifact and above wear their color IN THE BACKGROUND (owner rule
+    // v1.7.8: "blue in the background like the artifact is red") — a soft
+    // rarity wash under the text: red / blue / teal / gold.
+    if (!torchT && item.rarity >= 6) {
+      ctx.globalAlpha = 0.13;
+      ctx.fillStyle = rareCol;
+      rr(ctx, x, y, w, h, 6); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
     ctx.strokeStyle = rareCol;
     ctx.lineWidth = 1.5;
     rr(ctx, x, y, w, h, 6); ctx.stroke();
@@ -4506,7 +4521,7 @@ const Screens = {
     ly += 6 * k;
     ly = header(lx, ly, '— JOURNEY —', '#b06adf');
     ly = Hero.level >= MAX_LEVEL
-      ? line(lx, ly, 'Paragon', 'P' + (Hero.paragon || 0) + '  (' + (Hero.np || 0) + ' NP)', '#ff8c2a')
+      ? line(lx, ly, 'Renown', 'R' + (Hero.paragon || 0) + '  (' + (Hero.np || 0) + ' NP)', '#ff8c2a')
       : line(lx, ly, 'XP', `${Hero.xp} / ${XP_CURVE(Hero.level)}`);
     ly = line(lx, ly, 'Story acts finished', (Hero.actsCleared || 0) + ' / 100');
     ly = line(lx, ly, 'Difficulty', DIFFICULTIES[Hero.difficulty].name);
@@ -4583,13 +4598,13 @@ const Screens = {
     if (scrollY > 1) ctx.fillText('▲ drag ▲', W / 2, bodyTop + 2);
     if (scrollY < UI.sel.scrollMax - 1) ctx.fillText('▼ drag for more ▼', W / 2, footTop - 2);
 
-    // Footer: Paragon (once level 70+) beside the campfire roster button.
+    // Footer: Renown (once level 70+) beside the campfire roster button.
     const showPara = Hero.level >= MAX_LEVEL || Hero.paragon > 0;
     const fbY = py + ph - 40, fbW = pw - 32;
     if (showPara) {
       const half = (fbW - 8) / 2;
       const np = Hero.np || 0;
-      UI.btnPlate2(ctx, px + 16, fbY, half, 30, 'PARAGON' + (np ? ' (' + np + ' NP)' : ''), () => { UI.open('paragon'); UI.sel.paraCat = 'Core'; UI.sel.scrollY = 0; },
+      UI.btnPlate2(ctx, px + 16, fbY, half, 30, 'RENOWN' + (np ? ' (' + np + ' NP)' : ''), () => { UI.open('paragon'); UI.sel.paraCat = PARAGON_CATS[0]; UI.sel.scrollY = 0; },
         { size: 12, color: np ? '#ffd76a' : '#c9a04a' });
       UI.btnPlate2(ctx, px + 16 + half + 8, fbY, half, 30, 'CAMPFIRE', () => {
         Hero.save(); Game.state = 'menu'; UI.open('select');
@@ -4601,19 +4616,21 @@ const Screens = {
     }
   },
 
-  // The Paragon screen: spend Nekromancer Points across four trees. Past level 70
-  // every level earns 1 NP; caps and per-point values live in PARAGON_STATS.
+  // The RENOWN screen (renamed from Paragon, owner rule v1.7.8): spend
+  // Nekromancer Points across four trees — Might · Warfare · Fortitude ·
+  // Cunning. Past level 70 every level earns 1 NP; caps and per-point values
+  // live in PARAGON_STATS (internal keys keep their old names).
   paragon(ctx, W, H) {
     this.dim(ctx, W, H);
     const pw = Math.min(500, W - 20);
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 20, 520);
     const py = Math.max(10, H / 2 - ph / 2);
-    UI.panel(ctx, px, py, pw, ph, 'PARAGON');
+    UI.panel(ctx, px, py, pw, ph, 'RENOWN');
     // Header: level, NP, XP-to-next bar.
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = '#ff8c2a';
-    ctx.fillText('Paragon ' + (Hero.paragon || 0), px + 16, py + 60);
+    ctx.fillText('Renown ' + (Hero.paragon || 0), px + 16, py + 60);
     ctx.textAlign = 'right'; ctx.fillStyle = (Hero.np || 0) ? '#ffd76a' : '#9a9080';
     ctx.fillText((Hero.np || 0) + ' NP to spend', px + pw - 16, py + 60);
     const need = PARAGON_XP(Hero.paragon || 0);
@@ -5097,7 +5114,7 @@ const Screens = {
           // Gated quests share ONE plate with live text (owner rule — no
           // thousand baked images, just "REQUIRES LEVEL X" on the plate).
           UI.btnPlate(ctx, lx, c - scrollY, lw, 40,
-            'REQUIRES ' + (def.gate.kind === 'level' ? 'LEVEL ' : 'PARAGON ') + def.gate.at,
+            'REQUIRES ' + (def.gate.kind === 'level' ? 'LEVEL ' : 'RENOWN ') + def.gate.at,
             null, { size: 12, disabled: true });
         }
       }
@@ -6282,7 +6299,7 @@ const Screens = {
     row('+5 levels', () => Hero.grantLevels(5));
     row('+10 levels', () => Hero.grantLevels(10));
     row('Jump to level 70', () => Hero.grantLevels(70), paraOpt);
-    row('+25 Paragon levels', () => { Hero.paragon += 25; Hero.np += 25; Items.apply(); Hero.save(); UI.toast('+25 Paragon (' + Hero.np + ' NP)', '#ff8c2a'); }, paraOpt);
+    row('+25 Renown levels', () => { Hero.paragon += 25; Hero.np += 25; Items.apply(); Hero.save(); UI.toast('+25 Renown (' + Hero.np + ' NP)', '#ff8c2a'); }, paraOpt);
     row('+200 Nekromancer Points', () => { Hero.np += 200; Hero.save(); UI.toast('+200 Nekromancer Points', '#ffd76a'); }, paraOpt);
 
     // ---- RESOURCES ----

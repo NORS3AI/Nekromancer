@@ -1132,7 +1132,8 @@ const UI = {
     for (const pk of Game.pickups) {
       if (pk.gone || pk.kind !== 'item' || !pk.item) continue;
       if (pk.item.rarity >= 4) {
-        const col = pk.item.rarity === 6 ? '#ff3b3b' : pk.item.rarity >= 5 ? '#4ade80' : '#ff8c2a';
+        const col = pk.item.rarity >= 7 ? RARITIES[pk.item.rarity].color
+          : pk.item.rarity === 6 ? '#ff3b3b' : pk.item.rarity >= 5 ? '#4ade80' : '#ff8c2a';
         this.star(ctx, x0 + pk.x / World.W * S, y0 + pk.y / World.H * S, col, 4 + Math.sin(Game.time * 6) * 1.2);
       }
     }

@@ -717,9 +717,9 @@ const Hero = {
     }
     if (gainedPara && Game.player) {
       const p = Game.player;
-      Particles.text(p.x, p.y - 46, 'PARAGON ' + this.paragon, { color: '#ff8c2a', size: 20, life: 1.4 });
+      Particles.text(p.x, p.y - 46, 'RENOWN ' + this.paragon, { color: '#ff8c2a', size: 20, life: 1.4 });
       AudioSys.sfx('level');
-      UI.toast('Paragon ' + this.paragon + ' — +' + gainedPara + ' Nekromancer Point' + (gainedPara > 1 ? 's' : ''), '#ff8c2a');
+      UI.toast('Renown ' + this.paragon + ' — +' + gainedPara + ' Nekromancer Point' + (gainedPara > 1 ? 's' : ''), '#ff8c2a');
     }
     if (leveled || gainedPara) this.save();
   },

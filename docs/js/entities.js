@@ -2613,7 +2613,7 @@ class Pickup {
         });
         AudioSys.sfx('gem');
       } else if (this.kind === 'item') {
-        if (this.item.rarity === 6) Hero.artifactsFound = (Hero.artifactsFound || 0) + 1;
+        if (this.item.rarity >= 6) Hero.artifactsFound = (Hero.artifactsFound || 0) + 1;
         else if (this.item.rarity >= 4) Hero.legendariesFound = (Hero.legendariesFound || 0) + 1;
         Items.pickup(this.item);
       } else if (this.kind === 'gem') {
@@ -2674,7 +2674,10 @@ class Pickup {
       // Legendary (orange) and Set (green) drops fire a tall pillar of light.
       const rr2 = this.item.rarity;
       if (rr2 >= 4) {
-        const beamCol = rr2 === 6 ? '255,59,59' : rr2 >= 5 ? '78,222,128' : '255,140,42';
+        // Beam colors climb the ladder: Legendary orange · Set green · Artifact
+        // red · Relic blue · Ancient teal · Mythic gold (owner v1.7.8).
+        const beamCol = rr2 === 9 ? '255,207,59' : rr2 === 8 ? '47,212,192' : rr2 === 7 ? '59,140,255'
+          : rr2 === 6 ? '255,59,59' : rr2 >= 5 ? '78,222,128' : '255,140,42';
         const bh2 = 150;
         const pillar = ctx.createLinearGradient(0, -bh2, 0, 0);
         pillar.addColorStop(0, `rgba(${beamCol},0)`);
