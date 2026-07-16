@@ -508,8 +508,8 @@ class Player {
     ctx.translate(0, -bobY);
     if (this.flash > 0.4) ctx.globalAlpha = 0.65;   // hurt blink
     if (sideways && side) {
-      // Real painted PROFILE (faces LEFT) — mirror it when walking right.
-      ctx.scale(fx > 0 ? -1 : 1, 1);
+      // Real painted PROFILE (faces RIGHT natively) — mirror when walking left.
+      ctx.scale(fx < 0 ? -1 : 1, 1);
       ctx.rotate(moving ? Math.sin(ph) * 0.03 + 0.02 : 0.015);  // lean into the stride
     } else if (sideways) {
       ctx.scale(fx < 0 ? -1 : 1, 1);                 // profile leads the walk
@@ -822,7 +822,9 @@ class Enemy {
   update(dt) {
     if (this.sleep) {
       const p = Game.player;
-      if (!p.dead && dist(this.x, this.y, p.x, p.y) < 440) this.wake();
+      // They stir only when the hero is close AND their ground has been
+      // uncovered (owner rule: no attacks from beneath the fog of war).
+      if (!p.dead && dist(this.x, this.y, p.x, p.y) < 440 && !Game.inFog(this.x, this.y)) this.wake();
       else return;
     }
     this.anim += dt * 6;

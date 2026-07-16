@@ -259,6 +259,15 @@ const Game = {
   topDown() {
     return typeof Settings !== 'undefined' && Settings.g && Settings.g.viewMode === 'topdown';
   },
+  // Is a world point still under the fog of war? (Town has no fog.) Enemies
+  // in fog are hidden and never wake (owner rule: they can't attack until
+  // their area is discovered).
+  inFog(x, y) {
+    if (this.state !== 'playing' || !World.cols || !World.explored) return false;
+    const cx = Math.floor(x / CELL), cy = Math.floor(y / CELL);
+    if (cx < 0 || cy < 0 || cx >= World.cols || cy >= World.rows) return true;
+    return !World.explored[cy * World.cols + cx];
+  },
   viewZoom() { return this.topDown() ? TOPDOWN_ZOOM : 1; },
   viewTilt() { return this.topDown() ? TOPDOWN_TILT : 1; },
   // Set up the world-space transform (zoom + vertical tilt about the screen
@@ -2316,7 +2325,7 @@ const Game = {
 
       const drawables = World.propsInView(cam, this.W, this.H);
       const inView = e => e.x > cam.x - 90 && e.x < cam.x + this.W + 90 && e.y > cam.y - 110 && e.y < cam.y + this.H + 110;
-      for (const e of this.enemies) if (inView(e)) drawables.push({ y: e.y, draw: c => e.draw(c) });
+      for (const e of this.enemies) if (inView(e) && !this.inFog(e.x, e.y)) drawables.push({ y: e.y, draw: c => e.draw(c) });
       for (const m of this.minions) if (inView(m)) drawables.push({ y: m.y, draw: c => m.draw(c) });
       if (this.pet) drawables.push({ y: this.pet.y, draw: c => this.drawPetSprite(c) });
       if (!this.player.dead) drawables.push({ y: this.player.y, draw: c => this.player.draw(c) });
@@ -2372,7 +2381,7 @@ const Game = {
     // 2) Standing sprites, billboarded upright, painter-sorted back-to-front.
     const inView = e => e.x > cam.x - 240 && e.x < cam.x + this.W + 240 && e.y > cam.y - 320 && e.y < cam.y + this.H + 320;
     const sprites = [];
-    for (const e of this.enemies) if (inView(e)) sprites.push(e);
+    for (const e of this.enemies) if (inView(e) && !this.inFog(e.x, e.y)) sprites.push(e);
     for (const m of this.minions) if (inView(m)) sprites.push(m);
     if (this.pet) sprites.push({ x: this.pet.x, y: this.pet.y, draw: c => this.drawPetSprite(c) });
     if (!this.player.dead) sprites.push(this.player);
@@ -2483,8 +2492,12 @@ const Game = {
     ctx.imageSmoothingEnabled = true;
     // Draw the world-sized fog buffer through the SAME view transform as the
     // world, so it lines up under zoom / tilt (Bird's Eye = plain -cam translate).
+    // 65% opacity (owner rule): the environment stays dimly visible through
+    // the shroud — only enemies hide in it (filtered out of the draw lists).
     this.applyWorldTransform(ctx, cam);
+    ctx.globalAlpha = 0.65;
     ctx.drawImage(this.fogBuf, 0, 0, w * F, h * F);
+    ctx.globalAlpha = 1;
     ctx.restore();
   }
 };
