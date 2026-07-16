@@ -388,7 +388,7 @@ const Game = {
     this.lukusImg('helmed'); this.lukusImg('idle');
     this.addyImg(); this.lyssaImg();
     for (const gd of ['m', 'f']) { this.heroImg(gd, 'front'); this.heroImg(gd, 'back'); this.heroImg(gd, 'side'); }
-    for (const k of ['panel', 'close', 'globe_red', 'globe_blue', 'button', 'enter', 'exit', 'talk', 'arrow_left', 'arrow_right']) this.uiImg(k);
+    for (const k of ['panel', 'close', 'globe_red', 'globe_blue', 'button', 'plate2', 'enter', 'exit', 'talk', 'arrow_left', 'arrow_right']) this.uiImg(k);
     // Warm the active theme's plate (the rest load lazily in the theme picker).
     if (typeof THEMES !== 'undefined' && typeof Settings !== 'undefined' && Settings.g) {
       const th = THEMES[Settings.g.theme] || THEMES.void;

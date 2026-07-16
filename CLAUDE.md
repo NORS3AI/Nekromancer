@@ -324,7 +324,35 @@ loot at the artisans. The hero is persistent (localStorage).
   **v1.6.85: 'Violet' is renamed VOID (id 'void', plate art key stays
   'violet') and is the DEFAULT theme (Settings default 'void').**
   `preloadArt` warms the active theme's plate; the rest lazy-load in the
-  Enchantress's theme picker.
+  Enchantress's theme picker. **v1.6.96: a 'Default' theme (id 'none',
+  `plate: null`, original grey panel colors, own `desc`) sits FIRST in
+  THEMES — the "no color, just blank" choice; with it active, plates never
+  glow (hover shows the neutral art).**
+- **THE SIMPLE PLATE (v1.6.96, owner art)**: `docs/art/ui/plate2.webp`
+  (1456×367 — octagonal-cut frame, a diamond finial at each end, cracked-
+  leather bar, NO skull crest), drawn by `UI.btnPlate2` — a flat 3-slice
+  (caps 1:1 at `capF` 0.14, one clean bar run 0.42–0.52 stretched, art at
+  1.08× the button rect; same Cinzel label treatment, hover only brightens
+  the label). APPLIED TO (owner list): death-screen buttons, ALL artisan
+  bench rows (`artisanHub` — TRAIN keeps the ornate plate), every quest
+  DROP (Journal, Lukus, Addy), and Settings' OPTIONS/KEYS/SAVES tabs
+  (selected bright `#f0dcae`, rest dim), SAVE HERO (renamed from "Save to
+  Current Hero"), EXPORT/IMPORT CODE, RESET TO DEFAULTS. **The ornate
+  skull plate STAYS on the ☰ MENU rows and everything in town (owner rule
+  "keep the old plates for in the town").** Six themed glow recolors are
+  SLICED AND STORED but NOT wired (`plate2_{violet,bone,blood,ocean,
+  jungle,ember}.webp`, 740×218, scratchpad `plate2themes.py` — owner:
+  "when a theme is chosen and only in specific places I want you to use
+  them. Just splice them and store them for now").
+- **PAINTED PANELS for INVENTORY + SKILLS (v1.6.96, owner rule "see the UI
+  in Character? Create similar… so everything matches")**: `invGrouped`
+  wraps its whole list in `UI.panel` (title carries the bag count:
+  "INVENTORY — n / N"), and `skills()` wraps both tabs in a full-height
+  `UI.panel` titled SKILLS OF RATHMA (tab plates at `ppy+44`; both
+  sub-screens' `sy` is 112 with slot circles pushed to `sy+40`/`sy+34` so
+  the section labels clear them). The Journal's per-quest left stripe is
+  the ACTIVE THEME's `title` color, not the giver's gold/violet (owner:
+  "if violet, do violet").
 - **PLATES EVERYWHERE + CINZEL HEADINGS (v1.6.84, owner rules)**: `btnPlate`
   also carries Accept Quest / Drop (Lukus, Addy, Journal), Campfire
   (character sheet), Choose Skills, the ACTIVES/PASSIVES tabs (selected =

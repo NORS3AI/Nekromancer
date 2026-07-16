@@ -611,6 +611,49 @@ const UI = {
     }
   },
 
+  // The owner's SIMPLE plate (v1.6.96): octagonal-cut frame, a diamond
+  // finial at each end, cracked-leather bar — no skull crest. Flat 3-slice
+  // (caps 1:1, one clean bar run stretched); the bar IS the full art height
+  // so it draws at the button rect (tiny 1.08 overhang for the bevel).
+  // Themed glow variants (plate2_<key>.webp) are sliced and STORED but not
+  // wired — the owner will point at the specific places later.
+  btnPlate2(ctx, x, y, w, h, label, cb, o = {}) {
+    const img = (typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg('plate2') : null;
+    if (!img) return this.btn(ctx, x, y, w, h, label, cb, o);
+    const mp = (typeof Input !== 'undefined' && !Input.touchMode) ? Input.mousePos : null;
+    const hover = !!(mp && cb && !o.disabled &&
+      mp.x >= x && mp.x <= x + w && mp.y >= y && mp.y <= y + h);
+    const sw = img.width, sh = img.height;
+    const capF = 0.14;
+    const dh = h * 1.08, dy = y - (dh - h) / 2;
+    let capW = sw * capF * (dh / sh);
+    capW = Math.min(capW, w * 0.32);
+    const runW = Math.max(0, w - 2 * capW);
+    if (o.disabled) ctx.globalAlpha = 0.45;
+    ctx.drawImage(img, 0, 0, sw * capF, sh, x, dy, capW, dh);
+    ctx.drawImage(img, sw * 0.42, 0, sw * 0.10, sh, x + capW, dy, runW, dh);
+    ctx.drawImage(img, sw * (1 - capF), 0, sw * capF, sh, x + w - capW, dy, capW, dh);
+    let size = o.size || 15;
+    const maxW = w - capW * 2 - 10;
+    const text = String(label).toUpperCase();
+    ctx.font = `600 ${size}px Cinzel, Georgia`;
+    while (size > 9 && ctx.measureText(text).width > maxW) {
+      size--; ctx.font = `600 ${size}px Cinzel, Georgia`;
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.fillText(text, x + w / 2, y + h / 2 + 2.5);
+    ctx.fillStyle = o.disabled ? '#6f6552' :
+      (hover ? '#f4e6c4' : (o.color || '#dcc9a2'));
+    ctx.fillText(text, x + w / 2, y + h / 2 + 1);
+    ctx.globalAlpha = 1;
+    if (!o.disabled && cb) {
+      this.register(x, y, w, h, cb);
+      this.hits[this.hits.length - 1].label = label;
+      if (o.tip !== false) this.tip(x, y, w, h, o.tipTitle || label, o.tip || '');
+    }
+  },
+
   // 9-slice a painted frame over a rect: corners 1:1, THIN text-free strips
   // (not the full spans, which carry baked-in content) stretched for edges.
   drawNine(ctx, img, x, y, w, h, c) {

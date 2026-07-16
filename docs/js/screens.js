@@ -1013,12 +1013,12 @@ const Screens = {
     ctx.fillText(this.fitText(ctx, npcLine, pw - 30), W / 2, py + 52);
     let y = py + 66;
     if (showTrain) { this.artisanRow(ctx, px, pw, y + 8, trainKey.k, trainKey.label); y += 34; }
-    // Bench rows are painted PLATES (owner rule — Jeweler / Enchantress /
-    // Smithy get the plate treatment); the bench's one-line description sits
-    // beneath the plate in small italics.
+    // Bench rows wear the SIMPLE plate (v1.6.96 owner rule — the ornate
+    // skull plate stays on the ☰ MENU and the town); the bench's one-line
+    // description sits beneath the plate in small italics.
     for (const [label, desc, target] of buttons) {
       const cb = typeof target === 'function' ? target : () => UI.open(target);
-      UI.btnPlate(ctx, px + 14, y + 2, pw - 28, rowH - 24, String(label).replace(/^[^A-Za-z]*/, ''), cb, { size: 14, tip: desc });
+      UI.btnPlate2(ctx, px + 14, y + 2, pw - 28, rowH - 24, String(label).replace(/^[^A-Za-z]*/, ''), cb, { size: 14, tip: desc });
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = 'italic 9px Georgia'; ctx.fillStyle = '#9a9080';
       ctx.fillText(this.fitText(ctx, desc, pw - 60), px + pw / 2, y + rowH - 11);
@@ -1140,8 +1140,9 @@ const Screens = {
         if (vis(c, 62)) {
           ctx.fillStyle = expanded ? 'rgba(46,42,58,0.8)' : g.bg;
           rr(ctx, lx - 4, yy, lw + 8, 58, 6); ctx.fill();
-          // The giver's colored stripe on the row's left edge.
-          ctx.fillStyle = g.color;
+          // The stripe on the row's left edge wears the ACTIVE THEME's color
+          // (v1.6.96 owner rule — "if violet, do violet").
+          ctx.fillStyle = UI.theme().title;
           rr(ctx, lx - 4, yy, 3, 58, 2); ctx.fill();
           if (expanded) { ctx.strokeStyle = milestone ? '#b06adf' : g.barCol; ctx.lineWidth = 1.2; rr(ctx, lx - 4, yy, lw + 8, 58, 6); ctx.stroke(); }
           ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
@@ -1160,7 +1161,7 @@ const Screens = {
             ctx.font = '8px Georgia'; ctx.fillStyle = '#7ab88a';
             ctx.fillText(g.see, lx + lw - 2, yy + 42);
           } else if (!def.abs) {
-            UI.btnPlate(ctx, lx + lw - 50, yy + 18, 48, 22, 'DROP', () => {
+            UI.btnPlate2(ctx, lx + lw - 50, yy + 18, 48, 22, 'DROP', () => {
               Hero.abandonQuest(entry);
               UI.toast('Returned to ' + (g.src === 'A' ? 'Addy' : 'Lukus') + ': ' + def.name, '#9a9080');
             }, { size: 8, border: '#7a4a4a', color: '#c98a8a' });
@@ -2314,16 +2315,17 @@ const Screens = {
   invGrouped(ctx, W, H) {
     this.dim(ctx, W, H);
     const sfa = UI.safe || { top: 0 };
-    const pw = Math.min(560, W - 20);
+    // The painted panel wraps the whole list (v1.6.96 owner rule — Inventory
+    // matches the Character sheet's framed look). px/pw = the content column.
+    const ppw = Math.min(600, W - 16);
+    const ppx = W / 2 - ppw / 2;
+    const ppy = Math.max(8, (sfa.top || 0) + 8);
+    const ppb = H - 10;
+    UI.panel(ctx, ppx, ppy, ppw, ppb - ppy,
+      'INVENTORY — ' + Hero.bagUsed() + ' / ' + Hero.BAG_SIZE);
+    const pw = ppw - 40;
     const px = W / 2 - pw / 2;
-    let y = 18 + (sfa.top || 0);
-
-    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = '600 16px Cinzel, Georgia'; ctx.fillStyle = '#dcc9a2';
-    ctx.fillText('INVENTORY', px, y);
-    ctx.textAlign = 'right'; ctx.font = '11px Georgia'; ctx.fillStyle = '#6ff7c3';
-    ctx.fillText(Hero.bagUsed() + ' / ' + Hero.BAG_SIZE + ' in bag', px + pw, y);
-    y += 10;
+    let y = ppy + 48;
 
     // Bag expansion (same as the wheel's).
     const up = Hero.nextBagUpgrade();
@@ -2366,8 +2368,8 @@ const Screens = {
     }
     y = chY + 28;
 
-    // Scrolling grouped list.
-    const listTop = y, viewBot = H - (Game.state === 'town' ? 150 : 12), viewH = Math.max(60, viewBot - listTop);
+    // Scrolling grouped list, clipped inside the panel.
+    const listTop = y, viewBot = ppb - 14, viewH = Math.max(60, viewBot - listTop);
     const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
     UI.sel.scrollY = scrollY;
     UI.sel.scrollRegion = { x: px - 4, y: listTop - 4, w: pw + 8, h: viewH + 8 };
@@ -2680,17 +2682,16 @@ const Screens = {
     if (!UI.sel.tab) UI.sel.tab = 'actives';
     if (UI.sel.slotIdx === undefined) UI.sel.slotIdx = 0;
 
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold ' + (UI.desktop ? 22 : 17) + 'px Georgia';
-    ctx.fillStyle = '#c9bfa8';
-    ctx.fillText('SKILLS OF RATHMA', W / 2, UI.desktop ? 26 : 22);
-
-    // Roomier on desktop (mouse), tighter on phones.
+    // Roomier on desktop (mouse), tighter on phones. The painted panel wraps
+    // the whole screen (v1.6.96 owner rule — match the Character sheet); its
+    // title carries SKILLS OF RATHMA.
     const pw = Math.min(UI.desktop ? 860 : 600, W - 16);
     const px = W / 2 - pw / 2;
-    UI.btnPlate(ctx, px, 40, pw / 2 - 8, 32, 'ACTIVES', () => { UI.sel.tab = 'actives'; UI.sel.info = null; },
+    const ppy = Math.max(2, ((UI.safe && UI.safe.top) || 0) + 2);
+    UI.panel(ctx, Math.max(2, px - 12), ppy, Math.min(W - 4, pw + 24), H - 6 - ppy, 'SKILLS OF RATHMA');
+    UI.btnPlate(ctx, px, ppy + 44, pw / 2 - 8, 32, 'ACTIVES', () => { UI.sel.tab = 'actives'; UI.sel.info = null; },
       { size: 13, color: UI.sel.tab === 'actives' ? '#f0dcae' : '#8a8070' });
-    UI.btnPlate(ctx, px + pw / 2 + 8, 40, pw / 2 - 8, 32, 'PASSIVES', () => { UI.sel.tab = 'passives'; UI.sel.info = null; },
+    UI.btnPlate(ctx, px + pw / 2 + 8, ppy + 44, pw / 2 - 8, 32, 'PASSIVES', () => { UI.sel.tab = 'passives'; UI.sel.info = null; },
       { size: 13, color: UI.sel.tab === 'passives' ? '#f0dcae' : '#8a8070' });
 
     if (UI.sel.tab === 'actives') this.skillsActives(ctx, W, H, px, pw);
@@ -2722,7 +2723,7 @@ const Screens = {
   slotCatLabels: ['PRIMARY', 'SECONDARY', 'CORPSES', 'REANIM', 'CURSES', 'BLOOD'],
 
   skillsActives(ctx, W, H, px, pw) {
-    const sy = 96;
+    const sy = 112;
     ctx.textAlign = 'left';
     ctx.font = 'bold 12px Georgia';
     ctx.fillStyle = '#9a9080';
@@ -2731,7 +2732,7 @@ const Screens = {
     const nSlots = 6;
     const sw = pw / nSlots;
     const cr = Math.min(UI.desktop ? 42 : 26, sw / 2 - 4);
-    const cyc = sy + 24;
+    const cyc = sy + 40;   // clear of the section label above
     for (let i = 0; i < nSlots; i++) {
       const bx = px + i * sw + sw / 2;
       const cat = LOADOUT_CATS[i];
@@ -2990,7 +2991,7 @@ const Screens = {
   },
 
   skillsPassives(ctx, W, H, px, pw) {
-    const sy = 96;
+    const sy = 112;
     const nSlots = Hero.passiveSlots();
     ctx.textAlign = 'left';
     ctx.font = 'bold 12px Georgia';
@@ -3005,34 +3006,34 @@ const Screens = {
       const pcr = Math.min(UI.desktop ? 34 : 23, sw / 2 - 4);
       ctx.globalAlpha = locked ? 0.35 : 1;
       ctx.fillStyle = selected ? '#2e2a3a' : '#16121d';
-      ctx.beginPath(); ctx.arc(bx, sy + 20, pcr, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(bx, sy + 34, pcr, 0, TAU); ctx.fill();
       ctx.strokeStyle = selected ? '#b06adf' : '#3a3448';
       ctx.lineWidth = selected ? 3 : 2;
-      ctx.beginPath(); ctx.arc(bx, sy + 20, pcr, 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.arc(bx, sy + 34, pcr, 0, TAU); ctx.stroke();
       const id = Hero.passives[i];
       ctx.textAlign = 'center';
       if (locked) {
         ctx.fillStyle = '#5c5569';
         ctx.font = '10px Georgia';
-        ctx.fillText('lvl ' + PASSIVE_SLOT_LEVELS[i], bx, sy + 21);
+        ctx.fillText('lvl ' + PASSIVE_SLOT_LEVELS[i], bx, sy + 35);
       } else if (id) {
         const pd = PASSIVE_DATA.find(x => x.id === id);
         ctx.fillStyle = '#b06adf';
         ctx.font = 'bold 9px Georgia';
         const words = pd.name.split(' ');
-        words.forEach((wd, wi) => ctx.fillText(wd, bx, sy + 14 + wi * 11));
+        words.forEach((wd, wi) => ctx.fillText(wd, bx, sy + 28 + wi * 11));
       } else {
         ctx.fillStyle = '#3a3448';
         ctx.font = '20px Georgia';
-        ctx.fillText('+', bx, sy + 21);
+        ctx.fillText('+', bx, sy + 35);
       }
       ctx.globalAlpha = 1;
-      if (!locked) UI.register(bx - 25, sy - 5, 50, 52, () => { UI.sel.slotIdx = i; });
+      if (!locked) UI.register(bx - 25, sy + 9, 50, 52, () => { UI.sel.slotIdx = i; });
     }
 
     // More columns when the screen is too short for one tall list. Rows are
     // taller on desktop so the passives read bigger.
-    const gy = sy + 62;
+    const gy = sy + 76;
     const rh = UI.desktop ? 40 : 30;
     const rowsFit = Math.max(3, Math.floor((H - gy - 100) / rh));
     const listCols = Math.min(3, Math.max(1, Math.ceil(PASSIVE_DATA.length / rowsFit)));
@@ -3710,7 +3711,7 @@ const Screens = {
 
   mysTheme(ctx, W, H) {
     this.cosmeticList(ctx, W, H, 'CHOOSE A THEME',
-      Object.entries(THEMES).map(([id, e]) => [id, { name: e.name, desc: 'Menus and buttons take on ' + e.name.toLowerCase() + ' tones.' }, e.title]),
+      Object.entries(THEMES).map(([id, e]) => [id, { name: e.name, desc: e.desc || ('Menus and buttons take on ' + e.name.toLowerCase() + ' tones.') }, e.title]),
       Settings.g.theme || 'bone',
       id => { if (id) { Settings.g.theme = id; Settings.save(); AudioSys.sfx('gem'); } });
   },
@@ -4544,7 +4545,7 @@ const Screens = {
           }, { size: 10, border: '#3a7a4a', color: '#4ade80' });
         } else if (!def.abs) {
           // Dropping returns the quest to Lukus's queue — nothing is lost.
-          UI.btnPlate(ctx, lx + lw - 50, yy + 10, 46, 22, 'DROP', () => {
+          UI.btnPlate2(ctx, lx + lw - 50, yy + 10, 46, 22, 'DROP', () => {
             Hero.abandonQuest(entry);
             UI.toast('Returned to Lukus: ' + def.name, '#9a9080');
           }, { size: 8, border: '#7a4a4a', color: '#c98a8a' });
@@ -4821,7 +4822,7 @@ const Screens = {
               AudioSys.sfx('level');
             }, { size: 10, border: '#3a7a4a', color: '#4ade80' });
           } else {
-            UI.btnPlate(ctx, lx + lw - 50, yy + 10, 46, 22, 'DROP', () => {
+            UI.btnPlate2(ctx, lx + lw - 50, yy + 10, 46, 22, 'DROP', () => {
               Hero.abandonQuest(entry);
               UI.toast('Returned to Addy: ' + def.name, '#9a9080');
             }, { size: 8, border: '#7a4a4a', color: '#c98a8a' });
@@ -5286,8 +5287,9 @@ const Screens = {
     const tabs = [['options', 'OPTIONS'], ['keys', 'KEYS'], ['saves', 'SAVES']];
     const tw = (pw - 48) / 3;
     tabs.forEach((t, i) => {
-      UI.btn(ctx, px + 16 + i * (tw + 8), py + 40, tw, 30, t[1], () => { UI.sel.stab = t[0]; UI.sel.rebindAction = null; },
-        { size: 12, bg: UI.sel.stab === t[0] ? 'rgba(60,52,78,0.95)' : undefined });
+      // Simple-plate tabs (v1.6.96): the selected tab reads bright, the rest dim.
+      UI.btnPlate2(ctx, px + 16 + i * (tw + 8), py + 40, tw, 30, t[1], () => { UI.sel.stab = t[0]; UI.sel.rebindAction = null; },
+        { size: 12, color: UI.sel.stab === t[0] ? '#f0dcae' : '#8a8070' });
     });
     UI.sel.scrollRegion = null;   // (options tab sets its own below; others don't scroll)
     if (UI.sel.stab === 'saves') { this.savesTab(ctx, W, H, px, py, pw, ph); return; }
@@ -5539,17 +5541,18 @@ const Screens = {
 
   savesTab(ctx, W, H, px, py, pw, ph) {
     const saves = Saves.list();
-    UI.btn(ctx, px + 16, py + 76, pw - 32, 34,
-      saves.length >= Saves.MAX ? 'ALL 20 SLOTS FULL' : '＋ SAVE CURRENT HERO  (' + saves.length + ' / ' + Saves.MAX + ')',
+    // "Save Hero" (renamed from Save to Current Hero, v1.6.96) on the simple plate.
+    UI.btnPlate2(ctx, px + 16, py + 76, pw - 32, 34,
+      saves.length >= Saves.MAX ? 'ALL 20 SLOTS FULL' : 'SAVE HERO  (' + saves.length + ' / ' + Saves.MAX + ')',
       saves.length >= Saves.MAX ? null : () => Saves.add(),
-      { size: 13, disabled: saves.length >= Saves.MAX, border: '#57b894', color: '#6ff7c3' });
+      { size: 13, disabled: saves.length >= Saves.MAX, color: '#a8d9be' });
 
     // Portable export / import — move a hero between browsers or devices.
     const halfW = (pw - 40) / 2;
-    UI.btn(ctx, px + 16, py + 114, halfW, 30, '⬆ EXPORT CODE', () => this.exportSave(),
-      { size: 11, border: '#8a6f4a', color: '#ffd76a' });
-    UI.btn(ctx, px + 24 + halfW, py + 114, halfW, 30, '⬇ IMPORT CODE', () => this.importSave(),
-      { size: 11, border: '#5a7fb0', color: '#8fb0e8' });
+    UI.btnPlate2(ctx, px + 16, py + 114, halfW, 30, 'EXPORT CODE', () => this.exportSave(),
+      { size: 11 });
+    UI.btnPlate2(ctx, px + 24 + halfW, py + 114, halfW, 30, 'IMPORT CODE', () => this.importSave(),
+      { size: 11 });
 
     if (!saves.length) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -5651,10 +5654,10 @@ const Screens = {
       UI.register(addX, chipY, 18, 18, () => { UI.sel.rebindAction = id; });
     });
 
-    UI.btn(ctx, px + 16, py + ph - 38, pw - 32, 28, 'RESET TO DEFAULTS', () => {
+    UI.btnPlate2(ctx, px + 16, py + ph - 38, pw - 32, 28, 'RESET TO DEFAULTS', () => {
       Settings.resetKeys();
       UI.sel.rebindAction = null;
-    }, { size: 11, border: '#8a4550', color: '#e04a5a' });
+    }, { size: 11, color: '#e08a96' });
   },
 
   // ------------------------------------------------- dev panel & cheats
@@ -6071,8 +6074,8 @@ const Screens = {
     ctx.fillText(this.fitText(ctx, 'The dead reclaim their own... but Rathma\'s work is not done.', W - 30), cx, cy + 36);
     if (Game.playerDeadT > 1) {
       const bw = Math.min(280, W * 0.72);
-      UI.btnPlate(ctx, cx - bw / 2, cy + 66, bw, 42, 'RISE AT THE ENTRANCE', () => Game.respawn(), { size: 14 });
-      UI.btnPlate(ctx, cx - bw / 2, cy + 122, bw, 38, 'RETURN TO TOWN', () => Game.toCamp(), { size: 13 });
+      UI.btnPlate2(ctx, cx - bw / 2, cy + 66, bw, 42, 'RISE AT THE ENTRANCE', () => Game.respawn(), { size: 14 });
+      UI.btnPlate2(ctx, cx - bw / 2, cy + 122, bw, 38, 'RETURN TO TOWN', () => Game.toCamp(), { size: 13 });
     }
   },
 
