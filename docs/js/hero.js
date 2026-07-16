@@ -153,6 +153,12 @@ const Hero = {
   paragonXp: 0,     // XP banked toward the next paragon level
   cryptUnlocked: false,   // six worn Artifacts opens the FORGOTTEN CRYPT
   cryptTier: 0,           // chosen Crypt tier (0 = off, 1–250)
+  cryptBest: 0,           // highest Crypt tier with a slain Guardian
+  // Lifetime tallies feeding the ACHIEVEMENTS ledger (v1.7.7).
+  playSeconds: 0, deaths: 0, repairsDone: 0, gemsSold: 0,
+  torchesCrafted: 0, gamblesRolled: 0, fountainTosses: 0,
+  shrinesTouched: 0, legendariesFound: 0, artifactsFound: 0,
+  goldEarned: 0, potionsDrunk: 0, portalsUsed: 0,
   np: 0,            // unspent Nekromancer Points
   para: {},         // allocated paragon points, keyed by PARAGON_STATS id
   paraOrder: [],    // spend history (keys, in order) for rotation + single-undo
@@ -220,7 +226,11 @@ const Hero = {
     if (!this.hair) this.hair = 0;
     this.level = 1; this.xp = 0; this.gold = 0;
     this.paragon = 0; this.paragonXp = 0; this.np = 0; this.para = {}; this.paraOrder = [];
-    this.cryptUnlocked = false; this.cryptTier = 0;
+    this.cryptUnlocked = false; this.cryptTier = 0; this.cryptBest = 0;
+    this.playSeconds = 0; this.deaths = 0; this.repairsDone = 0; this.gemsSold = 0;
+    this.torchesCrafted = 0; this.gamblesRolled = 0; this.fountainTosses = 0;
+    this.shrinesTouched = 0; this.legendariesFound = 0; this.artifactsFound = 0;
+    this.goldEarned = 0; this.potionsDrunk = 0; this.portalsUsed = 0;
     this.mats = { parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0, wyrmscale: 0, brain: 0, rathmasoul: 0 };
     this.gems = [];
     this.bag = [];
@@ -295,7 +305,12 @@ const Hero = {
       name: this.name, eyeColor: this.eyeColor,
       level: this.level, xp: this.xp, gold: this.gold, mats: this.mats,
       paragon: this.paragon, paragonXp: this.paragonXp, np: this.np, para: this.para, paraOrder: this.paraOrder,
-      cryptUnlocked: this.cryptUnlocked, cryptTier: this.cryptTier,
+      cryptUnlocked: this.cryptUnlocked, cryptTier: this.cryptTier, cryptBest: this.cryptBest,
+      playSeconds: this.playSeconds, deaths: this.deaths, repairsDone: this.repairsDone,
+      gemsSold: this.gemsSold, torchesCrafted: this.torchesCrafted, gamblesRolled: this.gamblesRolled,
+      fountainTosses: this.fountainTosses, shrinesTouched: this.shrinesTouched,
+      legendariesFound: this.legendariesFound, artifactsFound: this.artifactsFound,
+      goldEarned: this.goldEarned, potionsDrunk: this.potionsDrunk, portalsUsed: this.portalsUsed,
       gems: this.gems, bag: this.bag, equipped: this.equipped,
       loadout: this.loadout, passives: this.passives,
       zonesCleared: this.zonesCleared, actsCleared: this.actsCleared, actUniques: this.actUniques, difficulty: this.difficulty,
@@ -358,7 +373,12 @@ const Hero = {
       name: d.name || 'Nekromancer', eyeColor: d.eyeColor || '#6ff7c3',
       level: d.level || 1, xp: d.xp || 0, gold: d.gold || 0,
       paragon: d.paragon || 0, paragonXp: d.paragonXp || 0, np: d.np || 0,
-      cryptUnlocked: !!d.cryptUnlocked, cryptTier: d.cryptTier || 0,
+      cryptUnlocked: !!d.cryptUnlocked, cryptTier: d.cryptTier || 0, cryptBest: d.cryptBest || 0,
+      playSeconds: d.playSeconds || 0, deaths: d.deaths || 0, repairsDone: d.repairsDone || 0,
+      gemsSold: d.gemsSold || 0, torchesCrafted: d.torchesCrafted || 0, gamblesRolled: d.gamblesRolled || 0,
+      fountainTosses: d.fountainTosses || 0, shrinesTouched: d.shrinesTouched || 0,
+      legendariesFound: d.legendariesFound || 0, artifactsFound: d.artifactsFound || 0,
+      goldEarned: d.goldEarned || 0, potionsDrunk: d.potionsDrunk || 0, portalsUsed: d.portalsUsed || 0,
       para: (d.para && typeof d.para === 'object') ? Object.assign({}, d.para) : {},
       paraOrder: Array.isArray(d.paraOrder) ? d.paraOrder.slice() : [],
       mats: Object.assign({ parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0, wyrmscale: 0, brain: 0, rathmasoul: 0 }, d.mats),

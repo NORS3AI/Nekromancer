@@ -408,6 +408,41 @@ loot at the artisans. The hero is persistent (localStorage).
   the Jeweler's `gemStackList` chips moved gothic→SIMPLE plate (owner
   correction). Character footer: PARAGON + **CAMPFIRE** (renamed from
   CHANGE HERO) on the simple plate.
+- **v1.7.7 — THE LEDGER OF DEEDS: 5,721 ACHIEVEMENTS (owner spec "5 to
+  6000… categories on the left-hand side… it has to be a different
+  name")**: the old 24-entry ACHIEVEMENTS became a deterministic
+  generator (data.js): `ACH_CHAINS` = 28 escalating chains grouped by
+  category/subcategory (Slaughter: Monsters/Elites/Bosses/Hard Lessons ·
+  Leveling: Character/Paragon · Gameplay: Rifts/Campaign/The Crypt/
+  Shrines/Portals/Potions/Play Time · Fortune: Gambling/The Fountain ·
+  Collecting: Gold/Chests/Legendaries/Artifacts · Quests: both 500-quest
+  ledgers · Smithy: Salvaging/Crafting/Repairing/Torches · Jeweler:
+  Combining/Selling · Enchantress: Enchanting), each `[cat, sub, steps,
+  lo, hi, lin, tmpl, cur]` — geometric ladders for open tallies, LINEAR
+  for capped tracks, a monotonic guard so a chain's target never
+  repeats. **EVERY name is UNIQUE** (owner rule — never numbered
+  copies): `achName(g)` deals from `ACH_A`(40)×`ACH_B`(40) two-part
+  names, then "… of `ACH_C`"(30) three-part forms (48,000 possible;
+  5,721 used, uniqueness browser-verified). 'The Forgotten Crypt'
+  (wear six Artifacts) stands first as a special single. **14 NEW
+  lifetime counters on Hero** (fresh/snapshot/applySnapshot parity):
+  playSeconds (ticked in Game.update for town+playing), deaths,
+  goldEarned (Pickup gold), potionsDrunk, portalsUsed, shrinesTouched,
+  legendariesFound/artifactsFound (Pickup item by rarity), repairsDone,
+  gemsSold, torchesCrafted, gamblesRolled, fountainTosses, cryptBest
+  (deepest Crypt-tier Guardian kill, set in onBossDead). **The
+  ACHIEVEMENTS screen is a TWO-PANE browser**: left sidebar = category
+  accordion (tap cat to unfold subs, tap sub to fill the right pane;
+  per-sub earned counts, hidden when the sidebar is slim on phones),
+  right pane = the sub's ladder (only-visible rows, earned = gold ✓,
+  else progress bar + k/m/b/t-shortened counts; adaptive widths under
+  W<480). Both panes scroll independently via the NEW second scroll
+  region: `UI.sel.scrollRegion2`/`scrollY2`/`scrollMax2` — the drag
+  remembers which pane it started in, the mouse wheel picks the pane
+  under the cursor (`Input.mousePos`); UI.open's sel wipe prevents
+  leaks. `Screens.achIndex()` builds the cat→sub tree once;
+  `Screens.achCounts()` caches earned tallies for 0.5s at a time
+  (5,721 cur() calls per frame would eat the budget) — 61fps verified.
 - **v1.7.6 — PARAGON 3500 + THE FORGOTTEN CRYPT + pet fetching (owner
   spec)**: (1) `MAX_PARAGON = 3500`; `PARAGON_XP(p)` keeps the old curve
   below 250, then multiplies by `1.004^(p-250)` — level 3500 costs ~2.7

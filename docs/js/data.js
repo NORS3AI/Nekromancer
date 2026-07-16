@@ -287,33 +287,86 @@ function questReward(i) { return questRewardSrc('L', i); }
 // ------------------------------ achievements -------------------------------
 // Earned state is computed LIVE from the hero's persistent lifetime counters —
 // no separate save data needed (the counters already snapshot).
-const ACHIEVEMENTS = [
-  { name: 'The Forgotten Crypt',     desc: 'Wear six Artifacts at once',         need: 1,      cur: () => Hero.cryptUnlocked ? 1 : 0 },
-  { name: 'First Blood',             desc: 'Slay 100 monsters',                  need: 100,    cur: () => Hero.totalKills || 0 },
-  { name: 'Gravekeeper',             desc: 'Slay 1,000 monsters',                need: 1000,   cur: () => Hero.totalKills || 0 },
-  { name: 'Deathbringer',            desc: 'Slay 10,000 monsters',               need: 10000,  cur: () => Hero.totalKills || 0 },
-  { name: 'Warden of Silence',       desc: 'Slay 100,000 monsters',              need: 100000, cur: () => Hero.totalKills || 0 },
-  { name: "Champions' End",          desc: 'Slay 50 elite monsters',             need: 50,     cur: () => Hero.eliteKills || 0 },
-  { name: 'Terror of Terrors',       desc: 'Slay 500 elite monsters',            need: 500,    cur: () => Hero.eliteKills || 0 },
-  { name: 'Kingsbane',               desc: 'Fell 10 bosses or unique monsters',  need: 10,     cur: () => Hero.bossKills || 0 },
-  { name: 'Godslayer',               desc: 'Fell 100 bosses or unique monsters', need: 100,    cur: () => Hero.bossKills || 0 },
-  { name: 'Riftwalker',              desc: 'Clear 10 Rifts',                     need: 10,     cur: () => Hero.riftsCleared || 0 },
-  { name: 'Master of the Breach',    desc: 'Clear 100 Rifts',                    need: 100,    cur: () => Hero.riftsCleared || 0 },
-  { name: 'Journeyman of the Anvil', desc: 'Craft 25 items',                     need: 25,     cur: () => Hero.itemsCrafted || 0 },
-  { name: 'Forgemaster',             desc: 'Craft 250 items',                    need: 250,    cur: () => Hero.itemsCrafted || 0 },
-  { name: 'Ashes to Ashes',          desc: 'Salvage 100 items',                  need: 100,    cur: () => Hero.salvagedCount || 0 },
-  { name: 'Stonecutter',             desc: 'Combine 50 gems at the Jeweler',     need: 50,     cur: () => Hero.gemsCombined || 0 },
-  { name: 'Fateweaver',              desc: 'Reroll 25 properties at the Mystic', need: 25,     cur: () => Hero.enchantsDone || 0 },
-  { name: 'Cartographer of Greed',   desc: 'Open 100 chests',                    need: 100,    cur: () => Hero.chestsOpened || 0 },
-  { name: 'The Long Road',           desc: 'Reach level 70',                     need: 70,     cur: () => Hero.level || 1 },
-  { name: 'Beyond Mortality',        desc: 'Reach Paragon 100',                  need: 100,    cur: () => Hero.paragon || 0 },
-  { name: 'The Thousandth Step',     desc: 'Reach Paragon 1000',                 need: 1000,   cur: () => Hero.paragon || 0 },
-  { name: 'A Good Start',            desc: "Complete 10 of Lukus's quests",      need: 10,     cur: () => Hero.questLine || 0 },
-  { name: "Lukus's Right Hand",      desc: "Complete 100 of Lukus's quests",     need: 100,    cur: () => Hero.questLine || 0 },
-  { name: 'The Ledger Closed',       desc: 'Complete all 500 quests',            need: 500,    cur: () => Hero.questLine || 0 },
-  { name: 'Landfall',                desc: 'Clear all 5 lands',                  need: 5,      cur: () => Hero.zonesCleared || 0 },
-  { name: 'The Cube Restored',       desc: "Find the Soul Crucible",           need: 1,      cur: () => Hero.hasCube ? 1 : 0 }
+// ---------------------------------------------------------- achievements
+// THE LEDGER OF DEEDS (owner spec v1.7.7): ~5,700 achievements, generated
+// deterministically as escalating CHAINS grouped by category/subcategory.
+// EVERY achievement bears a UNIQUE NAME (owner rule: never the same name
+// numbered I…VI) — names are dealt from a 40×40×30 combinatorial pool
+// (48,000 possible), two-part first, then "… of …" three-part forms.
+const ACH_A = ['Pale', 'Grim', 'Silent', 'Hollow', 'Crimson', 'Ashen', 'Veiled', 'Broken',
+  'Endless', 'Withered', 'Gilded', 'Sombre', 'Howling', 'Buried', 'Frozen', 'Rotten',
+  'Shattered', 'Nameless', 'Wicked', 'Solemn', 'Dread', 'Mournful', 'Blighted', 'Thorned',
+  'Umbral', 'Ancient', 'Restless', 'Fallen', 'Cursed', 'Wretched', 'Ghostly', 'Ravenous',
+  'Bleak', 'Haunted', 'Sunken', 'Forsaken', 'Marrow', 'Deathly', 'Iron', 'Obsidian'];
+const ACH_B = ['Tally', 'Harvest', 'Vigil', 'Reckoning', 'Procession', 'Litany', 'Toll', 'Covenant',
+  'Requiem', 'Threshold', 'Dirge', 'Offering', 'Dominion', 'Communion', 'Passage', 'Lament',
+  'Bounty', 'Tribute', 'Descent', 'Awakening', 'Crown', 'Oath', 'Hunger', 'Shroud',
+  'Chorus', 'March', 'Silence', 'Embrace', 'Verdict', 'Path', 'Hymn', 'Burden',
+  'Feast', 'Watch', 'Calling', 'Grasp', 'Sermon', 'Debt', 'Trial', 'Legacy'];
+const ACH_C = ['Bone', 'Ash', 'Dust', 'Blood', 'Sorrow', 'Night', 'Graves', 'Worms',
+  'Echoes', 'Cinders', 'Thorns', 'Whispers', 'Ruin', 'Shadow', 'Marrow', 'Rust',
+  'Salt', 'Embers', 'Hunger', 'Stone', 'Mist', 'Chains', 'Crows', 'Roots',
+  'Frost', 'Smoke', 'Teeth', 'Tears', 'Depths', 'Cold'];
+function achName(g) {
+  const a = ACH_A[g % 40], b = ACH_B[Math.floor(g / 40) % 40];
+  if (g < 1600) return a + ' ' + b;
+  return a + ' ' + b + ' of ' + ACH_C[Math.floor(g / 1600) % 30];
+}
+
+// Chains: [category, subcategory, steps, lo, hi, 'linear'?, desc template, cur].
+// Geometric ladders for open-ended tallies; LINEAR for hard-capped tracks
+// (level, paragon, acts, crypt tiers, the two 500-quest ledgers).
+const ACH_CHAINS = [
+  ['Slaughter', 'Monsters',    350, 10, 50000000, 0, 'Slay # monsters',                 () => Hero.totalKills || 0],
+  ['Slaughter', 'Elites',      250, 5,  2000000,  0, 'Slay # elite monsters',           () => Hero.eliteKills || 0],
+  ['Slaughter', 'Bosses',      250, 1,  200000,   0, 'Slay # bosses',                   () => Hero.bossKills || 0],
+  ['Slaughter', 'Hard Lessons', 75, 1,  2000,     0, 'Fall in battle # times',          () => Hero.deaths || 0],
+  ['Leveling',  'Character',    70, 1,  70,       1, 'Reach level #',                   () => Hero.level || 1],
+  ['Leveling',  'Paragon',     350, 10, 3500,     1, 'Reach Paragon #',                 () => Hero.paragon || 0],
+  ['Gameplay',  'Rifts',       250, 1,  100000,   0, 'Clear # rifts',                   () => Hero.riftsCleared || 0],
+  ['Gameplay',  'Campaign',    100, 1,  100,      1, 'Finish # Story Acts',             () => Hero.actsCleared || 0],
+  ['Gameplay',  'The Crypt',   250, 1,  250,      1, 'Slay a Guardian at Crypt Tier #', () => Hero.cryptBest || 0],
+  ['Gameplay',  'Shrines',     175, 1,  20000,    0, 'Touch # shrines',                 () => Hero.shrinesTouched || 0],
+  ['Gameplay',  'Portals',     125, 1,  10000,    0, 'Open # town portals',             () => Hero.portalsUsed || 0],
+  ['Gameplay',  'Potions',     125, 1,  25000,    0, 'Drink # potions',                 () => Hero.potionsDrunk || 0],
+  ['Gameplay',  'Play Time',   350, 10, 900000,   0, 'Play for # minutes',              () => Math.floor((Hero.playSeconds || 0) / 60)],
+  ['Fortune',   'Gambling',    175, 1,  30000,    0, "Gamble # of Lyssa's hands",       () => Hero.gamblesRolled || 0],
+  ['Fortune',   'The Fountain',125, 1,  5000,     0, 'Toss # coins into the fountain',  () => Hero.fountainTosses || 0],
+  ['Collecting','Gold',        250, 100, 1000000000000, 0, 'Gather # gold',             () => Hero.goldEarned || 0],
+  ['Collecting','Chests',      225, 1,  100000,   0, 'Open # chests',                   () => Hero.chestsOpened || 0],
+  ['Collecting','Legendaries', 250, 1,  50000,    0, 'Claim # legendary items',         () => Hero.legendariesFound || 0],
+  ['Collecting','Artifacts',   175, 1,  10000,    0, 'Claim # Artifacts',               () => Hero.artifactsFound || 0],
+  ['Quests',    'Ledger of Light',     250, 2, 500, 1, "Complete # of Lukus's deeds",   () => Hero.questLine || 0],
+  ['Quests',    'Underworld Ledger',   250, 2, 500, 1, "Complete # of Addy's jobs",     () => Hero.addyLine || 0],
+  ['Smithy',    'Salvaging',   250, 1,  200000,   0, 'Salvage # items',                 () => Hero.salvagedCount || 0],
+  ['Smithy',    'Crafting',    225, 1,  50000,    0, 'Craft # items',                   () => Hero.itemsCrafted || 0],
+  ['Smithy',    'Repairing',   150, 1,  20000,    0, 'Repair # pieces of gear',         () => Hero.repairsDone || 0],
+  ['Smithy',    'Torches',      75, 1,  2000,     0, 'Craft # torches',                 () => Hero.torchesCrafted || 0],
+  ['Jeweler',   'Combining',   225, 1,  50000,    0, 'Combine # gems',                  () => Hero.gemsCombined || 0],
+  ['Jeweler',   'Selling',     150, 1,  30000,    0, 'Sell # gems',                     () => Hero.gemsSold || 0],
+  ['Enchantress','Enchanting', 225, 1,  50000,    0, 'Reroll # properties',             () => Hero.enchantsDone || 0]
 ];
+
+const ACHIEVEMENTS = [];
+{
+  // The Forgotten Crypt stands first, alone and named for itself.
+  ACHIEVEMENTS.push({ cat: 'Gameplay', sub: 'The Crypt', name: 'The Forgotten Crypt',
+    desc: 'Wear six Artifacts at once', need: 1, cur: () => Hero.cryptUnlocked ? 1 : 0 });
+  let g = 0;
+  for (const [cat, sub, steps, lo, hi, lin, tmpl, cur] of ACH_CHAINS) {
+    let prev = 0;
+    for (let i = 0; i < steps; i++) {
+      let need = steps === 1 ? hi
+        : lin ? Math.round(lo + (hi - lo) * i / (steps - 1))
+        : Math.round(lo * Math.pow(hi / lo, i / (steps - 1)));
+      if (need <= prev) need = prev + 1;
+      prev = need;
+      ACHIEVEMENTS.push({ cat, sub, name: achName(g++),
+        desc: tmpl.replace('#', need.toLocaleString()), need, cur });
+    }
+  }
+}
+
 
 // Reward readout, shared by the journal, both NPC dialogs and offers. `short`
 // compacts "gold" to "g" so narrow phone columns can WRAP it instead of
@@ -330,11 +383,20 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.6-alpha';
+const GAME_VERSION = 'v1.7.7-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.7-alpha', date: 'July 2026',
+    notes: [
+      'THE LEDGER OF DEEDS — the achievement list swells from 24 entries to 5,721: escalating chains across nine categories (Slaughter, Leveling, Gameplay, Fortune, Collecting, Quests, Smithy, Jeweler, Enchantress) and 28 subcategories, from your tenth kill to your fifty-millionth, from 10 minutes played to 15,000 hours, from 100 gold to a TRILLION',
+      'Every deed bears its OWN name — 5,721 unique titles dealt from a necromantic word-hoard (Pale Tally, Grim Reckoning, Obsidian Hunger of Blood…); no achievement is ever a numbered copy of another',
+      'The Achievements screen is REBORN: categories stand in a sidebar on the left — tap one to unfold its subcategories, tap a subcategory to browse its ladder on the right. Both columns scroll on their own, and each subcategory shows its earned count',
+      'Fourteen new lifetime tallies now follow your hero (and save): deaths, play time, gold gathered, potions drunk, shrines touched, portals opened, repairs, torches forged, gems sold, gambles rolled, fountain coins, legendaries and Artifacts claimed, and your deepest Crypt-tier Guardian kill'
+    ]
+  },
   {
     v: 'v1.7.6-alpha', date: 'July 2026',
     notes: [

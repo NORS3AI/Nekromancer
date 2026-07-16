@@ -312,6 +312,7 @@ const Items = {
   // Kadala's odds, tuned to our ladder: 20% magic · 45% rare · 25% epic ·
   // 10% legendary (star tier by Torment band, like world drops).
   gambleItem(slotKey) {
+    Hero.gamblesRolled = (Hero.gamblesRolled || 0) + 1;
     const cost = this.GAMBLE_COSTS[slotKey];
     if (!cost || (Hero.amOrbs || 0) < cost) {
       UI.toast('Not enough Amidrassi Orbs', '#9a9080');
@@ -383,6 +384,7 @@ const Items = {
   // Craft a torch at the Blacksmith — consumes reagents, sends it to the bag
   // (torches persist in the bag WITHOUT taking a slot; see Hero.bagUsed()).
   craftTorch(type) {
+    Hero.torchesCrafted = (Hero.torchesCrafted || 0) + 1;
     const T = TORCH_TYPES[type];
     if (!T) return;
     for (const [k, n] of Object.entries(T.recipe)) {
@@ -507,6 +509,7 @@ const Items = {
     return out;
   },
   repairItem(it) {
+    Hero.repairsDone = (Hero.repairsDone || 0) + 1;
     const cost = this.repairCost(it);
     if (cost <= 0) return false;
     if (Hero.gold < cost) { UI.toast('Not enough gold — ' + cost + 'g to repair', '#e04a5a'); AudioSys.sfx('denied'); return false; }
@@ -521,6 +524,7 @@ const Items = {
     return this.damagedGear().reduce((s, it) => s + this.repairCost(it), 0);
   },
   repairAll() {
+    Hero.repairsDone = (Hero.repairsDone || 0) + this.damagedGear().length;
     const cost = this.repairAllCost();
     if (cost <= 0) return false;
     if (Hero.gold < cost) { UI.toast('Not enough gold — ' + cost + 'g to repair all', '#e04a5a'); AudioSys.sfx('denied'); return false; }
@@ -1230,6 +1234,7 @@ const Items = {
   },
 
   sellGem(type, tier, all = false) {
+    Hero.gemsSold = (Hero.gemsSold || 0) + (all ? Hero.gems.filter(g => g.type === type && g.tier === tier).length : 1);
     const idxs = [];
     for (let i = Hero.gems.length - 1; i >= 0; i--) {
       if (Hero.gems[i].type === type && Hero.gems[i].tier === tier) idxs.push(i);

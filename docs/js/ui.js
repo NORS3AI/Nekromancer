@@ -1237,25 +1237,38 @@ const UI = {
   // becomes scrollable: a touch/drag that starts inside the region scrolls it
   // instead of firing a button; a tap that never moves is forwarded to click()
   // on release, so buttons still work. Used by the inventory and the Mystic.
+  // A screen may also set `UI.sel.scrollRegion2` (+ scrollY2/scrollMax2) for a
+  // SECOND independent pane (the achievements category sidebar) — the drag
+  // remembers which pane it started in.
   startDragScroll(x, y, id) {
-    const r = this.sel.scrollRegion;
-    if (!r) return false;
-    if (x < r.x || x > r.x + r.w || y < r.y || y > r.y + r.h) return false;
-    this.dragScroll = { id, sx: x, sy: y, start: this.sel.scrollY || 0, moved: false };
+    const inR = r => r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+    let key = null;
+    if (inR(this.sel.scrollRegion2)) key = 2;
+    else if (inR(this.sel.scrollRegion)) key = 1;
+    if (!key) return false;
+    const yKey = key === 2 ? 'scrollY2' : 'scrollY';
+    this.dragScroll = { id, sx: x, sy: y, start: this.sel[yKey] || 0, moved: false,
+      yKey, maxKey: key === 2 ? 'scrollMax2' : 'scrollMax' };
     return true;
   },
   moveDragScroll(x, y) {
     const d = this.dragScroll; if (!d) return;
     if (Math.abs(y - d.sy) > 6 || Math.abs(x - d.sx) > 6) d.moved = true;
-    this.sel.scrollY = clamp(d.start - (y - d.sy), 0, this.sel.scrollMax || 0);
+    this.sel[d.yKey] = clamp(d.start - (y - d.sy), 0, this.sel[d.maxKey] || 0);
   },
   endDragScroll(x, y) {
     const d = this.dragScroll; if (!d) return;
     this.dragScroll = null;
     if (!d.moved) this.click(d.sx, d.sy);   // it was a tap, not a scroll
   },
-  // Desktop mouse-wheel over a scrollable overlay.
+  // Desktop mouse-wheel over a scrollable overlay. The second pane wins when
+  // the cursor hovers it.
   wheelScroll(dy) {
+    const r2 = this.sel.scrollRegion2, m = Input.mousePos;
+    if (r2 && m && m.x >= r2.x && m.x <= r2.x + r2.w && m.y >= r2.y && m.y <= r2.y + r2.h) {
+      this.sel.scrollY2 = clamp((this.sel.scrollY2 || 0) + dy, 0, this.sel.scrollMax2 || 0);
+      return true;
+    }
     if (!this.sel.scrollRegion) return false;
     this.sel.scrollY = clamp((this.sel.scrollY || 0) + dy, 0, this.sel.scrollMax || 0);
     return true;
