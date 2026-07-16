@@ -516,8 +516,11 @@ loot at the artisans. The hero is persistent (localStorage).
   'select'; 'create' joined NO_CLOSE_X. **Names: letters only, max 12**
   (`q.replace(/[^A-Za-z]/g,'').slice(0,12)`), default name is
   **'Nekromancer'** (hero.js defaults renamed too). Select frames get a
-  black rounded backing inside the arch (`rgba(2,1,4,0.88)`, 85%×91.5%)
-  so heroes read; the retire ':(' is gone. **Bone-white hover glow** on
+  black backing inside the arch (`rgba(2,1,4,0.88)`) so heroes read —
+  v1.7.10 fix: it's shaped to the arch's MEASURED opening (interior y
+  0.11–0.965, narrowing to x 0.21–0.79 at the crown → backing x
+  0.10–0.90, y 0.125–0.95, top corner radius 0.30·fw, bottom 0.07·fw)
+  so it never pokes past the frame borders; the retire ':(' is gone. **Bone-white hover glow** on
   the campfire/creation menus only: `UI.boneGlow` fires from btnPlate2/3
   when `UI.screen` is 'create'/'select'; gender medallions, gear, busts
   and frames glow via canvas shadowBlur on hover. Settings is ONE padded

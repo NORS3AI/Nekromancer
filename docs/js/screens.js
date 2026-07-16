@@ -144,10 +144,24 @@ const Screens = {
       const snap = Profiles.slots[i];
       const selected = !delMode && UI.sel.pick === i && !!snap;
       // A black backing INSIDE the frame so the hero reads clearly
-      // (owner rule v1.7.5) — kept within the arch's confines.
-      ctx.fillStyle = 'rgba(2,1,4,0.88)';
-      rr(ctx, x0 + fw * 0.075, y0 + fh * 0.045, fw * 0.85, fh * 0.915, fw * 0.10);
-      ctx.fill();
+      // (owner rule v1.7.5) — shaped to the arch's MEASURED opening
+      // (v1.7.9 fix: it used to poke past the frame): the interior runs
+      // y 0.11–0.965 and narrows to x 0.21–0.79 up top, so the backing
+      // gets big top corners and starts below the arch crown.
+      {
+        const bx = x0 + fw * 0.10, bw2 = fw * 0.80;
+        const by = y0 + fh * 0.125, bh2 = fh * 0.825;
+        const rt = fw * 0.30, rb = fw * 0.07;   // top / bottom corner radii
+        ctx.fillStyle = 'rgba(2,1,4,0.88)';
+        ctx.beginPath();
+        ctx.moveTo(bx + rt, by);
+        ctx.arcTo(bx + bw2, by, bx + bw2, by + bh2, rt);
+        ctx.arcTo(bx + bw2, by + bh2, bx, by + bh2, rb);
+        ctx.arcTo(bx, by + bh2, bx, by, rb);
+        ctx.arcTo(bx, by, bx + bw2, by, rt);
+        ctx.closePath();
+        ctx.fill();
+      }
       const mpf = (typeof Input !== 'undefined' && !Input.touchMode) ? Input.mousePos : null;
       const fhov = !!(mpf && mpf.x >= x0 && mpf.x <= x0 + fw && mpf.y >= y0 && mpf.y <= y0 + fh);
       // The frame (procedural arch until the art loads).

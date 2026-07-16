@@ -389,11 +389,17 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.9-alpha';
+const GAME_VERSION = 'v1.7.10-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.10-alpha', date: 'July 2026',
+    notes: [
+      'Choose Your Hero: the black backing inside each gothic frame now follows the arch\'s true shape — rounded shoulders up top, tucked below the crown — so it never pokes past the frame\'s borders'
+    ]
+  },
   {
     v: 'v1.7.9-alpha', date: 'July 2026',
     notes: [
