@@ -197,7 +197,8 @@ loot at the artisans. The hero is persistent (localStorage).
 - Potion button sits ON the skill-cluster arc past slot 1 (angle π·0.98, radius R+54·scale)
   — verified non-overlapping at 390×750 / 844×390 / 900×500 / 1280×720.
 - XP: `60·lvl^1.5`, cap 70. Level-up = full heal + toasts for new unlocks.
-- **PARAGON (past 70)**: XP overflow feeds `Hero.paragon` (near-infinite); each paragon level = 1 NP (`Hero.np`). **FREE SPEND (v1.6.99 owner rule — supersedes the old rotation lock)**: `Hero.spendParagon(key)` spends 1 point on ANY stat in ANY category, in any order (still records it in `Hero.paraOrder`); the old rotation helpers (`paragonCat`, `PARAGON_ROTATION`) remain only for `syncParaOrder`'s legacy-save rebuild; `refundLastParagon()` undoes the last point (LIFO via `paraOrder`), `resetParagon()` refunds all. `syncParaOrder()` rebuilds `paraOrder` for old free-spend saves. `PARAGON_STATS` (16 stats; `per`=per-point, `max`=cap, **0=infinite — Vitality/Intelligence/Life% never cap**). `Hero.paragonBonus(key)`→fraction, folded into `computeStats` (`paraHpMul`/`paraDmgMul`/`paraManaMul`, additive to crit/cdr/rcr/area/move/resistDR, ×armor/regen/lph, +pickupRadius). `Screens.paragon` (opened from the Character Sheet footer) shows Core→Utility view tabs on the SIMPLE plate (no banner, no lock, v1.6.99), per-row painted `+`, and Undo Last / Reset All on the little empty plate; `PARAGON_XP(p)` is the per-level cost.
+- **PARAGON (past 70; DISPLAY-RENAMED "RENOWN" in v1.7.8, tabs Might/Warfare/
+  Fortitude/Cunning — internal keys unchanged)**: XP overflow feeds `Hero.paragon` (near-infinite); each paragon level = 1 NP (`Hero.np`). **FREE SPEND (v1.6.99 owner rule — supersedes the old rotation lock)**: `Hero.spendParagon(key)` spends 1 point on ANY stat in ANY category, in any order (still records it in `Hero.paraOrder`); the old rotation helpers (`paragonCat`, `PARAGON_ROTATION`) remain only for `syncParaOrder`'s legacy-save rebuild; `refundLastParagon()` undoes the last point (LIFO via `paraOrder`), `resetParagon()` refunds all. `syncParaOrder()` rebuilds `paraOrder` for old free-spend saves. `PARAGON_STATS` (16 stats; `per`=per-point, `max`=cap, **0=infinite — Vitality/Intelligence/Life% never cap**). `Hero.paragonBonus(key)`→fraction, folded into `computeStats` (`paraHpMul`/`paraDmgMul`/`paraManaMul`, additive to crit/cdr/rcr/area/move/resistDR, ×armor/regen/lph, +pickupRadius). `Screens.paragon` (opened from the Character Sheet footer) shows Core→Utility view tabs on the SIMPLE plate (no banner, no lock, v1.6.99), per-row painted `+`, and Undo Last / Reset All on the little empty plate; `PARAGON_XP(p)` is the per-level cost.
 - Difficulty unlocks: up to Master until all 5 lands cleared, then Torment I–III.
 - **Artisan resource lanes (owner rule)**: Blacksmith = gold/parts/dust/crystals;
   Mystic = gold + Forgotten Souls ONLY; Jeweler = gold + gems ONLY (and BUYS gems
@@ -233,9 +234,10 @@ loot at the artisans. The hero is persistent (localStorage).
   normal Rifts (`Game.startRift('normal')`, levels 1–69, Guardians drop **Rift Keys**
   45%), Nephalem Rifts (`'greater'`, level 70, consumes `Hero.riftKeys`), Seasons.
 - **Rarity indexes: 0 Common · 1 Magic · 2 Rare · 3 Epic · 4 Legendary · 5 Set ·
-  6 Artifact (red).** Items carry a **star tier** (`item.stars`, shown as ★,
-  +1 affix each) and the lowest common is grey **trash** (`item.trash`). Saves
-  migrated via `Hero.migrate` (SAVE_VERSION 3).
+  6 Artifact (red) · 7 Relic (blue) · 8 Ancient (teal) · 9 Mythic (gold — the
+  three Crypt rarities, v1.7.8).** Items carry a **star tier** (`item.stars`,
+  shown as ★, +1 affix each) and the lowest common is grey **trash**
+  (`item.trash`). Saves migrated via `Hero.migrate` (SAVE_VERSION 3).
 - **Drop table (owner spec)** — `Items.rollRarity` returns the BASE rarity by
   sampling `ITEM_DROP_TABLE` (items.js): one editable row per difficulty index,
   7 columns `[Trash, Common, Magic, Rare, Epic, Legendary, Artifact]` as percents
@@ -408,6 +410,41 @@ loot at the artisans. The hero is persistent (localStorage).
   the Jeweler's `gemStackList` chips moved gothic→SIMPLE plate (owner
   correction). Character footer: PARAGON + **CAMPFIRE** (renamed from
   CHANGE HERO) on the simple plate.
+- **v1.7.8 — RENOWN + CRYPT BANDS + BEYOND-ARTIFACT RARITIES (owner spec)**:
+  (1) **PARAGON is renamed RENOWN** everywhere the player sees it (screen
+  title, character-sheet footer/line 'R<N>', level-up toast/particle, quest
+  gates "REQUIRES RENOWN", milestone descs 'Reach Renown', achievements sub
+  Leveling→Renown, dev panel) — ALL internal keys stay `paragon*`. The four
+  tabs are renamed: **Might (was Core) · Warfare (Offense) · Fortitude
+  (Defense) · Cunning (Utility)** — `PARAGON_CATS`/`PARAGON_STATS[].cat` carry
+  the new strings (rename is internally consistent; saves store stat ids, not
+  cats). (2) **CRYPT TIER PROGRESSION**: tiers open in bands read from
+  `Hero.cryptBest` via `Items.cryptMaxTier()` — best 0 → only Tier 1; finish
+  Tier 1 → 2–7 open; finish Tier 7 → 12; then +5 per finished band edge
+  (`12 + 5·floor((best−7)/5)`, cap 250). `Items.cryptTier()` clamps by it,
+  the Waygate stepper clamps to it and shows "Open to Tier N — slay a boss at
+  Tier N to descend further" (cryptRow/cryptH 70→84). (3) **THREE RARITIES
+  ABOVE ARTIFACT** (deep-Crypt only, all 5★-capable): index **7 RELIC**
+  (blue #3b8cff, mult 5.0, salvage 5 souls) · **8 ANCIENT** (teal #2fd4c0,
+  6.2, 7 souls) · **9 MYTHIC** (gold #ffcf3b, 7.5, 10 souls).
+  `Items.cryptRarityRoll()` (items.js) rolls the upgrade per drop: T201–220
+  Relic 1% · T221–242 Relic 5%/Ancient 1% · T243–249 Mythic 1%/Ancient
+  4%/Relic 2% · T250 Mythic 3%/Ancient 5%/Relic 7%. Wired into `generate()`
+  (skipped on `force`), `generateSetPiece` (piece KEEPS `set:'inarius'` —
+  setCount reads item.set, not rarity) and `generatePowerItem(tiered)` (now
+  passes force={rarity,stars} into generate so base stats roll at true
+  grade). Stars roll via `cryptArtifactStars`. **Power**: `affixTierFrac`
+  returns >1 for 7–9 (base 1.5/2.4/3.6 + 0.3/★ — Relic 0★ already beats
+  Artifact 5★, Mythic 5★ = 5.1× the old ceiling); generation/starPower mult
+  1.25; computeStats totals still clamp (atkSpeed 75%, cdr/rcr 60%, move
+  25%). Prefix pools `RELIC_PREFIX`/`ANCIENT_PREFIX`/`MYTHIC_PREFIX`
+  (data.js; artifact pool dropped 'Ancient' to avoid collision).
+  `MAX_SOCKETS` [..,4,5,5]; socket odds 0.8/0.85/0.9; `mysticSoulCost`
+  8/11/14+★; `salvageYield` rarity>=6 → salvageN+stars. **UI**: item cards
+  rarity>=6 get a 13%-alpha color WASH in the background (owner: "blue in
+  the background like the artifact is red"); drop beams + minimap stars in
+  the new colors; six-artifact Crypt unlock + artifactsFound counter now
+  `rarity >= 6`.
 - **v1.7.7 — THE LEDGER OF DEEDS: 5,721 ACHIEVEMENTS (owner spec "5 to
   6000… categories on the left-hand side… it has to be a different
   name")**: the old 24-entry ACHIEVEMENTS became a deterministic

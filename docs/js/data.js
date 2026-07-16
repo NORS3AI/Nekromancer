@@ -9,6 +9,9 @@
 
 // Indexes matter: 0 Common · 1 Magic (uncommon) · 2 Rare · 3 Epic ·
 // 4 Legendary · 5 Set. Saves from before Epic existed are migrated on load.
+// v1.7.8 (owner spec): THREE rarities stand ABOVE the Artifact, found only in
+// the deep Forgotten Crypt — Relic (blue, Tier 201+), Ancient (teal, Tier
+// 221+), Mythic (gold, Tier 243+). All three carry star tiers up to 5★.
 const RARITIES = [
   { name: 'Common',    color: '#c9bfa8', mult: 1.0, salvage: 'parts',   salvageN: 2 },
   { name: 'Magic',     color: '#6a9aff', mult: 1.4, salvage: 'dust',    salvageN: 2 },
@@ -16,7 +19,10 @@ const RARITIES = [
   { name: 'Epic',      color: '#b06adf', mult: 2.3, salvage: 'crystal', salvageN: 2 },
   { name: 'Legendary', color: '#ff8c2a', mult: 2.7, salvage: 'soul',    salvageN: 1 },
   { name: 'Set',       color: '#4ade80', mult: 3.1, salvage: 'soul',    salvageN: 2 },
-  { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 }  // index 6, red — the pinnacle
+  { name: 'Artifact',  color: '#ff3b3b', mult: 3.9, salvage: 'soul',    salvageN: 3 },  // index 6, red
+  { name: 'Relic',     color: '#3b8cff', mult: 5.0, salvage: 'soul',    salvageN: 5 },  // index 7, blue — beyond the Artifact
+  { name: 'Ancient',   color: '#2fd4c0', mult: 6.2, salvage: 'soul',    salvageN: 7 },  // index 8, teal
+  { name: 'Mythic',    color: '#ffcf3b', mult: 7.5, salvage: 'soul',    salvageN: 10 }  // index 9, gold — the summit
 ];
 
 // Damage elements (owner: "elemental damage types"). Each hit carries one; the
@@ -154,7 +160,7 @@ const QUEST_TEMPLATES = [
 const MILESTONE_NAMES = {
   level: ['The First Ascent', 'A Flame Kindled', 'The Broadening Road', 'Strength of the Grave',
           'The Deepening Dark', 'A Name Whispered', 'The Gathering Storm', 'The Summit of Flesh'],
-  paragon: ['Beyond the Veil', 'The Endless Stair', 'Starlight and Bone', "The Paragon's Path",
+  paragon: ['Beyond the Veil', 'The Endless Stair', 'Starlight and Bone', 'The Path of Renown',
             'A Thousand Steps', 'The Horizon Calls', 'Light Undying', 'The Great Work',
             'Crown of Ages', 'The Last Threshold', 'Apotheosis Rising', 'The Final Trial']
 };
@@ -215,7 +221,7 @@ function makeQuestLine(opts) {
         : opts.milestoneNames.paragon[msParagon++ % opts.milestoneNames.paragon.length];
       line.push({
         idx: i, tid: 'reach', abs: true, need: target, gate, name,
-        desc: lvlPhase ? 'Reach level ' + target + '.' : 'Reach Paragon ' + target + '.',
+        desc: lvlPhase ? 'Reach level ' + target + '.' : 'Reach Renown ' + target + '.',
         counter: lvlPhase ? (() => Hero.level || 1) : (() => Hero.paragon || 0)
       });
       continue;
@@ -322,7 +328,7 @@ const ACH_CHAINS = [
   ['Slaughter', 'Bosses',      250, 1,  200000,   0, 'Slay # bosses',                   () => Hero.bossKills || 0],
   ['Slaughter', 'Hard Lessons', 75, 1,  2000,     0, 'Fall in battle # times',          () => Hero.deaths || 0],
   ['Leveling',  'Character',    70, 1,  70,       1, 'Reach level #',                   () => Hero.level || 1],
-  ['Leveling',  'Paragon',     350, 10, 3500,     1, 'Reach Paragon #',                 () => Hero.paragon || 0],
+  ['Leveling',  'Renown',      350, 10, 3500,     1, 'Reach Renown #',                  () => Hero.paragon || 0],
   ['Gameplay',  'Rifts',       250, 1,  100000,   0, 'Clear # rifts',                   () => Hero.riftsCleared || 0],
   ['Gameplay',  'Campaign',    100, 1,  100,      1, 'Finish # Story Acts',             () => Hero.actsCleared || 0],
   ['Gameplay',  'The Crypt',   250, 1,  250,      1, 'Slay a Guardian at Crypt Tier #', () => Hero.cryptBest || 0],
@@ -383,11 +389,20 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.7-alpha';
+const GAME_VERSION = 'v1.7.8-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.8-alpha', date: 'July 2026',
+    notes: [
+      'PARAGON IS NOW RENOWN — same climb, a worthier name. The four trees are reborn as MIGHT (was Core), WARFARE (Offense), FORTITUDE (Defense) and CUNNING (Utility)',
+      'THE CRYPT NOW OPENS IN BANDS — finish Tier 1 (slay a boss there) and Tiers 2–7 unlock; finish Tier 7 for the next five, and every band edge after that opens five more, all the way down to Tier 250. The Waygate shows how deep your key reaches',
+      'BEYOND THE ARTIFACT: three new rarities haunt the deep Crypt, each 5★-capable and worlds stronger than an Artifact 5★ — RELIC (blue) from Tier 201 (1%), ANCIENT (teal) from Tier 221 (1%, Relics rise to 5%), MYTHIC (gold) from Tier 243 (1%, Ancient 4%, Relic 2%). At Tier 250 the floor is theirs: Mythic 3% · Ancient 5% · Relic 7%',
+      'Every item can reach the new grades — set pieces keep their set bonuses at Relic/Ancient/Mythic rank, and named legendaries roll them in the deep Crypt too. Their cards wear the rarity IN THE BACKGROUND (blue/teal/gold wash, as the Artifact wears red), their drop beams and minimap stars match, and salvaging one pays 5/7/10 Forgotten Souls plus stars'
+    ]
+  },
   {
     v: 'v1.7.7-alpha', date: 'July 2026',
     notes: [
@@ -2509,8 +2524,9 @@ const GEM_STATS = {
 };
 
 // Most gem slots an item can hold, by rarity (Mystic enchants can uncover them):
-// Common 0 · Magic 1 · Rare 2 · Epic 3 · Legendary 4 · Set 4 · Artifact 4.
-const MAX_SOCKETS = [0, 1, 2, 3, 4, 4, 4];
+// Common 0 · Magic 1 · Rare 2 · Epic 3 · Legendary 4 · Set 4 · Artifact 4 ·
+// Relic 4 · Ancient 5 · Mythic 5.
+const MAX_SOCKETS = [0, 1, 2, 3, 4, 4, 4, 4, 5, 5];
 
 // The two stats a gem grants, as a { key: value } object.
 function gemStats(gem) {
@@ -2903,13 +2919,23 @@ const AFFIX_CAP = {
   dnova: 6.0, area: 1.5   // signature affixes — generous
 };
 // Fraction of the Artifact-5★ ceiling a given rarity/star tier can reach (so a
-// legendary can't roll artifact-grade numbers). Artifact 5★ = 1.0.
+// legendary can't roll artifact-grade numbers). Artifact 5★ = 1.0. The Crypt
+// rarities (v1.7.8) tower ABOVE that old ceiling by design — a Relic 0★
+// already beats an Artifact 5★, and a Mythic 5★ reaches 5.1× it.
 function affixTierFrac(rarity, stars) {
+  if (rarity >= 7) {
+    const over = [1.5, 2.4, 3.6][rarity - 7] || 1.5;
+    return over + (stars || 0) * 0.3;
+  }
   const base = [0.12, 0.18, 0.26, 0.40, 0.58, 0.70, 0.80][rarity];
   return clamp((base === undefined ? 0.12 : base) + (stars || 0) * 0.04, 0.05, 1.0);
 }
 
 const LEGENDARY_PREFIX = ["Maltorius'", "The Widow's", "Bellmahath's", "Xul's", "Trag'Oul's", "Mendeln's"];
+// The Crypt rarities bear their own naming voices (v1.7.8).
+const RELIC_PREFIX   = ['Void-Touched', 'Star-Forged', 'Deep-Sunken', "The Drowned King's", 'Athanor'];
+const ANCIENT_PREFIX = ['First-Age', 'Primeval', 'Elder', 'Antediluvian', 'Worldroot'];
+const MYTHIC_PREFIX  = ['Mythborn', 'Godwoven', "Worldshaper's", "Dawnbreaker's", 'Unmade'];
 const EPIC_PREFIX = ['Fabled', 'Mythic', 'Hallowed', 'Abyssal', 'Deathless', 'Umbral'];
 const RARE_PREFIX = ['Cruel', 'Vicious', 'Dread', 'Baleful', 'Sinister', 'Woeful'];
 const MAGIC_PREFIX = ['Sturdy', 'Sharp', 'Grim', 'Cold', 'Hungry', 'Pale'];
@@ -3197,39 +3223,40 @@ function tormentTier(di) {
 const XP_CURVE = lvl => Math.round(60 * Math.pow(lvl, 1.5));
 const MAX_LEVEL = 70;
 
-// ---------------------------------------------------------------- PARAGON
-// Past level 70 the hero earns PARAGON levels (near-infinite); each grants one
-// Nekromancer Point (NP) to spend across four trees. `per` = bonus per point,
-// `max` = point cap (0 = infinite). Percentages are stored as fractions.
-// D3-style rotation: each Nekromancer Point must be spent in the CURRENT
-// category, one at a time, cycling Core → Defense → Offense → Utility → Core…
-// (owner rule). PARAGON_CATS doubles as both the tab order and the rotation.
-const PARAGON_CATS = ['Core', 'Defense', 'Offense', 'Utility'];
+// ---------------------------------------------------------------- RENOWN
+// (Renamed from Paragon, owner rule v1.7.8 — internal keys/ids unchanged.)
+// Past level 70 the hero earns RENOWN levels; each grants one Nekromancer
+// Point (NP) to spend across four trees. `per` = bonus per point, `max` =
+// point cap (0 = infinite). Percentages are stored as fractions.
+// Tabs (owner names v1.7.8): Might · Warfare · Fortitude · Cunning
+// (formerly Core · Offense · Defense · Utility). PARAGON_ROTATION remains
+// only for syncParaOrder's legacy-save rebuild.
+const PARAGON_CATS = ['Might', 'Warfare', 'Fortitude', 'Cunning'];
 const PARAGON_ROTATION = PARAGON_CATS;
 // v1.7.1 owner caps: EVERYTHING caps at 50 points except Intelligence /
 // Vitality / Life% (uncapped, but Int & Vit slow to 0.5%/pt). Maximum
 // Mana is renamed MAXIMUM ESSENCE.
 const PARAGON_STATS = {
-  // Core
-  vitality:     { cat: 'Core',    label: 'Vitality',           per: 0.005, max: 0,  fmt: 'pct', note: 'Life' },
-  intelligence: { cat: 'Core',    label: 'Intelligence',       per: 0.005, max: 0,  fmt: 'pct', note: 'Damage' },
-  moveSpeed:    { cat: 'Core',    label: 'Movement Speed',     per: 0.005, max: 50, fmt: 'pct', note: 'Move Speed' },
-  maxMana:      { cat: 'Core',    label: 'Maximum Essence',    per: 0.02,  max: 50, fmt: 'pct', note: 'Max Essence' },
-  // Offense
-  attackSpeed:  { cat: 'Offense', label: 'Attack Speed',       per: 0.005, max: 50, fmt: 'pct', note: 'Attack Speed' },
-  paraCritDmg:  { cat: 'Offense', label: 'Crit Hit Damage',    per: 0.002, max: 50, fmt: 'pct', note: 'Crit Damage' },
-  paraCritChance:{ cat: 'Offense', label: 'Crit Hit Chance',   per: 0.005, max: 50, fmt: 'pct', note: 'Crit Chance' },
-  paraCdr:      { cat: 'Offense', label: 'Cooldown Reduction', per: 0.005, max: 50, fmt: 'pct', note: 'Cooldowns' },
-  // Defense
-  paraArmor:    { cat: 'Defense', label: 'Armor',              per: 0.01,  max: 50, fmt: 'pct', note: 'Armor' },
-  lifePct:      { cat: 'Defense', label: 'Life %',             per: 0.02,  max: 0,  fmt: 'pct', note: 'Life' },
-  paraResAll:   { cat: 'Defense', label: 'All Resistance',     per: 0.005, max: 50, fmt: 'pct', note: 'Resist' },
-  lifeRegen:    { cat: 'Defense', label: 'Life per Second',    per: 0.01,  max: 50, fmt: 'pct', note: 'Regen (of max Life/s)' },
-  // Utility
-  paraArea:     { cat: 'Utility', label: 'Area Damage',        per: 0.005, max: 50, fmt: 'pct', note: 'Area Damage' },
-  paraLph:      { cat: 'Utility', label: 'Life per Hit',       per: 0.01,  max: 50, fmt: 'pct', note: 'Life on Hit (of max Life)' },
-  paraRcr:      { cat: 'Utility', label: 'Resource Cost',      per: 0.005, max: 50, fmt: 'pct', note: 'Cost Reduction' },
-  pickup:       { cat: 'Utility', label: 'Pickup Radius',      per: 0.002, max: 50, fmt: 'pct', note: 'Pickup Radius' }
+  // Might (formerly Core)
+  vitality:     { cat: 'Might',     label: 'Vitality',           per: 0.005, max: 0,  fmt: 'pct', note: 'Life' },
+  intelligence: { cat: 'Might',     label: 'Intelligence',       per: 0.005, max: 0,  fmt: 'pct', note: 'Damage' },
+  moveSpeed:    { cat: 'Might',     label: 'Movement Speed',     per: 0.005, max: 50, fmt: 'pct', note: 'Move Speed' },
+  maxMana:      { cat: 'Might',     label: 'Maximum Essence',    per: 0.02,  max: 50, fmt: 'pct', note: 'Max Essence' },
+  // Warfare (formerly Offense)
+  attackSpeed:  { cat: 'Warfare',   label: 'Attack Speed',       per: 0.005, max: 50, fmt: 'pct', note: 'Attack Speed' },
+  paraCritDmg:  { cat: 'Warfare',   label: 'Crit Hit Damage',    per: 0.002, max: 50, fmt: 'pct', note: 'Crit Damage' },
+  paraCritChance:{ cat: 'Warfare',  label: 'Crit Hit Chance',    per: 0.005, max: 50, fmt: 'pct', note: 'Crit Chance' },
+  paraCdr:      { cat: 'Warfare',   label: 'Cooldown Reduction', per: 0.005, max: 50, fmt: 'pct', note: 'Cooldowns' },
+  // Fortitude (formerly Defense)
+  paraArmor:    { cat: 'Fortitude', label: 'Armor',              per: 0.01,  max: 50, fmt: 'pct', note: 'Armor' },
+  lifePct:      { cat: 'Fortitude', label: 'Life %',             per: 0.02,  max: 0,  fmt: 'pct', note: 'Life' },
+  paraResAll:   { cat: 'Fortitude', label: 'All Resistance',     per: 0.005, max: 50, fmt: 'pct', note: 'Resist' },
+  lifeRegen:    { cat: 'Fortitude', label: 'Life per Second',    per: 0.01,  max: 50, fmt: 'pct', note: 'Regen (of max Life/s)' },
+  // Cunning (formerly Utility)
+  paraArea:     { cat: 'Cunning',   label: 'Area Damage',        per: 0.005, max: 50, fmt: 'pct', note: 'Area Damage' },
+  paraLph:      { cat: 'Cunning',   label: 'Life per Hit',       per: 0.01,  max: 50, fmt: 'pct', note: 'Life on Hit (of max Life)' },
+  paraRcr:      { cat: 'Cunning',   label: 'Resource Cost',      per: 0.005, max: 50, fmt: 'pct', note: 'Cost Reduction' },
+  pickup:       { cat: 'Cunning',   label: 'Pickup Radius',      per: 0.002, max: 50, fmt: 'pct', note: 'Pickup Radius' }
 };
 // XP to earn the NEXT paragon level — a level-70's worth, creeping up per level.
 // Paragon cap (owner rule v1.7.6): 3500 levels. The climb is gentle to 250,

@@ -79,7 +79,38 @@ const Items = {
   // stands at Ascendant XVI. 0 = the Crypt is closed.
   cryptTier() {
     return (typeof Hero !== 'undefined' && Hero.cryptUnlocked && (Hero.cryptTier || 0) > 0 &&
-      tormentTier() >= 16) ? Hero.cryptTier : 0;
+      tormentTier() >= 16) ? Math.min(Hero.cryptTier, this.cryptMaxTier()) : 0;
+  },
+
+  // Tier PROGRESSION (owner spec v1.7.8): tiers open in bands. Finishing
+  // Tier 1 (a boss kill at that tier, tracked in Hero.cryptBest) opens 2–7;
+  // finishing Tier 7 opens the next five (8–12), and each finished band edge
+  // opens five more, all the way to 250.
+  cryptMaxTier() {
+    const b = (typeof Hero !== 'undefined' && Hero.cryptBest) || 0;
+    if (b < 1) return 1;
+    if (b < 7) return 7;
+    return Math.min(250, 12 + 5 * Math.floor((b - 7) / 5));
+  },
+
+  // BEYOND THE ARTIFACT (owner spec v1.7.8) — the deep Crypt's own rarities.
+  // Returns 7 Relic · 8 Ancient · 9 Mythic, or 0 (no upgrade). Chances by tier:
+  //   201–220: Relic 1%
+  //   221–242: Relic 5% · Ancient 1%
+  //   243–249: Relic 2% · Ancient 4% · Mythic 1%
+  //        250: Relic 7% · Ancient 5% · Mythic 3%
+  cryptRarityRoll() {
+    const t = this.cryptTier();
+    if (t < 201) return 0;
+    let mythic = 0, ancient = 0, relic = 1;
+    if (t >= 250)      { mythic = 3; ancient = 5; relic = 7; }
+    else if (t >= 243) { mythic = 1; ancient = 4; relic = 2; }
+    else if (t >= 221) { ancient = 1; relic = 5; }
+    const x = Math.random() * 100;
+    if (x < mythic) return 9;
+    if (x < mythic + ancient) return 8;
+    if (x < mythic + ancient + relic) return 7;
+    return 0;
   },
 
   // Crypt legendaries roll 1–5★: 5★ 5% · 4★ 10% · 1–3★ split evenly (owner).
@@ -119,8 +150,13 @@ const Items = {
     const slot = forceSlot || pick(Object.keys(ITEM_SLOTS).filter(s => !ITEM_SLOTS[s].torch));
     const def = ITEM_SLOTS[slot];
     const roll = force ? { r: force.rarity } : this.rollRarity(boost);
-    const rarity = roll.r;
-    const trash = !!roll.trash;         // grey junk
+    let rarity = roll.r;
+    let trash = !!roll.trash;           // grey junk
+    // The deep Crypt's own rarities override the table roll (owner spec v1.7.8).
+    if (!force) {
+      const up = this.cryptRarityRoll();
+      if (up) { rarity = up; trash = false; }
+    }
     const tt = tormentTier();
     // Star tier is gated by Torment band, not by the rarity roll (owner spec).
     let stars = 0;
@@ -128,10 +164,11 @@ const Items = {
     if (force && force.stars != null) stars = force.stars;
     else if (rarity === 4) stars = ct ? this.cryptLegendaryStars() : this.legendaryStars(tt);
     else if (rarity === 6) stars = ct ? this.cryptArtifactStars(ct) : this.artifactStars();
+    else if (rarity >= 7) stars = this.cryptArtifactStars(Math.max(ct, 181));   // 5★-capable, always
     const R = RARITIES[rarity];
     const lvlScale = 1 + mLvl * 0.11;
-    // Artifacts and starred legendaries roll a little hotter.
-    const power = (trash ? 0.6 : 1) * (1 + stars * 0.18) * (rarity === 6 ? 1.15 : 1);
+    // Artifacts (and above) and starred legendaries roll a little hotter.
+    const power = (trash ? 0.6 : 1) * (1 + stars * 0.18) * (rarity >= 7 ? 1.25 : rarity === 6 ? 1.15 : 1);
     const capItem = { rarity, stars };
 
     const stats = {};
@@ -155,11 +192,14 @@ const Items = {
     }
 
     // Sockets: rarer items are likelier to bear one.
-    const sockets = Math.random() < ([0.06, 0.14, 0.25, 0.38, 0.5, 0.6, 0.7][rarity] || 0.06) ? 1 : 0;
+    const sockets = Math.random() < ([0.06, 0.14, 0.25, 0.38, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9][rarity] || 0.06) ? 1 : 0;
 
     let prefix;
     if (trash) prefix = pick(['Cracked', 'Rusted', 'Broken', 'Worn']);
-    else if (rarity === 6) prefix = pick(['Ancient', 'Primordial', 'Godforged', 'Eternal']);
+    else if (rarity === 9) prefix = pick(MYTHIC_PREFIX);
+    else if (rarity === 8) prefix = pick(ANCIENT_PREFIX);
+    else if (rarity === 7) prefix = pick(RELIC_PREFIX);
+    else if (rarity === 6) prefix = pick(['Primordial', 'Godforged', 'Eternal', 'Deathless']);
     else if (rarity >= 4) prefix = pick(LEGENDARY_PREFIX);
     else if (rarity === 3) prefix = pick(EPIC_PREFIX);
     else if (rarity === 2) prefix = pick(RARE_PREFIX);
@@ -228,14 +268,18 @@ const Items = {
     const missing = Object.keys(INARIUS_SET.pieces).filter(s => !owned.has(s));
     const slot = forceSlot || (missing.length ? pick(missing) : pick(Object.keys(INARIUS_SET.pieces)));
     const def = ITEM_SLOTS[slot];
-    const R = RARITIES[5];
     // Set pieces (season-only) scale legendary→artifact-5★ with Torment: each
-    // star adds an affix and lifts every roll (owner spec).
+    // star adds an affix and lifts every roll (owner spec). In the deep Crypt
+    // a set piece can rise to Relic/Ancient/Mythic grade too (owner v1.7.8 —
+    // "five star mythic on every item, including sets") while KEEPING its set
+    // membership (setCount reads item.set, not rarity).
+    const rar = this.cryptRarityRoll() || 5;
+    const R = RARITIES[rar];
     const stars = this.tieredStars();
-    const power = 1 + stars * 0.18;
+    const power = (1 + stars * 0.18) * (rar >= 7 ? 1.25 : 1);
     const lvlScale = 1 + mLvl * 0.11;
     const stats = {};
-    const capItem = { rarity: 5, stars };
+    const capItem = { rarity: rar, stars };
     const addStat = (key, mult) => {
       stats[key] = Math.min((stats[key] || 0) + AFFIX_ROLLS[key].base * mult * lvlScale * rand(0.9, 1.2) * power,
         this.affixCap(capItem, key));
@@ -249,7 +293,7 @@ const Items = {
     if (slot === 'helm' || slot === 'boots') stats.dnova = 0.15;
     if (slot === 'gloves' || slot === 'shoulders') stats.area = 0.20;
     const item = {
-      slot, rarity: 5, set: 'inarius',
+      slot, rarity: rar, set: 'inarius',
       name: INARIUS_SET.pieces[slot] + (stars ? ' ' + '★'.repeat(stars) : ''),
       stats, mLvl, sockets: 1, gems: []
     };
@@ -259,18 +303,21 @@ const Items = {
   },
 
   // Build-defining legendaries from the Inarius guide. `tiered` (wild drops)
-  // scales the piece legendary→artifact with the Torment level (owner spec).
+  // scales the piece legendary→artifact with the Torment level (owner spec) —
+  // and up to Relic/Ancient/Mythic grade in the deep Crypt (owner v1.7.8).
   generatePowerItem(mLvl, forceKey, tiered = false) {
     // Exclusive powers (e.g. The Royal Grandeur) only drop from their specific
     // source, never from the generic legendary pool.
     const key = forceKey || pick(Object.keys(LEGENDARY_POWERS).filter(k => !LEGENDARY_POWERS[k].exclusive));
     const P = LEGENDARY_POWERS[key];
-    const item = this.generate(mLvl, 0, P.slot);
     let rarity = 4, stars = 0;
     if (tiered) {
       stars = this.tieredStars();
-      rarity = tormentTier() >= 16 ? 6 : 4;   // artifact-grade at T16, else legendary
+      rarity = this.cryptRarityRoll() || (tormentTier() >= 16 ? 6 : 4);   // artifact at T16, Crypt rarities deeper
     }
+    // Forcing rarity+stars into generate() makes the base stats roll at the
+    // item's TRUE grade (caps, power multiplier, affix count all match).
+    const item = this.generate(mLvl, 0, P.slot, { rarity, stars });
     item.rarity = rarity;
     item.power = key;
     item.name = P.name + (stars ? ' ' + '★'.repeat(stars) : '');
@@ -856,7 +903,8 @@ const Items = {
   // +1 per star up to 8 at 5★.
   salvageYield(item) {
     const R = RARITIES[item.rarity] || RARITIES[0];
-    const n = item.rarity === 6 ? 3 + (item.stars || 0) : R.salvageN;
+    // Artifact and above: stars sweeten the soul yield (owner rule).
+    const n = item.rarity >= 6 ? R.salvageN + (item.stars || 0) : R.salvageN;
     return { mat: R.salvage, n };
   },
 
@@ -1283,12 +1331,16 @@ const Items = {
 
   // Forgotten Souls the Mystic needs per reroll, by item tier (owner table).
   // ONLY legendary-and-above cost souls; common/magic/rare/epic are gold-only.
-  //   Set = 1 · Legendary 0-3★ = 1..4 · Artifact 0-5★ = 5..10
+  //   Set = 1 · Legendary 0-3★ = 1..4 · Artifact 0-5★ = 5..10 ·
+  //   Relic = 8..13 · Ancient = 11..16 · Mythic = 14..19
   mysticSoulCost(item) {
     const st = item.stars || 0;
     if (item.rarity === 4) return 1 + st;   // Legendary
     if (item.rarity === 5) return 1;        // Set
     if (item.rarity === 6) return 5 + st;   // Artifact
+    if (item.rarity === 7) return 8 + st;   // Relic
+    if (item.rarity === 8) return 11 + st;  // Ancient
+    if (item.rarity >= 9) return 14 + st;   // Mythic
     return 0;                               // common / magic / rare / epic
   },
 
@@ -1321,7 +1373,8 @@ const Items = {
   // The star/rarity/trash multiplier a fresh roll on this item gets — the SAME
   // one generation uses, so enchant and generation stay in lock-step.
   starPower(item) {
-    return (item.trash ? 0.6 : 1) * (1 + (item.stars || 0) * 0.18) * (item.rarity === 6 ? 1.15 : 1);
+    return (item.trash ? 0.6 : 1) * (1 + (item.stars || 0) * 0.18) *
+      (item.rarity >= 7 ? 1.25 : item.rarity === 6 ? 1.15 : 1);
   },
 
   // The hard ceiling for `key` on this item = the Artifact-5★ cap scaled by the
@@ -1536,7 +1589,7 @@ const Items = {
     // THE FORGOTTEN CRYPT unlocks the moment SIX worn pieces are Artifacts
     // (owner rule v1.7.6) — a big popup + a permanent achievement.
     if (typeof Hero !== 'undefined' && !Hero.cryptUnlocked) {
-      const nArt = Object.values(Hero.equipped || {}).filter(it => it && it.rarity === 6).length;
+      const nArt = Object.values(Hero.equipped || {}).filter(it => it && it.rarity >= 6).length;
       if (nArt >= 6) {
         Hero.cryptUnlocked = true;
         Hero.save();
