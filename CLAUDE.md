@@ -421,11 +421,14 @@ loot at the artisans. The hero is persistent (localStorage).
   filling title→PLAY; when width-bound (portrait) the row drops back to
   `0.55H − fh/2` so the baked vista title stays clear; unselected frame
   alpha 0.88→0.97 (opaque interior would bleed vista); the RETIRE header
-  rides at `y0−12`. (3) HOVER = BLOOD RED on the CONTENT, never a pale
-  plate-wide glow: claimed frames outline the hero avatar itself
-  (`rgba(168,18,26,.95)` shadow, double-draw), empty frames outline the
-  plus plate (alpha 0.25→0.45 + same red rim). Frame art itself never
-  glows.
+  rides at `y0−12`. (3) HOVER rims the CONTENT, never a pale plate-wide
+  glow — **v1.7.14 colors: FADED BONE GREEN `rgba(152,188,158,.5)` for
+  normal hover ("shouldn't be blinding"); BLOOD RED `rgba(190,28,36,.9)`
+  is reserved SOLELY for delete mode.** The rim is a shadow-only
+  silhouette pass (`rim()` helper: shadowOffsetX 10000, image drawn
+  off-canvas twice) so the plus plate keeps its quiet 0.25 alpha —
+  outline only, no wash (plus rim blur 8; hero rim blur
+  `max(10, fw·0.05)`). Frame art itself never glows.
 - **v1.7.12 — REPAINTED HERO FRAME (owner art)**: `slot_frame.webp` is the
   owner's new thorned arch, cut offline with the interior KEPT OPAQUE BLACK
   (owner rule "keep the interior black background") — the v1.7.9/1.7.10

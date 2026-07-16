@@ -399,11 +399,17 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.13-alpha';
+const GAME_VERSION = 'v1.7.14-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.14-alpha', date: 'July 2026',
+    notes: [
+      'Hover on Choose Your Hero speaks more gently now: a FADED BONE GREEN rim, low and quiet — never blinding. Blood red belongs to RETIRING alone. The plus plate\'s rim traces its outline only; the plate itself stays dim, never washed in light'
+    ]
+  },
   {
     v: 'v1.7.13-alpha', date: 'July 2026',
     notes: [
