@@ -941,17 +941,17 @@ const Screens = {
   // (closeAction sets UI.sel.inside), so browsing benches stays snappy.
   ARTISAN_INTROS: {
     smith: {
-      npc: 'THARN EMBERHAND', color: '#ffb43a', welcome: 'WELCOME TO THE FORGE',
+      npc: 'THARN', color: '#ffb43a', welcome: 'WELCOME TO THE FORGE',
       info: '"The coals never cool in New Haven. Bring me your battle-scrap and I\'ll break it down to parts, dust and crystal — or set the hammer to fresh steel: weapons, armor, and torches to carry the Light into the dark."',
       enter: 'STEP UP TO THE ANVIL'
     },
     jeweler: {
-      npc: 'ORREN GILDSTONE', color: '#4ecbe0', welcome: "WELCOME TO THE JEWELER'S",
+      npc: 'ORREN', color: '#4ecbe0', welcome: "WELCOME TO THE JEWELER'S",
       info: '"Every stone has a soul, friend — let me show you. I cut fresh gems, merge three of a kind into finer ones, set them snug into your sockets and pry them out again without a scratch. Tired of a stone? I pay honest gold."',
       enter: 'BROWSE THE STONES'
     },
     mystic: {
-      npc: 'VESSA NIGHTWEAVE', color: '#b06adf', welcome: 'WELCOME TO THE SANCTUM',
+      npc: 'VESSA', color: '#b06adf', welcome: 'WELCOME TO THE SANCTUM',
       info: '"Sit, child — the threads of fate can always be rewoven. I reroll the properties on your gear until they suit you, and I keep a wardrobe of wonders besides: pets to walk beside you, wings for your back, and themes to re-tint the very world."',
       enter: 'PART THE VEIL'
     }
@@ -959,40 +959,58 @@ const Screens = {
 
   artisanIntro(ctx, W, H, artKey) {
     const I = this.ARTISAN_INTROS[artKey];
+    // No ✕, no round EXIT on the welcome splash (owner rule v1.7.0) —
+    // tapping anywhere steps inside; Escape still leaves.
+    UI.introShowing = true;
     // The art is the star — barely veiled.
     this.shopBackdrop(ctx, W, H, artKey, 0.10);
     // A readability gradient over the lower third only.
-    const g = ctx.createLinearGradient(0, H * 0.35, 0, H);
+    const g = ctx.createLinearGradient(0, H * 0.30, 0, H);
     g.addColorStop(0, 'rgba(2,1,4,0)'); g.addColorStop(1, 'rgba(2,1,4,0.9)');
-    ctx.fillStyle = g; ctx.fillRect(0, H * 0.35, W, H * 0.65);
+    ctx.fillStyle = g; ctx.fillRect(0, H * 0.30, W, H * 0.70);
 
-    // Anywhere on the art steps inside (the red ✕, drawn above, still exits).
+    // Anywhere on the art steps inside (Escape still exits).
     UI.register(0, 0, W, H, () => { UI.sel.inside = true; AudioSys.sfx('gold'); });
 
-    const pad = (Game.state === 'town' ? 150 : 28);
+    // Spaced-out groupings (owner rule): name · WELCOME · flavor · button,
+    // each with real air between them.
+    const pad = 40;
     const bw = Math.min(300, W - 40), bx = W / 2 - bw / 2;
-    const by = H - pad - 42;
-    let iy = by - 16 - 5 * 17;   // up to 5 wrapped info lines
+    const by = H - pad - 44;
+    const iw = Math.min(470, W - 48);
+    let iy = by - 30 - 5 * 18;   // flavor block, well above the button
 
     ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-    ctx.fillText('—  ' + I.npc + '  —', W / 2, iy - 44);
+    ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.fillText('—  ' + I.npc + '  —', W / 2, iy - 74);
     ctx.font = 'bold ' + (W < 520 ? 20 : 26) + 'px Cinzel, Georgia';
     ctx.fillStyle = I.color;
     ctx.shadowColor = I.color; ctx.shadowBlur = 16;
-    ctx.fillText(this.fitText(ctx, I.welcome, W - 30), W / 2, iy - 16);
+    ctx.fillText(this.fitText(ctx, I.welcome, W - 30), W / 2, iy - 38);
     ctx.shadowBlur = 0;
-    ctx.textAlign = 'left';
+    // Flavor text CENTERED (owner rule).
     ctx.font = 'italic ' + (W < 520 ? 11 : 12) + 'px Cinzel, Georgia'; ctx.fillStyle = '#e8e0cc';
-    const iw = Math.min(470, W - 48);
-    wrapText(ctx, I.info, W / 2 - iw / 2, iy, iw, 17, 5);
+    this.wrapCentered(ctx, I.info, W / 2, iy, iw, 18, 5);
 
-    const pulse = 0.6 + 0.4 * Math.sin(Game.time * 3.5);
     UI.btnPlate(ctx, bx, by, bw, 40, I.enter, () => { UI.sel.inside = true; AudioSys.sfx('gold'); },
       { size: 13 });
-    ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia';
-    ctx.fillStyle = 'rgba(201,191,168,' + (0.35 + 0.3 * pulse).toFixed(2) + ')';
-    ctx.fillText('tap anywhere to step inside', W / 2, by + 52);
+  },
+
+  // Center-aligned wrapText (ctx.textAlign must be 'center').
+  wrapCentered(ctx, text, cx, y, maxW, lineH, maxLines) {
+    const words = String(text).split(' ');
+    const lines = [];
+    let line = '';
+    for (const w of words) {
+      const t = line ? line + ' ' + w : w;
+      if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; }
+      else line = t;
+    }
+    if (line) lines.push(line);
+    if (lines.length > maxLines) { lines[maxLines - 1] = lines.slice(maxLines - 1).join(' '); lines.length = maxLines; }
+    ctx.textAlign = 'center';
+    for (let i = 0; i < lines.length; i++) ctx.fillText(lines[i], cx, y + i * lineH);
+    return y + lines.length * lineH;
   },
 
   artisanHub(ctx, W, H, artKey, title, npcLine, buttons, trainKey) {
@@ -1061,9 +1079,10 @@ const Screens = {
     UI.panel(ctx, px, py, pw, ph, 'MENU');
     let y = py + 56;
     for (const [label, target] of rows) {
-      // The gothic plate (v1.6.98 owner art) carries the menu rows; the
-      // ABANDON row below keeps the old ornate skull plate.
-      UI.btnPlate3(ctx, px + 16, y, pw - 32, btnH, label.replace(/^[^A-Z]*/, ''), () => UI.open(target),
+      // Character→Achievements ride the SIMPLE plate; SETTINGS keeps the
+      // gothic plate (owner rule v1.7.0). ABANDON keeps the old ornate.
+      const plateFn = target === 'settings' ? 'btnPlate3' : 'btnPlate2';
+      UI[plateFn](ctx, px + 16, y, pw - 32, btnH, label.replace(/^[^A-Z]*/, ''), () => UI.open(target),
         { size: H < 520 ? 13 : 15 });
       y += rowH;
     }
@@ -1390,14 +1409,16 @@ const Screens = {
 
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-    ctx.fillText(this.fitText(ctx, 'Coins glint far below the dark water. The dead are listening.', pw - 40), W / 2, py + 208);
+    // Two lines — never clipped (owner rule).
+    this.wrapCentered(ctx, 'Coins glint far below the dark water. The dead are listening.', W / 2, py + 202, pw - 44, 16, 2);
 
-    let y = py + 232;
+    let y = py + 240;
     const fb = Game.fountainBuff;
-    const names = { empowered: 'Empowered — essence surges', frenzied: 'Frenzied — +25% damage', blessed: 'Blessed — −25% damage taken', fortune: 'Fortune — +100% gold find' };
+    const names = FOUNTAIN_BUFFS;
     if (fb && fb.t > 0) {
       const mins = Math.floor(fb.t / 60), secs = Math.floor(fb.t % 60);
-      ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = '#6ff7c3';
+      // Bone-white Cinzel — no garish blue (owner rule).
+      ctx.font = '600 12px Cinzel, Georgia'; ctx.fillStyle = '#cfc8b8';
       ctx.fillText(this.fitText(ctx, '✦ ' + names[fb.buff] + '  ·  ' + mins + ':' + String(secs).padStart(2, '0') + ' left', pw - 36), W / 2, y);
     } else {
       ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
@@ -1419,13 +1440,13 @@ const Screens = {
         }
         Hero.save();
         AudioSys.sfx('shrine');
-        UI.toast('The water stirs… ' + names[buff] + ' (10 min)', '#6ff7c3');
+        UI.toast('The water stirs… ' + names[buff] + ' (10 min)', '#cfc8b8');
         Particles.ring(W / 2, my, 80, '#8fd0ff', 5, 0.6);
       } : null,
       { size: 13, disabled: !afford, color: '#ffd76a' });
     y += 48;
     ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
-    ctx.fillText(this.fitText(ctx, 'A random shrine blessing · lasts 10 minutes · follows you into the wilds', pw - 36), W / 2, y);
+    this.wrapCentered(ctx, 'A random shrine blessing · lasts 10 minutes · follows you into the wilds', W / 2, y, pw - 48, 13, 2);
     ctx.textAlign = 'right'; ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = '#ffd76a';
     ctx.fillText(Hero.gold.toLocaleString() + ' g', px + pw - 18, py + 30);
   },
@@ -1453,47 +1474,45 @@ const Screens = {
     let y = bodyTop + 6 - scrollY;
     const vis = (yy, hh) => yy + hh > bodyTop && yy < bodyBot;
 
-    // ---- Your extraction reagents, at the top ----
+    // ---- Your extraction reagents — painted icons + counts (owner rule) ----
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold ' + (10 * k) + 'px Cinzel, Georgia';
-    if (vis(y, 14 * k)) {
+    ctx.font = '600 ' + (11 * k) + 'px Cinzel, Georgia';
+    if (vis(y, 18 * k)) {
       let mxx = rx;
       for (const mk of ['parts', 'dust', 'crystal', 'soul']) {
-        const txt = (Hero.mats[mk] || 0) + ' ' + MATERIALS[mk].name;
-        const w = ctx.measureText(txt).width;
-        if (mxx > rx && mxx + w > rx + rw) { mxx = rx; y += 14 * k; }
+        drawMatIcon(ctx, mk, mxx + 10 * k, y + 4 * k, 20 * k);
+        const txt = String(Hero.mats[mk] || 0);
         ctx.fillStyle = MATERIALS[mk].color;
-        ctx.fillText(txt, mxx, y + 8 * k); mxx += w + 12;
+        ctx.fillText(txt, mxx + 22 * k, y + 8 * k);
+        mxx += 22 * k + ctx.measureText(txt).width + 16;
       }
     }
-    y += 22 * k;
+    y += 24 * k;
 
     // ---- Instruction of Rathma (extraction) ----
     ctx.font = 'bold ' + (14 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#ff5a4a';
     if (vis(y, 20 * k)) ctx.fillText('Instruction of Rathma', rx, y + 6 * k);
     y += 20 * k;
     ctx.font = (10 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-    if (vis(y, 24 * k)) y = wrapText(ctx, 'Rip the legendary power from a LOOSE item in your bag (not equipped, not stashed) into the Cube. The item is consumed.', rx, y + 8 * k, rw, 13 * k, 3) + 2 * k;
-    else y += 26 * k;
+    // Short and plain (owner rule — cut the text down).
+    if (vis(y, 16 * k)) y = wrapText(ctx, "Extract a loose bag legendary's power. The item is consumed.", rx, y + 8 * k, rw, 13 * k, 2) + 2 * k;
+    else y += 18 * k;
     const c = Items.extractCost();
-    ctx.font = (10 * k) + 'px Cinzel, Georgia';
+    ctx.font = '600 ' + (10 * k) + 'px Cinzel, Georgia';
     {
-      // Cost tokens FLOW-WRAP so the last one (Forgotten Souls) is never
-      // clipped on narrow panels (owner report).
+      // Cost: painted icon + number per reagent — compact, never clipped.
       let cxx = rx;
       for (const [mk, n] of Object.entries(c)) {
         const have = (Hero.mats[mk] || 0) >= n;
-        const txt = n + ' ' + MATERIALS[mk].name;
-        const tw2 = ctx.measureText(txt).width;
-        if (cxx > rx && cxx + tw2 > rx + rw) { cxx = rx; y += 14 * k; }
-        if (vis(y, 14 * k)) {
+        if (vis(y, 18 * k)) {
+          drawMatIcon(ctx, mk, cxx + 9 * k, y + 4 * k, 18 * k);
           ctx.fillStyle = have ? MATERIALS[mk].color : '#a05a5a';
-          ctx.fillText(txt, cxx, y + 8 * k);
+          ctx.fillText(String(n), cxx + 20 * k, y + 8 * k);
         }
-        cxx += tw2 + 12;
+        cxx += 20 * k + ctx.measureText(String(n)).width + 14;
       }
     }
-    y += 20 * k;
+    y += 22 * k;
     const items = Items.extractable();
     if (!items.length) {
       ctx.font = 'italic ' + (11 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
@@ -3173,38 +3192,29 @@ const Screens = {
   // ----------------------------------------------------------- artisans
 
   matsRow(ctx, x, y, w) {
-    // Compact, measured labels that never spill off narrow phones. Shows the
-    // FORGE reagents only — including Souls (legendary/artifact salvage) right
-    // next to Crystals; gold is abbreviated so nothing gets clipped. Torch
-    // reagents (lumber/rivets/heart) live on the torch bench.
+    // Gold + the four forge reagents as PAINTED ICONS with counts
+    // (owner rule v1.7.0 — no more written material names).
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     const gs = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'm' : n >= 1e4 ? (n / 1e3).toFixed(0) + 'k' : '' + n;
-    const short = { parts: 'Parts', dust: 'Dust', crystal: 'Cryst', soul: 'Souls' };
-    const parts = [[gs(Hero.gold) + 'g', '#ffd76a']];
-    for (const key of ['parts', 'dust', 'crystal', 'soul']) {
-      parts.push([(Hero.mats[key] || 0) + ' ' + short[key], MATERIALS[key].color]);
-    }
-    // Shrink the font/spacing until EVERY token fits — Souls (legendary/artifact
-    // salvage) must always be visible, so nothing gets dropped off the end.
-    let size = 11, gap = 12;
-    for (; size >= 8; size--) {
-      ctx.font = 'bold ' + size + 'px Cinzel, Georgia';
-      gap = size >= 10 ? 12 : 7;
-      let total = -gap;
-      for (const [txt] of parts) total += ctx.measureText(txt).width + gap;
-      if (total <= w) break;
-    }
     let cx = x;
-    for (const [txt, col] of parts) {
-      ctx.fillStyle = col;
-      ctx.fillText(txt, cx, y);
-      cx += ctx.measureText(txt).width + gap;
+    ctx.font = '600 12px Cinzel, Georgia';
+    ctx.fillStyle = '#ffd76a';
+    const gTxt = gs(Hero.gold) + 'g';
+    ctx.fillText(gTxt, cx, y); cx += ctx.measureText(gTxt).width + 16;
+    ctx.font = '600 11px Cinzel, Georgia';
+    for (const key of ['parts', 'dust', 'crystal', 'soul']) {
+      drawMatIcon(ctx, key, cx + 9, y - 4, 18);
+      const t = gs(Hero.mats[key] || 0);
+      ctx.fillStyle = MATERIALS[key].color;
+      ctx.fillText(t, cx + 20, y);
+      cx += 20 + ctx.measureText(t).width + 16;
     }
   },
 
+
   // BLACKSMITH — art-first hub with four benches (owner rule).
   smith(ctx, W, H) {
-    this.artisanHub(ctx, W, H, 'smith', 'THARN EMBERHAND — SMITHY',
+    this.artisanHub(ctx, W, H, 'smith', 'THARN THE BLACKSMITH',
       '"The forge is hot. What do you need?"', [
         ['⚒  SALVAGE', 'Break gear down into crafting materials', 'smithSalvage', '#ffb43a'],
         ['⚔  CRAFT WEAPON', 'Forge scythes and phylacteries', 'smithWeapon', '#e0724a'],
@@ -3290,19 +3300,20 @@ const Screens = {
     UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 6);
   },
 
-  // The shared craft bench body — quality toggle + a slot grid.
+  // The shared craft bench body — quality toggle + a CENTERED slot grid,
+  // all on the simple plate (owner rules v1.7.0).
   smithCraft(ctx, W, H, title, slots) {
     this.shopBackdrop(ctx, W, H, 'smith');
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
     const cols = pw >= 480 ? 4 : 3;
     const rows = Math.ceil(slots.length / cols);
-    UI.panel(ctx, px, 46, pw, Math.min(H - 56, 236 + rows * 40), title);
+    UI.panel(ctx, px, 46, pw, Math.min(H - 56, 250 + rows * 44), title);
     if (UI.sel.master === undefined) UI.sel.master = false;
     const half = (pw - 40) / 2;
     const stdCost = Items.craftCost(false), mwCost = Items.craftCost(true);
-    UI.btnPlate3(ctx, px + 16, 92, half, 42, '', () => { UI.sel.master = false; });
-    UI.btnPlate3(ctx, px + 24 + half, 92, half, 42, '', () => { UI.sel.master = true; });
+    UI.btnPlate2(ctx, px + 16, 92, half, 42, '', () => { UI.sel.master = false; });
+    UI.btnPlate2(ctx, px + 24 + half, 92, half, 42, '', () => { UI.sel.master = true; });
     ctx.textAlign = 'center'; ctx.font = '600 12px Cinzel, Georgia';
     ctx.fillStyle = !UI.sel.master ? '#f0dcae' : '#8a8070'; ctx.fillText('STANDARD', px + 16 + half / 2, 106);
     ctx.fillStyle = UI.sel.master ? '#ffd76a' : '#8a8070'; ctx.fillText('MASTERWORK', px + 24 + half * 1.5, 106);
@@ -3311,23 +3322,26 @@ const Screens = {
     ctx.fillText(this.fitText(ctx, this.costLabel(mwCost), half - 12), px + 24 + half * 1.5, 122);
     const afford = Items.canAfford(Items.craftCost(UI.sel.master));
     const [flo, fhi] = Items.smithRange();
-    ctx.font = '10px Cinzel, Georgia'; ctx.textAlign = 'left'; ctx.fillStyle = '#ffb43a';
-    const bandTxt = 'Forges lvl ' + flo + '–' + fhi + '.  ';
-    ctx.fillText(bandTxt, px + 16, 148);
-    const bandW = ctx.measureText(bandTxt).width;
-    ctx.fillStyle = UI.sel.master ? '#ffd76a' : '#6f6552';
-    ctx.fillText(this.fitText(ctx, UI.sel.master
-      ? 'Masterwork: Rare+ guaranteed, 50% socket.'
-      : 'Standard: a quick roll for the slot.', pw - 32 - bandW), px + 16 + bandW, 148);
-    const bw = (pw - 32 - (cols - 1) * 8) / cols;
+    // Centered band line + the two quality explainers (owner wording).
+    ctx.textAlign = 'center';
+    ctx.font = '600 11px Cinzel, Georgia'; ctx.fillStyle = '#ffb43a';
+    ctx.fillText('Forges level ' + flo + '–' + fhi, px + pw / 2, 148);
+    ctx.font = '10px Cinzel, Georgia';
+    ctx.fillStyle = !UI.sel.master ? '#cfc8b8' : '#8a8070';
+    ctx.fillText(this.fitText(ctx, 'Standard: Crafts a random common, uncommon, or magic item', pw - 40), px + pw / 2, 165);
+    ctx.fillStyle = UI.sel.master ? '#ffd76a' : '#8a8070';
+    ctx.fillText(this.fitText(ctx, 'Masterwork: Crafts a rare, epic, or legendary item', pw - 40), px + pw / 2, 181);
+    // The slot grid — each row CENTERED (owner rule).
+    const bw = Math.min(150, (pw - 32 - (cols - 1) * 8) / cols);
     slots.forEach((slot, i) => {
-      const bx = px + 16 + (i % cols) * (bw + 8);
-      const by = 162 + Math.floor(i / cols) * 40;
-      UI.btnPlate3(ctx, bx, by, bw, 34, ITEM_SLOTS[slot].label, () => Items.craft(slot, UI.sel.master),
+      const row = Math.floor(i / cols);
+      const inRow = Math.min(cols, slots.length - row * cols);
+      const rowW = inRow * bw + (inRow - 1) * 8;
+      const bx = px + pw / 2 - rowW / 2 + (i % cols) * (bw + 8);
+      const by = 198 + row * 44;
+      UI.btnPlate2(ctx, bx, by, bw, 34, ITEM_SLOTS[slot].label, () => Items.craft(slot, UI.sel.master),
         { size: 11, disabled: !afford });
     });
-    ctx.textAlign = 'center'; ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
-    ctx.fillText('Crafted gear goes to your bag.', px + pw / 2, 162 + rows * 40 + 12);
   },
 
   smithWeapon(ctx, W, H) { this.smithCraft(ctx, W, H, 'CRAFT WEAPONS', ['weapon', 'offhand']); },
@@ -3341,53 +3355,66 @@ const Screens = {
   // and go straight to the Stash for safe keeping.
   torches(ctx, W, H) {
     this.shopBackdrop(ctx, W, H, 'smith');
-    const pw = Math.min(560, W - 20);
+    // Wider + roomier (owner rule v1.7.0).
+    const pw = Math.min(640, W - 20);
     const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 56, 468);
+    const ph = Math.min(H - 56, 500);
     UI.panel(ctx, px, 46, pw, ph, 'TORCH BENCH');
 
-    // Reagent tally — only reagents the player actually holds (no teasing the
-    // ones they haven't found yet).
-    ctx.textAlign = 'left';
-    ctx.font = 'bold 11px Cinzel, Georgia';
-    const reagents = ['lumber', 'rivets', 'heartstring', 'wyrmscale', 'brain', 'rathmasoul'].filter(k => (Hero.mats[k] || 0) > 0);
-    let tx = px + 16, ty = 96;
-    for (const k of reagents) {
-      const txt = (Hero.mats[k] || 0) + ' ' + MATERIALS[k].name;
-      const w = ctx.measureText(txt).width;
-      if (tx > px + 16 && tx + w > px + pw - 16) { tx = px + 16; ty += 15; }
-      ctx.fillStyle = MATERIALS[k].color;
-      ctx.fillText(txt, tx, ty);
-      tx += w + 16;
+    let ty = 100;
+    // ---- REAGENTS — its own collapsible drawer, closed by default ----
+    const open = !!UI.sel.torchReag;
+    UI.btnPlate2(ctx, px + 20, ty, pw - 40, 26, (open ? '▾  ' : '▸  ') + 'REAGENTS',
+      () => { UI.sel.torchReag = !open; }, { size: 11 });
+    ty += 36;
+    if (open) {
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.font = '600 11px Cinzel, Georgia';
+      const reagents = ['lumber', 'rivets', 'heartstring', 'wyrmscale', 'brain', 'rathmasoul'].filter(k => (Hero.mats[k] || 0) > 0);
+      if (!reagents.length) {
+        ctx.fillStyle = '#6f6552';
+        ctx.fillText('No torch reagents yet — smash scenery in the wilds.', px + 24, ty);
+        ty += 20;
+      }
+      let tx = px + 24;
+      for (const k2 of reagents) {
+        const txt = (Hero.mats[k2] || 0) + ' ' + MATERIALS[k2].name;
+        const w2 = ctx.measureText(txt).width;
+        if (tx > px + 24 && tx + w2 > px + pw - 24) { tx = px + 24; ty += 17; }
+        ctx.fillStyle = MATERIALS[k2].color;
+        ctx.fillText(txt, tx, ty);
+        tx += w2 + 18;
+      }
+      ty += reagents.length ? 24 : 0;
     }
-    ty += reagents.length ? 20 : 0;
 
-    // Current torch status.
+    // ---- The lit torch, with its live countdown ----
     const eq = Hero.equipped.torch;
-    ctx.font = '11px Cinzel, Georgia';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = '600 11px Cinzel, Georgia';
     if (eq && eq.burnT !== undefined) {
       const mins = Math.floor(eq.burnT / 60), secs = Math.floor(eq.burnT % 60);
       const T = TORCH_TYPES[eq.torch] || TORCH_TYPES.wood;
-      ctx.fillStyle = T.tierColor;   // rarity colour (matches the inventory)
-      ctx.fillText('Lit: ' + eq.name + '  —  ' + mins + ':' + String(secs).padStart(2, '0') + ' left', px + 16, ty);
+      ctx.fillStyle = T.tierColor;
+      ctx.fillText('Lit: ' + eq.name + '  —  ' + mins + ':' + String(secs).padStart(2, '0') + ' left', px + 24, ty);
     } else {
       ctx.fillStyle = '#6f6552';
-      ctx.fillText('No torch lit — darkness closes in.', px + 16, ty);
+      ctx.fillText('No torch lit — darkness closes in.', px + 24, ty);
     }
+    ty += 14;
 
-    // Craft rows — ONLY torches the player can actually forge right now (the
-    // rest stay hidden; let them discover the ladder for themselves). DRAG to scroll.
+    // ---- Craft rows — SIMPLE plates, spaced out, no rarity tags ----
     const panelBot = 46 + ph;
-    const footTop = panelBot - 50;
-    const listTop = ty + 10;
+    const footTop = panelBot - 46;
+    const listTop = ty + 8;
     const listBot = footTop - 4;
     const viewH = Math.max(60, listBot - listTop);
     const order = Object.keys(TORCH_TYPES).filter(t => Items.canCraftTorch(t));
     if (!order.length) {
       ctx.textAlign = 'left'; ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
-      ctx.fillText('Gather reagents to forge a torch.', px + 16, listTop + 14);
+      ctx.fillText('Gather reagents to forge a torch.', px + 24, listTop + 14);
     }
-    const rowH = 72;
+    const rowH = 82;
     const scrollMax = Math.max(0, order.length * rowH - viewH);
     const scrollY = clamp(UI.sel.scrollY || 0, 0, scrollMax);
     UI.sel.scrollY = scrollY; UI.sel.scrollMax = scrollMax;
@@ -3396,40 +3423,37 @@ const Screens = {
     ctx.beginPath(); ctx.rect(px + 14, listTop, pw - 28, viewH); ctx.clip();
     order.forEach((type, i) => {
       const y = listTop + i * rowH - scrollY;
-      if (y + rowH - 8 < listTop || y > listBot) return;   // off view: skip draw + hit
+      if (y + rowH - 12 < listTop || y > listBot) return;
       const T = TORCH_TYPES[type];
       const can = Items.canCraftTorch(type);
-      // Torch rows ride the gothic plate (v1.6.98 owner rule).
-      if (!UI.btnPlate3(ctx, px + 16, y, pw - 32, rowH - 8, '', null)) {
+      // The simple plate carries each torch (owner rule).
+      if (!UI.btnPlate2(ctx, px + 20, y, pw - 40, rowH - 14, '', null)) {
         ctx.fillStyle = 'rgba(28,24,38,0.92)';
-        rr(ctx, px + 16, y, pw - 32, rowH - 8, 8); ctx.fill();
-        ctx.strokeStyle = can ? T.tierColor : '#3a3448';
-        ctx.lineWidth = 1.5;
-        rr(ctx, px + 16, y, pw - 32, rowH - 8, 8); ctx.stroke();
+        rr(ctx, px + 20, y, pw - 40, rowH - 14, 8); ctx.fill();
       }
-      // Name + rarity-tier badge. Colour = the RARITY colour (matches inventory).
-      ctx.textAlign = 'left';
-      ctx.font = 'bold 13px Cinzel, Georgia';
+      // Name (no rarity tag — owner rule), spaced in from the finial cap.
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.font = '600 13px Cinzel, Georgia';
       ctx.fillStyle = T.tierColor;
-      ctx.fillText(T.name + '  ·  ' + T.tier, px + 28, y + 18);
+      ctx.fillText(T.name, px + 52, y + 22);
       ctx.font = '10px Cinzel, Georgia';
       ctx.fillStyle = '#9a9080';
-      ctx.fillText('Burns ' + T.minutes + ' min  ·  light radius ' + T.radius, px + 28, y + 34);
+      ctx.fillText('Burns ' + T.minutes + ' min  ·  light radius ' + T.radius, px + 52, y + 39);
       // Recipe (owned / needed per component).
       const shortMat = { lumber: 'Lumber', rivets: 'Rivets', heartstring: 'Heart', wyrmscale: 'Wyrm', brain: 'Brain', rathmasoul: 'Rathma' };
-      ctx.font = (pw < 420 ? 10 : 11) + 'px Cinzel, Georgia';
-      let rx = px + 28;
-      const recipeRight = px + pw - 128;
-      for (const [k, n] of Object.entries(T.recipe)) {
-        const have = Hero.mats[k] || 0;
-        const label = have + '/' + n + ' ' + (shortMat[k] || MATERIALS[k].name);
+      ctx.font = (pw < 480 ? 10 : 11) + 'px Cinzel, Georgia';
+      let rx = px + 52;
+      const recipeRight = px + pw - 160;
+      for (const [k2, n] of Object.entries(T.recipe)) {
+        const have = Hero.mats[k2] || 0;
+        const label = have + '/' + n + ' ' + (shortMat[k2] || MATERIALS[k2].name);
         if (rx + ctx.measureText(label).width > recipeRight) break;
-        ctx.fillStyle = have >= n ? MATERIALS[k].color : '#a05a5a';
-        ctx.fillText(label, rx, y + 52);
-        rx += ctx.measureText(label).width + 12;
+        ctx.fillStyle = have >= n ? MATERIALS[k2].color : '#a05a5a';
+        ctx.fillText(label, rx, y + 56);
+        rx += ctx.measureText(label).width + 14;
       }
-      // Craft button.
-      UI.chip(ctx, px + pw - 118, y + 12, 92, rowH - 32, can ? 'CRAFT' : 'NEED MATS',
+      // Craft chip — inside the plate, clear of the finial and the text.
+      UI.chip(ctx, px + pw - 152, y + 20, 100, rowH - 46, can ? 'CRAFT' : 'NEED MATS',
         can ? () => Items.craftTorch(type) : null,
         { size: 11, disabled: !can, color: can ? T.tierColor : '#5c5569' });
     });
@@ -3440,18 +3464,13 @@ const Screens = {
       if (scrollY < scrollMax - 1) ctx.fillText('▼ drag for more ▼', px + pw / 2, listBot - 1);
     }
 
-    ctx.textAlign = 'center';
-    ctx.font = 'italic 10px Cinzel, Georgia';
-    ctx.fillStyle = '#6f6552';
-    ctx.fillText(this.fitText(ctx, 'Forged torches go to your inventory (no bag slot). Equip one from the Inventory wheel.', pw - 24),
-      px + pw / 2, footTop + 8);
-    UI.btnPlate3(ctx, px + 16, footTop + 18, pw - 32, 26, 'BACK TO FORGE', () => UI.open('smith'),
+    UI.btnPlate3(ctx, px + 20, footTop + 12, pw - 40, 26, 'BACK TO FORGE', () => UI.open('smith'),
       { size: 11 });
   },
 
   // JEWELER — art-first hub with five gem benches (owner rule).
   jeweler(ctx, W, H) {
-    this.artisanHub(ctx, W, H, 'jeweler', 'ORREN GILDSTONE — JEWELER',
+    this.artisanHub(ctx, W, H, 'jeweler', 'ORREN THE JEWELER',
       '"Every stone has a soul. Let me show you."', [
         ['◆  SOCKET A GEM', 'Set a gem into an empty socket', 'jewSocket', '#4ecbe0'],
         ['◇  UNSOCKET A GEM', 'Pull gems back out — always free', 'jewUnsocket', '#b06adf'],
@@ -3467,16 +3486,22 @@ const Screens = {
   gemStackList(ctx, W, H, px, pw, top, panelBot, detailNeed, onSelect) {
     // Filter chips (All + 5 types) and a sort-direction toggle.
     const types = Object.keys(GEM_TYPES);
-    const chipW = (pw - 32 - 64) / (types.length + 1);
-    UI.btnPlate2(ctx, px + 16, top, chipW - 4, 24, 'All', () => { UI.sel.gemFilter = null; UI.sel.gemKey = null; },
+    // The chip row is CENTERED in the wider panel (owner rule).
+    const sortW = 62, gap = 6;
+    const chipW = Math.min(84, (pw - 48 - sortW - gap * (types.length + 1)) / (types.length + 1));
+    const rowW = (types.length + 1) * (chipW + gap) + sortW;
+    let cxr = px + (pw - rowW) / 2;
+    UI.btnPlate2(ctx, cxr, top, chipW, 24, 'All', () => { UI.sel.gemFilter = null; UI.sel.gemKey = null; },
       { size: 9, color: !UI.sel.gemFilter ? '#f0dcae' : '#8a8070' });
-    types.forEach((t, ti) => {
+    cxr += chipW + gap;
+    types.forEach(t => {
       const on = UI.sel.gemFilter === t;
-      UI.btnPlate2(ctx, px + 16 + (ti + 1) * chipW, top, chipW - 4, 24, GEM_TYPES[t].name.slice(0, 4),
+      UI.btnPlate2(ctx, cxr, top, chipW, 24, GEM_TYPES[t].name.slice(0, 4),
         () => { UI.sel.gemFilter = on ? null : t; UI.sel.gemKey = null; },
         { size: 9, color: on ? GEM_TYPES[t].color : '#8a8070' });
+      cxr += chipW + gap;
     });
-    UI.btnPlate2(ctx, px + pw - 74, top, 58, 24, UI.sel.gemSortAsc ? '▲ tier' : '▼ tier',
+    UI.btnPlate2(ctx, cxr, top, sortW, 24, UI.sel.gemSortAsc ? '▲ tier' : '▼ tier',
       () => { UI.sel.gemSortAsc = !UI.sel.gemSortAsc; }, { size: 9 });
 
     const groups = {};
@@ -3531,7 +3556,7 @@ const Screens = {
 
   jewMerge(ctx, W, H) {
     this.shopBackdrop(ctx, W, H, 'jeweler');
-    const pw = Math.min(560, W - 20);
+    const pw = Math.min(620, W - 20);
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 56, 470);
     UI.panel(ctx, px, 46, pw, ph, 'MERGE GEMS');
@@ -3563,7 +3588,7 @@ const Screens = {
 
   jewSell(ctx, W, H) {
     this.shopBackdrop(ctx, W, H, 'jeweler');
-    const pw = Math.min(560, W - 20);
+    const pw = Math.min(620, W - 20);
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 56, 470);
     UI.panel(ctx, px, 46, pw, ph, 'SELL GEMS');
@@ -3590,35 +3615,36 @@ const Screens = {
 
   jewCraft(ctx, W, H) {
     this.shopBackdrop(ctx, W, H, 'jeweler');
-    const pw = Math.min(480, W - 20);
+    // Wider + roomier; everything centered in Cinzel bone white (owner rules).
+    const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
-    UI.panel(ctx, px, 46, pw, Math.min(H - 56, 420), 'CRAFT A GEM');
+    UI.panel(ctx, px, 46, pw, Math.min(H - 56, 490), 'CRAFT A GEM');
     const spec = Items.gemCraftSpec();
     const cost = Items.gemCraftCost();
     const afford = Items.canAfford(cost);
-    // Flavor WRAPPED over its own lines (owner rule: no more cut-off text).
-    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
     ctx.font = 'italic 11px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-    let y = wrapText(ctx, '"Choose a stone and Orren cuts it fresh. The finer my training, the finer the cut."',
-      px + 20, 94, pw - 40, 15, 3);
-    ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = '#4ecbe0';
-    y = wrapText(ctx, 'Jeweler level ' + (Hero.artisans.jeweler || 1) + ' cuts ' + GEM_TIERS[spec.tier].toUpperCase() + ' gems.',
-      px + 20, y + 4, pw - 40, 14, 2);
-    ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = afford ? '#ffd76a' : '#a05a5a';
-    y = wrapText(ctx, 'Cost: ' + this.costLabel(cost) + '  ·  you have ' + Hero.gold.toLocaleString() + 'g',
-      px + 20, y + 4, pw - 40, 14, 2);
-    y += 8;
+    let y = this.wrapCentered(ctx, '"Choose a stone and Orren cuts it fresh. The finer my training, the finer the cut."',
+      px + pw / 2, 104, pw - 56, 15, 3);
+    ctx.font = '600 11px Cinzel, Georgia'; ctx.fillStyle = '#cfc8b8';
+    y = this.wrapCentered(ctx, 'Jeweler level ' + (Hero.artisans.jeweler || 1) + ' cuts ' + GEM_TIERS[spec.tier].toUpperCase() + ' gems',
+      px + pw / 2, y + 10, pw - 56, 14, 2);
+    ctx.font = '600 12px Cinzel, Georgia'; ctx.fillStyle = afford ? '#cfc8b8' : '#a05a5a';
+    y = this.wrapCentered(ctx, 'Cost: ' + this.costLabel(cost) + '  ·  you have ' + Hero.gold.toLocaleString() + 'g',
+      px + pw / 2, y + 6, pw - 56, 14, 2);
+    y += 10;
+    // Taller gem rows, all text centered; stat line in faded bone white.
     for (const t of Object.keys(GEM_TYPES)) {
       const gm = GEM_TYPES[t];
-      UI.btnPlate3(ctx, px + 16, y, pw - 32, 40, '', afford ? () => Items.craftGem(t) : null,
+      UI.btnPlate2(ctx, px + 16, y, pw - 32, 52, '', afford ? () => Items.craftGem(t) : null,
         { disabled: !afford });
-      drawGemIcon(ctx, t, spec.tier, px + 38, y + 20, 12);
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = gm.color;
-      ctx.fillText(gm.name, px + 58, y + 14);
-      ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-      ctx.fillText(this.fitText(ctx, gemStatText({ type: t, tier: spec.tier }).replace(/\s*\/\s*/, ' · '), pw - 90), px + 58, y + 29);
-      y += 46;
+      drawGemIcon(ctx, t, spec.tier, px + 52, y + 26, 13);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '600 13px Cinzel, Georgia'; ctx.fillStyle = gm.color;
+      ctx.fillText(gm.name, px + pw / 2, y + 18);
+      ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#cfc8b8';
+      ctx.fillText(this.fitText(ctx, gemStatText({ type: t, tier: spec.tier }).replace(/\s*\/\s*/, ' · '), pw - 130), px + pw / 2, y + 36);
+      y += 58;
     }
   },
 
@@ -3628,8 +3654,9 @@ const Screens = {
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 56, 470);
     UI.panel(ctx, px, 46, pw, ph, 'SOCKET A GEM');
-    ctx.textAlign = 'left'; ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-    ctx.fillText(this.fitText(ctx, 'Gear with sockets (equipped ◈ and bagged). Tap one to choose its gem.', pw - 32), px + 16, 86);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
+    this.wrapCentered(ctx, 'Gear with sockets (equipped ◈ and bagged). Tap one to choose its gem.', px + pw / 2, 86, pw - 44, 14, 2);
     const rows = [];
     for (const slot of Object.keys(ITEM_SLOTS)) {
       const it = Hero.equipped[slot];
@@ -3637,10 +3664,10 @@ const Screens = {
     }
     for (const it of Hero.bag) if (it && !it.torch && (it.sockets || 0) > 0) rows.push({ it, equipped: false });
     if (!rows.length) {
-      ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#544d44';
-      ctx.fillText('No socketed gear yet — sockets roll on drops, or the Mystic can add one.', px + 16, 116);
+      ctx.textAlign = 'center'; ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#544d44';
+      this.wrapCentered(ctx, 'No socketed gear yet — sockets roll on drops, or the Mystic can add one.', px + pw / 2, 132, pw - 44, 15, 2);
     }
-    const rowH = 44, listTop = 98, listBot = 46 + ph - 14;
+    const rowH = 44, listTop = 116, listBot = 46 + ph - 14;
     const viewH = Math.max(rowH, listBot - listTop);
     const scrollMax = Math.max(0, rows.length * rowH - viewH);
     const scrollY = clamp(UI.sel.scrollY || 0, 0, scrollMax);
@@ -3686,8 +3713,8 @@ const Screens = {
     }
     for (const it of Hero.bag) if (it && it.gems) it.gems.forEach((g, gi) => rows.push({ it, gi, g, equipped: false }));
     if (!rows.length) {
-      ctx.textAlign = 'left'; ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#544d44';
-      ctx.fillText('Nothing is socketed right now.', px + 16, 100);
+      ctx.textAlign = 'center'; ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#544d44';
+      ctx.fillText('Nothing is socketed right now.', px + pw / 2, 110);
       return;
     }
     const rowH = 40, listTop = 88, listBot = 46 + ph - 14;
@@ -3755,7 +3782,7 @@ const Screens = {
 
   // MYSTIC — art-first hub: enchanting plus the cosmetic wardrobe (owner rule).
   mystic(ctx, W, H) {
-    this.artisanHub(ctx, W, H, 'mystic', 'VESSA NIGHTWEAVE — ENCHANTRESS',
+    this.artisanHub(ctx, W, H, 'mystic', 'VESSA THE ENCHANTRESS',
       '"The threads of fate can always be rewoven."', [
         ['✦  ENCHANT GEAR', 'Reroll a chosen property on an item', 'mysEnchant', '#b06adf'],
         ['🐾  PETS', 'Choose a companion to walk beside you', 'mysPet', '#6ff7c3'],
@@ -3775,11 +3802,12 @@ const Screens = {
     const row = (label, desc, id, color) => {
       const on = current === id;
       UI.btnPlate3(ctx, px + 16, y, pw - 32, 44, '', () => onPick(id));
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      // Centered (owner rule v1.7.0).
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = color || '#e8e0cc';
-      ctx.fillText((on ? '✔  ' : '') + label, px + 30, y + 15);
+      ctx.fillText((on ? '✔  ' : '') + label, px + pw / 2, y + 15);
       ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-      ctx.fillText(this.fitText(ctx, desc, pw - 60), px + 30, y + 31);
+      ctx.fillText(this.fitText(ctx, desc, pw - 120), px + pw / 2, y + 31);
       y += 52;
     };
     if (noneLabel) row(noneLabel, 'Plain and unadorned.', null, '#9a9080');
@@ -3821,11 +3849,11 @@ const Screens = {
 
     // ---- pick an item ----
     if (!UI.sel.item) {
-      ctx.textAlign = 'left';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
       ctx.font = (big ? 14 : 12) + 'px Cinzel, Georgia';
       ctx.fillStyle = '#9a9080';
-      ctx.fillText('Choose an item, then a property to reroll. Each reroll', px + 16, big ? 114 : 112);
-      ctx.fillText('stays in that property\'s group — you see the exact odds.', px + 16, big ? 134 : 128);
+      ctx.fillText('Choose an item, then a property to reroll. Each reroll', px + pw / 2, big ? 114 : 112);
+      ctx.fillText('stays in that property\'s group — you see the exact odds.', px + pw / 2, big ? 134 : 128);
       // Scrollable list so ALL equip slots are reachable — both rings included —
       // even on short screens (the list is 11 slots tall). Torch isn't enchantable.
       const slots = Object.keys(ITEM_SLOTS).filter(s => !ITEM_SLOTS[s].torch);
@@ -3851,15 +3879,16 @@ const Screens = {
             UI.sel.affix = null;
             UI.sel.scrollY = 0;   // detail view starts at the top
           } : null, { disabled: !it });
-          ctx.textAlign = 'left';
+          // Centered gear text (owner rule — no more far-left squish).
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           ctx.font = 'bold ' + rowF + 'px Cinzel, Georgia';
           ctx.fillStyle = it ? RARITIES[it.rarity].color : '#453f52';
-          ctx.fillText(this.fitText(ctx, ITEM_SLOTS[slot].label + ':  ' + (it ? it.name : '—'), pw - 90), px + 26, y + rowBoxH / 2);
+          ctx.fillText(this.fitText(ctx, ITEM_SLOTS[slot].label + ':  ' + (it ? it.name : '—'), pw - 140), px + pw / 2, y + rowBoxH / 2);
           if (it && it.enchants) {
-            ctx.textAlign = 'right';
+            ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
             ctx.font = (big ? 12 : 10) + 'px Cinzel, Georgia';
             ctx.fillStyle = '#b06adf';
-            ctx.fillText('✦ ' + it.enchants, px + pw - 26, y + rowBoxH / 2);
+            ctx.fillText('✦ ' + it.enchants, px + pw - 44, y + rowBoxH / 2);
           }
         }
         y += rowStep;
@@ -4108,13 +4137,29 @@ const Screens = {
     ly = line(lx, ly, 'Story acts finished', (Hero.actsCleared || 0) + ' / 100');
     ly = line(lx, ly, 'Difficulty', DIFFICULTIES[Hero.difficulty].name);
     ly = line(lx, ly, 'Monsters slain', Hero.totalKills);
+    // The fountain's blessing, in plain words (owner rule — bone white).
+    if (Game.fountainBuff && Game.fountainBuff.t > 0) {
+      const fb = Game.fountainBuff;
+      ly = line(lx, ly, 'Fountain blessing',
+        Math.floor(fb.t / 60) + ':' + String(Math.floor(fb.t % 60)).padStart(2, '0') + ' left', '#cfc8b8');
+      ctx.textAlign = 'left'; ctx.font = 'italic ' + (10 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#cfc8b8';
+      ly = wrapText(ctx, FOUNTAIN_BUFFS[fb.buff], lx, ly, colW, 13 * k, 2) + 4 * k;
+    }
     if (!twoCol) ry = ly + 6; // stack columns on narrow screens
 
     // Reagents & holdings.
     ry = header(rx, ry, '— REAGENTS —', '#ffd76a');
     ry = line(rx, ry, 'Gold', Hero.gold, '#ffd76a');
     for (const [key, m] of Object.entries(MATERIALS)) {
-      ry = line(rx, ry, m.name, Hero.mats[key], m.color);
+      if (key === 'parts' || key === 'dust' || key === 'crystal' || key === 'soul') {
+        // Painted material icon instead of the written name (owner rule).
+        drawMatIcon(ctx, key, rx + 10 * k, ry - 4 * k, 18 * k);
+        ctx.textAlign = 'right'; ctx.font = '600 ' + (12 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = m.color;
+        ctx.fillText(String(Hero.mats[key] || 0), rx + colW, ry);
+        ry += 19 * k;
+      } else {
+        ry = line(rx, ry, m.name, Hero.mats[key], m.color);
+      }
     }
     ry = line(rx, ry, 'Gems in pouch', Hero.gems.length, '#b06adf');
     ry = line(rx, ry, 'Bag', Hero.bagUsed() + ' / ' + Hero.BAG_SIZE);
@@ -4333,19 +4378,18 @@ const Screens = {
     };
 
     const sfa = UI.safe || { top: 0 };
-    const pw = Math.min(560, W - 20);
-    const px = W / 2 - pw / 2;
-    let y = 18 + (sfa.top || 0);
-
-    // Header: totals + capacity.
+    // The painted panel wraps the whole vault (v1.7.0 owner rule — the
+    // Stash gets a menu of its own, like Inventory).
     const total = Hero.stash.filter(it => it && !it.torch).length;
-    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = '600 16px Cinzel, Georgia'; ctx.fillStyle = '#dcc9a2';
-    ctx.fillText('STASH', px, y);
-    // Right-aligned clear of the red ✕ in the corner.
-    ctx.textAlign = 'right'; ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#8fb0e8';
-    ctx.fillText(total + ' stored  ·  ' + Hero.stashPerSlot().toLocaleString() + '/type', px + pw - 54, y);
-    y += 10;
+    const ppw = Math.min(600, W - 16);
+    const ppx = W / 2 - ppw / 2;
+    const ppy = Math.max(8, (sfa.top || 0) + 8);
+    const ppb = H - 10;
+    UI.panel(ctx, ppx, ppy, ppw, ppb - ppy,
+      'STASH — ' + total + ' stored · ' + Hero.stashPerSlot().toLocaleString() + '/type');
+    const pw = ppw - 40;
+    const px = W / 2 - pw / 2;
+    let y = ppy + 48;
 
     // Deposit + upgrade.
     const gs = n => n >= 1e6 ? (n / 1e6) + 'm' : n >= 1000 ? (n / 1000) + 'k' : '' + n;
@@ -4401,7 +4445,7 @@ const Screens = {
       })
       .filter(g => g.items.length);
 
-    const listTop = y, viewBot = H - (Game.state === 'town' ? 150 : 12), viewH = Math.max(60, viewBot - listTop);
+    const listTop = y, viewBot = ppb - 14, viewH = Math.max(60, viewBot - listTop);
     const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
     UI.sel.scrollY = scrollY;
     UI.sel.scrollRegion = { x: px - 4, y: listTop - 4, w: pw + 8, h: viewH + 8 };
@@ -4491,7 +4535,7 @@ const Screens = {
     const img = Game.lukusImg('idle');
     const ready = img.complete && img.naturalWidth;
     const aspect = ready ? img.naturalWidth / img.naturalHeight : 0.62;
-    const lx = Math.max(14, W * 0.04);
+    const lx = Math.max(30, W * 0.055);   // indented from the edge (owner rule)
 
     // Try the wide layout first: knight bottom-anchored left of the button.
     let h = Math.min(H * 0.92, 640), w = h * aspect;
@@ -4677,10 +4721,10 @@ const Screens = {
           UI.btn(ctx, lx, c - scrollY, lw, 40, 'JOURNAL FULL — ' + QUEST_JOURNAL_MAX + ' / ' + QUEST_JOURNAL_MAX,
             null, { size: 12, disabled: true, color: '#8a8070' });
         } else if (gateOk) {
-          UI.btnPlate(ctx, lx, c - scrollY, lw, 40, 'ACCEPT QUEST', () => {
+          UI.btnPlate2(ctx, lx, c - scrollY, lw, 40, 'ACCEPT QUEST', () => {
             const acc = Hero.acceptQuest();
             if (acc) { UI.toast('Quest accepted: ' + acc.name, '#ffd76a'); AudioSys.sfx('gold'); }
-          }, { size: 13, border: '#8a6f2a', color: '#ffd76a' });
+          }, { size: 13, color: '#ffd76a' });
         } else {
           // Gated quests share ONE plate with live text (owner rule — no
           // thousand baked images, just "REQUIRES LEVEL X" on the plate).
@@ -4854,10 +4898,10 @@ const Screens = {
           ctx.fillText(this.fitText(ctx, dd.desc, lw - 8), lx + 4, dy2 + 15);
           ctx.font = 'italic 9px Cinzel, Georgia'; ctx.fillStyle = '#b08ab8';
           wrapText(ctx, 'Pays: one random MARQUISE gem, plus a legendary — 90% plain, 6% 1–3★, 3% 4–5★, 1% ARTIFACT.', lx + 4, dy2 + 30, lw - 8, 12, 3);
-          UI.btn(ctx, lx, dy2 + 62, lw, 24, 'DAILY QUEST', () => {
+          UI.btnPlate3(ctx, lx, dy2 + 62, lw, 24, 'DAILY QUEST', () => {
             const acc = Hero.acceptDaily();
             if (acc) { UI.toast("The Queen's Errand: " + acc.desc, '#c86adf'); AudioSys.sfx('gold'); }
-          }, { size: 11, border: '#7a4a8f', color: '#c86adf' });
+          }, { size: 11, color: '#c86adf' });
         }
       }
       c += dh + 8;
@@ -4946,10 +4990,10 @@ const Screens = {
             UI.btn(ctx, lx, c - scrollY, lw, 40, 'JOURNAL FULL — ' + QUEST_JOURNAL_MAX + ' / ' + QUEST_JOURNAL_MAX,
               null, { size: 12, disabled: true, color: '#8a8070' });
           } else {
-            UI.btnPlate(ctx, lx, c - scrollY, lw, 40, 'ACCEPT QUEST', () => {
+            UI.btnPlate2(ctx, lx, c - scrollY, lw, 40, 'ACCEPT QUEST', () => {
               const acc = Hero.acceptQuest('A');
               if (acc) { UI.toast('Quest accepted: ' + acc.name, '#c86adf'); AudioSys.sfx('gold'); }
-            }, { size: 13, border: '#7a4a8f', color: '#c86adf' });
+            }, { size: 13, color: '#c86adf' });
           }
         }
         c += 48;
@@ -5084,10 +5128,10 @@ const Screens = {
         } : null, { disabled: !afford });
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
         ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = afford ? '#e8e0cc' : '#6f6552';
-        ctx.fillText(label, lx + 8, yy + 17);
+        ctx.fillText(label, lx + 20, yy + 17);
         ctx.textAlign = 'right';
         ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = afford ? '#c88bf0' : '#5a4a66';
-        ctx.fillText('◉ ' + cost, lx + lw - 6, yy + 17);
+        ctx.fillText('◉ ' + cost, lx + lw - 28, yy + 17);
       }
       c += 38;
     }
@@ -5135,17 +5179,18 @@ const Screens = {
       UI.btnPlate2(ctx, px + 14, y, pw - 28, 34, '', entry.sold ? null : () => {
         UI.sel.buy = selected ? null : entry;
       }, { disabled: entry.sold });
+      // Text + gold sit well clear of the plate's finial caps (owner rule).
       ctx.textAlign = 'left';
       ctx.font = 'bold 12px Cinzel, Georgia';
       ctx.fillStyle = entry.sold ? '#544d44' : RARITIES[it.rarity].color;
-      ctx.fillText(this.fitText(ctx, it.name, pw - 130), px + 26, y + 12);
+      ctx.fillText(this.fitText(ctx, it.name, pw - 176), px + 44, y + 12);
       ctx.font = '10px Cinzel, Georgia';
       ctx.fillStyle = entry.sold ? '#453f52' : '#8a8070';
-      ctx.fillText(ITEM_SLOTS[it.slot].label + ' · ' + RARITIES[it.rarity].name, px + 26, y + 25);
+      ctx.fillText(ITEM_SLOTS[it.slot].label + ' · ' + RARITIES[it.rarity].name, px + 44, y + 25);
       ctx.textAlign = 'right';
       ctx.font = 'bold 12px Cinzel, Georgia';
       ctx.fillStyle = entry.sold ? '#453f52' : (Hero.gold >= entry.price ? '#ffd76a' : '#8a5a5a');
-      ctx.fillText(entry.sold ? 'SOLD' : entry.price + ' g', px + pw - 26, y + 17);
+      ctx.fillText(entry.sold ? 'SOLD' : entry.price + ' g', px + pw - 44, y + 17);
       y += 40;
     });
 

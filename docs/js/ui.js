@@ -23,6 +23,7 @@ const UI = {
     this.panelRects = [];
     this.overlayBarrier = 0;
     this.tipHover = null;
+    this.introShowing = false;   // set by Screens.artisanIntro while it draws
   },
 
   // Desktop hover help: if the mouse is inside this rect, remember its tooltip.
@@ -159,7 +160,10 @@ const UI = {
   // way out (straight back to the playable screen) — no round EXIT button.
   MENU_SCREENS: ['sysmenu', 'character', 'radial', 'invGrouped', 'journal',
     'skills', 'skillChooser', 'achievements', 'settings', 'paragon',
-    'wilds', 'storyacts'],
+    'wilds', 'storyacts',
+    // The Enchantress's benches shed the round EXIT too (owner rule v1.7.0)
+    // — their ✕ rides the panel corner and Escape returns to the hub.
+    'mysEnchant', 'mysPet', 'mysWings', 'mysTheme'],
 
   // The navigation for the red ✕ / Escape on the CURRENT screen. Most screens
   // just close, but a few step back to a parent menu instead:
@@ -399,14 +403,14 @@ const UI = {
         this.drawGlobalClose(ctx, W);
         // Pure MENU screens rely on the red ✕ alone (owner rule — no round
         // EXIT button); doorway screens (shops, stash, NPCs) keep it.
-        if (!this.MENU_SCREENS.includes(this.screen))
+        if (!this.MENU_SCREENS.includes(this.screen) && !this.introShowing)
           this.drawTownEnter(ctx, W, H, true);   // EXIT — registered above the barrier
       } else {
         if (!this.desktop) this.drawJoystick(ctx);
         // Top-left: ☰ MENU (camp hub: skills/paragon/character/settings) + 🎒.
         const s = this.safe || { top: 0, left: 0 };
-        this.btn(ctx, 12 + s.left, 40 + s.top, 92, 30, '☰ MENU', () => UI.open('sysmenu'),
-          { size: 12, color: '#c9bfa8', border: '#5a544a' });
+        this.btnPlate2(ctx, 12 + s.left, 40 + s.top, 96, 30, 'MENU', () => UI.open('sysmenu'),
+          { size: 12, color: '#c9bfa8' });
         // (The 🎒 inventory shortcut beside MENU was deleted — owner rule;
         // Inventory lives in the ☰ MENU.)
         if (Game.townPrompt) this.drawTownEnter(ctx, W, H, false);
@@ -513,10 +517,23 @@ const UI = {
 
   // Every open menu gets the same red ✕, drawn ABOVE all of its content
   // (some panels used to paint over their own close button on phones).
+  // Screens whose ✕ was removed outright (owner list v1.7.0): the Crucible
+  // and the three NPC dialogs keep only Escape / the round EXIT medallion.
+  NO_CLOSE_X: ['cube', 'lukus', 'addy', 'lyssa'],
+
   drawGlobalClose(ctx, W) {
+    if (this.NO_CLOSE_X.includes(this.screen)) return;
+    // The artisan WELCOME splash carries no ✕ at all (owner rule).
+    if (this.introShowing) return;
     const s = this.safe || { top: 0, right: 0 };
+    // The ✕ plate rides the MENU PANEL's top-right corner (owner rule v1.7.0
+    // — "on the menu items they are on, not far away in the corner"); screens
+    // that draw no panel fall back to the screen corner.
+    const pr = (this.panelRects && this.panelRects[0]) || null;
+    const x = pr ? Math.min(W - 26 - s.right, pr.x + pr.w - 8) : W - 26 - s.right;
+    const y = pr ? Math.max(24, pr.y + 6) : 26 + s.top;
     // ✕ and Escape share one navigation policy (see closeAction).
-    Screens.closeX(ctx, W, { x: W - 26 - s.right, y: 26 + s.top, cb: this.closeAction() });
+    Screens.closeX(ctx, W, { x, y, cb: this.closeAction() });
   },
 
   // ------------------------------------------------------------- HUD parts

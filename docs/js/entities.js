@@ -181,7 +181,9 @@ class Player {
     if (this.powers.hauntedVisions && Game.minions.some(mn => !mn.dead && mn.kind === 'sim')) {
       this.hp = Math.max(1, this.hp - this.maxHp * 0.05 * dt);
     }
-    this.essence = clamp(this.essence + this.essenceRegen * dt, 0, this.maxEssence);
+    // The fountain's Empowered blessing doubles essence regeneration.
+    const eRegen = this.essenceRegen * (this.shrine && this.shrine.buff === 'empowered' ? 2 : 1);
+    this.essence = clamp(this.essence + eRegen * dt, 0, this.maxEssence);
     if (Hero.cheats.essence) this.essence = this.maxEssence;
     this.shield = Math.max(0, this.shield - dt * 1.2);
 

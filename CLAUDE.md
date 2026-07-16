@@ -407,6 +407,44 @@ loot at the artisans. The hero is persistent (localStorage).
   the Jeweler's `gemStackList` chips moved gothic→SIMPLE plate (owner
   correction). Character footer: PARAGON + **CAMPFIRE** (renamed from
   CHANGE HERO) on the simple plate.
+- **v1.7.0 (owner mega-list)**: (1) **MATERIAL ICONS** — owner art in
+  `docs/art/mats/{parts,dust,crystal,soul}.webp` (square-padded 96px),
+  loaded by `Game.matImg`, drawn by global `drawMatIcon(ctx,key,x,y,s)`
+  (utils.js, colored-dot fallback) — replaces the written names in the
+  Character REAGENTS panel, the Blacksmith `matsRow`, and the Crucible
+  leaflet (tally + extraction cost); the leaflet's explainer is one line
+  now. (2) **✕ ON THE PANEL** — `drawGlobalClose` anchors the ✕ plate to
+  `UI.panelRects[0]`'s top-right corner (screen-corner fallback);
+  `UI.NO_CLOSE_X` = cube/lukus/addy/lyssa have NO ✕ at all, and the
+  artisan intro sets `UI.introShowing` (reset in clearHits) which kills
+  both ✕ and the round EXIT on the splash. (3) **ARTISANS**: hub titles
+  are THARN THE BLACKSMITH / ORREN THE JEWELER / VESSA THE ENCHANTRESS;
+  intro splash spaced out, flavor CENTERED (`Screens.wrapCentered`
+  helper), "tap anywhere" whisper deleted, npc names surname-free.
+  (4) **TORCH BENCH** rebuilt: pw 640, REAGENTS in a collapsible drawer
+  (`UI.sel.torchReag`), lit-torch countdown kept, NO rarity tags, rows on
+  the SIMPLE plate (rowH 82), CRAFT chip inside the plate at
+  `px+pw-152`, BACK TO FORGE gothic; TORCH_TYPES.nephalem is now
+  "Ascendant's Torch". (5) **smithCraft**: quality toggles + slot grid on
+  SIMPLE plates, every row CENTERED, "Forges level X–Y" centered with
+  the owner's Standard/Masterwork lines beneath, bag-note deleted.
+  (6) **JEWELER**: socket/unsocket explainers centered+wrapped; merge/
+  sell pw 620 with the chip row CENTERED; jewCraft restyled — centered
+  Cinzel bone-white level/cost lines, 52px simple-plate rows, stats in
+  `#cfc8b8`. (7) **ENCHANTRESS**: enchant list + cosmeticList text
+  centered; her four benches joined MENU_SCREENS (no round EXIT — panel
+  ✕/Escape); FOUR NEW PETS (graveHound dog / ghostMoth / marrowImp /
+  tombToad — procedural draws in Game.drawPet). (8) **FOUNTAIN**: flavor
+  + footer lines wrap via wrapCentered; buff text bone-white Cinzel from
+  the shared `FOUNTAIN_BUFFS` plain-words table (data.js); the blessing
+  ALSO shows on the Character sheet (JOURNEY, with description);
+  Empowered now doubles essence regen while active (entities.js).
+  (9) **STASH** wraps in its own UI.panel like Inventory. (10) Town's
+  top-left ☰ is a SIMPLE-plate MENU button. (11) sysmenu rows
+  Character→Achievements SIMPLE plate, SETTINGS gothic, ABANDON ornate.
+  (12) Vendor rows inset text/gold 44px clear of the plate caps; Lyssa's
+  column indented (`lx = max(30, W*0.055)`), orb costs pulled in; Addy
+  DAILY QUEST gothic + ACCEPT simple; Lukus ACCEPT simple.
 - **PAINTED PANELS for INVENTORY + SKILLS (v1.6.96, owner rule "see the UI
   in Character? Create similar… so everything matches")**: `invGrouped`
   wraps its whole list in `UI.panel` (title carries the bag count:
