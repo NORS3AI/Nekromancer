@@ -496,6 +496,16 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.20 — SCALABLE SELECT TITLE (owner art)**: `select_bg.webp` recut
+  TITLE-FREE (the baked "CHOOSE YOUR HERO" plate painted out offline — box
+  x 0.13–0.87 / y 0.01–0.30 filled with per-row median-sampled dark cloud +
+  grain, feathered; ART_V 9→10). The plate is a NEW standalone
+  `select_title.webp` (alpha-cut, aspect ~3.38) drawn device-scaled in
+  `Screens.select`: width fraction `W>=1100 ? 0.46 : W>=640 ? 0.58 : 0.82`
+  capped 620, at y `max(8, H*0.04)`. `titleBottom` (its measured bottom)
+  feeds the frame `y0 = max(0.17H, 58, titleBottom+14)` so the massive
+  frames never overlap it. `select_bg` cover-fit at every aspect now (no
+  more portrait top-anchor for a baked title). preloadArt warms it.
 - **v1.7.15 — SEAMLESS UI SWEEP + FIXES (owner mega-list)**: (1) the ✕ is
   the BARE painted X (`close_x.webp`, lifted off the close2 plate offline;
   `Screens.closeX` dh 26, no plate) on every panel; `UI.panel` titles sit

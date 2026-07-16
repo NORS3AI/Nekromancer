@@ -100,22 +100,34 @@ const Screens = {
     // holding a ghostly unclaimed vessel — the plus plate at 25% opacity on
     // an empty vessel is the CREATE button. Claimed frames show the hero.
     const t = Game.time || 0;
+    // TITLE-FREE vista now (v1.7.20): the "CHOOSE YOUR HERO" plate is a
+    // SEPARATE, DEVICE-SCALED element drawn on top — so it can shrink on
+    // phones and grow on desktop instead of being baked huge into the art.
     const bg = Game.uiImg('select_bg');
     ctx.fillStyle = '#050408'; ctx.fillRect(0, 0, W, H);
     if (bg && bg.complete && bg.naturalWidth) {
-      if (W < H) {
-        // Portrait: width-fit anchored TOP so the baked title survives; the
-        // frames stand over the dark lower half.
-        const cf = W / bg.width;
-        ctx.drawImage(bg, 0, 0, bg.width * cf, bg.height * cf);
+      const cf = Math.max(W / bg.width, H / bg.height);   // always cover-fit
+      ctx.drawImage(bg, (W - bg.width * cf) / 2, (H - bg.height * cf) / 2, bg.width * cf, bg.height * cf);
+    }
+    // The painted title plate, scaled to the viewport tier. `titleBottom`
+    // is where the frames must begin so nothing overlaps the plate.
+    let titleBottom = H * 0.10;
+    {
+      const title = Game.uiImg('select_title');
+      // desktop wide · tablet · phone → a fraction of the screen width, capped.
+      const wf = W >= 1100 ? 0.46 : W >= 640 ? 0.58 : 0.82;
+      const ty = Math.max(8, H * 0.04);
+      if (title && title.complete && title.naturalWidth) {
+        const tw = Math.min(W * wf, 620);
+        const th = tw * (title.height / title.width);
+        ctx.drawImage(title, W / 2 - tw / 2, ty, tw, th);
+        titleBottom = ty + th;
       } else {
-        const cf = Math.max(W / bg.width, H / bg.height);
-        ctx.drawImage(bg, (W - bg.width * cf) / 2, (H - bg.height * cf) / 2, bg.width * cf, bg.height * cf);
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = '600 ' + Math.round(W < 640 ? 22 : 30) + 'px Cinzel, Georgia'; ctx.fillStyle = '#d8c5a0';
+        ctx.fillText('CHOOSE YOUR HERO', W / 2, H * 0.10);
+        titleBottom = H * 0.14;
       }
-    } else {
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = '600 24px Cinzel, Georgia'; ctx.fillStyle = '#d8c5a0';
-      ctx.fillText('CHOOSE YOUR HERO', W / 2, H * 0.10);
     }
 
     const delMode = !!UI.sel.delMode;
@@ -136,8 +148,8 @@ const Screens = {
     const narrow = W < 640;
     const gutter = narrow ? 0 : 46;      // side room reserved for the arrows
     // MASSIVE frames (owner rule v1.7.13: "fill the space… command it"):
-    // from just under the baked title down to the PLAY row.
-    let y0 = Math.max(H * 0.17, 58);
+    // from just under the scalable title plate down to the PLAY row.
+    let y0 = Math.max(H * 0.17, 58, titleBottom + 14);
     let fh = Math.min(H - 96 - y0, 640);
     let fw = fh * FA;
     const avail = W - (narrow ? 20 : 8 + gutter * 2);
