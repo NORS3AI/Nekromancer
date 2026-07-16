@@ -122,11 +122,6 @@ const Screens = {
     if (!delMode && UI.sel.pick === undefined) {
       UI.sel.pick = Profiles.slots[Profiles.active] ? Profiles.active : null;
     }
-    if (delMode) {
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = '600 13px Cinzel, Georgia'; ctx.fillStyle = '#e04a5a';
-      ctx.fillText('RETIRE A HERO — tap the hero you wish to retire', W / 2, H * 0.285);
-    }
 
     // ---- three slot frames per PAGE (v1.7.11 owner rule: up to 9 heroes,
     // paged 3 at a time with painted arrows left and right) ----
@@ -140,11 +135,23 @@ const Screens = {
     // arrows move DOWN beside the page dots instead (v1.7.12).
     const narrow = W < 640;
     const gutter = narrow ? 0 : 46;      // side room reserved for the arrows
-    let fh = Math.min(H * (short ? 0.46 : 0.52), 430);
+    // MASSIVE frames (owner rule v1.7.13: "fill the space… command it"):
+    // from just under the baked title down to the PLAY row.
+    let y0 = Math.max(H * 0.17, 58);
+    let fh = Math.min(H - 96 - y0, 640);
     let fw = fh * FA;
     const avail = W - (narrow ? 20 : 8 + gutter * 2);
-    if (fw * 3 + gap * 2 > avail) { fw = (avail - gap * 2) / 3; fh = fw / FA; }
-    const y0 = H * (short ? 0.50 : 0.56) - fh / 2;
+    if (fw * 3 + gap * 2 > avail) {
+      // Width-bound (portrait phones): size by width and drop the row back
+      // to the lower half so the vista's baked title stays clear.
+      fw = (avail - gap * 2) / 3; fh = fw / FA;
+      y0 = Math.max(y0, H * 0.55 - fh / 2);
+    }
+    if (delMode) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '600 13px Cinzel, Georgia'; ctx.fillStyle = '#e04a5a';
+      ctx.fillText('RETIRE A HERO — tap the hero you wish to retire', W / 2, y0 - 12);
+    }
     const pages = Math.ceil((Profiles.MAX || 3) / 3);
     if (UI.sel.selPage === undefined) {
       const home = Profiles.slots[Profiles.active] ? Profiles.active : Profiles.firstFilled();
@@ -163,26 +170,32 @@ const Screens = {
       // claimed frames stay clean for the name and level.)
       const mpf = (typeof Input !== 'undefined' && !Input.touchMode) ? Input.mousePos : null;
       const fhov = !!(mpf && mpf.x >= x0 && mpf.x <= x0 + fw && mpf.y >= y0 && mpf.y <= y0 + fh);
-      // The frame (procedural arch until the art loads).
+      // The frame (procedural arch until the art loads). No plate-wide glow
+      // (owner rule v1.7.13) — the hover outline lives on the HERO / plus.
       if (frame && frame.complete && frame.naturalWidth) {
-        ctx.save();
-        if (fhov) { ctx.shadowColor = 'rgba(232,226,208,0.55)'; ctx.shadowBlur = 20; }
-        ctx.globalAlpha = selected ? 1 : 0.88;
+        // Near-opaque even unselected — the painting's interior is solid
+        // black now, so a low alpha would bleed the vista through it.
+        ctx.globalAlpha = selected ? 1 : 0.97;
         ctx.drawImage(frame, x0, y0, fw, fh);
-        ctx.restore();
         ctx.globalAlpha = 1;
       } else {
         ctx.strokeStyle = selected ? '#cfc8b8' : '#3a3448'; ctx.lineWidth = 2;
         rr(ctx, x0, y0, fw, fh, 12); ctx.stroke();
       }
       if (snap) {
-        // A claimed vessel — the hero's painted avatar on the plinth.
+        // A claimed vessel — the hero's painted avatar on the plinth. On
+        // hover the HERO ITSELF takes a blood-red outline (owner rule
+        // v1.7.13 — never a plate-wide white glow).
         const img = Game.heroImg(snap.gender || 'm', 'front', snap.hair || 0);
         const gh2 = fh * 0.60;
         if (img && img.complete && img.naturalWidth) {
           const gw2 = gh2 * (img.width / img.height);
           const breath = Math.sin(t * 1.6 + i) * 1.2;
+          ctx.save();
+          if (fhov) { ctx.shadowColor = 'rgba(168,18,26,0.95)'; ctx.shadowBlur = Math.max(10, fw * 0.055); }
           ctx.drawImage(img, x0 + fw / 2 - gw2 / 2, y0 + fh * 0.875 - gh2 - breath, gw2, gh2 + breath);
+          if (fhov) ctx.drawImage(img, x0 + fw / 2 - gw2 / 2, y0 + fh * 0.875 - gh2 - breath, gw2, gh2 + breath);
+          ctx.restore();
         } else {
           this.drawNecroFigure(ctx, x0 + fw / 2, y0 + fh * 0.86, fh / 420, '#8fb0e8', false, false);
         }
@@ -217,9 +230,15 @@ const Screens = {
           ctx.globalAlpha = 1;
         }
         if (plus && plus.complete && plus.naturalWidth) {
+          // On hover the plus plate takes the same blood-red outline the
+          // heroes get (owner rule v1.7.13) and wakes up a little.
           const pw2 = fw * 0.52, ph2 = pw2 * (plus.height / plus.width);
-          ctx.globalAlpha = 0.25;
+          ctx.save();
+          if (fhov) { ctx.shadowColor = 'rgba(168,18,26,0.95)'; ctx.shadowBlur = 14; ctx.globalAlpha = 0.45; }
+          else ctx.globalAlpha = 0.25;
           ctx.drawImage(plus, x0 + fw / 2 - pw2 / 2, y0 + fh * 0.56 - ph2 / 2, pw2, ph2);
+          if (fhov) ctx.drawImage(plus, x0 + fw / 2 - pw2 / 2, y0 + fh * 0.56 - ph2 / 2, pw2, ph2);
+          ctx.restore();
           ctx.globalAlpha = 1;
         } else {
           ctx.globalAlpha = 0.25;
