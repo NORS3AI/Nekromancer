@@ -321,11 +321,18 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.90-alpha';
+const GAME_VERSION = 'v1.6.91-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.91-alpha', date: 'July 2026',
+    notes: [
+      'The Waygate and Shroud panels now fit their contents — no more giant empty box under one or two mode plates; the difficulty stepper is wider so the arrows never crowd the difficulty name',
+      'Street signs in town are ALWAYS the unlit plate now — the theme\'s lit plate appears ONLY under a hovering mouse, nowhere else (standing at a doorway just brightens the sign\'s lettering)'
+    ]
+  },
   {
     v: 'v1.6.90-alpha', date: 'July 2026',
     notes: [
