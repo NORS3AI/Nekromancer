@@ -672,11 +672,18 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.18-alpha';
+const GAME_VERSION = 'v1.7.19-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.19-alpha', date: 'July 2026',
+    notes: [
+      'BONE ARMOR REFORGED (owner spec) — it now rips the bones from LIVING monsters around you, striking each for HALF its total life. The number of monsters pulled sets how long the armor holds: 1 monster = 5 seconds, 10 = 45 seconds (10 is the cap). With no living monster in reach, Bone Armor cannot form',
+      'FIX: the Grace of Inarius bone tornado no longer whirls forever — it spins ONLY while Bone Armor is actually up, so a short pull means a short storm'
+    ]
+  },
   {
     v: 'v1.7.18-alpha', date: 'July 2026',
     notes: [

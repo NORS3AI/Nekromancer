@@ -324,28 +324,44 @@ const SKILL_FX = {
     const baRune = Hero.rune('boneArmor');
     const stun = baRune === 'dislocation';
     const dmgMul = baRune === 'vengefulArms' ? 1.45 : 1;   // Vengeful Arms: 145% damage
-    World.smash(p.x, p.y, 150);
-    let hits = 0;
+    // Bone Armor now PULLS the bones of LIVING monsters within reach (owner
+    // spec v1.7.19), striking each for 50% of its TOTAL life. The number of
+    // monsters pulled sets the buff's DURATION — no monsters, no armor.
+    const targets = [];
     for (const e of Game.enemies) {
       if (e.dead || e.sleep || e.spawnT > 0) continue;
-      if (dist(p.x, p.y, e.x, e.y) < 150 + e.r) {
-        const o = boneOpts(angleTo(p.x, p.y, e.x, e.y), 80);
-        if (stun) o.root = Math.max(o.root || 0, 2); // Dislocation: stunned
-        // Inarius 2pc: Bone Armor damage +1000% (x11).
-        e.hurt(12 * (set >= 2 ? 11 : 1) * dmgMul * p.power(), o);
-        hits++;
-      }
+      if (dist(p.x, p.y, e.x, e.y) < 150 + e.r) targets.push(e);
     }
-    const shieldGain = (14 + hits * 7) * (set >= 2 ? 2 : 1) * (kalan ? 1.5 : 1);
+    // The cap is 10 bones (a later legendary may raise p.boneArmorCap).
+    const cap = p.boneArmorCap || 10;
+    const pulled = Math.min(targets.length, cap);
+    if (pulled < 1) {
+      // Nothing living to pull from — Bone Armor cannot form (refund the cast).
+      UI.toast('Bone Armor needs living monsters to pull from', '#9a9080');
+      return false;
+    }
+    World.smash(p.x, p.y, 150);
+    // Strike each pulled monster for 50% of its MAXIMUM life (owner rule).
+    for (let i = 0; i < pulled; i++) {
+      const e = targets[i];
+      const o = boneOpts(angleTo(p.x, p.y, e.x, e.y), 80);
+      if (stun) o.root = Math.max(o.root || 0, 2); // Dislocation: stunned
+      o.noCrit = true;   // exactly 50% of total life (owner rule) — no crit variance
+      o.noSplash = true; // and no Ruby flat-damage on top
+      e.hurt(e.maxHp * 0.5 * dmgMul, o);
+    }
+    const shieldGain = (14 + pulled * 7) * (set >= 2 ? 2 : 1) * (kalan ? 1.5 : 1);
     p.shield = Math.min((p.shieldMax + Hero.level) * (set >= 2 ? 2 : 1) * (kalan ? 1.5 : 1), p.shield + shieldGain);
-    // Inarius 4pc: damage reduction per enemy hit; 6pc: the tornado spins up.
+    // DURATION scales with bones pulled: 1 → 5s, 10 → 45s (linear).
+    p.boneArmorT = 5 + (pulled - 1) * (40 / 9);
+    // Inarius 4pc: damage reduction per enemy pulled; 6pc: the tornado spins
+    // up FOR THE BUFF'S DURATION (Player.update gates it on boneArmorT).
     // Wisdom of Kalan grants DR even without the set and raises the cap.
-    p.boneArmorT = 15;
-    const stacks = hits + (kalan ? 5 : 0);
+    const stacks = pulled + (kalan ? 5 : 0);
     p.boneArmorDR = (set >= 4 || kalan) ? Math.min(kalan ? 0.75 : 0.6, stacks * 0.03) : 0;
     // Batch-3 Bone Armor runes.
-    if (baRune === 'thyFlesh') { p.thyFleshStacks = Math.min(10, hits + 3); p.thyFleshT = 15; }        // +10% regen/stack
-    if (baRune === 'harvestAnguish') { p.harvestStacks = Math.min(25, (p.harvestStacks || 0) + hits); p.harvestT = 5; } // +1% move/hit
+    if (baRune === 'thyFlesh') { p.thyFleshStacks = Math.min(10, pulled + 3); p.thyFleshT = 15; }        // +10% regen/stack
+    if (baRune === 'harvestAnguish') { p.harvestStacks = Math.min(25, (p.harvestStacks || 0) + pulled); p.harvestT = 5; } // +1% move/hit
     if (baRune === 'limitedImmunity') p.ccImmuneT = 5;   // immune to control effects 5s
     if (set >= 6) {
       Particles.ring(p.x, p.y, 150, '#4ade80', 5, 0.6);

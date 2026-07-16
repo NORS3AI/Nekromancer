@@ -1391,7 +1391,7 @@ class Enemy {
     if (heroHit && p && p.flatDmg && !opts.noSplash) dmg += p.flatDmg;
     // Brittle (Corpse Lance · Brittle Touch, Ice Golem): the victim takes crits
     // far more often while the debuff lasts.
-    const critChance = (heroHit && p ? p.critChance : 0.1) + (this.brittleT > 0 ? 0.25 : 0);
+    const critChance = opts.noCrit ? 0 : (heroHit && p ? p.critChance : 0.1) + (this.brittleT > 0 ? 0.25 : 0);
     const crit = Math.random() < critChance;
     if (crit) dmg *= 1.8 + (heroHit && p ? (p.critDmg || 0) : 0);   // Emerald crit damage
     if (this.curse) {
