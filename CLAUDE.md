@@ -362,6 +362,34 @@ loot at the artisans. The hero is persistent (localStorage).
   slots, passives slots, skillChooser skills + rune stones (stones shrink
   to 0.86r inside the frame); selection glow rings still draw over it.
   The campfire "＋ New Nekromancer" ghost marker keeps its plain glyph.
+- **THE GOTHIC PLATE + FOUNTAIN (v1.6.98, owner art)**: `docs/art/ui/
+  plate3.webp` (1526×380 — thorned spike caps, small skull crest top AND
+  bottom of centre) drawn by `UI.btnPlate3` — same 5-slice discipline as
+  the ornate plate (capF 0.14, crest 0.45–0.55, art 1.48× the rect, run
+  samples 0.20/0.72). **Plate assignment (owner list)**: GOTHIC = ☰ MENU
+  rows (ABANDON keeps the OLD ornate), skillChooser APPLY (renamed from
+  ACCEPT) + CANCEL, campfire DELETE HERO (150×28 — roomier), gem filter/
+  tier chips (jewSell+jewMerge via `gemStackList`), jewCraft type rows,
+  mysEnchant gear rows, `cosmeticList` rows (pets/wings/themes),
+  smithSalvage buttons, smithCraft STANDARD/MASTERWORK + slot buttons,
+  torch rows + BACK TO FORGE, stash DEPOSIT/UPGRADE, cube INSTRUCTION
+  LEAFLET. SIMPLE plate (`btnPlate2`) = the three town vendors' stock rows
+  (`vendor()`), Lyssa's gamble rows, stash filter+sort chips, TRANSMUTE
+  GOLDEN MIRROR. CHIP = torch CRAFT, smithRepair per-item costs, stash
+  WITHDRAW/SALVAGE, Lukus + Addy DROP (the ☰ Journal DROP stays simple-
+  plate). `btnPlate2/3` return true when the art drew (callers keep
+  procedural fallbacks). Lukus/Addy journal rows grew 42→50px (step 58)
+  — owner: "space out better". The chooser's "1 / 6" page count is gone.
+  Cube menu widened (440→520; leaflet 460→520/640) and the leaflet's
+  extraction-cost tokens FLOW-WRAP (Forgotten Souls was clipped); the
+  Soul Crucible street plate rides at `it.y - 185` (above the painted
+  cube). **THE WISHING FOUNTAIN**: town pad (600,712, kind 'fountain')
+  at the fountain's south rim; `UI.drawTownEnter` shows the skeleton-hand
+  medallion (`fountain.webp`, label WISH) → `Screens.fountain` — toss
+  200g (a `UI.chip` button) for a RANDOM shrine buff (empowered/frenzied/
+  blessed/fortune) lasting 600s: `Game.fountainBuff {buff,t}` ticks in
+  `update()` (all states, real-time), `startLand` copies it onto the
+  fresh Player's `shrine`, session-only (not saved).
 - **PAINTED PANELS for INVENTORY + SKILLS (v1.6.96, owner rule "see the UI
   in Character? Create similar… so everything matches")**: `invGrouped`
   wraps its whole list in `UI.panel` (title carries the bag count:
