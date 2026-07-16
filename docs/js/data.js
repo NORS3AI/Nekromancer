@@ -329,11 +329,20 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.2-alpha';
+const GAME_VERSION = 'v1.7.3-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.3-alpha', date: 'July 2026',
+    notes: [
+      'CHARACTER SELECT REBORN (owner art) — a painted "Choose Your Hero — the battle for Ghallia begins" vista replaces the campfire; three gothic soul-frames stand centered, each holding a ghostly unclaimed vessel on a glowing plinth',
+      'Your heroes now stand INSIDE their frames — painted avatar on the plinth, name and level up by the divider, a teal breath around the chosen one',
+      'Empty vessels carry the plus plate at a quarter opacity — tap the frame to CREATE YOUR NEKROMANCER, whose screen now opens over its own painted vista ("The dead obey.")',
+      'All four paintings ship as WebP'
+    ]
+  },
   {
     v: 'v1.7.2-alpha', date: 'July 2026',
     notes: [
