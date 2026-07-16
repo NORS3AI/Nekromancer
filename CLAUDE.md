@@ -410,6 +410,28 @@ loot at the artisans. The hero is persistent (localStorage).
   the Jeweler's `gemStackList` chips moved gothic→SIMPLE plate (owner
   correction). Character footer: PARAGON + **CAMPFIRE** (renamed from
   CHANGE HERO) on the simple plate.
+- **v1.7.17 — SHIELDS + GATES + FIXES (owner list)**: (1) **SHIELDS**:
+  50% of offhand drops (`item.shield`, `SHIELD_NOUNS` in data.js) —
+  primary rolls `hp` + a hot `vit` affix, `stats.block` (AFFIX_ROLLS
+  'block', RESTRICTED so it never rolls elsewhere; AFFIX_CAP 0.35,
+  tier-scaled so commons block ~4%, leg-3★ ~24%), `durMaxFor` ×1.5;
+  `computeStats.blockChance` (cap 0.40) → `p.blockChance`; `Player.hurt`
+  rolls block FIRST (whole hit negated, 'BLOCK' float, 0.15s invuln);
+  Character sheet Block-chance line. (2) **Legendary+ 1★+ requires
+  LEVEL 70** to equip (gate in `Items.equip`, 'Requires level 70' in
+  statLines). (3) **Craft gates**: `craft()` refuses on a full bag;
+  `craftTorch` too (unless a stack of that torch exists — counters also
+  moved so denied crafts no longer count). (4) **Ring 2 fix**: invGrouped
+  bag rings = ONE family pool listed under BOTH ring groups; EQUIP uses
+  the group's slotKey so the ring goes on THAT finger. (5) Smithy bulk
+  salvage → SIMPLE plates, 'COMMON' label; `salvageLegendaries` pred
+  tightened to r 4–5; `Items.salvageHighTier(rarity,label)` +
+  ARTIFACTS/RELICS/ANCIENTS/MYTHICS buttons appear once
+  `Hero.*Found > 0` (smith-10 gate, panel grows). (6) **UI.panel interior
+  = TOTAL BLACK** rgba(2,1,4,.96) (the purple rectangle is gone).
+  (7) Heartstring rename; dev: resources ×10,000, torch/boss reagents
+  ×5,000 (incl. Wyrm Scale/Brain/Souls of Bellmahath), 4 'random
+  Artifact/Relic/Ancient/Mythic → Stash' rows (random slot, 0–5★).
 - **v1.7.16 — CLICK-TO-MOVE + CURATED POINTED ACHIEVEMENTS (owner
   mega-list; SUPERSEDES the v1.7.7 5,721-generator)**: (1) **DESKTOP
   CLICK-TO-MOVE**: hold LMB → hero walks to the cursor (town + wilds);

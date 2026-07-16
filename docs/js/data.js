@@ -672,11 +672,23 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.16-alpha';
+const GAME_VERSION = 'v1.7.17-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.17-alpha', date: 'July 2026',
+    notes: [
+      'SHIELDS — the Nekromancer takes up the bulwark: half of all offhand drops are now SHIELDS (Bone Bulwark, Grave Aegis, Casket Lid…) with a CHANCE TO BLOCK that turns a hit away entirely, half again the durability, and life and vitality running hot. Block chance shows on the Character sheet',
+      'ENDGAME GEAR IS ENDGAME: every Legendary (and above) bearing 1★ or more now requires LEVEL 70 to wear — the card says so',
+      'FIX: the forge refuses to craft past a full bag — gear and torches both check for room first',
+      'FIX: Ring 2 lives! The grouped inventory shows your rings under BOTH ring groups, and equipping from a group puts the ring on THAT finger',
+      'The Smithy\'s bulk salvage rides simple plates now (COMMON · RARES · EPICS · LEGENDARIES) — and once you\'ve found your first, ARTIFACTS, RELICS, ANCIENTS and MYTHICS buttons appear too',
+      'Menu interiors are TOTAL BLACK — the faint purple rectangle inside every panel is gone',
+      'Heartstring is simply Heartstring now. Dev panel: crafting resources come 10,000 at a time, torch & boss reagents 5,000 at a time, and four new buttons mint a random Artifact, Relic, Ancient or Mythic straight to the Stash'
+    ]
+  },
   {
     v: 'v1.7.16-alpha', date: 'July 2026',
     notes: [
@@ -2766,7 +2778,7 @@ const MATERIALS = {
   // Torch-crafting reagents.
   lumber:      { name: 'Lumber',                color: '#8a6f4a' },
   rivets:      { name: 'Iron Rivets',           color: '#9aa0a8' },
-  heartstring: { name: 'Nephalem Heartstring',  color: '#b06adf' },
+  heartstring: { name: 'Heartstring',           color: '#b06adf' },
   wyrmscale:   { name: 'Wyrm Scale',            color: '#4ea3c0' },   // roaming Wyrm boss (12%)
   brain:       { name: 'Gluttonous Brain',      color: '#d0708c' },   // Gluttonous Brain ogre boss (10%)
   rathmasoul:  { name: 'Soul of Bellmahath',        color: '#c88bf0' }    // rare caves + Bellmahath assassin (20%, 1–3)
@@ -2911,6 +2923,10 @@ function gemName(gem) {
 }
 
 // ---------------------------- equipment slots -------------------------------
+
+// SHIELDS (v1.7.17 owner rule): half of all offhand drops. Their own nouns;
+// block chance, 1.5x durability, and they roll life/vitality hot.
+const SHIELD_NOUNS = ['Bone Bulwark', 'Grave Aegis', 'Casket Lid', 'Rib Wall', 'Tombstone Shield', 'Pallbearer Guard'];
 
 const ITEM_SLOTS = {
   weapon:   { label: 'Weapon',     nouns: ['Scythe', 'Bone Blade', 'Grim Sickle', 'Grave Reaper', 'Femur Cleaver'], primary: 'dmg' },
@@ -3223,11 +3239,13 @@ const AFFIX_ROLLS = {
   // Movement speed rolls ONLY on boots (1%–25%), handled specially in generation.
   move:  { base: 0.06, label: v => `+${Math.round(v * 100)}% movement speed` },
   // Special affixes — never roll on random gear; placed on set/legendary items only.
+  // Block chance — SHIELDS ONLY (v1.7.17): a blocked hit deals nothing.
+  block: { base: 0.02, label: v => `${Math.round(v * 100)}% chance to block` },
   dnova: { base: 0.15, label: v => `+${Math.round(v * 100)}% Death Nova damage` },
   area:  { base: 0.20, label: v => `${Math.round(v * 100)}% chance to deal Area Damage on hit` }
 };
 // Affixes that must never appear from the generic random pool.
-const RESTRICTED_AFFIXES = new Set(['move', 'dnova', 'area']);
+const RESTRICTED_AFFIXES = new Set(['move', 'dnova', 'area', 'block']);
 
 // Mystic reroll GROUPS (owner rule): a rerolled property can only become
 // another property in its OWN group, so the player always knows the exact
@@ -3265,6 +3283,7 @@ const AFFIX_CAP = {
   cdr: 0.20,      // +20% cooldown reduction per item (total capped 60% in computeStats)
   rcr: 0.20,      // +20% resource cost reduction per item (total capped 60%)
   lph: 60000,     // 60000 life per hit
+  block: 0.35,    // 35% block chance (shields only)
   elem: 5.0,      // +500% elemental damage
   dnova: 6.0, area: 1.5   // signature affixes — generous
 };

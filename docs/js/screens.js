@@ -2926,7 +2926,11 @@ const Screens = {
     const groupLabel = s => s === 'ring1' ? 'Ring 1' : s === 'ring2' ? 'Ring 2' : ITEM_SLOTS[s].label;
     const bagFor = s => s === 'torch'
       ? Hero.bag.filter(it => it && it.torch)
-      : Hero.bag.filter(it => it && !it.torch && it.slot === s);
+      // Rings are ONE pool shown under BOTH ring groups (v1.7.17 fix — Ring 2
+      // never showed); equipping from a group targets that finger.
+      : (s === 'ring1' || s === 'ring2')
+        ? Hero.bag.filter(it => it && !it.torch && (it.slot === 'ring1' || it.slot === 'ring2'))
+        : Hero.bag.filter(it => it && !it.torch && it.slot === s);
     let chX = px, chY = y;
     // Filter chips ride the little empty plate (v1.6.99 owner rule).
     const chip = (label, on, cb) => {
@@ -2995,7 +2999,8 @@ const Screens = {
           } else {
             const bw = (pw - 24) / 4;
             UI.btn(ctx, px, ay, bw, 32, 'EQUIP', () => {
-              Items.equip(it, it.torch ? 'torch' : it.slot);
+              // Equip into THIS group's slot (rings pick the finger, v1.7.17).
+              Items.equip(it, it.torch ? 'torch' : slotKey);
               UI.sel.invItem = null;
             }, { border: '#57b894', color: '#6ff7c3', size: 11 });
             const canSalv = Items.canSalvage(it) && !it.torch;
@@ -3732,22 +3737,32 @@ const Screens = {
     this.shopBackdrop(ctx, W, H, 'smith');
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
-    UI.panel(ctx, px, 46, pw, Math.min(H - 56, 330), 'SALVAGE');
+    const hiRows = (Hero.artifactsFound > 0) + (Hero.relicsFound > 0) + (Hero.ancientsFound > 0) + (Hero.mythicsFound > 0);
+    UI.panel(ctx, px, 46, pw, Math.min(H - 56, 330 + Math.ceil(hiRows / 2) * 54), 'SALVAGE');
     // Reagents CENTERED and dropped clear of the title bar (owner rule).
     this.matsRow(ctx, px + 16, 112, pw - 32, true);
     ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
     this.wrapCentered(ctx, 'Bulk-melt everything of a rarity in your bag. Gems survive the forge.', px + pw / 2, 140, pw - 44, 14, 2);
+    // SIMPLE plates (owner rule v1.7.17); the beyond-legendary rows only
+    // appear once the character has FOUND one of that rarity.
     const q = (pw - 32 - 3 * 8) / 2;
     const epicLvl = Items.BULK_SALVAGE_SMITH.epic, legLvl = Items.BULK_SALVAGE_SMITH.legendary;
     const epicOk = Hero.artisans.smith >= epicLvl, legOk = Hero.artisans.smith >= legLvl;
-    UI.btnPlate3(ctx, px + 16, 182, q, 44, 'COMMON + MAGIC', () => Items.salvageJunk(),
-      { size: 12, color: '#ffb43a' });
-    UI.btnPlate3(ctx, px + 24 + q, 182, q, 44, 'RARES', () => Items.salvageRares(),
-      { size: 12, color: '#ffd76a' });
-    UI.btnPlate3(ctx, px + 16, 236, q, 44, epicOk ? 'EPICS' : 'EPICS  (smith ' + epicLvl + ')', () => Items.salvageEpics(),
-      { size: 12, color: epicOk ? '#b06adf' : '#6f5a7a', disabled: !epicOk });
-    UI.btnPlate3(ctx, px + 24 + q, 236, q, 44, legOk ? 'LEGENDARIES' : 'LEGENDARIES  (smith ' + legLvl + ')', () => Items.salvageLegendaries(),
-      { size: 12, color: legOk ? '#ff8c2a' : '#7a5f45', disabled: !legOk });
+    const btns = [
+      ['COMMON', () => Items.salvageJunk(), '#ffb43a', true],
+      ['RARES', () => Items.salvageRares(), '#ffd76a', true],
+      [epicOk ? 'EPICS' : 'EPICS  (smith ' + epicLvl + ')', () => Items.salvageEpics(), epicOk ? '#b06adf' : '#6f5a7a', epicOk],
+      [legOk ? 'LEGENDARIES' : 'LEGENDARIES  (smith ' + legLvl + ')', () => Items.salvageLegendaries(), legOk ? '#ff8c2a' : '#7a5f45', legOk]
+    ];
+    if (Hero.artifactsFound > 0) btns.push(['ARTIFACTS', () => Items.salvageHighTier(6, 'Artifact'), legOk ? '#ff5a4a' : '#7a4a45', legOk]);
+    if (Hero.relicsFound > 0) btns.push(['RELICS', () => Items.salvageHighTier(7, 'Relic'), legOk ? '#3b8cff' : '#3a5a7a', legOk]);
+    if (Hero.ancientsFound > 0) btns.push(['ANCIENTS', () => Items.salvageHighTier(8, 'Ancient'), legOk ? '#2fd4c0' : '#2a6a62', legOk]);
+    if (Hero.mythicsFound > 0) btns.push(['MYTHICS', () => Items.salvageHighTier(9, 'Mythic'), legOk ? '#ffcf3b' : '#8a7a3a', legOk]);
+    btns.forEach((b, i) => {
+      const col = i % 2, rowI = Math.floor(i / 2);
+      UI.btnPlate2(ctx, px + 16 + col * (q + 8), 182 + rowI * 54, q, 44, b[0], b[1],
+        { size: 12, color: b[2], disabled: !b[3] });
+    });
   },
 
   // REPAIR (owner spec v1.6.84, D3-style): every damaged piece — worn or
@@ -4666,6 +4681,7 @@ const Screens = {
     ly = line(lx, ly, 'Essence regen', s.essenceRegen.toFixed(1) + '/s', '#4ecbe0');
     ly = line(lx, ly, 'Life regen', s.hpRegen.toFixed(1) + '/s', '#e04a5a');
     ly = line(lx, ly, 'Armor', s.armor + '  (' + Math.round(s.armorDR * 100) + '% dmg reduced)', '#bfe8f4');
+    if (s.blockChance > 0) ly = line(lx, ly, 'Block chance', Math.round(s.blockChance * 100) + '%', '#8fb0e8');
     if (s.resistAll > 0) ly = line(lx, ly, 'All resist', s.resistAll + '  (' + Math.round(s.resistDR * 100) + '% reduced)', '#bfe8f4');
     if (s.cooldownReduction > 0) ly = line(lx, ly, 'Cooldown reduction', '-' + Math.round(s.cooldownReduction * 100) + '%', '#bfe8f4');
     if (s.resourceCostReduction > 0) ly = line(lx, ly, 'Resource cost', '-' + Math.round(s.resourceCostReduction * 100) + '%', '#ffd76a');
@@ -6489,14 +6505,26 @@ const Screens = {
 
     // ---- RESOURCES ----
     section('Resources');
-    row('Add 100 of each crafting resource', () => {
-      for (const k of Object.keys(MATERIALS)) Hero.mats[k] += 100;
-      UI.toast('+100 of every material', '#ffd76a'); Hero.save();
+    row('Add 10,000 of each crafting resource', () => {
+      for (const k of Object.keys(MATERIALS)) Hero.mats[k] = (Hero.mats[k] || 0) + 10000;
+      UI.toast('+10,000 of every material', '#ffd76a'); Hero.save();
     }, { color: '#ffd76a' });
-    row('+5 Lumber / Rivets / Heartstring', () => {
-      Hero.mats.lumber = (Hero.mats.lumber || 0) + 5; Hero.mats.rivets = (Hero.mats.rivets || 0) + 5; Hero.mats.heartstring = (Hero.mats.heartstring || 0) + 5;
-      Hero.save(); UI.toast('+5 Lumber, +5 Iron Rivets, +5 Heartstring', MATERIALS.lumber.color);
+    row('+5,000 torch & boss reagents', () => {
+      for (const k of ['lumber', 'rivets', 'heartstring', 'wyrmscale', 'brain', 'rathmasoul'])
+        Hero.mats[k] = (Hero.mats[k] || 0) + 5000;
+      Hero.save(); UI.toast('+5,000 Lumber, Rivets, Heartstring, Wyrm Scale, Gluttonous Brain, Souls of Bellmahath', MATERIALS.lumber.color);
     }, { color: MATERIALS.lumber.color, border: '#6a5a3a' });
+    // Random beyond-epic pieces straight to the Stash (armor, jewelry,
+    // weapon / phylactery / shield — any equip slot).
+    for (const [rlabel, rrar, rcol] of [['Artifact', 6, '#ff5a4a'], ['Relic', 7, '#3b8cff'], ['Ancient', 8, '#2fd4c0'], ['Mythic', 9, '#ffcf3b']]) {
+      row('★ Add a random ' + rlabel + ' → Stash', () => {
+        if (Hero.stash.length >= Hero.STASH_SIZE) { UI.toast('Stash is full — make room first', '#9a9080'); AudioSys.sfx('denied'); return; }
+        const slot = pick(Object.keys(ITEM_SLOTS).filter(k => !ITEM_SLOTS[k].torch));
+        const it = Items.generate(Math.max(70, Hero.level), 0, slot, { rarity: rrar, stars: randInt(0, 5) });
+        Hero.stash.push(it); Hero.saveStash(); Hero.save();
+        UI.toast('★ ' + it.name + ' → Stash', rcol); AudioSys.sfx('setdrop');
+      }, { color: rcol, border: '#5a3a3a' });
+    }
     row('+6 Marquise of each gem type', () => {
       for (const type of Object.keys(GEM_TYPES)) { for (let i = 0; i < 6; i++) Hero.gems.push({ type, tier: GEM_MAX_TIER }); }
       UI.toast('+6 Marquise of every gem', '#b06adf'); Hero.save();
