@@ -57,8 +57,8 @@ const Settings = {
   },
   g: {
     theme: 'void',        // UI chrome theme (THEMES in data.js) — set at the Enchantress; Void is the default
-    electiveMode: false,  // allow more than one skill per category on the action bar
-    invGrouped: false,    // inventory layout: false = radial wheel · true = grouped list
+    electiveMode: true,   // allow more than one skill per category on the action bar (default ON, owner rule)
+    invGrouped: true,     // inventory layout: false = radial wheel · true = grouped list (default GROUPED, owner rule)
     leftHanded: false,    // mirror the touch controls (cluster left, movement right)
     dmgNumbers: true,     // floating damage text (red hit / yellow crit / green heal)
     shake: true,          // camera shake
@@ -77,7 +77,7 @@ const Settings = {
     cursorScale: 1,       // bone-hand mouse cursor size: 1× / 2× / 3×
     mono: false,          // fold WebAudio output to one channel (single/mono speaker)
     fontSize: 13,         // global UI font size (8–22); scales all text via ctx.font
-    viewMode: 'birdseye'  // camera: 'birdseye' (straight down) | 'topdown' (D3-style tilt + zoom)
+    viewMode: 'topdown'   // camera: 'birdseye' (straight down) | 'topdown' (D3-style tilt + zoom; default, owner rule)
   },
   keys: JSON.parse(JSON.stringify(KEY_DEFAULTS)),  // action -> [KeyboardEvent.code]
   _codeToAction: {},

@@ -321,11 +321,17 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.91-alpha';
+const GAME_VERSION = 'v1.6.92-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.92-alpha', date: 'July 2026',
+    notes: [
+      'New defaults (owner rule): ELECTIVE MODE is on, the camera starts in TOP DOWN, and the inventory opens as the GROUPED list. Anyone who already picked their own settings keeps them'
+    ]
+  },
   {
     v: 'v1.6.91-alpha', date: 'July 2026',
     notes: [
