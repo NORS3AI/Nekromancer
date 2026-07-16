@@ -2696,34 +2696,10 @@ const Screens = {
     if (UI.sel.tab === 'actives') this.skillsActives(ctx, W, H, px, pw);
     else this.skillsPassives(ctx, W, H, px, pw);
 
-    // Info footer.
+    // Info footer. (The ACTIVES slot footer + its RUNES button are DELETED,
+    // owner rule — tapping a slot opens the chooser straight away.)
     if (UI.sel.tab === 'actives') {
-      // Action-bar slot footer: the equipped skill + its rune, and a RUNES
-      // button that opens the fleshed-out chooser (underneath the description).
-      const slot = UI.sel.slotIdx == null ? 0 : UI.sel.slotIdx;
-      const cat = LOADOUT_CATS[slot];
-      const sid = Hero.loadout[slot];
-      const s = sid ? SKILL_DATA.find(x => x.id === sid) : null;
-      const fy = H - 84;
-      UI.panel(ctx, px, fy, pw, 76);
-      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      ctx.font = 'bold 13px Georgia';
-      ctx.fillStyle = SKILL_CATS[cat].color;
-      ctx.fillText(this.fitText(ctx, (s ? s.name : 'Empty slot') + '  ·  ' + SKILL_CATS[cat].name, pw - 130), px + 12, fy + 16);
-      ctx.font = '12px Georgia'; ctx.fillStyle = '#b5ab94';
-      if (s) {
-        wrapText(ctx, SKILL_DESCS[s.id], px + 12, fy + 33, pw - 150, 14, 2);
-        const rid = Hero.rune(s.id);
-        const rune = SKILL_RUNES[s.id] && SKILL_RUNES[s.id].find(r => r.id === rid);
-        if (rune && rune.id !== 'base') {
-          ctx.fillStyle = '#e0a24a'; ctx.font = '10px Georgia';
-          ctx.fillText(this.fitText(ctx, '◈ ' + rune.name, pw - 150), px + 12, fy + 66);
-        }
-      } else {
-        ctx.fillText(this.fitText(ctx, 'Tap RUNES to choose a ' + SKILL_CATS[cat].name + ' skill.', pw - 150), px + 12, fy + 34);
-      }
-      UI.btn(ctx, px + pw - 128, fy + 46, 116, 24, '◈  RUNES',
-        () => Screens.openChooser(slot, sid, null), { size: 12, color: '#e0a24a', border: '#8a6f4a' });
+      // no footer
     } else if (UI.sel.info) {
       // Passives footer.
       const s = UI.sel.info;
@@ -2780,7 +2756,8 @@ const Screens = {
       ctx.fillText(elective ? SKILL_CATS[lblCat].name.toUpperCase().slice(0, 9) : this.slotCatLabels[i], bx, cyc + cr + 12);
       UI.register(bx - sw / 2 + 2, sy - 4, sw - 4, cr * 2 + 30, () => {
         UI.sel.slotIdx = i;
-        UI.sel.info = null;   // the actives footer keys off slotIdx now
+        UI.sel.info = null;
+        Screens.openChooser(i, Hero.loadout[i], null);   // straight to the chooser (footer deleted)
       });
     }
 
@@ -2838,8 +2815,17 @@ const Screens = {
       UI.sel.chSkill = cs[0];
       UI.sel.chRune = Hero.runes[cs[0]] || 'base';
     };
-    UI.btn(ctx, px + 14, selY, 42, 32, '◀', () => stepCat(-1), { size: 15 });
-    UI.btn(ctx, px + pw - 56, selY, 42, 32, '▶', () => stepCat(1), { size: 15 });
+    const chArrow = (ax, key, glyph, cb) => {
+      const img = Game.uiImg ? Game.uiImg(key) : null;
+      if (img) {
+        const abw = 46, abh = Math.round(46 * (img.height / img.width));
+        const ay = selY + 16 - abh / 2;
+        ctx.drawImage(img, ax, ay, abw, abh);
+        UI.register(ax - 4, ay - 4, abw + 8, abh + 8, cb);
+      } else UI.btn(ctx, ax, selY, 42, 32, glyph, cb, { size: 15 });
+    };
+    chArrow(px + 14, 'arrow_left', '◀', () => stepCat(-1));
+    chArrow(px + pw - 60, 'arrow_right', '▶', () => stepCat(1));
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 17px Georgia'; ctx.fillStyle = catDef.color;
     ctx.fillText(catDef.name.toUpperCase(), W / 2, selY + 15);

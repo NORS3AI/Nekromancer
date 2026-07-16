@@ -321,11 +321,19 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.93-alpha';
+const GAME_VERSION = 'v1.6.94-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.94-alpha', date: 'July 2026',
+    notes: [
+      'FOG OF WAR reworked — the shroud is now 65% dark instead of pitch black, so the environment shows dimly through it. Enemies HIDE in the fog: you can\'t see them and they can\'t attack (or even wake) until their ground is uncovered',
+      'FIXED: running right made the character face left and vice versa — the painted side profile\'s mirror was backwards',
+      'Skills & Passives: the bottom "Empty slot / RUNES" bar is deleted — tapping an action-bar slot opens the skill chooser straight away; the chooser\'s category arrows are the painted arrow plates'
+    ]
+  },
   {
     v: 'v1.6.93-alpha', date: 'July 2026',
     notes: [
