@@ -223,9 +223,9 @@ const UI = {
     // shrink the font first, then ellipsize as a last resort.
     let size = o.size || 14;
     const maxW = w - 14;
-    ctx.font = `${bold}${size}px Georgia`;
+    ctx.font = `${bold}${size}px Cinzel, Georgia`;
     while (size > 8 && ctx.measureText(label).width > maxW) {
-      size--; ctx.font = `${bold}${size}px Georgia`;
+      size--; ctx.font = `${bold}${size}px Cinzel, Georgia`;
     }
     let text = label;
     if (ctx.measureText(text).width > maxW) {

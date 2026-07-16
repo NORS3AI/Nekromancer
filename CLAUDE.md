@@ -196,7 +196,7 @@ loot at the artisans. The hero is persistent (localStorage).
 - Potion button sits ON the skill-cluster arc past slot 1 (angle π·0.98, radius R+54·scale)
   — verified non-overlapping at 390×750 / 844×390 / 900×500 / 1280×720.
 - XP: `60·lvl^1.5`, cap 70. Level-up = full heal + toasts for new unlocks.
-- **PARAGON (past 70)**: XP overflow feeds `Hero.paragon` (near-infinite); each paragon level = 1 NP (`Hero.np`). **D3-style ROTATION spend (owner rule)**: points go in ONE AT A TIME, and each must land in the currently-unlocked category, cycling **Core → Defense → Offense → Utility** (`PARAGON_ROTATION`=`PARAGON_CATS`). `Hero.paragonCat()` returns the unlocked category from `paraOrder.length % 4` (skipping any fully-capped category); `Hero.spendParagon(key)` spends 1 point iff `key`'s cat matches (records it in `Hero.paraOrder`); `refundLastParagon()` undoes the last point (LIFO via `paraOrder`), `resetParagon()` refunds all. `syncParaOrder()` rebuilds `paraOrder` for old free-spend saves. `PARAGON_STATS` (16 stats; `per`=per-point, `max`=cap, **0=infinite — Vitality/Intelligence/Life% never cap**). `Hero.paragonBonus(key)`→fraction, folded into `computeStats` (`paraHpMul`/`paraDmgMul`/`paraManaMul`, additive to crit/cdr/rcr/area/move/resistDR, ×armor/regen/lph, +pickupRadius). `Screens.paragon` (opened from the Character Sheet footer) shows the "▶ Now spending" banner, rotation-locked ✦ tab, per-row single `+`, and Undo/Reset footer; `PARAGON_XP(p)` is the per-level cost.
+- **PARAGON (past 70)**: XP overflow feeds `Hero.paragon` (near-infinite); each paragon level = 1 NP (`Hero.np`). **FREE SPEND (v1.6.99 owner rule — supersedes the old rotation lock)**: `Hero.spendParagon(key)` spends 1 point on ANY stat in ANY category, in any order (still records it in `Hero.paraOrder`); the old rotation helpers (`paragonCat`, `PARAGON_ROTATION`) remain only for `syncParaOrder`'s legacy-save rebuild; `refundLastParagon()` undoes the last point (LIFO via `paraOrder`), `resetParagon()` refunds all. `syncParaOrder()` rebuilds `paraOrder` for old free-spend saves. `PARAGON_STATS` (16 stats; `per`=per-point, `max`=cap, **0=infinite — Vitality/Intelligence/Life% never cap**). `Hero.paragonBonus(key)`→fraction, folded into `computeStats` (`paraHpMul`/`paraDmgMul`/`paraManaMul`, additive to crit/cdr/rcr/area/move/resistDR, ×armor/regen/lph, +pickupRadius). `Screens.paragon` (opened from the Character Sheet footer) shows Core→Utility view tabs on the SIMPLE plate (no banner, no lock, v1.6.99), per-row painted `+`, and Undo Last / Reset All on the little empty plate; `PARAGON_XP(p)` is the per-level cost.
 - Difficulty unlocks: up to Master until all 5 lands cleared, then Torment I–III.
 - **Artisan resource lanes (owner rule)**: Blacksmith = gold/parts/dust/crystals;
   Mystic = gold + Forgotten Souls ONLY; Jeweler = gold + gems ONLY (and BUYS gems
@@ -390,6 +390,23 @@ loot at the artisans. The hero is persistent (localStorage).
   blessed/fortune) lasting 600s: `Game.fountainBuff {buff,t}` ticks in
   `update()` (all states, real-time), `startLand` copies it onto the
   fresh Player's `shrine`, session-only (not saved).
+- **CINZEL EVERYWHERE + BONE-WHITE SELECTION + PASSIVE MEDALLIONS
+  (v1.6.99, owner rules)**: EVERY `px Georgia` font string in screens.js
+  (334 of them — all menus and vendors, bold/italic/concat forms) became
+  `px Cinzel, Georgia`, and `UI.btn`'s label font too (the in-game HUD in
+  ui.js is untouched). ALL selection rings (skills actives slot, passives,
+  chooser skill/rune, No-Rune socket) are **faded bone white `#cfc8b8`** —
+  never bright green/purple/yellow (owner rule "keeping in theme with the
+  arpg medieval look"). **PASSIVES are a GRID of circle-framed medallions**
+  (5 cols desktop / 4 tablet / 3 mobile — `UI.desktop ? 5 : W>=760 ? 4 :
+  3`), each passive in `UI.circleFrame` with its Cinzel name beneath
+  (font MUST be set before `wrapLabel` — its last param is LINE HEIGHT,
+  not size), '✔' inside when chosen, 'lvl N' inside when locked; same
+  tap-to-assign behavior. CHOOSE SKILLS sits lower (`cyc+cr+44`).
+  Inventory: EXPAND BAG on the simple plate, filter chips on `UI.chip`;
+  the Jeweler's `gemStackList` chips moved gothic→SIMPLE plate (owner
+  correction). Character footer: PARAGON + **CAMPFIRE** (renamed from
+  CHANGE HERO) on the simple plate.
 - **PAINTED PANELS for INVENTORY + SKILLS (v1.6.96, owner rule "see the UI
   in Character? Create similar… so everything matches")**: `invGrouped`
   wraps its whole list in `UI.panel` (title carries the bag count:
