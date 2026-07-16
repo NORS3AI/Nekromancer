@@ -2405,59 +2405,84 @@ const Screens = {
   // ---------------------------------------------------------------- map
 
   map(ctx, W, H) {
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 24px Cinzel, Georgia';
-    ctx.fillStyle = '#c9bfa8';
-    ctx.fillText('HARVESTS OF SANCTUARY', W / 2, 30);
+    // HARVESTS OF GHALLIA (owner rules v1.7.18): the owner's painted gothic
+    // vista replaces the old moving world backdrop; the menu matches every
+    // other panel — simple plates, painted arrows, ✕ riding the panel.
+    ctx.fillStyle = '#020104'; ctx.fillRect(0, 0, W, H);
+    const bg = Game.uiImg('harvests_bg');
+    if (bg) {
+      const cf = Math.max(W / bg.width, H / bg.height);
+      ctx.drawImage(bg, (W - bg.width * cf) / 2, (H - bg.height * cf) / 2, bg.width * cf, bg.height * cf);
+      ctx.fillStyle = 'rgba(2,1,4,0.42)'; ctx.fillRect(0, 0, W, H);
+    }
 
-    // Difficulty stepper — arrows grey out at Normal / T16.
+    const pw = Math.min(620, W - 24);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 24, 196 + ZONES.length * 56 + 56);
+    const py = Math.max(12, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, 'HARVESTS OF GHALLIA');
+
+    // Difficulty stepper — painted arrow plates, greyed at Normal / T16.
     const maxDiff = Hero.level >= MAX_LEVEL ? DIFFICULTIES.length - 1 : 3;
     Hero.difficulty = Math.min(Hero.difficulty, maxDiff);
     const atMin = Hero.difficulty <= 0, atMax = Hero.difficulty >= maxDiff;
-    const dw = Math.min(340, W - 24);
+    const dw = Math.min(360, pw - 48);
     const dx = W / 2 - dw / 2;
-    UI.btn(ctx, dx, 50, 44, 36, '◀', atMin ? null : () => {
-      Hero.difficulty = Math.max(0, Hero.difficulty - 1); Hero.save();
-    }, { size: 15, disabled: atMin });
-    UI.btn(ctx, dx + dw - 44, 50, 44, 36, '▶', atMax ? null : () => {
-      Hero.difficulty = Math.min(maxDiff, Hero.difficulty + 1); Hero.save();
-    }, { size: 15, disabled: atMax });
+    const arrowBtn = (ax, key, glyph, cb, disabled) => {
+      const img = Game.uiImg ? Game.uiImg(key) : null;
+      if (img) {
+        const abw = 50, abh = Math.round(abw * (img.height / img.width));
+        const ay = py + 72 - abh / 2;
+        ctx.globalAlpha = disabled ? 0.35 : 1;
+        ctx.drawImage(img, ax, ay, abw, abh);
+        ctx.globalAlpha = 1;
+        if (!disabled && cb) UI.register(ax - 4, ay - 4, abw + 8, abh + 8, cb);
+      } else {
+        UI.btn(ctx, ax, py + 56, 40, 32, glyph, disabled ? null : cb, { size: 14, disabled });
+      }
+    };
+    arrowBtn(dx, 'arrow_left', '◀',
+      () => { Hero.difficulty = Math.max(0, Hero.difficulty - 1); Hero.save(); }, atMin);
+    arrowBtn(dx + dw - 50, 'arrow_right', '▶',
+      () => { Hero.difficulty = Math.min(maxDiff, Hero.difficulty + 1); Hero.save(); }, atMax);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '600 10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.fillText('DIFFICULTY', W / 2, py + 54);
     ctx.fillStyle = Hero.difficulty >= 4 ? '#e04a5a' : '#ffd76a';
-    ctx.font = 'bold 16px Cinzel, Georgia';
-    ctx.fillText(DIFFICULTIES[Hero.difficulty].name, W / 2, 68);
+    ctx.font = 'bold 15px Cinzel, Georgia';
+    ctx.fillText(DIFFICULTIES[Hero.difficulty].name, W / 2, py + 72);
     const D = DIFFICULTIES[Hero.difficulty];
-    ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = '#fff';
-    ctx.fillText(`Monsters ×${D.mult}      Rewards ×${D.reward}` +
-      (D.legBonus ? `      +${(D.legBonus * 100).toFixed(1)}% leg` : ''), W / 2, 88);
+    ctx.font = '600 11px Cinzel, Georgia'; ctx.fillStyle = '#cfc8b8';
+    ctx.fillText(`Monsters ×${D.mult}   ·   Rewards ×${D.reward}` +
+      (D.legBonus ? `   ·   +${(D.legBonus * 100).toFixed(1)}% leg` : ''), W / 2, py + 92);
 
-    const pw = Math.min(560, W - 24);
-    const px = W / 2 - pw / 2;
+    // The five lands — SIMPLE plates, inset from the panel edges.
+    const rx = px + 24, rw = pw - 48;
     ZONES.forEach((z, i) => {
-      const y = 100 + i * 58;
+      const y = py + 112 + i * 56;
       const locked = i > Hero.zonesCleared;
-      UI.btn(ctx, px, y, pw, 50, '', locked ? null : () => Game.startZone(i), {
-        disabled: locked,
-        border: i === Math.min(Hero.zonesCleared, ZONES.length - 1) ? '#57b894' : undefined
-      });
-      ctx.textAlign = 'left';
-      ctx.font = 'bold 14px Cinzel, Georgia';
+      UI.btnPlate2(ctx, rx, y, rw, 46, '', locked ? null : () => Game.startZone(i), { disabled: locked });
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.font = 'bold 13px Cinzel, Georgia';
       ctx.fillStyle = locked ? '#5c5569' : '#e8e0cc';
-      ctx.fillText((locked ? '🔒  ' : '') + z.name, px + 14, y + 17);
-      ctx.font = '11px Cinzel, Georgia';
+      ctx.fillText((locked ? '🔒  ' : '') + z.name, rx + 26, y + 20);
+      ctx.font = '10px Cinzel, Georgia';
       ctx.fillStyle = locked ? '#453f52' : '#9a9080';
-      ctx.fillText(this.fitText(ctx, locked ? 'Clear the previous land to unlock' : z.desc, pw - 100), px + 14, y + 35);
+      ctx.fillText(this.fitText(ctx, locked ? 'Clear the previous land to unlock' : z.desc, rw - 140), rx + 26, y + 35);
       ctx.textAlign = 'right';
-      ctx.font = 'bold 11px Cinzel, Georgia';
+      ctx.font = 'bold 10px Cinzel, Georgia';
       ctx.fillStyle = locked ? '#453f52' : '#ffb43a';
-      ctx.fillText(z.kind === 'dungeon' ? 'CRYPT' : 'WILDS', px + pw - 12, y + 17);
+      ctx.fillText(z.kind === 'dungeon' ? 'CRYPT' : 'WILDS', rx + rw - 26, y + 20);
       ctx.fillStyle = locked ? '#453f52' : '#c9bfa8';
-      ctx.fillText('lvl ' + (z.mLvl + Hero.difficulty * 6), px + pw - 12, y + 35);
+      ctx.fillText('lvl ' + (z.mLvl + Hero.difficulty * 6), rx + rw - 26, y + 35);
     });
 
-    UI.btn(ctx, px, 100 + ZONES.length * 58 + 6, pw, 40, '← BACK TO TOWN', () => { Game.enterTown(); }, { size: 13 });
-    // Bounties is a full state, not an overlay — give it its own red ✕.
-    const sfa = UI.safe || { top: 0, right: 0 };
-    this.closeX(ctx, W, { x: W - 26 - sfa.right, y: 26 + sfa.top, cb: () => { Game.enterTown(); } });
+    // Compact centered BACK plate — never full width (owner rule).
+    const bw2 = 200;
+    UI.btnPlate2(ctx, W / 2 - bw2 / 2, py + 112 + ZONES.length * 56 + 6, bw2, 36,
+      'BACK TO TOWN', () => { Game.enterTown(); }, { size: 12 });
+    // The ✕ rides the panel's title bar like every other menu (owner rule).
+    this.closeX(ctx, W, { x: px + pw - 30, y: py + 26, cb: () => { Game.enterTown(); } });
   },
 
   // ------------------------------------------------- radial inventory
@@ -5720,10 +5745,14 @@ const Screens = {
     // (red ✕ drawn globally by UI.draw, above all content)
     const o = UI.sel.vendor;
     if (!o) { UI.close(); return; }
-    const pw = Math.min(540, W - 20);
+    // Two columns of half-width plates (owner rule v1.7.18 — never full
+    // width); the panel anchors TOP on desktop so it's always fully visible.
+    const twoColV = W >= 560;
+    const pw = Math.min(twoColV ? 640 : 540, W - 20);
     const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 20, 126 + o.stock.length * 40 + (UI.sel.buy ? 140 : 40));
-    const py = Math.max(8, H / 2 - ph / 2);
+    const rowsV = twoColV ? Math.ceil(o.stock.length / 2) : o.stock.length;
+    const ph = Math.min(H - 20, 126 + rowsV * 40 + (UI.sel.buy ? 150 : 40));
+    const py = UI.desktop ? 16 : Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, o.name || 'WANDERING MERCHANT');
     // The flavor line shares its row with the gold readout — fit it to the
     // space that's actually left so neither ever overlaps or runs off-panel.
@@ -5744,26 +5773,32 @@ const Screens = {
       ctx.fillText('The shelves are bare. Come back another day.', px + pw / 2, y + 14);
       y += 34;
     }
-    o.stock.forEach(entry => {
+    const colW2 = twoColV ? (pw - 40) / 2 : pw - 28;
+    o.stock.forEach((entry, ei) => {
       const it = entry.item;
       const selected = UI.sel.buy === entry;
-      UI.btnPlate2(ctx, px + 14, y, pw - 28, 34, '', entry.sold ? null : () => {
+      const cx2 = twoColV ? px + 14 + (ei % 2) * (colW2 + 12) : px + 14;
+      const cy2 = y + (twoColV ? Math.floor(ei / 2) : ei) * 40;
+      UI.btnPlate2(ctx, cx2, cy2, colW2, 34, '', entry.sold ? null : () => {
         UI.sel.buy = selected ? null : entry;
       }, { disabled: entry.sold });
       // Text + gold sit well clear of the plate's finial caps (owner rule).
+      // 'Common' rarity is NEVER printed (owner rule v1.7.18).
       ctx.textAlign = 'left';
-      ctx.font = 'bold 12px Cinzel, Georgia';
+      ctx.font = 'bold 11px Cinzel, Georgia';
       ctx.fillStyle = entry.sold ? '#544d44' : RARITIES[it.rarity].color;
-      ctx.fillText(this.fitText(ctx, it.name, pw - 176), px + 44, y + 12);
-      ctx.font = '10px Cinzel, Georgia';
+      ctx.fillText(this.fitText(ctx, it.name, colW2 - 116), cx2 + 26, cy2 + 12);
+      ctx.font = '9px Cinzel, Georgia';
       ctx.fillStyle = entry.sold ? '#453f52' : '#8a8070';
-      ctx.fillText(ITEM_SLOTS[it.slot].label + ' · ' + RARITIES[it.rarity].name, px + 44, y + 25);
+      const sub = (it.shield ? 'Shield' : ITEM_SLOTS[it.slot].label) +
+        (it.rarity > 0 ? ' · ' + RARITIES[it.rarity].name : '');
+      ctx.fillText(this.fitText(ctx, sub, colW2 - 116), cx2 + 26, cy2 + 25);
       ctx.textAlign = 'right';
-      ctx.font = 'bold 12px Cinzel, Georgia';
+      ctx.font = 'bold 11px Cinzel, Georgia';
       ctx.fillStyle = entry.sold ? '#453f52' : (Hero.gold >= entry.price ? '#ffd76a' : '#8a5a5a');
-      ctx.fillText(entry.sold ? 'SOLD' : entry.price + ' g', px + pw - 44, y + 17);
-      y += 40;
+      ctx.fillText(entry.sold ? 'SOLD' : entry.price + ' g', cx2 + colW2 - 26, cy2 + 17);
     });
+    y += (twoColV ? Math.ceil(o.stock.length / 2) : o.stock.length) * 40;
 
     if (UI.sel.buy && !UI.sel.buy.sold) {
       // Tap once = full stat card; then an explicit BUY or CANCEL.
@@ -6055,6 +6090,16 @@ const Screens = {
         Settings.save();
         UI.toast(Settings.g.wasdMove !== false ? 'WASD movement ON (click-to-move stays)' : 'Click-to-move only', '#cfc8b8');
       }, 'WASD movement keys (click-to-move is always on)');
+      gy += rowStep + 24;
+      ctx.font = '600 12px Cinzel, Georgia';
+      ctx.fillStyle = '#d8c5a0';
+      // ---- RENDERING (v1.7.18 owner report: screen tearing) ----
+      ctx.fillText('— RENDERING —', gx, gy - 14);
+      UI.check(ctx, gx, gy, Settings.g.vsync !== false, () => {
+        Settings.g.vsync = Settings.g.vsync === false;
+        Settings.save();
+        UI.toast('V-Sync ' + (Settings.g.vsync !== false ? 'ON' : 'OFF') + ' — reload the game to apply', '#cfc8b8');
+      }, 'V-Sync (prevents screen tearing · applies after reload)');
       gy += rowStep + 24;
       ctx.font = '600 12px Cinzel, Georgia';
       ctx.fillStyle = '#d8c5a0';

@@ -60,6 +60,7 @@ const Settings = {
   g: {
     theme: 'void',        // UI chrome theme (THEMES in data.js) — set at the Enchantress; Void is the default
     wasdMove: true,       // MOVEMENT (desktop, v1.7.16): WASD keys move; click-to-move is always available
+    vsync: true,          // RENDERING (v1.7.18): browser-synced presentation (prevents screen tearing); needs reload
     electiveMode: true,   // allow more than one skill per category on the action bar (default ON, owner rule)
     invGrouped: true,     // inventory layout: false = radial wheel · true = grouped list (default GROUPED, owner rule)
     leftHanded: false,    // mirror the touch controls (cluster left, movement right)
