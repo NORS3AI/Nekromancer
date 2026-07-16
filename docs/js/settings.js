@@ -172,6 +172,9 @@ const Settings = {
   },
 
   volume(channel) {
+    // Weather FX left the Settings menu (v1.7.15) — its loops follow the
+    // Ambience channel now, so an old muted-weather blob can't strand it.
+    if (channel === 'weather') channel = 'ambience';
     const c = this.audio[channel];
     return c.mute ? 0 : c.v;
   },

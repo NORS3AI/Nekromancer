@@ -21,7 +21,9 @@ const Particles = {
 
   shake(n) {
     if (typeof Settings !== 'undefined' && !Settings.g.shake) return;
-    this.shakeAmt = Math.min(16, this.shakeAmt + n);
+    // Punchier since v1.7.15 (owner report: shake read as "not working") —
+    // higher ceiling, and every jolt lands a little harder.
+    this.shakeAmt = Math.min(22, this.shakeAmt + n * 1.5);
   },
 
   spawn(x, y, o = {}) {

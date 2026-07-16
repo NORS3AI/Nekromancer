@@ -1620,16 +1620,16 @@ const Screens = {
     if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', lx + lw / 2, viewBot + 8);
   },
 
-  // The one true way to dismiss a menu: a fat red ✕ (Escape works too).
+  // The one true way to dismiss a menu: the red ✕ (Escape works too).
+  // v1.7.15 (owner rule): the BARE painted X (close_x.webp — lifted off its
+  // plate offline) so it sits seamlessly on any panel; no plate frame.
   closeX(ctx, W, opts = {}) {
     const x = opts.x !== undefined ? opts.x : W - 26;
     const y = opts.y !== undefined ? opts.y : 26;
     const cb = opts.cb || (() => UI.close());
-    const img = (typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg('close2') : null;
+    const img = (typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg('close_x') : null;
     if (img && img.complete && img.naturalWidth) {
-      // The owner's painted red ✕ plate (v1.6.97 art — a wider notched
-      // frame, drawn at its own aspect).
-      const dh = 34, dw = dh * (img.width / img.height);
+      const dh = 26, dw = dh * (img.width / img.height);
       ctx.drawImage(img, x - dw / 2, y - dh / 2, dw, dh);
     } else {
       ctx.fillStyle = '#7a1220';
@@ -1850,7 +1850,7 @@ const Screens = {
     UI.sel.scrollRegion = { x: px + 2, y: bodyTop, w: pw - 4, h: viewH };
     ctx.save();
     ctx.beginPath(); ctx.rect(px + 2, bodyTop, pw - 4, viewH); ctx.clip();
-    let y = bodyTop + 6 - scrollY;
+    let y = bodyTop + 22 - scrollY;   // breathing room below the title bar (owner rule v1.7.15)
     const vis = (yy, hh) => yy + hh > bodyTop && yy < bodyBot;
 
     // ---- Your extraction reagents — painted icons + counts, CENTERED ----
@@ -1900,8 +1900,10 @@ const Screens = {
     y += 22 * k;
     const items = Items.extractable();
     if (!items.length) {
+      ctx.textAlign = 'center';
       ctx.font = 'italic ' + (11 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
-      if (vis(y, 16 * k)) ctx.fillText('No loose legendary with an unclaimed power in your bag.', rx, y + 10 * k);
+      if (vis(y, 16 * k)) ctx.fillText('No loose legendary with an unclaimed power in your bag.', rx + rw / 2, y + 10 * k);
+      ctx.textAlign = 'left';
       y += 22 * k;
     } else {
       const rh = 38 * k;
@@ -1929,8 +1931,10 @@ const Screens = {
     y += 20 * k;
     const bank = Hero.cubePowers || [];
     if (!bank.length) {
+      ctx.textAlign = 'center';
       ctx.font = 'italic ' + (11 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
-      if (vis(y, 16 * k)) ctx.fillText('Extract a power above to bank it here.', rx, y + 10 * k);
+      if (vis(y, 16 * k)) ctx.fillText('Extract a power above to bank it here.', rx + rw / 2, y + 10 * k);
+      ctx.textAlign = 'left';
       y += 22 * k;
     } else {
       const rh = 44 * k;
@@ -1957,23 +1961,31 @@ const Screens = {
     if (vis(y, 18 * k)) ctx.fillText('Golden Mirror', rx + rw / 2, y + 6 * k);
     ctx.textAlign = 'left';
     y += 18 * k;
+    // All Golden Mirror flavor is CENTERED (owner rule v1.7.15), and the
+    // transmute plate hugs its own label — never the full menu width.
     if (Hero.orbAutoPickup) {
       ctx.font = (11 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-      if (vis(y, 16 * k)) y = wrapText(ctx, '✦ Transmuted — purple orbs (Rifts & Seasons) now collect instantly.', rx, y + 10 * k, rw, 13 * k, 2) + 4 * k;
-      else y += 20 * k;
+      if (vis(y, 16 * k)) { this.wrapCentered(ctx, '✦ Transmuted — purple orbs (Rifts & Seasons) now collect instantly.', rx + rw / 2, y + 10 * k, rw, 13 * k, 2); y += 30 * k; }
+      else y += 30 * k;
     } else if (Hero.goldenMirror) {
+      ctx.textAlign = 'center';
       ctx.font = (10 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-      if (vis(y, 14 * k)) ctx.fillText('Transmute to auto-collect every purple orb.', rx, y + 10 * k);
+      if (vis(y, 14 * k)) ctx.fillText('Transmute to auto-collect every purple orb.', rx + rw / 2, y + 10 * k);
+      ctx.textAlign = 'left';
       y += 18 * k;
-      if (vis(y, 28 * k)) UI.btnPlate2(ctx, rx, y, rw, 26 * k, 'TRANSMUTE GOLDEN MIRROR', () => {
+      ctx.font = '600 ' + (12 * k) + 'px Cinzel, Georgia';
+      const tbw = Math.min(rw, ctx.measureText('TRANSMUTE GOLDEN MIRROR').width + 56 * k);
+      if (vis(y, 28 * k)) UI.btnPlate2(ctx, rx + (rw - tbw) / 2, y, tbw, 26 * k, 'TRANSMUTE GOLDEN MIRROR', () => {
         Hero.goldenMirror = false; Hero.orbAutoPickup = true; Hero.save();
         UI.toast('The Golden Mirror dissolves — purple orbs now come to you', '#ffd76a');
         AudioSys.sfx('level');
       }, { size: 12 * k, color: '#ffd76a' });
       y += 32 * k;
     } else {
+      ctx.textAlign = 'center';
       ctx.font = 'italic ' + (10 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#57503f';
-      if (vis(y, 14 * k)) ctx.fillText('Not found — the Treasure Goblin sometimes carries it (10%).', rx, y + 10 * k);
+      if (vis(y, 14 * k)) ctx.fillText('Not found — the Treasure Goblin sometimes carries it (10%).', rx + rw / 2, y + 10 * k);
+      ctx.textAlign = 'left';
       y += 18 * k;
     }
 
@@ -5009,7 +5021,7 @@ const Screens = {
     const img = Game.lukusImg('idle');
     const ready = img.complete && img.naturalWidth;
     const aspect = ready ? img.naturalWidth / img.naturalHeight : 0.62;
-    const lx = Math.max(30, W * 0.055);   // indented from the edge (owner rule)
+    let lx = Math.max(30, W * 0.055);   // indented from the edge (owner rule)
 
     // Try the wide layout first: knight bottom-anchored left of the button.
     let h = Math.min(H * 0.92, 640), w = h * aspect;
@@ -5030,6 +5042,13 @@ const Screens = {
     } else {
       px2 = W - w - btnZone;
       py2 = H - h;
+      // Desktop (owner rule v1.7.15): pure-black stage split in two — the
+      // text column centers in the LEFT half, the figure in the RIGHT half.
+      if (UI.desktop) {
+        lw = Math.min(470, Math.floor(W * 0.42));
+        lx = Math.max(14, Math.round(W * 0.25 - lw / 2));
+        px2 = Math.round(W * 0.75 - w / 2);
+      }
     }
     if (ready) {
       const bob = Math.sin(Game.time * 1.5) * 3;
@@ -5236,7 +5255,7 @@ const Screens = {
     const img = Game.addyImg();
     const ready = img.complete && img.naturalWidth;
     const aspect = ready ? img.naturalWidth / img.naturalHeight : 0.8;
-    const lx = Math.max(14, W * 0.04);
+    let lx = Math.max(14, W * 0.04);
 
     let h = Math.min(H * 0.92, 640), w = h * aspect;
     const maxW = Math.max(120, (W - btnZone) * 0.5);
@@ -5256,6 +5275,13 @@ const Screens = {
     } else {
       px2 = W - w - btnZone;
       py2 = H - h;
+      // Desktop (owner rule v1.7.15): pure-black stage split in two — the
+      // text column centers in the LEFT half, the figure in the RIGHT half.
+      if (UI.desktop) {
+        lw = Math.min(470, Math.floor(W * 0.42));
+        lx = Math.max(14, Math.round(W * 0.25 - lw / 2));
+        px2 = Math.round(W * 0.75 - w / 2);
+      }
     }
     if (ready) {
       const bob = Math.sin(Game.time * 1.3) * 3;
@@ -5487,7 +5513,7 @@ const Screens = {
     const img = Game.lyssaImg();
     const ready = img.complete && img.naturalWidth;
     const aspect = ready ? img.naturalWidth / img.naturalHeight : 0.66;
-    const lx = Math.max(14, W * 0.04);
+    let lx = Math.max(14, W * 0.04);
 
     let h = Math.min(H * 0.92, 640), w = h * aspect;
     const maxW = Math.max(120, (W - btnZone) * 0.5);
@@ -5507,6 +5533,13 @@ const Screens = {
     } else {
       px2 = W - w - btnZone;
       py2 = H - h;
+      // Desktop (owner rule v1.7.15): pure-black stage split in two — the
+      // text column centers in the LEFT half, the figure in the RIGHT half.
+      if (UI.desktop) {
+        lw = Math.min(470, Math.floor(W * 0.42));
+        lx = Math.max(14, Math.round(W * 0.25 - lw / 2));
+        px2 = Math.round(W * 0.75 - w / 2);
+      }
     }
     if (ready) {
       const bob = Math.sin(Game.time * 1.2) * 3;
@@ -5535,16 +5568,15 @@ const Screens = {
 
     ctx.font = 'italic ' + (nr ? 12 : 13) + 'px Cinzel, Georgia'; ctx.fillStyle = '#e8e0cc';
     y = wrapText(ctx,
-      '"Every Amidrassi Orb hums with a rift boss\'s dying breath. Give them to me and fate deals you a hand — no refunds, no promises. Only chance."',
+      '"Every Amidrassi Orb hums with a boss\'s dying breath. Give them to me and fate deals you a hand — no refunds, no promises. Only chance."',
       lx, y, lw, nr ? 16 : 19, nr ? 7 : 5);
     y += 12;
 
-    // Orb purse.
+    // Orb purse. (The "Rift & Season bosses drop 1–10" footnote is gone —
+    // owner rule v1.7.15.)
     ctx.font = 'bold ' + (nr ? 12 : 14) + 'px Cinzel, Georgia'; ctx.fillStyle = '#c88bf0';
     ctx.fillText('◉ ' + (Hero.amOrbs || 0).toLocaleString() + ' Amidrassi Orbs', lx, y + 4);
-    ctx.font = (nr ? 8 : 9) + 'px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
-    ctx.fillText('Rift & Season bosses drop 1–10', lx, y + (nr ? 17 : 19));
-    y += nr ? 28 : 32;
+    y += nr ? 20 : 24;
 
     // Scrolling column: the last hand dealt, then the gamble table.
     const listTop = y;
@@ -5856,11 +5888,11 @@ const Screens = {
     const px = W / 2 - pw / 2;
     // ONE column, padded in from both edges (owner rule v1.7.5).
     const twoCol = false;
-    const ph = Math.min(H - 16, 720);
+    const ph = Math.min(H - 36, 720);   // always daylight above and below
     const compact = H < 720;   // tighten spacing on short phones
     const audioStep = compact ? 36 : 42;
     const rowStep = compact ? 28 : 34;
-    const py = Math.max(8, H / 2 - ph / 2);
+    const py = Math.max(14, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, 'SETTINGS');
 
     // Tabs: options · keybindings · manual save slots.
@@ -5869,7 +5901,7 @@ const Screens = {
     const tw = (pw - 48) / 3;
     tabs.forEach((t, i) => {
       // Simple-plate tabs (v1.6.96): the selected tab reads bright, the rest dim.
-      UI.btnPlate2(ctx, px + 16 + i * (tw + 8), py + 40, tw, 30, t[1], () => { UI.sel.stab = t[0]; UI.sel.rebindAction = null; },
+      UI.btnPlate2(ctx, px + 16 + i * (tw + 8), py + 46, tw, 30, t[1], () => { UI.sel.stab = t[0]; UI.sel.rebindAction = null; },
         { size: 12, color: UI.sel.stab === t[0] ? '#f0dcae' : '#8a8070' });
     });
     UI.sel.scrollRegion = null;   // (options tab sets its own below; others don't scroll)
@@ -5878,23 +5910,23 @@ const Screens = {
 
     // The options list can exceed the panel on phones — DRAG it up/down to
     // scroll (touch/mouse/wheel), clipped to the panel body below the tabs.
-    const bodyTop = py + 78, bodyBot = py + ph - 8;
+    const bodyTop = py + 84, bodyBot = py + ph - 8;
     const sc = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
     UI.sel.scrollY = sc;
     UI.sel.scrollRegion = { x: px + 2, y: bodyTop, w: pw - 4, h: bodyBot - bodyTop };
     ctx.save();
     ctx.beginPath(); ctx.rect(px + 2, bodyTop, pw - 4, bodyBot - bodyTop); ctx.clip();
 
-    // ---- audio: slider + mute per channel ----
+    // ---- audio: slider + mute per channel (Weather FX removed v1.7.15,
+    // owner rule — weather loops now ride the Ambience channel) ----
     const chans = [
       ['master', 'Master volume'],
       ['sfx', 'Sound FX'],
       ['music', 'Music'],
-      ['ambience', 'Ambience FX'],
-      ['weather', 'Weather FX']
+      ['ambience', 'Ambience FX']
     ];
     const colW = pw - 96;   // padded 48px each side (owner rule)
-    let ay = py + 92 - sc;
+    let ay = py + 98 - sc;
     ctx.textAlign = 'left';
     ctx.font = '600 12px Cinzel, Georgia';
     ctx.fillStyle = '#d8c5a0';
@@ -6120,7 +6152,7 @@ const Screens = {
     const saves = Saves.list();
     // "Save Hero" — narrower than the panel, centered (owner rule v1.7.1).
     const shw = Math.min(300, pw * 0.62);
-    UI.btnPlate2(ctx, px + pw / 2 - shw / 2, py + 76, shw, 34,
+    UI.btnPlate2(ctx, px + pw / 2 - shw / 2, py + 84, shw, 34,
       saves.length >= Saves.MAX ? 'ALL 20 SLOTS FULL' : 'SAVE HERO  (' + saves.length + ' / ' + Saves.MAX + ')',
       saves.length >= Saves.MAX ? null : () => Saves.add(),
       { size: 13, disabled: saves.length >= Saves.MAX, color: '#a8d9be' });
@@ -6276,11 +6308,13 @@ const Screens = {
     UI.check(ctx, W / 2 - 66, py + 262, UI.sel.devToggle, () => {
       UI.sel.devToggle = !UI.sel.devToggle;
     }, 'Enable dev panel');
-    const bw = (pw - 44) / 2;
-    UI.btnPlate2(ctx, px + 16, py + ph - 56, bw, 38, 'DEV PANEL',
+    // Compact centered pair — never the full panel width (owner rule v1.7.15).
+    const bw = Math.min(140, (pw - 44) / 2);
+    const bx0 = W / 2 - bw - 7;
+    UI.btnPlate2(ctx, bx0, py + ph - 56, bw, 38, 'DEV PANEL',
       UI.sel.devToggle ? () => UI.open('cheats') : null,
       { size: 13, disabled: !UI.sel.devToggle, color: '#e08a96' });
-    UI.btnPlate2(ctx, px + 28 + bw, py + ph - 56, bw, 38, 'CLOSE', () => UI.close(), { size: 13 });
+    UI.btnPlate2(ctx, W / 2 + 7, py + ph - 56, bw, 38, 'CLOSE', () => UI.close(), { size: 13 });
   },
 
   // Grant a specific legendary (at level 70+) straight to the Stash.
@@ -6413,6 +6447,7 @@ const Screens = {
     row('+100k inventory space', () => { Hero.bagBonus = (Hero.bagBonus || 0) + 100000; Hero.applyBagSize(); Hero.save(); UI.toast('Inventory expanded to ' + Hero.BAG_SIZE.toLocaleString() + ' slots', '#ffd76a'); }, { color: '#ffd76a', border: '#8a6f4a' });
     row('+5 Ashen Keys', () => { Hero.masterKeys += 5; UI.toast('+5 Ashen Keys (' + Hero.masterKeys + ')', '#d8b4f0'); Hero.save(); }, { color: '#d8b4f0', border: '#5a3a7a' });
     row('+5 Crypt Keys', () => { Hero.riftKeys += 5; UI.toast('+5 Crypt Keys (' + Hero.riftKeys + ')', '#b06adf'); Hero.save(); }, { color: '#b06adf', border: '#5a3a7a' });
+    row('+5,000 Amidrassi Orbs', () => { Hero.amOrbs = (Hero.amOrbs || 0) + 5000; UI.toast('+5,000 Amidrassi Orbs (◉ ' + Hero.amOrbs.toLocaleString() + ')', '#c88bf0'); Hero.save(); }, { color: '#c88bf0', border: '#5a3a7a' });
 
     // ---- GEAR & LEGENDARIES ----
     section('Gear & Legendaries');

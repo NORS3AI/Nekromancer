@@ -477,8 +477,7 @@ const Game = {
     this.state = 'town';
     this.townPrompt = null;
     UI.close();
-    this.camera.x = clamp(this.player.x - this.W / 2, 0, Math.max(0, t.W - this.W));
-    this.camera.y = clamp(this.player.y - this.H / 2, 0, Math.max(0, t.H - this.H));
+    this.townCamClamp();
     AudioSys.sfx('portal');
     Hero.save();
   },
@@ -502,6 +501,20 @@ const Game = {
     this.state = 'playing';
     this.returnFromTownPortal();   // collapse the portal + 30s cooldown
     AudioSys.sfx('portal');
+  },
+
+  // New Haven fills the WHOLE screen (owner rule v1.7.15): when the viewport
+  // outgrows the painted map (desktop), the town view zooms up to cover it.
+  townZoom() {
+    const t = this.town;
+    if (!t) return 1;
+    return Math.max(1, this.W / t.W, this.H / t.H);
+  },
+  townCamClamp() {
+    const t = this.town, Z = this.townZoom();
+    const Wv = this.W / Z, Hv = this.H / Z;
+    this.camera.x = clamp(this.player.x - Wv / 2, 0, Math.max(0, t.W - Wv));
+    this.camera.y = clamp(this.player.y - Hv / 2, 0, Math.max(0, t.H - Hv));
   },
 
   townBlocked(x, y) {
@@ -529,8 +542,7 @@ const Game = {
       p.facing = lerpAngle(p.facing, Math.atan2(my, mx), Math.min(1, 14 * dt));
       p.anim += dt * 7;
     }
-    this.camera.x = clamp(p.x - this.W / 2, 0, Math.max(0, t.W - this.W));
-    this.camera.y = clamp(p.y - this.H / 2, 0, Math.max(0, t.H - this.H));
+    this.townCamClamp();
 
     // NO auto-open: standing near a doorway only arms the ENTER button
     // (UI.drawTownEnter); Game.townEnter() fires it.
@@ -556,21 +568,24 @@ const Game = {
   drawTown(ctx) {
     const t = this.town; if (!t) return;
     const cam = this.camera, p = this.player;
+    const Z = this.townZoom();   // desktop: the map scales up to fill the screen
+    const Wv = this.W / Z, Hv = this.H / Z;
     ctx.save();
+    ctx.scale(Z, Z);
     ctx.translate(-Math.round(cam.x), -Math.round(cam.y));
     // The owner's hand-drawn town map, blitting only the visible slice.
     const img = this.townImg;
     if (img && img.complete && img.naturalWidth) {
       const sx = clamp(cam.x, 0, t.W), sy = clamp(cam.y, 0, t.H);
-      const sw = Math.min(this.W, t.W - sx), sh = Math.min(this.H, t.H - sy);
+      const sw = Math.min(Wv, t.W - sx), sh = Math.min(Hv, t.H - sy);
       if (sw > 0 && sh > 0) ctx.drawImage(img, sx, sy, sw, sh, sx, sy, sw, sh);
     } else {
-      ctx.fillStyle = '#171320'; ctx.fillRect(cam.x, cam.y, this.W, this.H);
+      ctx.fillStyle = '#171320'; ctx.fillRect(cam.x, cam.y, Wv, Hv);
       // Slow connection: say so instead of leaving a mute dark screen.
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = 'italic 13px Georgia';
       ctx.fillStyle = 'rgba(201,191,168,' + (0.45 + 0.25 * Math.sin(this.time * 3)).toFixed(2) + ')';
-      ctx.fillText('New Haven emerges from the dark…', cam.x + this.W / 2, cam.y + this.H * 0.45);
+      ctx.fillText('New Haven emerges from the dark…', cam.x + Wv / 2, cam.y + Hv * 0.45);
     }
 
     // Lukus, Bringer of Light — the painted knight at his post by the plaza,
@@ -2462,7 +2477,9 @@ const Game = {
 
     this.drawWeather(ctx);
     ctx.drawImage(this.vignette, 0, 0);
-    this.drawTorchLight(ctx);
+    // The light mask rides the SHAKEN camera too (v1.7.15 fix: it used to
+    // stay still while the world jittered, visually cancelling the shake).
+    this.drawTorchLight(ctx, cam);
     this.drawWorldFog(ctx, cam);
 
     // Land of the Dead ambience.
@@ -2538,13 +2555,13 @@ const Game = {
   // The torch's pool of light — a lit circle around the hero that fades to
   // darkness. With a torch it's a gentle atmospheric edge; once it burns out the
   // dark closes right in. Nephalem torches light the most.
-  drawTorchLight(ctx) {
+  drawTorchLight(ctx, cam) {
     const p = this.player;
     if (!p) return;
     const torch = Hero.equipped.torch;
     const T = torch ? (TORCH_TYPES[torch.torch] || TORCH_TYPES.wood) : null;
     const lp = this.heroLightPoint();
-    const ps = this.worldToScreen(lp.x, lp.y);
+    const ps = this.worldToScreen(lp.x, lp.y, cam);
     const sx = ps.x, sy = ps.y;
     if (!isFinite(sx) || !isFinite(sy)) return;   // never let a bad coord crash the frame
     // Crypts are the true dark; open daylit lands stay bright (the torch just

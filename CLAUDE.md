@@ -410,6 +410,34 @@ loot at the artisans. The hero is persistent (localStorage).
   the Jeweler's `gemStackList` chips moved gothic→SIMPLE plate (owner
   correction). Character footer: PARAGON + **CAMPFIRE** (renamed from
   CHANGE HERO) on the simple plate.
+- **v1.7.15 — SEAMLESS UI SWEEP + FIXES (owner mega-list)**: (1) the ✕ is
+  the BARE painted X (`close_x.webp`, lifted off the close2 plate offline;
+  `Screens.closeX` dh 26, no plate) on every panel; `UI.panel` titles sit
+  LOWER (y+26, divider y+40) and SHRINK-to-fit (`w-96`); drawGlobalClose
+  aligns y+26. (2) Checkboxes = the owner's square plate (`check.webp`,
+  cut from the 582B upload — NOT e4de2a7d, that's the red-✗ plate!) with
+  a bone tick; sliders are faded bone+blood (`#6e262d` fill, `#cfc8b8`
+  knob). (3) WEATHER FX row REMOVED from Settings — `Settings.volume`
+  maps 'weather'→'ambience'; Settings ph H−36, tabs py+46, body py+84
+  (savesTab SAVE HERO py+84). (4) **CAMERA SHAKE FIX**: `drawTorchLight`
+  now takes the SHAKEN cam (the still light-mask visually cancelled the
+  shake); `Particles.shake` ×1.5, cap 22. (5) **TORCH RADII** (owner
+  ladder): NO_TORCH 40, then ×1.2 each — Wood 48 · Iron 58 · Wyrm 69 ·
+  Ascendant 83 · Master 100 · Nekromancer 120. (6) **MATERIALS display
+  renames**: Glittering Dust (parts) · Arcane Powder (dust) · Golden
+  Crystal (crystal) · Twisted Souls (soul); `drawMatIcon` registers a
+  desktop `UI.tip` with the name. (7) **TOWN FILLS DESKTOP**:
+  `Game.townZoom()` = max(1, W/tW, H/tH), `townCamClamp()` clamps with
+  the zoomed viewport, `drawTown` scales — the painted map covers the
+  window. (8) **NPC STAGES on desktop** (lukus/addy/lyssa, `UI.desktop`
+  wide branch): text column centered in the LEFT half (`lx = W·0.25 −
+  lw/2`), figure centered in the RIGHT half (`px2 = W·0.75 − w/2`).
+  Lyssa: "rift boss's" → "boss's", the "Rift & Season bosses drop 1–10"
+  footnote deleted. (9) Leaflet: reagents start bodyTop+22, all flavor
+  centered, TRANSMUTE GOLDEN MIRROR plate hugs its label (centered);
+  devconfirm DEV PANEL/CLOSE plates ≤140px centered; dev cheats grew
+  "+5,000 Amidrassi Orbs" (Keys & Storage). Owner rule going forward:
+  NOTHING spans a menu full-width; ≥10px padding all around.
 - **v1.7.13 — GHOST FULLY BANISHED + MASSIVE FRAMES + BLOOD-RED HOVER
   (owner rules)**: (1) `slot_frame.webp` recut — the v1.7.12 erase left a
   faint ghost remnant on claimed frames; now EVERYTHING inside the arch is

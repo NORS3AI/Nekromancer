@@ -118,4 +118,7 @@ function drawMatIcon(ctx, key, x, y, s) {
     ctx.fillStyle = (typeof MATERIALS !== 'undefined' && MATERIALS[key] && MATERIALS[key].color) || '#9a9080';
     ctx.beginPath(); ctx.arc(x, y, s * 0.32, 0, Math.PI * 2); ctx.fill();
   }
+  // Desktop hover help: the icon names itself (owner rule v1.7.15).
+  if (typeof UI !== 'undefined' && UI.tip && typeof MATERIALS !== 'undefined' && MATERIALS[key])
+    UI.tip(x - s / 2, y - s / 2, s, s, MATERIALS[key].name);
 }
