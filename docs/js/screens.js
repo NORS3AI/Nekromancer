@@ -797,8 +797,12 @@ const Screens = {
   // Character creation: name your Nekromancer and choose your glowing-eye
   // colour. Opened from the title screen when starting a new hero.
   create(ctx, W, H) {
-    // The painted CREATE YOUR NEKROMANCER vista (owner art v1.7.3, baked
-    // title) fills the screen behind the creation panel.
+    // CREATE YOUR NEKROMANCER, part 2 (owner art): painted vista behind,
+    // gender medallions in their own left menu, the big SHOWCASE model
+    // centre-stage over rolling ground fog, name + CREATE beneath, a lore
+    // panel with the four classic spells at right, and the gear medallion
+    // (bottom-right) into Settings.
+    const t = Game.time || 0;
     const cbg = Game.uiImg('create_bg');
     ctx.fillStyle = '#050408'; ctx.fillRect(0, 0, W, H);
     if (cbg && cbg.complete && cbg.naturalWidth) {
@@ -809,110 +813,184 @@ const Screens = {
         const cf = Math.max(W / cbg.width, H / cbg.height);
         ctx.drawImage(cbg, (W - cbg.width * cf) / 2, (H - cbg.height * cf) / 2, cbg.width * cf, cbg.height * cf);
       }
-      ctx.fillStyle = 'rgba(3,2,6,0.35)'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(3,2,6,0.30)'; ctx.fillRect(0, 0, W, H);
     }
-    const pw = Math.min(460, W - 20);
-    const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 16, 620);
-    const py = Math.max(8, H / 2 - ph / 2);
-    UI.panel(ctx, px, py, pw, ph, 'CREATE YOUR NEKROMANCER');
+    // Defaults FEMALE on a fresh visit (owner rule).
+    if (UI.sel._cinit === undefined) { UI.sel._cinit = 1; Hero.gender = 'f'; }
+    const gd = Hero.gender || 'f';
+    const wide = W >= 760;
+    const cx = wide ? W * 0.5 : W / 2;
 
-    // Live preview — the PAINTED AVATAR (the actual top-down walking model,
-    // owner rule), gently striding in place; glowing eyes tint a soft aura.
-    const cx = W / 2;
-    const gd = Hero.gender || 'm';
-    const spr = Game.heroSprite ? Game.heroSprite(gd, 'front', Hero.hair || 0) : null;
-    // Everything below the preview has a fixed cost; whatever headroom is left
-    // goes to the avatar so short landscape phones still fit the whole panel.
-    const cols = ph < 560 ? 10 : 5, gap = 8;
-    const sw = (pw - 32 - (cols - 1) * gap) / cols;
-    const swRows = Math.ceil(HAIR_COLORS.length / cols);
-    const pvH = Math.max(64, Math.min(150, ph - 230 - swRows * (sw + 20)));
-    const pvFeet = py + 40 + pvH;
-    if (spr) {
-      const pw2 = pvH * (spr.width / spr.height);
-      const t = Game.time || 0;
-      // SUBTLE idle — a slow breath and the faintest sway. No walk slices
-      // here (owner rule: "subtle movements, not dancing images").
-      const breath = Math.sin(t * 1.6);
+    // ---- rolling ground fog + the showcase model, centre-stage ----
+    const show = Game.uiImg(gd === 'f' ? 'showcase_f' : 'showcase_m');
+    const feet = H * (wide ? 0.74 : 0.58);
+    const mh = H * (wide ? 0.56 : 0.40);
+    // Fog BEHIND the model: slow, low, rolling banks.
+    const fog = (front) => {
       ctx.save();
-      // Plain black behind the figure (owner rule: no colored background
-      // while picking hair) — just a soft ground shadow at the feet.
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.beginPath(); ctx.ellipse(cx, pvFeet - 2, pw2 * 0.4, 7, 0, 0, TAU); ctx.fill();
-      ctx.translate(cx, pvFeet);
-      ctx.rotate(breath * 0.008);
-      ctx.drawImage(spr, -pw2 / 2, -pvH - breath * 1.1, pw2, pvH + breath * 1.1);
+      for (let i = 0; i < 6; i++) {
+        const sp = 0.10 + (i % 3) * 0.045;
+        const fxp = cx + Math.sin(t * sp + i * 2.1) * (70 + i * 26) * (i % 2 ? 1 : -1);
+        const fyp = feet - 6 - (i % 3) * 9;
+        const frx = 90 + (i % 4) * 34, fry = 14 + (i % 3) * 5;
+        const g2 = ctx.createRadialGradient(fxp, fyp, 4, fxp, fyp, frx);
+        const al = (front ? 0.05 : 0.085) + 0.02 * Math.sin(t * 0.8 + i * 3);
+        g2.addColorStop(0, 'rgba(180,190,200,' + Math.max(0.02, al).toFixed(3) + ')');
+        g2.addColorStop(1, 'rgba(180,190,200,0)');
+        ctx.fillStyle = g2;
+        ctx.beginPath(); ctx.ellipse(fxp, fyp, frx, fry, 0, 0, TAU); ctx.fill();
+      }
       ctx.restore();
+    };
+    fog(false);
+    if (show && show.complete && show.naturalWidth) {
+      const mw = mh * (show.width / show.height);
+      const breath = Math.sin(t * 1.5) * 1.4;
+      ctx.drawImage(show, cx - mw / 2, feet - mh - breath, mw, mh + breath);
     } else {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = 'italic 11px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
-      ctx.fillText('the flesh takes shape…', cx, py + 110);
+      ctx.fillText('the flesh takes shape…', cx, feet - mh / 2);
     }
+    fog(true);
 
-    // MALE / FEMALE choice (owner art for each).
-    let y = pvFeet + 18;
-    const gbw = (pw - 40) / 2;
-    UI.btn(ctx, px + 16, y, gbw, 32, '♂  MALE', () => { Hero.gender = 'm'; },
-      { size: 12, border: gd === 'm' ? '#6ff7c3' : '#3a3448', color: gd === 'm' ? '#6ff7c3' : '#8a8070' });
-    UI.btn(ctx, px + 24 + gbw, y, gbw, 32, '♀  FEMALE', () => { Hero.gender = 'f'; },
-      { size: 12, border: gd === 'f' ? '#e08ae0' : '#3a3448', color: gd === 'f' ? '#e08ae0' : '#8a8070' });
-    y += 44;
-    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-    ctx.fillText('NAME', px + 16, y);
-    UI.btn(ctx, px + 16, y + 10, pw - 32, 34, this.fitText(ctx, Hero.name || 'The Nekromancer', pw - 60), () => {
-      let q = null;
-      try { q = window.prompt('Name your Nekromancer:', Hero.name || ''); } catch (e) { /* blocked */ }
-      if (q !== null) { const t = q.trim().slice(0, 22); Hero.name = t || 'The Nekromancer'; }
-    }, { size: 14, border: '#6b5f80', color: '#e8e0cc' });
-    y += 58;
-
-    // Hair-colour swatches (owner rule: hair color instead of glowing eyes) —
-    // each picks the matching avatar art variant, shown live in the preview.
-    ctx.textAlign = 'left';
-    ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-    ctx.fillText('HAIR COLOR', px + 16, y);
-    y += 12;
+    // ---- LEFT MENU: gender medallions + hair-colour busts ----
+    const lpW = wide ? Math.min(210, W * 0.24) : Math.min(190, W * 0.44);
+    const lpH = wide ? 388 : 300;
+    const lpX = wide ? Math.max(10, W * 0.03) : 8;
+    const lpY = wide ? H / 2 - lpH / 2 : Math.max(50, H * 0.10);
+    UI.panel(ctx, lpX, lpY, lpW, lpH);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '600 13px Cinzel, Georgia'; ctx.fillStyle = '#d8c5a0';
+    ctx.fillText('GENDER', lpX + lpW / 2, lpY + 24);
+    const gsz = wide ? 58 : 46;
+    const gy2 = lpY + 40;
+    [['m', 'gender_m'], ['f', 'gender_f']].forEach(([g3, key], gi) => {
+      const gx2 = lpX + lpW / 2 + (gi === 0 ? -gsz - 8 : 8);
+      const img = Game.uiImg(key);
+      const on = gd === g3;
+      if (img && img.complete && img.naturalWidth) {
+        ctx.globalAlpha = on ? 1 : 0.45;
+        ctx.drawImage(img, gx2, gy2, gsz, gsz);
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.strokeStyle = on ? '#cfc8b8' : '#3a3448'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(gx2 + gsz / 2, gy2 + gsz / 2, gsz / 2 - 2, 0, TAU); ctx.stroke();
+        ctx.font = (gsz * 0.5) + 'px Georgia'; ctx.fillStyle = on ? '#e8e2d0' : '#8a8070';
+        ctx.fillText(g3 === 'm' ? '♂' : '♀', gx2 + gsz / 2, gy2 + gsz / 2);
+      }
+      if (on) {
+        const pl = 0.45 + 0.2 * Math.sin(t * 2.6);
+        ctx.strokeStyle = 'rgba(120,220,215,' + pl.toFixed(3) + ')'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(gx2 + gsz / 2, gy2 + gsz / 2, gsz / 2 + 3, 0, TAU); ctx.stroke();
+      }
+      UI.register(gx2 - 3, gy2 - 3, gsz + 6, gsz + 6, () => { Hero.gender = g3; });
+    });
+    // Hair-colour busts (3 across).
+    ctx.font = '600 12px Cinzel, Georgia'; ctx.fillStyle = '#d8c5a0';
+    ctx.fillText('HAIR COLOR', lpX + lpW / 2, gy2 + gsz + 22);
+    const hcols = 3, hgap = 8;
+    const sw = Math.min(52, (lpW - 32 - (hcols - 1) * hgap) / hcols);
+    const hy0 = gy2 + gsz + 36;
+    const hx0 = lpX + lpW / 2 - (hcols * sw + (hcols - 1) * hgap) / 2;
     HAIR_COLORS.forEach((c, i) => {
-      const bx = px + 16 + (i % cols) * (sw + gap);
-      const by = y + Math.floor(i / cols) * (sw + 20);
+      const bx = hx0 + (i % hcols) * (sw + hgap);
+      const by = hy0 + Math.floor(i / hcols) * (sw + hgap);
       const sel = (Hero.hair || 0) === i;
       ctx.fillStyle = '#16121d';
       rr(ctx, bx, by, sw, sw, 8); ctx.fill();
-      // The chip is the HEAD BUST in that hair color (owner rule — busts,
-      // not the whole body); a plain color dot stands in until it loads.
       const bust = Game.heroBust ? Game.heroBust(gd, i) : null;
       if (bust) {
-        const s = Math.min((sw - 4) / bust.width, (sw - 4) / bust.height);
-        const dw = bust.width * s, dh = bust.height * s;
+        const s2 = Math.min((sw - 4) / bust.width, (sw - 4) / bust.height);
+        const dw = bust.width * s2, dh2 = bust.height * s2;
         ctx.save();
         rr(ctx, bx + 1, by + 1, sw - 2, sw - 2, 7); ctx.clip();
-        ctx.drawImage(bust, bx + (sw - dw) / 2, by + sw - dh - 2, dw, dh);
+        ctx.drawImage(bust, bx + (sw - dw) / 2, by + sw - dh2 - 2, dw, dh2);
         ctx.restore();
       } else {
         ctx.fillStyle = c.hex;
-        ctx.shadowColor = c.hex; ctx.shadowBlur = sel ? 12 : 4;
         ctx.beginPath(); ctx.arc(bx + sw / 2, by + sw / 2, sw * 0.28, 0, TAU); ctx.fill();
-        ctx.shadowBlur = 0;
       }
       ctx.strokeStyle = sel ? '#f2ecd8' : '#3a3448';
-      ctx.lineWidth = sel ? 3 : 1.5;
+      ctx.lineWidth = sel ? 2.5 : 1.2;
       rr(ctx, bx, by, sw, sw, 8); ctx.stroke();
-      ctx.fillStyle = sel ? '#f2ecd8' : '#8a8070';
-      ctx.font = '9px Cinzel, Georgia'; ctx.textAlign = 'center';
-      ctx.fillText(c.name, bx + sw / 2, by + sw + 9);
-      UI.register(bx, by, sw, sw + 14, () => { Hero.hair = i; });
+      UI.register(bx, by, sw, sw, () => { Hero.hair = i; });
     });
-    y += Math.ceil(HAIR_COLORS.length / cols) * (sw + 20) + 6;
 
-    // Begin — the new hero joins the roster at the campfire.
-    UI.btnPlate(ctx, px + 16, py + ph - 48, pw - 32, 38, 'CREATE CHARACTER', () => {
+    // ---- RIGHT MENU: the Nekromancer's lore + the four classic spells ----
+    if (wide) {
+      const rpW = Math.min(270, W * 0.30);
+      const rpH = Math.min(430, H - 60);
+      const rpX = W - rpW - Math.max(10, W * 0.03);
+      const rpY = H / 2 - rpH / 2;
+      UI.panel(ctx, rpX, rpY, rpW, rpH, 'THE NEKROMANCER');
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.font = 'italic 11px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
+      let ry = this.wrapCentered(ctx,
+        'A master of death and decay from the cult of Bellmahath. Where others see corpses, the Nekromancer sees an army waiting for orders. The dead obey.',
+        rpX + rpW / 2, rpY + 58, rpW - 40, 15, 5);
+      ry += 14;
+      ctx.font = '600 12px Cinzel, Georgia'; ctx.fillStyle = '#d8c5a0';
+      ctx.fillText('— CLASSIC SPELLS —', rpX + rpW / 2, ry);
+      ry += 12;
+      const SPELLS = [
+        ['corpseExplosion', 'Corpse Explosion', 'Detonate the fallen in a shower of gore', '#ffb43a'],
+        ['deathNova', 'Death Nova', 'A poison ring that scours all around you', '#9adf5a'],
+        ['boneArmor', 'Bone Armor', 'Shield yourself in the bones of the dead', '#e8e2d0'],
+        ['commandSkeletons', 'Command Skeletons', 'Raise a tireless skeletal army', '#8fd0ff']
+      ];
+      for (const [id, nm, desc] of SPELLS.map(x => x)) {
+        const col = SPELLS.find(sp => sp[0] === id)[3];
+        ctx.save();
+        ctx.beginPath(); ctx.arc(rpX + 32, ry + 18, 15, 0, TAU);
+        ctx.fillStyle = '#16121d'; ctx.fill();
+        ctx.restore();
+        UI.circleFrame(ctx, rpX + 32, ry + 18, 15);
+        if (typeof drawSkillIcon === 'function') drawSkillIcon(ctx, id, rpX + 32, ry + 18, 12);
+        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        ctx.font = '600 12px Cinzel, Georgia'; ctx.fillStyle = col;
+        ctx.fillText(nm, rpX + 56, ry + 13);
+        ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#cfc8b8';
+        const dB = wrapText(ctx, desc, rpX + 56, ry + 27, rpW - 76, 12, 2);
+        ry += Math.max(46, (dB - ry) + 12);
+      }
+    }
+
+    // ---- NAME YOUR NEKROMANCER + CREATE, beneath the model ----
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '600 13px Cinzel, Georgia'; ctx.fillStyle = '#d8c5a0';
+    const ny = wide ? H * 0.79 : H * 0.64;
+    ctx.fillText('NAME YOUR NEKROMANCER', cx, ny);
+    const nw = Math.min(320, W * 0.5);
+    UI.btn(ctx, cx - nw / 2, ny + 10, nw, 34, this.fitText(ctx, Hero.name || 'Enter name…', nw - 30), () => {
+      let q = null;
+      try { q = window.prompt('Name your Nekromancer:', Hero.name || ''); } catch (e) { /* blocked */ }
+      if (q !== null) { const t2 = q.trim().slice(0, 22); Hero.name = t2 || 'The Nekromancer'; }
+    }, { size: 14, border: '#6b5f80', color: '#e8e0cc' });
+    // CREATE on the ADVANCED plate — straight to New Haven (owner rule).
+    UI.btnPlate3(ctx, cx - nw / 2, ny + 54, nw, 40, 'CREATE', () => {
       if (!Hero.name) Hero.name = 'The Nekromancer';
       if (!Hero.eyeColor) Hero.eyeColor = '#6ff7c3';
       Hero.save();
-      UI.open('select');
+      Game.enterTown();
     }, { size: 15 });
+
+    // ---- the SETTINGS gear medallion, lower right ----
+    const gear = Game.uiImg('gear');
+    const gr2 = wide ? 34 : 28;
+    const gcx = W - gr2 - 16, gcy = H - gr2 - 16;
+    if (gear && gear.complete && gear.naturalWidth) {
+      ctx.drawImage(gear, gcx - gr2, gcy - gr2, gr2 * 2, gr2 * 2);
+    } else {
+      ctx.strokeStyle = '#8a8070'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(gcx, gcy, gr2 - 4, 0, TAU); ctx.stroke();
+      ctx.font = (gr2) + 'px Georgia'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#c9bfa8'; ctx.fillText('⚙', gcx, gcy);
+    }
+    UI.register(gcx - gr2, gcy - gr2, gr2 * 2, gr2 * 2, () => {
+      UI.settingsBack = 'create';
+      UI.open('settings');
+    });
   },
 
   dim(ctx, W, H) {
