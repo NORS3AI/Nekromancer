@@ -410,6 +410,13 @@ loot at the artisans. The hero is persistent (localStorage).
   the Jeweler's `gemStackList` chips moved gothic→SIMPLE plate (owner
   correction). Character footer: PARAGON + **CAMPFIRE** (renamed from
   CHANGE HERO) on the simple plate.
+- **v1.7.9 — TOP DOWN IS THE ONLY CAMERA (owner rule)**: Bird's Eye is
+  retired — `Game.topDown()` is hard-wired `true` (the function stays so all
+  branches keep working; a saved `viewMode:'birdseye'` blob is inert), the
+  Camera-view chip is deleted from Settings ▸ Gameplay, and
+  `Settings.g.viewMode` remains in defaults only so old blobs merge cleanly.
+  The Bird's-Eye draw paths (rotating sprite in `Player.draw` etc.) are now
+  dead code behind the always-true branch.
 - **v1.7.8 — RENOWN + CRYPT BANDS + BEYOND-ARTIFACT RARITIES (owner spec)**:
   (1) **PARAGON is renamed RENOWN** everywhere the player sees it (screen
   title, character-sheet footer/line 'R<N>', level-up toast/particle, quest

@@ -389,11 +389,17 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.8-alpha';
+const GAME_VERSION = 'v1.7.9-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.9-alpha', date: 'July 2026',
+    notes: [
+      'ONE CAMERA — Bird\'s Eye is retired. TOP DOWN (the closer, Diablo-style tilted view) is now the only way the world is seen, and the Camera-view toggle has left the Settings menu. Heroes who had Bird\'s Eye saved are moved over automatically'
+    ]
+  },
   {
     v: 'v1.7.8-alpha', date: 'July 2026',
     notes: [

@@ -77,7 +77,7 @@ const Settings = {
     cursorScale: 1,       // bone-hand mouse cursor size: 1× / 2× / 3×
     mono: false,          // fold WebAudio output to one channel (single/mono speaker)
     fontSize: 13,         // global UI font size (8–22); scales all text via ctx.font
-    viewMode: 'topdown'   // camera: 'birdseye' (straight down) | 'topdown' (D3-style tilt + zoom; default, owner rule)
+    viewMode: 'topdown'   // RETIRED v1.7.9 (Top Down is the only camera; Game.topDown() is hard-wired true) — key kept so old saved blobs merge cleanly
   },
   keys: JSON.parse(JSON.stringify(KEY_DEFAULTS)),  // action -> [KeyboardEvent.code]
   _codeToAction: {},
