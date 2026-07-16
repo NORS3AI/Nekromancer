@@ -67,6 +67,14 @@ const Input = {
           if (UI.screen === 'skills' && UI.sel.tab === 'passives') UI.close();
           else { UI.open('skills'); UI.sel.tab = 'passives'; }
         } else if (action === 'character') UI.screen === 'character' ? UI.close() : UI.open('character');
+        else if (action === 'journal') UI.screen === 'journal' ? UI.close() : UI.open('journal');
+        else if (action === 'achievements') UI.screen === 'achievements' ? UI.close() : UI.open('achievements');
+      }
+      // In town, the portal and potion keys explain themselves instead of
+      // silently doing nothing (owner rule v1.7.16).
+      if (Game.state === 'town' && !UI.screen) {
+        if (action === 'portal') { UI.toast('You are already in town', '#e04a5a'); AudioSys.sfx('denied'); }
+        else if (action === 'potion') { UI.toast('You are at full life', '#e04a5a'); AudioSys.sfx('denied'); }
       }
       if (Game.state === 'playing') {
         // Escape mirrors the ✕: town-portal sub-menus step back to the town
@@ -137,6 +145,12 @@ const Input = {
       if (UI.startDpsDrag(e.clientX, e.clientY, 'mouse')) return;
       if (UI.startDragScroll(e.clientX, e.clientY, 'mouse')) return;
       if (UI.click(e.clientX, e.clientY)) return;
+      // New Haven: holding the left button walks the hero to the cursor
+      // (desktop click-to-move, v1.7.16) — no combat in town.
+      if (Game.state === 'town' && !UI.screen && !this.touchMode) {
+        this.mousePrimary = true;
+        return;
+      }
       if (!this.gameplayLive()) return;
       const slot = UI.buttonAt(e.clientX, e.clientY);
       if (slot !== null) {
@@ -337,10 +351,16 @@ const Input = {
 
   update() {
     let kx = 0, ky = 0;
-    if (this.actionHeld('moveLeft')) kx -= 1;
-    if (this.actionHeld('moveRight')) kx += 1;
-    if (this.actionHeld('moveUp')) ky -= 1;
-    if (this.actionHeld('moveDown')) ky += 1;
+    // WASD movement can be toggled off on desktop (Settings ▸ Movement,
+    // v1.7.16) — click-to-move remains.
+    const wasdOn = this.touchMode || !Settings.g || Settings.g.wasdMove !== false;
+    if (wasdOn) {
+      if (this.actionHeld('moveLeft')) kx -= 1;
+      if (this.actionHeld('moveRight')) kx += 1;
+      if (this.actionHeld('moveUp')) ky -= 1;
+      if (this.actionHeld('moveDown')) ky += 1;
+    }
+    this.mouseMoving = false;
     if (kx || ky) {
       const d = Math.hypot(kx, ky);
       this.move.x = kx / d;
@@ -351,7 +371,47 @@ const Input = {
     } else {
       this.move.x = 0;
       this.move.y = 0;
+      // DESKTOP CLICK-TO-MOVE (v1.7.16, owner rule — Diablo style): hold the
+      // left button and the hero follows the cursor; pointing at a nearby
+      // enemy attacks instead (mouseMoveVector yields null there).
+      if (this.mousePrimary && !this.touchMode && !UI.screen) {
+        const v = this.mouseMoveVector();
+        if (v) { this.move.x = v.x; this.move.y = v.y; this.mouseMoving = true; }
+      }
     }
+  },
+
+  // The walk direction toward the cursor's WORLD point, or null when the
+  // cursor rests on the hero / hovers an enemy (attack instead) / no world.
+  mouseMoveVector() {
+    const m = this.mousePos;
+    let wx, wy, px, py;
+    if (Game.state === 'town' && Game.town && Game.player) {
+      const Z = Game.townZoom ? Game.townZoom() : 1;
+      wx = Game.camera.x + m.x / Z;
+      wy = Game.camera.y + m.y / Z;
+      px = Game.player.x; py = Game.player.y;
+    } else if (Game.state === 'playing' && Game.player && !Game.player.dead) {
+      const Z = Game.viewZoom(), TY = Game.viewTilt();
+      wx = (m.x - Game.W / 2) / Z + Game.camera.x + Game.W / 2;
+      wy = (m.y - Game.H / 2) / (Z * TY) + Game.camera.y + Game.H / 2;
+      px = Game.player.x; py = Game.player.y;
+      // An enemy under (or near) the cursor means ATTACK, not walk.
+      for (const e of Game.enemies) {
+        if (!e.dead && !e.sleep && dist(wx, wy, e.x, e.y) < e.r + 26) return null;
+      }
+    } else return null;
+    const dx = wx - px, dy = wy - py;
+    const d = Math.hypot(dx, dy);
+    if (d < 16) return null;   // arrived — don't jitter on the spot
+    return { x: dx / d, y: dy / d };
+  },
+
+  // Bulk-click modifiers (v1.7.16 Renown): shift ×10 · ctrl ×100 · both ×1000.
+  bulkN() {
+    const sh = !!(this.keys['ShiftLeft'] || this.keys['ShiftRight']);
+    const ct = !!(this.keys['ControlLeft'] || this.keys['ControlRight']);
+    return sh && ct ? 1000 : ct ? 100 : sh ? 10 : 1;
   },
 
   skillHeld(slot) {
@@ -360,7 +420,7 @@ const Input = {
     for (const bt of this.buttonTouches.values()) {
       if (bt.slot === slot) return true;
     }
-    if (slot === 0) return this.mousePrimary || this.actionHeld('primary');
+    if (slot === 0) return (this.mousePrimary && !this.mouseMoving) || this.actionHeld('primary');
     if (slot === 1) return this.mouseSecondary;
     return this.actionHeld('skill' + (slot - 1));
   },

@@ -410,6 +410,42 @@ loot at the artisans. The hero is persistent (localStorage).
   the Jeweler's `gemStackList` chips moved gothic→SIMPLE plate (owner
   correction). Character footer: PARAGON + **CAMPFIRE** (renamed from
   CHANGE HERO) on the simple plate.
+- **v1.7.16 — CLICK-TO-MOVE + CURATED POINTED ACHIEVEMENTS (owner
+  mega-list; SUPERSEDES the v1.7.7 5,721-generator)**: (1) **DESKTOP
+  CLICK-TO-MOVE**: hold LMB → hero walks to the cursor (town + wilds);
+  `Input.mouseMoveVector()` inverts the view transform (town uses
+  townZoom), returns null near an enemy (r+26 → attack as before) or
+  within 16px (no jitter); `Input.mouseMoving` suppresses the held-LMB
+  primary; town mousedown arms mousePrimary. WASD = optional toggle
+  `Settings.g.wasdMove` (default true) under Settings ▸ **— MOVEMENT —**
+  (desktop-only section). (2) **ACHIEVEMENTS, CURATED**: ACHIEVEMENTS =
+  257 HAND-AUTHORED entries `{cat,sub,name,desc,need,pts,cur}` (unique
+  names, no numbered copies except the owner-specified Campaign/Shrine
+  ladders); `achPoints()` = total earned pts (leaderboard currency;
+  Character ▸ JOURNEY shows it; title = 'ACHIEVEMENTS — N POINTS', no 🏆,
+  no earned tally). Subs: Gameplay (The Crypt · The Ossuary · Campaign
+  10×1pt + 10 decades ×10 + all-acts 50 · Shrines 1/15/50/100/500/1000 =
+  1/5/10/15/30/50pts · Play Time 1h→1y + LIVE clock row) — Portals,
+  Potions, Chests DELETED; Slaughter; Leveling (Character · Renown 25
+  steps to 3500); Fortune (Lyssa's Hands · The Fountain); Collecting
+  (Gold · Legendaries · Artifacts/Relics/Ancients/Mythics GATED via
+  `ACH_SUB_GATES` until first pickup — new counters relicsFound/
+  ancientsFound/mythicsFound, Pickup hooks rarity 7/8/9); Quests (Lukus ·
+  Addy); Smithy; Jeweler; Enchantress (Enchanting · Themes · Pets ·
+  Wings — `Hero.themesTried/petsTried/wingsTried` arrays, snapshot
+  parity, fed by `Hero.noteCosmetic` in the cosmetic pickers). Screen:
+  3-way filter chip (show all / hide earned / hide unearned), pts on
+  every row, a real DRAGGABLE SCROLLBAR (`UI.sel.scrollBar` {x,y,w,h,
+  ratio} handled in startDragScroll/moveDragScroll). (3) **KEYS**: J =
+  Journal (migrated out of primary in Settings.load), Y = Achievements,
+  'Menu / back' label; T/Q in town toast explanations. (4) **RENOWN
+  BULK**: `Hero.spendParagonN(k, Input.bulkN())` — shift ×10, ctrl ×100,
+  both ×1000, one apply/save per batch. (5) **MASTERWORK** rolls rarity
+  directly: 65% Rare · 25% Epic · 10% Legendary (`generate` force).
+  (6) Desktop `fontSize` defaults to 16 (Settings.load, fine-pointer +
+  W≥900, only when the player never chose one). (7) Character sheet
+  inset px+28/pw−56 (numbers off the plate), reagent icons carry their
+  NAMES; fountain TOSS = 172px centered chip.
 - **v1.7.15 — SEAMLESS UI SWEEP + FIXES (owner mega-list)**: (1) the ✕ is
   the BARE painted X (`close_x.webp`, lifted off the close2 plate offline;
   `Screens.closeX` dh 26, no plate) on every panel; `UI.panel` titles sit

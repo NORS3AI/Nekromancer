@@ -1473,35 +1473,40 @@ const Screens = {
     }
     return this._achIndex = cats;
   },
-  // Earned tallies, cached half a second at a time — walking all 5,721
-  // progress callbacks every frame would burn the frame budget for nothing.
+  // Earned tallies + POINTS, cached half a second at a time.
   achCounts() {
     const c = UI.sel.achCache;
     if (c && Game.time - c.t < 0.5) return c;
-    const bySub = {}; let earned = 0;
+    const bySub = {}; let earned = 0, pts = 0;
     for (const a of ACHIEVEMENTS) {
       const k = a.cat + '|' + a.sub;
       const b = bySub[k] || (bySub[k] = { e: 0, n: 0 });
       b.n++;
-      if (a.cur() >= a.need) { b.e++; earned++; }
+      if (a.cur() >= a.need) { b.e++; earned++; pts += a.pts || 0; }
     }
-    return UI.sel.achCache = { t: Game.time, earned, bySub };
+    return UI.sel.achCache = { t: Game.time, earned, pts, bySub };
+  },
+  // Is a subcategory visible for this character? (Artifacts/Relics/Ancients/
+  // Mythics hide until the first one is claimed — owner rule v1.7.16.)
+  achSubVisible(key) {
+    const g = (typeof ACH_SUB_GATES !== 'undefined') && ACH_SUB_GATES[key];
+    return !g || g();
   },
 
-  // ACHIEVEMENTS (reworked v1.7.7, owner spec): a CATEGORY SIDEBAR on the left
-  // — tap a category to unfold its subcategories, tap a subcategory to fill
-  // the right-hand ladder. Both panes drag-scroll independently.
+  // ACHIEVEMENTS (owner spec v1.7.16): a category sidebar on the left, the
+  // selected sub's hand-authored ladder on the right with POINTS, a real
+  // scrollbar, and a three-way earned filter. Title shows the character's
+  // total Achievement Points — no icon, no earned tally.
   achievements(ctx, W, H) {
     this.dim(ctx, W, H);
     const idx = this.achIndex(), cc = this.achCounts();
-    if (!UI.sel.achSub) {
+    if (!UI.sel.achSub || !this.achSubVisible(UI.sel.achSub)) {
       UI.sel.achCat = idx[0].cat;
       UI.sel.achSub = idx[0].subs[0].key;
     }
     const pw = Math.min(720, W - 20), px = W / 2 - pw / 2;
     const ph = Math.min(640, H - 20), py = Math.max(10, H / 2 - ph / 2);
-    UI.panel(ctx, px, py, pw, ph, '🏆 ACHIEVEMENTS — ' +
-      cc.earned.toLocaleString() + ' / ' + ACHIEVEMENTS.length.toLocaleString());
+    UI.panel(ctx, px, py, pw, ph, 'ACHIEVEMENTS — ' + cc.pts.toLocaleString() + ' POINTS');
 
     const listTop = py + 56, viewBot = py + ph - 14, viewH = Math.max(50, viewBot - listTop);
     ctx.textBaseline = 'alphabetic';
@@ -1535,8 +1540,9 @@ const Screens = {
       }
       c += 32;
       if (open) {
-        for (const s of cat.subs) {
-          const on = UI.sel.achSub === s.key;
+        for (const sb2 of cat.subs) {
+          if (!this.achSubVisible(sb2.key)) continue;
+          const on = UI.sel.achSub === sb2.key;
           const sy = c - sScroll;
           if (sy + 26 > listTop && sy < viewBot) {
             if (on) {
@@ -1545,16 +1551,16 @@ const Screens = {
               ctx.strokeStyle = '#cfc8b8'; ctx.lineWidth = 1;
               rr(ctx, sx + 4, sy, sw - 2, 24, 5); ctx.stroke();
             }
-            const b = cc.bySub[s.key] || { e: 0, n: s.list.length };
+            const b = cc.bySub[sb2.key] || { e: 0, n: sb2.list.length };
             ctx.textAlign = 'left'; ctx.font = (on ? 'bold ' : '') + '10px Cinzel, Georgia';
             ctx.fillStyle = on ? '#e8e2d0' : (b.e >= b.n ? '#b8a76a' : '#8a8070');
-            ctx.fillText(this.fitText(ctx, s.sub, sw - (showCnt ? 62 : 22)), sx + 12, sy + 16);
+            ctx.fillText(this.fitText(ctx, sb2.sub, sw - (showCnt ? 62 : 22)), sx + 12, sy + 16);
             if (showCnt) {
               ctx.textAlign = 'right'; ctx.font = '8px Cinzel, Georgia';
               ctx.fillStyle = b.e >= b.n ? '#ffd76a' : '#6f6552';
               ctx.fillText(b.e + '/' + b.n, sx + sw - 2, sy + 16);
             }
-            const sk = s.key;
+            const sk = sb2.key;
             UI.register(sx - 6, sy, sw + 10, 26, () => {
               if (UI.sel.achSub !== sk) { UI.sel.achSub = sk; UI.sel.scrollY = 0; }
             });
@@ -1572,26 +1578,53 @@ const Screens = {
     ctx.strokeStyle = 'rgba(140,120,90,0.25)'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(dx, listTop - 4); ctx.lineTo(dx, viewBot + 4); ctx.stroke();
 
-    // ---- RIGHT: the selected subcategory's escalating ladder ----
+    // ---- RIGHT: the selected subcategory's ladder ----
     let sel = null;
-    for (const cat of idx) for (const s of cat.subs) if (s.key === UI.sel.achSub) sel = s;
+    for (const cat of idx) for (const s2 of cat.subs) if (s2.key === UI.sel.achSub) sel = s2;
     if (!sel) sel = idx[0].subs[0];
-    const lx = dx + 12, lw = px + pw - 14 - lx;
-    // Narrow panes give the name more room: a slimmer bar, smaller reserve.
-    const res = lw < 250 ? 54 : 82, bw = lw < 250 ? 48 : 64;
+    // Room for the scrollbar on the right (owner rule v1.7.16).
+    const lx = dx + 12, lw = px + pw - 26 - lx;
+    // Three-way filter chip: show all · hide earned · hide unearned.
+    const FILTERS = [['all', 'SHOW ALL'], ['unearned', 'HIDE EARNED'], ['earned', 'HIDE UNEARNED']];
+    const fi = Math.max(0, FILTERS.findIndex(f => f[0] === (UI.sel.achFilter || 'all')));
+    UI.chip(ctx, lx + lw - 128, listTop - 2, 128, 22, FILTERS[fi][1], () => {
+      UI.sel.achFilter = FILTERS[(fi + 1) % 3][0];
+      UI.sel.scrollY = 0;
+    }, { size: 9 });
+    const rowsTop = listTop + 28;
+    const rowsH = Math.max(40, viewBot - rowsTop);
+    let rows = sel.list;
+    if (UI.sel.achFilter === 'unearned') rows = rows.filter(a => a.cur() < a.need);
+    else if (UI.sel.achFilter === 'earned') rows = rows.filter(a => a.cur() >= a.need);
+
     const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
     UI.sel.scrollY = scrollY;
-    UI.sel.scrollRegion = { x: lx - 4, y: listTop - 4, w: lw + 8, h: viewH + 8 };
+    UI.sel.scrollRegion = { x: lx - 4, y: rowsTop - 4, w: lw + 8, h: rowsH + 8 };
+    const res = lw < 250 ? 54 : 82, bw = lw < 250 ? 48 : 64;
     const gs = n => n >= 1e12 ? (Math.round(n / 1e11) / 10) + 't'
       : n >= 1e9 ? (Math.round(n / 1e8) / 10) + 'b'
       : n >= 1e6 ? (Math.round(n / 1e5) / 10) + 'm'
       : n >= 10000 ? Math.round(n / 1000) + 'k' : n.toLocaleString();
     ctx.save();
-    ctx.beginPath(); ctx.rect(lx - 4, listTop - 4, lw + 8, viewH + 8); ctx.clip();
-    let r = listTop;
-    for (const a of sel.list) {
+    ctx.beginPath(); ctx.rect(lx - 4, rowsTop - 4, lw + 8, rowsH + 8); ctx.clip();
+    let r = rowsTop;
+    // Play Time leads with the LIVE clock (owner rule: after the milestones,
+    // just count).
+    if (sel.sub === 'Play Time') {
+      const t = Math.floor(Hero.playSeconds || 0);
+      const d2 = Math.floor(t / 86400), h2 = Math.floor((t % 86400) / 3600),
+        m2 = Math.floor((t % 3600) / 60), s2 = t % 60;
       const yy = r - scrollY;
-      if (yy + 44 > listTop && yy < viewBot) {
+      if (yy + 30 > rowsTop && yy < viewBot) {
+        ctx.textAlign = 'center'; ctx.font = 'bold 14px Cinzel, Georgia'; ctx.fillStyle = '#cfc8b8';
+        ctx.fillText('Time in the dark — ' + (d2 ? d2 + 'd ' : '') + h2 + 'h ' + m2 + 'm ' + s2 + 's',
+          lx + lw / 2, yy + 16);
+      }
+      r += 34;
+    }
+    for (const a of rows) {
+      const yy = r - scrollY;
+      if (yy + 44 > rowsTop && yy < viewBot) {
         const cur = a.cur();
         const done = cur >= a.need;
         ctx.fillStyle = done ? 'rgba(42,38,24,0.75)' : 'rgba(28,24,38,0.6)';
@@ -1603,21 +1636,43 @@ const Screens = {
         ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = done ? '#b5ab94' : '#6f6552';
         ctx.fillText(this.fitText(ctx, a.desc, lw - res), lx + 4, yy + 30);
         if (done) {
-          ctx.textAlign = 'right'; ctx.font = 'bold 16px Cinzel, Georgia'; ctx.fillStyle = '#4ade80';
-          ctx.fillText('✓', lx + lw - 4, yy + 24);
+          ctx.textAlign = 'right'; ctx.font = 'bold 14px Cinzel, Georgia'; ctx.fillStyle = '#4ade80';
+          ctx.fillText('✓', lx + lw - 4, yy + 16);
+          ctx.font = 'bold 9px Cinzel, Georgia'; ctx.fillStyle = '#ffd76a';
+          ctx.fillText('+' + (a.pts || 0) + ' pts', lx + lw - 4, yy + 31);
         } else {
-          UI.bar(ctx, lx + lw - bw - 4, yy + 12, bw, 7, Math.min(1, cur / a.need), '#221d2e', '#8a6f2a');
+          UI.bar(ctx, lx + lw - bw - 4, yy + 8, bw, 7, Math.min(1, cur / a.need), '#221d2e', '#8a6f2a');
           ctx.textAlign = 'right'; ctx.font = '8px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-          ctx.fillText(gs(cur) + ' / ' + gs(a.need), lx + lw - 4, yy + 30);
+          ctx.fillText(gs(cur) + ' / ' + gs(a.need), lx + lw - 4, yy + 24);
+          ctx.fillStyle = '#8a7f5a';
+          ctx.fillText((a.pts || 0) + ' pts', lx + lw - 4, yy + 34);
         }
       }
       r += 46;
     }
+    if (!rows.length) {
+      ctx.textAlign = 'center'; ctx.font = 'italic 11px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText(UI.sel.achFilter === 'earned' ? 'Nothing earned here yet.' : 'Everything here is done.',
+        lx + lw / 2, rowsTop + 30 - scrollY);
+      r += 40;
+    }
     ctx.restore();
-    UI.sel.scrollMax = Math.max(0, (r - listTop) - viewH + 6);
-    ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
-    if (scrollY > 1) ctx.fillText('▲', lx + lw / 2, listTop + 2);
-    if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', lx + lw / 2, viewBot + 8);
+    const contentH = r - rowsTop;
+    UI.sel.scrollMax = Math.max(0, contentH - rowsH + 6);
+
+    // ---- the draggable scrollbar (owner rule v1.7.16) ----
+    const sbX = px + pw - 20, sbW = 8;
+    if (UI.sel.scrollMax > 0) {
+      const trackH = rowsH;
+      const thumbH = Math.max(28, trackH * rowsH / contentH);
+      const thumbY = rowsTop + (trackH - thumbH) * (scrollY / UI.sel.scrollMax);
+      ctx.fillStyle = 'rgba(34,27,22,0.9)';
+      rr(ctx, sbX, rowsTop, sbW, trackH, 4); ctx.fill();
+      ctx.fillStyle = '#6e5a3a';
+      rr(ctx, sbX + 1, thumbY, sbW - 2, thumbH, 4); ctx.fill();
+      UI.sel.scrollBar = { x: sbX - 8, y: rowsTop, w: sbW + 16, h: trackH,
+        ratio: UI.sel.scrollMax / Math.max(1, trackH - thumbH) };
+    } else UI.sel.scrollBar = null;
   },
 
   // The one true way to dismiss a menu: the red ✕ (Escape works too).
@@ -1803,8 +1858,10 @@ const Screens = {
     y += 26;
 
     const afford = Hero.gold >= this.FOUNTAIN_COST;
-    // The toss rides the little empty plate (owner rule: second image plate).
-    UI.chip(ctx, px + 30, y, pw - 60, 38,
+    // The toss rides a SMALL centered plate hugging its words (owner rule
+    // v1.7.16 — never the menu's full width).
+    const tossW = 172;
+    UI.chip(ctx, W / 2 - tossW / 2, y, tossW, 38,
       afford ? 'TOSS 200 GOLD' : 'NEED 200 GOLD',
       afford ? () => {
         Hero.gold -= this.FOUNTAIN_COST;
@@ -4295,14 +4352,14 @@ const Screens = {
   mysPet(ctx, W, H) {
     this.cosmeticList(ctx, W, H, 'CHOOSE A PET',
       Object.entries(PETS).map(([id, e]) => [id, e, '#6ff7c3']),
-      Hero.pet, id => { Hero.pet = id; Game.pet = null; Hero.save(); AudioSys.sfx('gem'); },
+      Hero.pet, id => { Hero.pet = id; Game.pet = null; Hero.noteCosmetic('pets', id); Hero.save(); AudioSys.sfx('gem'); },
       'No pet');
   },
 
   mysWings(ctx, W, H) {
     this.cosmeticList(ctx, W, H, 'CHOOSE YOUR WINGS',
       Object.entries(WINGS).map(([id, e]) => [id, e, e.color]),
-      Hero.wings, id => { Hero.wings = id; Hero.save(); AudioSys.sfx('gem'); },
+      Hero.wings, id => { Hero.wings = id; Hero.noteCosmetic('wings', id); Hero.save(); AudioSys.sfx('gem'); },
       'No wings');
   },
 
@@ -4310,7 +4367,7 @@ const Screens = {
     this.cosmeticList(ctx, W, H, 'CHOOSE A THEME',
       Object.entries(THEMES).map(([id, e]) => [id, { name: e.name, desc: e.desc || ('Menus and buttons take on ' + e.name.toLowerCase() + ' tones.') }, e.title]),
       Settings.g.theme || 'bone',
-      id => { if (id) { Settings.g.theme = id; Settings.save(); AudioSys.sfx('gem'); } });
+      id => { if (id) { Settings.g.theme = id; Hero.noteCosmetic('themes', id); Settings.save(); AudioSys.sfx('gem'); } });
   },
 
   mysEnchant(ctx, W, H) {
@@ -4552,9 +4609,11 @@ const Screens = {
     const ph = Math.min(H - 16, 640);
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, this.fitText(ctx, Hero.name.toUpperCase() + '  ·  LVL ' + Hero.level + (Hero.paragon ? '  ·  P' + Hero.paragon : ''), pw - 60));
-    const colW = twoCol ? (pw - 44) / 2 : pw - 32;
-    const lx = px + 16;
-    const rx = twoCol ? px + 28 + colW : lx;
+    // Inset well clear of the painted border (owner rule v1.7.16 — values
+    // used to ride the exterior plate).
+    const colW = twoCol ? (pw - 68) / 2 : pw - 56;
+    const lx = px + 28;
+    const rx = twoCol ? px + 40 + colW : lx;
 
     // Scrollable body — the columns stack tall on phones, so the whole sheet
     // (Combat, Journey, Holdings, ANALYSIS) drag-scrolls; the campfire button
@@ -4619,6 +4678,7 @@ const Screens = {
       ? line(lx, ly, 'Renown', 'R' + (Hero.paragon || 0) + '  (' + (Hero.np || 0) + ' NP)', '#ff8c2a')
       : line(lx, ly, 'XP', `${Hero.xp} / ${XP_CURVE(Hero.level)}`);
     ly = line(lx, ly, 'Story acts finished', (Hero.actsCleared || 0) + ' / 100');
+    ly = line(lx, ly, 'Achievement points', achPoints().toLocaleString(), '#ffd76a');
     ly = line(lx, ly, 'Difficulty', DIFFICULTIES[Hero.difficulty].name);
     ly = line(lx, ly, 'Monsters slain', Hero.totalKills);
     // The fountain's blessing, in plain words (owner rule — bone white).
@@ -4636,8 +4696,11 @@ const Screens = {
     ry = line(rx, ry, 'Gold', Hero.gold, '#ffd76a');
     for (const [key, m] of Object.entries(MATERIALS)) {
       if (key === 'parts' || key === 'dust' || key === 'crystal' || key === 'soul') {
-        // Painted material icon instead of the written name (owner rule).
+        // Painted icon WITH its name beside it (owner rule v1.7.16 — icons
+        // matter later; teach the player what each one is).
         drawMatIcon(ctx, key, rx + 10 * k, ry - 4 * k, 18 * k);
+        ctx.textAlign = 'left'; ctx.font = (11 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
+        ctx.fillText(m.name, rx + 24 * k, ry);
         ctx.textAlign = 'right'; ctx.font = '600 ' + (12 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = m.color;
         ctx.fillText(String(Hero.mats[key] || 0), rx + colW, ry);
         ry += 19 * k;
@@ -4784,9 +4847,9 @@ const Screens = {
       // A single "+" — live whenever points remain (free spend, owner rule).
       const bw = 34, by = y + (rowH - 8) / 2 - 14;
       const canAdd = (Hero.np || 0) > 0 && !capped;
-      if (!UI.iconPlate(ctx, 'plus', px + pw - 30 - bw, by, bw, 28, canAdd ? () => Hero.spendParagon(k) : null,
+      if (!UI.iconPlate(ctx, 'plus', px + pw - 30 - bw, by, bw, 28, canAdd ? () => Hero.spendParagonN(k, Input.bulkN()) : null,
         { disabled: !canAdd, label: 'para+' }))
-        UI.btn(ctx, px + pw - 30 - bw, by, bw, 28, '+', canAdd ? () => Hero.spendParagon(k) : null,
+        UI.btn(ctx, px + pw - 30 - bw, by, bw, 28, '+', canAdd ? () => Hero.spendParagonN(k, Input.bulkN()) : null,
           { size: 17, disabled: !canAdd, border: '#8a6f2a', color: '#ffd76a' });
     });
     ctx.restore();
@@ -5967,6 +6030,19 @@ const Screens = {
     ctx.textAlign = 'left';
     ctx.font = '600 12px Cinzel, Georgia';
     ctx.fillStyle = '#d8c5a0';
+    // ---- MOVEMENT (desktop only, owner rule v1.7.16): click-to-move is
+    // always on; WASD keys are the optional extra scheme. ----
+    if (UI.desktop) {
+      ctx.fillText('— MOVEMENT —', gx, gy - 14);
+      UI.check(ctx, gx, gy, Settings.g.wasdMove !== false, () => {
+        Settings.g.wasdMove = Settings.g.wasdMove === false;
+        Settings.save();
+        UI.toast(Settings.g.wasdMove !== false ? 'WASD movement ON (click-to-move stays)' : 'Click-to-move only', '#cfc8b8');
+      }, 'WASD movement keys (click-to-move is always on)');
+      gy += rowStep + 24;
+      ctx.font = '600 12px Cinzel, Georgia';
+      ctx.fillStyle = '#d8c5a0';
+    }
     ctx.fillText('— GAMEPLAY —', gx, gy - 14);
     // Elective Mode — allow more than one skill from a category on the action
     // bar. Toggling it re-sanitizes the loadout under the new rule.

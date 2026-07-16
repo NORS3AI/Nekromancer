@@ -1103,10 +1103,16 @@ const Items = {
     // Smith level pins the gear-level band (owner spec): L1 forges 1-5, L9 forges 61-70.
     const [lo, hi] = this.smithRange();
     const craftLvl = Math.max(1, Math.round(rand(lo, hi)));
-    let item, tries = 0;
-    do {
-      item = this.generate(craftLvl, master ? 0.2 : 0.12, slot);
-    } while (master && item.rarity < 2 && tries++ < 30); // masterwork: Rare or better
+    let item;
+    if (master) {
+      // MASTERWORK rarity table (owner spec v1.7.16): 65% Rare · 25% Epic ·
+      // 10% Legendary — rolled directly, then forced onto the item.
+      const r = Math.random();
+      const rarity = r < 0.65 ? 2 : r < 0.90 ? 3 : 4;
+      item = this.generate(craftLvl, 0, slot, { rarity, stars: 0 });
+    } else {
+      item = this.generate(craftLvl, 0.12, slot);
+    }
     if (master && !item.sockets) item.sockets = Math.random() < 0.5 ? 1 : 0;
     this.stash(item);
     Hero.itemsCrafted = (Hero.itemsCrafted || 0) + 1;   // Lukus's quest counter
