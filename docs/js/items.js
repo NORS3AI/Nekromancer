@@ -551,7 +551,7 @@ const Items = {
 
   extractCost() { return { parts: 30, dust: 50, crystal: 50, soul: 3 }; },
 
-  // Instruction of Rathma: rip the legendary power out of a loose item into the
+  // Instruction of Bellmahath: rip the legendary power out of a loose item into the
   // Cube's bank (destroys the item), paying reagents.
   extractPower(item) {
     if (!item || !item.power || !LEGENDARY_POWERS[item.power]) return;

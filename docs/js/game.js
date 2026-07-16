@@ -599,8 +599,9 @@ const Game = {
 
   drawTownPlate(ctx, it, on) {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    // The Soul Crucible plate rides high so it clears the painted cube
-    // (owner rule: "above the cube on the town map").
+    // The Soul Crucible plate rides high AND right so it centers above the
+    // painted cube (owner rule v1.7.2).
+    const xOff = it.kind === 'cube' ? 52 : 0;
     const y = it.y - (it.kind === 'cube' ? 185 : 92);
     // Street signs are ALWAYS the unlit plate (owner rule: the lit theme
     // plate exists only under a hovering mouse — nothing else lights it);
@@ -617,13 +618,13 @@ const Game = {
       const capF = 0.15;
       const capW = Math.min(sw * capF * (dh / sh), w * 0.24);
       ctx.globalAlpha = on ? 1 : 0.85;
-      ctx.drawImage(img, 0, 0, sw * capF, sh, it.x - w / 2, dy, capW, dh);
-      ctx.drawImage(img, sw * (capF + 0.06), 0, sw * 0.08, sh, it.x - w / 2 + capW, dy, w - 2 * capW, dh);
-      ctx.drawImage(img, sw * (1 - capF), 0, sw * capF, sh, it.x + w / 2 - capW, dy, capW, dh);
+      ctx.drawImage(img, 0, 0, sw * capF, sh, (it.x + xOff) - w / 2, dy, capW, dh);
+      ctx.drawImage(img, sw * (capF + 0.06), 0, sw * 0.08, sh, (it.x + xOff) - w / 2 + capW, dy, w - 2 * capW, dh);
+      ctx.drawImage(img, sw * (1 - capF), 0, sw * capF, sh, (it.x + xOff) + w / 2 - capW, dy, capW, dh);
       ctx.fillStyle = 'rgba(0,0,0,0.65)';
-      ctx.fillText(txt, it.x, y + 1.5);
+      ctx.fillText(txt, it.x + xOff, y + 1.5);
       ctx.fillStyle = on ? '#f0e2bc' : '#d5c49e';
-      ctx.fillText(txt, it.x, y);
+      ctx.fillText(txt, it.x + xOff, y);
       ctx.globalAlpha = 1;
       return;
     }
@@ -632,11 +633,11 @@ const Game = {
     const w = ctx.measureText(txt).width + 20;
     ctx.globalAlpha = on ? 1 : 0.82;
     ctx.fillStyle = 'rgba(12,9,16,0.82)';
-    rr(ctx, it.x - w / 2, y - 12, w, 22, 6); ctx.fill();
+    rr(ctx, (it.x + xOff) - w / 2, y - 12, w, 22, 6); ctx.fill();
     ctx.strokeStyle = it.color; ctx.lineWidth = on ? 1.8 : 1;
-    rr(ctx, it.x - w / 2, y - 12, w, 22, 6); ctx.stroke();
+    rr(ctx, (it.x + xOff) - w / 2, y - 12, w, 22, 6); ctx.stroke();
     ctx.fillStyle = it.color;
-    ctx.fillText(txt, it.x, y);
+    ctx.fillText(txt, it.x + xOff, y);
     ctx.globalAlpha = 1;
   },
 
@@ -1238,7 +1239,7 @@ const Game = {
     // Phase-2 roaming bosses & the super-rare cave dweller (owner spec). A
     // Bonewyrm or Gluttonous Brain sometimes stalks eligible modes (everything
     // outside Story Mode: Bounties, Adventure, Rifts, Nephalem, Seasons); a 3%
-    // cave hides Rathma's Chosen on any map. All spawn away from the entrance.
+    // cave hides Bellmahath's Chosen on any map. All spawn away from the entrance.
     const placeAway = (minSp, minBs) => {
       let x, y, t = 0;
       do { x = rand(200, World.W - 200); y = rand(200, World.H - 200); t++; }
@@ -1251,7 +1252,7 @@ const Game = {
       const pos = placeAway(700, 320);
       this.enemies.push(new Enemy(rb, pos.x, pos.y, { name: MONSTERS[rb].name }));
     }
-    // (Rathma's Chosen now lives inside the rare CAVE — a real linked map — not
+    // (Bellmahath's Chosen now lives inside the rare CAVE — a real linked map — not
     // loose on the surface; see World.cave + Game.enterCave.)
     // Act III: the Horadric's Cube has a 10% chance to be half-buried on any
     // (non-final) map. If the player reaches the Sand Wyrm without finding it,
@@ -1930,7 +1931,7 @@ const Game = {
   },
 
   // Build a fresh linked map from the current land's character (same monsters /
-  // level), or a dank dungeon CAVE that harbours Rathma's Chosen.
+  // level), or a dank dungeon CAVE that harbours Bellmahath's Chosen.
   linkedZone() {
     const z = this.zone;
     // Preserve RIFT character so cycling through season/rift maps stays a rift
@@ -1977,7 +1978,7 @@ const Game = {
     };
     for (const pk of World.packs) spawnPack(pk.x, pk.y, zone.rift ? 0.5 : cave ? 0.3 : 0.18);
     if (cave) {
-      // The cave's dweller: Rathma's Chosen — the cave's boss (its death opens the
+      // The cave's dweller: Bellmahath's Chosen — the cave's boss (its death opens the
       // way out). mapBoss makes its death fire onBossDead + shows the boss bar.
       this.enemies.push(new Enemy('rathma', World.bossPos.x, World.bossPos.y, { rare: true, mapBoss: true, name: MONSTERS.rathma.name }));
     } else if (zone.rift) {

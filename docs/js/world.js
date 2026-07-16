@@ -1083,7 +1083,7 @@ const World = {
     // Black maw.
     ctx.fillStyle = '#050308';
     ctx.beginPath(); ctx.ellipse(0, 2, 16, 20, 0, 0, TAU); ctx.fill();
-    // Purple glow of Rathma stirring within.
+    // Purple glow of Bellmahath stirring within.
     const g = ctx.createRadialGradient(0, 2, 0, 0, 2, 16);
     g.addColorStop(0, `rgba(176,106,223,${0.25 + 0.12 * Math.sin(t * 3)})`);
     g.addColorStop(1, 'rgba(176,106,223,0)');

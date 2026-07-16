@@ -805,7 +805,7 @@ class Enemy {
       })[type] || ['charge', 'slam', 'nova'];
     }
     this.enraged = false;      // set once when hp drops past def.enrageAt
-    this.stealthT = 0;         // Rathma's Chosen fades to smoke while hurt
+    this.stealthT = 0;         // Bellmahath's Chosen fades to smoke while hurt
   }
 
   wake() {
@@ -1377,7 +1377,7 @@ class Enemy {
     if (this.vulnT > 0) dmg *= 191; // Inarius 6pc: +19000% damage taken from you
     this.hp -= dmg;
     this.flash = 1;
-    // Rathma's Chosen fades to smoke while you damage it — briefly hard to see.
+    // Bellmahath's Chosen fades to smoke while you damage it — briefly hard to see.
     if (this.def.stealth && !this.dead) {
       if (this.stealthT <= 0) {
         Particles.spawn(this.x, this.y, { count: 10, color: ['#2a2436', '#4a4258', '#6b5f80'], minSpeed: 30, maxSpeed: 120, minLife: 0.3, maxLife: 0.7 });
@@ -1487,7 +1487,7 @@ class Enemy {
       }
     }
     // Phase-2 reagent bosses: a chance to drop their crafting material (owner
-    // spec — Wyrm Scale 12%, Gluttonous Brain 10%, Souls of Rathma 20% ×1-3).
+    // spec — Wyrm Scale 12%, Gluttonous Brain 10%, Souls of Bellmahath 20% ×1-3).
     if (this.def.dropMat) {
       if (Math.random() < (this.def.dropChance || 0.1)) {
         const [lo, hi] = this.def.dropN || [1, 1];
