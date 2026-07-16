@@ -151,6 +151,8 @@ const Hero = {
   xp: 0,
   paragon: 0,       // paragon levels earned past 70 (near-infinite)
   paragonXp: 0,     // XP banked toward the next paragon level
+  cryptUnlocked: false,   // six worn Artifacts opens the FORGOTTEN CRYPT
+  cryptTier: 0,           // chosen Crypt tier (0 = off, 1–250)
   np: 0,            // unspent Nekromancer Points
   para: {},         // allocated paragon points, keyed by PARAGON_STATS id
   paraOrder: [],    // spend history (keys, in order) for rotation + single-undo
@@ -218,6 +220,7 @@ const Hero = {
     if (!this.hair) this.hair = 0;
     this.level = 1; this.xp = 0; this.gold = 0;
     this.paragon = 0; this.paragonXp = 0; this.np = 0; this.para = {}; this.paraOrder = [];
+    this.cryptUnlocked = false; this.cryptTier = 0;
     this.mats = { parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0, wyrmscale: 0, brain: 0, rathmasoul: 0 };
     this.gems = [];
     this.bag = [];
@@ -292,6 +295,7 @@ const Hero = {
       name: this.name, eyeColor: this.eyeColor,
       level: this.level, xp: this.xp, gold: this.gold, mats: this.mats,
       paragon: this.paragon, paragonXp: this.paragonXp, np: this.np, para: this.para, paraOrder: this.paraOrder,
+      cryptUnlocked: this.cryptUnlocked, cryptTier: this.cryptTier,
       gems: this.gems, bag: this.bag, equipped: this.equipped,
       loadout: this.loadout, passives: this.passives,
       zonesCleared: this.zonesCleared, actsCleared: this.actsCleared, actUniques: this.actUniques, difficulty: this.difficulty,
@@ -354,6 +358,7 @@ const Hero = {
       name: d.name || 'Nekromancer', eyeColor: d.eyeColor || '#6ff7c3',
       level: d.level || 1, xp: d.xp || 0, gold: d.gold || 0,
       paragon: d.paragon || 0, paragonXp: d.paragonXp || 0, np: d.np || 0,
+      cryptUnlocked: !!d.cryptUnlocked, cryptTier: d.cryptTier || 0,
       para: (d.para && typeof d.para === 'object') ? Object.assign({}, d.para) : {},
       paraOrder: Array.isArray(d.paraOrder) ? d.paraOrder.slice() : [],
       mats: Object.assign({ parts: 0, dust: 0, crystal: 0, soul: 0, lumber: 0, rivets: 0, heartstring: 0, wyrmscale: 0, brain: 0, rathmasoul: 0 }, d.mats),
@@ -670,10 +675,12 @@ const Hero = {
     }
     // Bank paragon levels — each grants one Nekromancer Point.
     let gainedPara = 0;
-    while (this.paragonXp >= PARAGON_XP(this.paragon)) {
+    while (this.paragon < MAX_PARAGON && this.paragonXp >= PARAGON_XP(this.paragon)) {
       this.paragonXp -= PARAGON_XP(this.paragon);
       this.paragon++; this.np++; gainedPara++;
     }
+    // At the 3500 cap the well is full — XP stops banking (owner rule).
+    if (this.paragon >= MAX_PARAGON) this.paragonXp = 0;
     if (leveled && Game.player) {
       Items.apply();
       const p = Game.player;

@@ -408,6 +408,27 @@ loot at the artisans. The hero is persistent (localStorage).
   the Jeweler's `gemStackList` chips moved gothic→SIMPLE plate (owner
   correction). Character footer: PARAGON + **CAMPFIRE** (renamed from
   CHANGE HERO) on the simple plate.
+- **v1.7.6 — PARAGON 3500 + THE FORGOTTEN CRYPT + pet fetching (owner
+  spec)**: (1) `MAX_PARAGON = 3500`; `PARAGON_XP(p)` keeps the old curve
+  below 250, then multiplies by `1.004^(p-250)` — level 3500 costs ~2.7
+  TRILLION XP; `addXP` stops banking at the cap (`paragonXp = 0`).
+  (2) **THE FORGOTTEN CRYPT**: wearing SIX Artifacts at once (checked at
+  the top of `Items.apply`) sets `Hero.cryptUnlocked` (snapshot parity,
+  with `Hero.cryptTier` 0–250), fires the `cryptUnlock` popup screen
+  (resonant title + SO BE IT) and an achievement (first ACHIEVEMENTS
+  entry). Once unlocked and at Ascendant XVI, the Waygate/Shroud grows a
+  FORGOTTEN CRYPT stepper (−10/−1/+1/+10 chips, tier 0 = CLOSED, shows
+  the ×1.5^tier monster multiplier). `Items.cryptTier()` = active tier
+  (unlocked + tier>0 + tormentTier()>=16). Enemy constructor multiplies
+  **maxHp ONLY** by `1.5^tier` (never count/damage). Drops in the Crypt:
+  `cryptLegendaryStars()` (5★ 5% · 4★ 10% · 1–3★ equal 85/3) replaces
+  legendaryStars, and `cryptArtifactStars(tier)` bands: 10–75 = 1–2★ 5%;
+  76–180 = 3–4★ 5% + 1–2★ 25%; 181–250 = 5★ 3% + 3–4★ 25% + 1–2★ 35%
+  (else 0★); `tieredStars()` routes through it too (named powers + set
+  pieces). (3) **PETS FETCH**: `updatePet` senses pickups within
+  `360×(1+pickupRadius)` px (skips bag-blocked items), breaks heel to
+  run to the nearest, and `Pickup.update`'s magnet/collect already fire
+  off the pet with the hero's paragon-widened radius.
 - **v1.7.5 (owner polish)**: fog on the creation screen REMOVED; the
   showcase model is **hair-tinted live** via `Screens.showcaseTinted(gd,
   hair)` (cached offscreen canvas: `source-atop` crown-centred radial in
