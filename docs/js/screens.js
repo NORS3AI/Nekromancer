@@ -152,6 +152,20 @@ const Screens = {
       ctx.font = '600 13px Cinzel, Georgia'; ctx.fillStyle = '#e04a5a';
       ctx.fillText('RETIRE A HERO — tap the hero you wish to retire', W / 2, y0 - 12);
     }
+    // A soft rim around a drawing's SILHOUETTE only (shadow-only pass: the
+    // image itself lands 10000px off-canvas, its shadow lands here) — the
+    // hover cue never washes the content itself (owner rule v1.7.14).
+    const rim = (im, dx, dy, dw2, dh2, col, blur) => {
+      ctx.save();
+      ctx.shadowColor = col; ctx.shadowBlur = blur; ctx.shadowOffsetX = 10000;
+      ctx.drawImage(im, dx - 10000, dy, dw2, dh2);
+      ctx.drawImage(im, dx - 10000, dy, dw2, dh2);   // second pass firms the rim
+      ctx.restore();
+    };
+    // Faded bone green, low opacity — never blinding. BLOOD RED is reserved
+    // solely for delete mode (owner rule v1.7.14).
+    const RIM_HOVER = 'rgba(152,188,158,0.5)';
+    const RIM_DELETE = 'rgba(190,28,36,0.9)';
     const pages = Math.ceil((Profiles.MAX || 3) / 3);
     if (UI.sel.selPage === undefined) {
       const home = Profiles.slots[Profiles.active] ? Profiles.active : Profiles.firstFilled();
@@ -184,18 +198,17 @@ const Screens = {
       }
       if (snap) {
         // A claimed vessel — the hero's painted avatar on the plinth. On
-        // hover the HERO ITSELF takes a blood-red outline (owner rule
-        // v1.7.13 — never a plate-wide white glow).
+        // hover the HERO ITSELF takes a soft rim: faded bone green normally,
+        // blood red only while retiring (owner rules v1.7.13/14).
         const img = Game.heroImg(snap.gender || 'm', 'front', snap.hair || 0);
         const gh2 = fh * 0.60;
         if (img && img.complete && img.naturalWidth) {
           const gw2 = gh2 * (img.width / img.height);
           const breath = Math.sin(t * 1.6 + i) * 1.2;
-          ctx.save();
-          if (fhov) { ctx.shadowColor = 'rgba(168,18,26,0.95)'; ctx.shadowBlur = Math.max(10, fw * 0.055); }
-          ctx.drawImage(img, x0 + fw / 2 - gw2 / 2, y0 + fh * 0.875 - gh2 - breath, gw2, gh2 + breath);
-          if (fhov) ctx.drawImage(img, x0 + fw / 2 - gw2 / 2, y0 + fh * 0.875 - gh2 - breath, gw2, gh2 + breath);
-          ctx.restore();
+          const ax2 = x0 + fw / 2 - gw2 / 2, ay2 = y0 + fh * 0.875 - gh2 - breath;
+          if (fhov) rim(img, ax2, ay2, gw2, gh2 + breath,
+            delMode ? RIM_DELETE : RIM_HOVER, Math.max(10, fw * 0.05));
+          ctx.drawImage(img, ax2, ay2, gw2, gh2 + breath);
         } else {
           this.drawNecroFigure(ctx, x0 + fw / 2, y0 + fh * 0.86, fh / 420, '#8fb0e8', false, false);
         }
@@ -230,15 +243,14 @@ const Screens = {
           ctx.globalAlpha = 1;
         }
         if (plus && plus.complete && plus.naturalWidth) {
-          // On hover the plus plate takes the same blood-red outline the
-          // heroes get (owner rule v1.7.13) and wakes up a little.
+          // On hover the plus plate takes a faded bone-green rim traced
+          // around its OUTLINE only — the plate itself stays at its quiet
+          // 25%, never washed brighter (owner rule v1.7.14).
           const pw2 = fw * 0.52, ph2 = pw2 * (plus.height / plus.width);
-          ctx.save();
-          if (fhov) { ctx.shadowColor = 'rgba(168,18,26,0.95)'; ctx.shadowBlur = 14; ctx.globalAlpha = 0.45; }
-          else ctx.globalAlpha = 0.25;
-          ctx.drawImage(plus, x0 + fw / 2 - pw2 / 2, y0 + fh * 0.56 - ph2 / 2, pw2, ph2);
-          if (fhov) ctx.drawImage(plus, x0 + fw / 2 - pw2 / 2, y0 + fh * 0.56 - ph2 / 2, pw2, ph2);
-          ctx.restore();
+          const px2 = x0 + fw / 2 - pw2 / 2, py2 = y0 + fh * 0.56 - ph2 / 2;
+          if (fhov && !delMode) rim(plus, px2, py2, pw2, ph2, RIM_HOVER, 8);
+          ctx.globalAlpha = 0.25;
+          ctx.drawImage(plus, px2, py2, pw2, ph2);
           ctx.globalAlpha = 1;
         } else {
           ctx.globalAlpha = 0.25;
