@@ -408,6 +408,44 @@ loot at the artisans. The hero is persistent (localStorage).
   the Jeweler's `gemStackList` chips moved gothic→SIMPLE plate (owner
   correction). Character footer: PARAGON + **CAMPFIRE** (renamed from
   CHANGE HERO) on the simple plate.
+- **v1.7.2 (owner list)**: (1) **✕ IN THE TITLE BAR** — `drawGlobalClose`
+  anchors the plate at `panelRects[0].x+w-30, y+22`, inside the header
+  band. (2) **GLOBAL RENAME: Rathma → Bellmahath** (capital-R display
+  strings only; ids `rathma`/`rathmasoul` unchanged) — Instruction of
+  Bellmahath, Souls of Bellmahath, Bellmahath's Chosen, Skills of
+  Bellmahath, legendary prefix, credit line. (3) Cube street plate:
+  `xOff = 52` for kind 'cube' in drawTownPlate (right + high, over the
+  painted cube); cube + leaflet screens fully CENTERED in bone
+  `#cfc8b8` (only reagent tokens keep color), tally/cost icon rows
+  centered. (4) Fountain: gold under TOSS (not the corner); active buff
+  in FADED BLOOD RED `#c98a8a`, two wrapped lines + its own countdown
+  line. (5) **Artisan hubs draw their name BIG** (20px Cinzel custom
+  header over an untitled panel): THARN THE SMITHY (renamed again from
+  Blacksmith) / ORREN THE JEWELER / VESSA THE ENCHANTRESS.
+  (6) smithSalvage: `matsRow(..., center)` mode, reagents dropped to
+  y112 + centered, flavor wrapCentered, buttons below, "always free"
+  footer deleted. (7) **smithCraft is SELECT-then-CRAFT?**: slot plates
+  set `UI.sel.craftSlot`, the chosen slot's cost renders as centered
+  gold + mat-icon tokens, a centered CRAFT? simple plate (180px) does
+  the hammering; per-quality costLabels under the toggles are gone.
+  (8) Torch bench: names/burn lines bone (`#e8e2d0`/`#c9bfa8`), radius
+  text gone, drawer reagents centered (token-line flush layout), CRAFT
+  chip bone. (9) Jeweler: socket explainer at y100 (list y134);
+  UNSOCKET title plain; `gemStackList` rows = centered 66%-width SIMPLE
+  plates with the gem ICON + "Tier ×N" in bone; merge/sell actions =
+  compact centered simple plates; jewCraft's per-row icon deleted; SELL
+  GEMS gold nudged left of the title-bar ✕. (10) mysEnchant: BACK +
+  REROLL simple plates, affix rows = centered 74%-width simple plates in
+  bone, **"undefined" property fixed** (stats without an `AFFIX_ROLLS`
+  entry are skipped). cosmeticList rows are SIMPLE plates now (pets/
+  wings/themes). (11) Wilds: titles lose their icons, the difficulty
+  NAME sits on its own line under a "Difficulty" caption (arrows never
+  overlapped again), mode rows on SIMPLE plates, ph +28. (12) Lukus +
+  Addy ledger headers lose the "N OF 500 DONE" counts (bars stay).
+  (13) devconfirm: ph 390, everything wrapCentered with air, DEV
+  PANEL/CLOSE simple plates, screen in MENU_SCREENS (no EXIT).
+  (14) vendor(): flavor wrapCentered 2 lines, gold right-aligned
+  beneath, rows start py+96 (ph 126+…).
 - **v1.7.1 (owner list)**: (1) The last PNGs (20 runes + 21 skill icons,
   1.6MB→272KB) converted to WebP; loaders in skills.js now request
   `.webp`. (2) **MOVE SPEED HARD CAP 25%** — `computeStats.moveSpeed`

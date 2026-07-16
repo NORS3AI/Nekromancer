@@ -163,7 +163,7 @@ const UI = {
     'wilds', 'storyacts',
     // The Enchantress's benches shed the round EXIT too (owner rule v1.7.0)
     // — their ✕ rides the panel corner and Escape returns to the hub.
-    'mysEnchant', 'mysPet', 'mysWings', 'mysTheme', 'patchnotes'],
+    'mysEnchant', 'mysPet', 'mysWings', 'mysTheme', 'patchnotes', 'devconfirm'],
 
   // The navigation for the red ✕ / Escape on the CURRENT screen. Most screens
   // just close, but a few step back to a parent menu instead:
@@ -529,9 +529,11 @@ const UI = {
     // The ✕ plate rides the MENU PANEL's top-right corner (owner rule v1.7.0
     // — "on the menu items they are on, not far away in the corner"); screens
     // that draw no panel fall back to the screen corner.
+    // Integrated INTO the title bar (owner rule v1.7.2): the ✕ sits on the
+    // same band as the menu title, flush with the panel's right edge.
     const pr = (this.panelRects && this.panelRects[0]) || null;
-    const x = pr ? Math.min(W - 26 - s.right, pr.x + pr.w - 8) : W - 26 - s.right;
-    const y = pr ? Math.max(24, pr.y + 6) : 26 + s.top;
+    const x = pr ? Math.min(W - 26 - s.right, pr.x + pr.w - 30) : W - 26 - s.right;
+    const y = pr ? pr.y + 22 : 26 + s.top;
     // ✕ and Escape share one navigation policy (see closeAction).
     Screens.closeX(ctx, W, { x, y, cb: this.closeAction() });
   },

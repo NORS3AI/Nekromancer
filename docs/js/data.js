@@ -329,11 +329,27 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.1-alpha';
+const GAME_VERSION = 'v1.7.2-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.2-alpha', date: 'July 2026',
+    notes: [
+      'The red ✕ now sits IN each menu\'s title bar, flush with the plate — seamless, not floating in a corner',
+      'RATHMA IS BELLMAHATH — every mention across the game (Instruction of Bellmahath, Souls of Bellmahath, Bellmahath\'s Chosen, Skills of Bellmahath…)',
+      'The Soul Crucible reads centered and bone-white (reagent colors stay), and its street plate now floats squarely above the painted cube',
+      'The artisans greet you in BIG letters — Tharn the Smithy, Orren the Jeweler, Vessa the Enchantress',
+      'Smithy: Salvage reagents centered with room to breathe; Craft benches now SELECT a piece, show its reagents, and ask CRAFT? — no more instant hammer',
+      'Torch bench: bone-white names (reagents keep their colors), brighter burn times, radius text gone, centered reagent drawer',
+      'Jeweler: gem stacks are centered plates wearing their gem ICON; merge & sell actions are compact centered plates; Craft-a-Gem lost its stray icons; UNSOCKET dropped the "always free" boast',
+      'Enchantress: property rows are narrow centered plates in plain bone white, the phantom "undefined" property is fixed, BACK and REROLL ride the simple plate',
+      'Waygate & Shroud: the difficulty name sits on its own line clear of the arrows, titles lost their icons, and every mode row is a simple plate',
+      'The fountain shows your gold under the TOSS button and wears its blessing in faded blood red on two lines; the Character sheet fountain line matches',
+      'Lukus and Addy no longer flash their 0/500 ledger counts; The Creator menu is spaced out with simple plates and no stray exit'
+    ]
+  },
   {
     v: 'v1.7.1-alpha', date: 'July 2026',
     notes: [
@@ -1078,8 +1094,8 @@ const PATCH_NOTES = [
     v: 'v1.6.9-alpha', date: 'July 2026',
     notes: [
       'Hidden Cave is now genuinely full of enemies — twice the pack sites the land defines (it previously spawned almost none)',
-      'Fixed the Hidden Cave objective reading "Bounty: slay undefined" — it now names its dweller, Rathma\'s Chosen',
-      'Slaying Rathma\'s Chosen in the Hidden Cave now opens the portal out (and shows a proper boss bar) — before, killing it left you trapped',
+      'Fixed the Hidden Cave objective reading "Bounty: slay undefined" — it now names its dweller, Bellmahath\'s Chosen',
+      'Slaying Bellmahath\'s Chosen in the Hidden Cave now opens the portal out (and shows a proper boss bar) — before, killing it left you trapped',
       'Town Portal: closing the town menu with ✕/Escape now collapses the portal and starts its 30s cooldown just like "Back to the Wilds", so you can\'t step back through it after returning'
     ]
   },
@@ -1209,7 +1225,7 @@ const PATCH_NOTES = [
     v: 'v1.5.3-alpha', date: 'July 2026',
     notes: [
       'Dev panel reorganized: every cheat is now its own row, grouped under category headers (Toggles · Character · Resources · Gold · Keys & Storage · Gear & Legendaries · Spawn Reagent Bosses · Artisans · Horadric\'s Cube), and the whole panel drag-scrolls so nothing is cut off',
-      'Spawning reagent bosses is now three separate buttons — Bonewyrm, Gluttonous Brain and Rathma\'s Chosen summon individually instead of all at once'
+      'Spawning reagent bosses is now three separate buttons — Bonewyrm, Gluttonous Brain and Bellmahath\'s Chosen summon individually instead of all at once'
     ]
   },
   {
@@ -1289,11 +1305,11 @@ const PATCH_NOTES = [
   {
     v: 'v1.4.1-alpha', date: 'July 2026',
     notes: [
-      'Horadric\'s Cube: the Instruction Leaflet now lists your Parts/Dust/Crystals/Souls at the top, "Instruction of Rathma" is the header, the placeholder icon is gone, and you can now run FOUR extracted powers at once (was 3)',
+      'Horadric\'s Cube: the Instruction Leaflet now lists your Parts/Dust/Crystals/Souls at the top, "Instruction of Bellmahath" is the header, the placeholder icon is gone, and you can now run FOUR extracted powers at once (was 3)',
       'The 6-piece Grace of Inarius BONE TORNADO is now huge and pronounced — a wide whirling circle of bone shards that grinds everything (and all the scenery) to bits',
       'The Pause menu\'s abandon button now names the mode: Abandon Story Mode / Rift / Nephalem Rift / Set Dungeon / Adventure Mode / Bounty',
       'Tidied The Wilds: removed the point/key flavor from Nephalem Rift and Seasons',
-      'Skills of Rathma and Passives screens are noticeably bigger on desktop'
+      'Skills of Bellmahath and Passives screens are noticeably bigger on desktop'
     ]
   },
   {
@@ -1316,7 +1332,7 @@ const PATCH_NOTES = [
   {
     v: 'v1.3.2-alpha', date: 'July 2026',
     notes: [
-      'HORADRIC\'S CUBE — Instruction of Rathma: the Cube can now EXTRACT a legendary power from a loose item in your bag (not equipped, not stashed) for 30 Parts / 50 Dust / 50 Crystals / 3 Souls, banking it forever (the item is consumed)',
+      'HORADRIC\'S CUBE — Instruction of Bellmahath: the Cube can now EXTRACT a legendary power from a loose item in your bag (not equipped, not stashed) for 30 Parts / 50 Dust / 50 Crystals / 3 Souls, banking it forever (the item is consumed)',
       'Switch on up to 3 banked powers at once — they apply to your character WITHOUT wearing the item (Kanai-style). Check the Character Sheet\'s ACTIVE POWERS panel to see them',
       'The Recipe Book is now the Instruction Leaflet; the Golden Mirror transmute moved to the END of it (and off the top of the Cube)',
       'Only legendaries that actually carry a secondary power appear in the extract list — plain legendaries are skipped'
@@ -1335,7 +1351,7 @@ const PATCH_NOTES = [
     notes: [
       'MAP CHAINING: every map now has a walkable ENTRANCE and EXIT (plus the odd rare CAVE mouth). Step through an exit to roam onward into a fresh linked map — chain as far as you like — and walk back through an entrance to return to the EXACT map you left, with every enemy, corpse and pickup right where you left it (true saved-state backtracking)',
       'The links stay open until a map\'s boss falls; killing the boss seals them and opens the usual portal (which, on a linked sub-map, walks you back to the parent map)',
-      'Rathma\'s Chosen now lurks inside the rare CAVE — a real hidden dungeon you enter, not an abstract spawn'
+      'Bellmahath\'s Chosen now lurks inside the rare CAVE — a real hidden dungeon you enter, not an abstract spawn'
     ]
   },
   {
@@ -1350,7 +1366,7 @@ const PATCH_NOTES = [
     notes: [
       'THREE new bosses now drop the top-torch reagents: THE BONEWYRM roams outside Story Mode (Bounties/Adventure/Rifts/Nephalem/Seasons) and drops Wyrm Scales (12%)',
       'THE GLUTTONOUS BRAIN — a huge, huge, HUGE fat ogre who vomits bile AoE, chain-pulls and STUNS you for 2s, summons fat zombies, and ENRAGES at 50% life (+15% dmg, +10% life). Drops Gluttonous Brain (10%)',
-      'RATHMA\'S CHOSEN — a tall, slender assassin who fades to smoke while you damage it and enrages at 35% (+20% life, +25% dmg). Lurks in a super-rare cave (3% of maps) and drops 1-3 Souls of Rathma (20%)',
+      'RATHMA\'S CHOSEN — a tall, slender assassin who fades to smoke while you damage it and enrages at 35% (+20% life, +25% dmg). Lurks in a super-rare cave (3% of maps) and drops 1-3 Souls of Bellmahath (20%)',
       'Dev panel: "Spawn reagent bosses near you" summons all three for testing'
     ]
   },
@@ -1358,7 +1374,7 @@ const PATCH_NOTES = [
     v: 'v1.2.3-alpha', date: 'July 2026',
     notes: [
       'TORCH LADDER expanded to SEVEN tiers: Wood (Common, r60) · Iron (Uncommon, r110) · NEW Wyrm-bound (Magic, r180) · Nephalem (Rare, r250) · NEW Master\'s Light (Epic, r350) · NEW Nekromancer\'s (Legendary, r500)',
-      'Three new crafting reagents — Wyrm Scale, Gluttonous Brain and Soul of Rathma — feed the top torches (their boss drop-sources are coming next)',
+      'Three new crafting reagents — Wyrm Scale, Gluttonous Brain and Soul of Bellmahath — feed the top torches (their boss drop-sources are coming next)',
       'The Torch Bench now scrolls so all seven torches fit, each showing its rarity tier'
     ]
   },
@@ -2288,7 +2304,7 @@ const MATERIALS = {
   heartstring: { name: 'Nephalem Heartstring',  color: '#b06adf' },
   wyrmscale:   { name: 'Wyrm Scale',            color: '#4ea3c0' },   // roaming Wyrm boss (12%)
   brain:       { name: 'Gluttonous Brain',      color: '#d0708c' },   // Gluttonous Brain ogre boss (10%)
-  rathmasoul:  { name: 'Soul of Rathma',        color: '#c88bf0' }    // rare caves + Rathma assassin (20%, 1–3)
+  rathmasoul:  { name: 'Soul of Bellmahath',        color: '#c88bf0' }    // rare caves + Bellmahath assassin (20%, 1–3)
 };
 
 // Torches — a consumable equipped in the Torch slot that lights the darkness
@@ -2431,13 +2447,13 @@ function gemName(gem) {
 const ITEM_SLOTS = {
   weapon:   { label: 'Weapon',     nouns: ['Scythe', 'Bone Blade', 'Grim Sickle', 'Grave Reaper', 'Femur Cleaver'], primary: 'dmg' },
   offhand:  { label: 'Phylactery', nouns: ['Phylactery', 'Death Urn', 'Soul Vessel', 'Grim Codex'], primary: 'dmg' },
-  helm:     { label: 'Helm',       nouns: ['Skullcap', 'Grave Crown', 'Deathmask', 'Hood of Rathma'], primary: 'hp' },
+  helm:     { label: 'Helm',       nouns: ['Skullcap', 'Grave Crown', 'Deathmask', 'Hood of Bellmahath'], primary: 'hp' },
   shoulders:{ label: 'Shoulders',  nouns: ['Spaulders', 'Bone Mantle', 'Grave Guards', 'Pall Pads'], primary: 'hp' },
   chest:    { label: 'Chest',      nouns: ['Shroud', 'Carapace', 'Grave Plate', 'Cadaver Mail'], primary: 'hp' },
   gloves:   { label: 'Gloves',     nouns: ['Grips', 'Bonefists', 'Corpsehands', 'Reaping Claws'], primary: 'crit' },
   legs:     { label: 'Legs',       nouns: ['Greaves', 'Tomb Leggings', 'Marrow Wraps', 'Cerecloth Pants'], primary: 'hp' },
   boots:    { label: 'Boots',      nouns: ['Treads', 'Gravewalkers', 'Marrow Striders', 'Tomb Boots'], primary: 'hp' },
-  amulet:   { label: 'Amulet',     nouns: ['Amulet', 'Death Locket', 'Vial Pendant', 'Rathma Charm'], primary: 'crit' },
+  amulet:   { label: 'Amulet',     nouns: ['Amulet', 'Death Locket', 'Vial Pendant', 'Bellmahath Charm'], primary: 'crit' },
   ring1:    { label: 'Ring',       nouns: ['Band', 'Signet', 'Knucklebone Loop', 'Death Seal', 'Wraith Coil'], primary: 'crit' },
   ring2:    { label: 'Ring',       nouns: ['Band', 'Signet', 'Knucklebone Loop', 'Death Seal', 'Wraith Coil'], primary: 'crit' },
   // A crafted, burn-down torch that lights the dark. Not a randomly-generated
@@ -2791,7 +2807,7 @@ function affixTierFrac(rarity, stars) {
   return clamp((base === undefined ? 0.12 : base) + (stars || 0) * 0.04, 0.05, 1.0);
 }
 
-const LEGENDARY_PREFIX = ["Maltorius'", "The Widow's", "Rathma's", "Xul's", "Trag'Oul's", "Mendeln's"];
+const LEGENDARY_PREFIX = ["Maltorius'", "The Widow's", "Bellmahath's", "Xul's", "Trag'Oul's", "Mendeln's"];
 const EPIC_PREFIX = ['Fabled', 'Mythic', 'Hallowed', 'Abyssal', 'Deathless', 'Umbral'];
 const RARE_PREFIX = ['Cruel', 'Vicious', 'Dread', 'Baleful', 'Sinister', 'Woeful'];
 const MAGIC_PREFIX = ['Sturdy', 'Sharp', 'Grim', 'Cold', 'Hungry', 'Pale'];
@@ -2943,9 +2959,9 @@ const MONSTERS = {
   glutton: { name: 'The Gluttonous Brain', hp: 980, speed: 30, dmg: 30, r: 44, xp: 440, atkRange: 64, atkCd: 2.0,
              boss: true, roamBoss: true, enrageAt: 0.5, enrageDmg: 0.15, enrageHp: 0.10,
              dropMat: 'brain', dropChance: 0.10, dropN: [1, 1] },
-  // Rathma's Chosen: a tall, slender assassin who stealths (goes to smoke) while
-  // you damage it, enrages at 35%, and drops 1-3 Souls of Rathma (20%).
-  rathma:  { name: "Rathma's Chosen",      hp: 150, speed: 150, dmg: 26, r: 15, xp: 320, atkRange: 34, atkCd: 1.0,
+  // Bellmahath's Chosen: a tall, slender assassin who stealths (goes to smoke) while
+  // you damage it, enrages at 35%, and drops 1-3 Souls of Bellmahath (20%).
+  rathma:  { name: "Bellmahath's Chosen",      hp: 150, speed: 150, dmg: 26, r: 15, xp: 320, atkRange: 34, atkCd: 1.0,
              lunges: true, rareBoss: true, stealth: true, enrageAt: 0.35, enrageHp: 0.20, enrageDmg: 0.25,
              dropMat: 'rathmasoul', dropChance: 0.20, dropN: [1, 3] }
 };
@@ -3040,7 +3056,7 @@ const ZONES = [
     desc: 'Rotting fens, criss-crossed by bloody streams and dead groves.'
   },
   {
-    id: 'rathma', name: 'Ruins of Rathma', kind: 'dungeon', mLvl: 23,
+    id: 'rathma', name: 'Ruins of Bellmahath', kind: 'dungeon', mLvl: 23,
     ground: '#141420', accent: '#3a3060',
     monsters: ['skeleton', 'archer', 'cultist', 'soldier', 'knight', 'catapult'],
     boss: 'The Bone Colossus', packs: 15,
