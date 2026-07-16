@@ -271,6 +271,16 @@ loot at the artisans. The hero is persistent (localStorage).
   by Torment) and tiered named powers. Set bonuses hook: skills.js `boneArmor`
   (2/4pc) + Player.update bone tornado (6pc, `vulnT` on victims); `LEGENDARY_POWERS`
   checked via `p.powers` (bloodtide in deathNova, krysbin/corrodedFang in Enemy.hurt).
+- **BONE ARMOR (reworked v1.7.19, owner spec)**: pulls the bones of LIVING
+  monsters within 150px, striking each for **exactly 50% of its max HP**
+  (`e.hurt(e.maxHp*0.5*dmgMul, {noCrit:true, noSplash:true})` — new
+  `opts.noCrit` in `Enemy.hurt` zeroes crit chance). DURATION scales with
+  bones pulled: `boneArmorT = 5 + (pulled-1)*(40/9)` → 1 monster 5s, 10
+  monsters 45s; cap `p.boneArmorCap || 10` (a future legendary can raise
+  it). **0 pulled → the cast REFUNDS (returns false), no armor, no
+  shield.** The 6pc bone tornado (Player.update) is gated on
+  `boneArmorT > 0`, so a short pull = a short storm (fixes "tornado spins
+  forever").
 - Patch notes screen shows FULL wrapped note text with ▲/▼ scrolling — never
   ellipsize or clip notes (owner rule).
 - **ONE MENU EVERYWHERE (v1.6.77, owner rule)**: dungeons (rifts/seasons/
