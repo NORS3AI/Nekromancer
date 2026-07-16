@@ -86,36 +86,46 @@ const UI = {
   },
 
   // A draggable volume slider (0..1). Registers itself for touch/mouse drags.
+  // Faded bone + blood styling (owner rule v1.7.15 — no garish blue/green).
   slider(ctx, x, y, w, value, set) {
-    ctx.fillStyle = '#241f30';
+    ctx.fillStyle = '#221b16';
     rr(ctx, x, y + 8, w, 8, 4); ctx.fill();
-    ctx.fillStyle = '#57b894';
+    ctx.strokeStyle = 'rgba(138,111,74,0.45)'; ctx.lineWidth = 1;
+    rr(ctx, x, y + 8, w, 8, 4); ctx.stroke();
+    ctx.fillStyle = '#6e262d';
     rr(ctx, x, y + 8, Math.max(4, w * value), 8, 4); ctx.fill();
-    ctx.fillStyle = '#e8e0cc';
+    ctx.fillStyle = '#cfc8b8';
     ctx.beginPath(); ctx.arc(x + w * value, y + 12, 9, 0, TAU); ctx.fill();
-    ctx.strokeStyle = '#57b894';
+    ctx.strokeStyle = '#5a2026';
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(x + w * value, y + 12, 9, 0, TAU); ctx.stroke();
     this.sliderRegs.push({ x, y: y - 6, w, h: 36, set });
   },
 
-  // A checkbox with label; returns width consumed.
+  // A checkbox with label; the box is the owner's painted square plate
+  // (check.webp, v1.7.15) with a bone-white tick, procedural until loaded.
   check(ctx, x, y, checked, cb, label) {
-    ctx.fillStyle = checked ? '#2c4a3a' : '#241f30';
-    rr(ctx, x, y, 22, 22, 5); ctx.fill();
-    ctx.strokeStyle = checked ? '#57b894' : '#4a4356';
-    ctx.lineWidth = 2;
-    rr(ctx, x, y, 22, 22, 5); ctx.stroke();
+    const img = (typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg('check') : null;
+    if (img) {
+      const bh = 20, bw2 = Math.round(bh * (img.width / img.height));
+      ctx.drawImage(img, x + 11 - bw2 / 2, y + 1, bw2, bh);
+    } else {
+      ctx.fillStyle = checked ? '#2e2620' : '#241f30';
+      rr(ctx, x, y, 22, 22, 5); ctx.fill();
+      ctx.strokeStyle = checked ? '#8a6f4a' : '#4a4356';
+      ctx.lineWidth = 2;
+      rr(ctx, x, y, 22, 22, 5); ctx.stroke();
+    }
     if (checked) {
-      ctx.strokeStyle = '#6ff7c3';
+      ctx.strokeStyle = '#cfc8b8';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.moveTo(x + 5, y + 11); ctx.lineTo(x + 9, y + 16); ctx.lineTo(x + 17, y + 6);
+      ctx.moveTo(x + 6, y + 11); ctx.lineTo(x + 10, y + 16); ctx.lineTo(x + 17, y + 6);
       ctx.stroke();
     }
     if (label) {
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = '12px Georgia';
+      ctx.font = '12px Cinzel, Georgia';
       ctx.fillStyle = '#c9bfa8';
       ctx.fillText(label, x + 30, y + 12);
     }
@@ -273,15 +283,24 @@ const UI = {
     if (title) {
       // Panel titles wear the plate style everywhere: Cinzel caps in
       // parchment gold (owner rule — never the theme's colored font).
-      ctx.font = '600 17px Cinzel, Georgia';
+      // v1.7.15: sit lower in the header band (they rode the carved top
+      // border) and SHRINK to fit beside the ✕ — titles never overflow.
+      let txt = String(title).toUpperCase();
+      let fs = 17;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const maxW = w - 96;
+      do {
+        ctx.font = '600 ' + fs + 'px Cinzel, Georgia';
+        if (ctx.measureText(txt).width <= maxW || fs <= 11) break;
+        fs--;
+      } while (true);
       ctx.fillStyle = 'rgba(0,0,0,0.7)';
-      ctx.fillText(String(title).toUpperCase(), x + w / 2, y + 23.5);
+      ctx.fillText(txt, x + w / 2, y + 27.5);
       ctx.fillStyle = '#dcc9a2';
-      ctx.fillText(String(title).toUpperCase(), x + w / 2, y + 22);
+      ctx.fillText(txt, x + w / 2, y + 26);
       ctx.strokeStyle = '#3a3448';
       ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(x + 16, y + 38); ctx.lineTo(x + w - 16, y + 38); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x + 16, y + 40); ctx.lineTo(x + w - 16, y + 40); ctx.stroke();
     }
   },
 
@@ -540,7 +559,7 @@ const UI = {
     // screen corner instead of riding the gender panel.
     const pr = this.screen === 'create' ? null : (this.panelRects && this.panelRects[0]) || null;
     const x = pr ? Math.min(W - 26 - s.right, pr.x + pr.w - 30) : W - 26 - s.right;
-    const y = pr ? pr.y + 22 : 26 + s.top;
+    const y = pr ? pr.y + 26 : 26 + s.top;
     // ✕ and Escape share one navigation policy (see closeAction).
     Screens.closeX(ctx, W, { x, y, cb: this.closeAction() });
   },
