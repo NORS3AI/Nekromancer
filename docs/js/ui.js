@@ -423,6 +423,7 @@ const UI = {
     else this.drawTopBar(ctx, W, H, p);
     this.drawObjective(ctx, W, H);
     this.drawMinimap(ctx, W, H);
+    this.drawQuestTracker(ctx, W, H);   // active quests ride under the map (owner rule)
     this.drawDpsMeter(ctx, W, H);
     this.drawBossBar(ctx, W, H);
     if (Settings.g.showFps) {
@@ -841,6 +842,63 @@ const UI = {
     ctx.stroke();
     ctx.restore();
     ctx.globalAlpha = 1;
+  },
+
+  // Active-quest tracker under the minimap (owner rule): up to 5 journal
+  // quests with live progress. A finished quest flashes GREEN, holds a
+  // moment, fades out — and the rows beneath bump up to fill the space
+  // (the quest itself stays in the journal for the NPC turn-in).
+  qtFade: {},
+  drawQuestTracker(ctx, W, H) {
+    const jr = (typeof Hero !== 'undefined' && Hero.journal) || [];
+    if (!jr.length) { this.qtFade = {}; return; }
+    const s = this.safe || { top: 0, right: 0 };
+    const S = Math.min(Settings.g.bigMinimap ? 160 : 110, W * (Settings.g.bigMinimap ? 0.3 : 0.2));
+    const x0 = W - S - 12 - s.right;
+    let y = 48 + s.top + S + 12;
+    if (Settings.g.dpsMeter && Settings.g.dpsX == null) y += 42;   // default DPS spot is under the map too
+    const t = Game.time || 0;
+    let shown = 0;
+    ctx.save();
+    ctx.textBaseline = 'middle';
+    for (const e of jr) {
+      if (shown >= 5) break;
+      const key = (e.src === 'A' ? 'A' : 'L') + e.idx;
+      const q = Hero.questProgress(e);
+      if (!q.def) continue;
+      let alpha = 1;
+      if (q.done) {
+        if (!this.qtFade[key]) this.qtFade[key] = t;
+        const ft = t - this.qtFade[key];
+        if (ft > 2.4) continue;                       // faded away — rows bump up
+        alpha = ft < 1.4 ? 1 : Math.max(0, 1 - (ft - 1.4));
+      }
+      shown++;
+      ctx.globalAlpha = 0.85 * alpha;
+      ctx.fillStyle = 'rgba(8,6,12,0.72)';
+      rr(ctx, x0 - 3, y, S + 6, 24, 5); ctx.fill();
+      ctx.globalAlpha = alpha;
+      ctx.textAlign = 'left';
+      ctx.font = '600 9px Cinzel, Georgia';
+      ctx.fillStyle = q.done ? '#4ade80' : '#d8c5a0';
+      const nm = (typeof Screens !== 'undefined') ? Screens.fitText(ctx, q.def.name, S - 34) : q.def.name;
+      ctx.fillText(nm, x0 + 2, y + 8);
+      ctx.textAlign = 'right';
+      ctx.font = 'bold 9px Georgia';
+      ctx.fillStyle = q.done ? '#4ade80' : '#9a9080';
+      ctx.fillText(q.done ? '✓' : (q.prog + '/' + q.def.need), x0 + S + 1, y + 8);
+      ctx.fillStyle = 'rgba(60,54,74,0.8)';
+      rr(ctx, x0 + 2, y + 16, S - 4, 3, 1.5); ctx.fill();
+      ctx.fillStyle = q.done ? '#4ade80' : '#c9a84a';
+      rr(ctx, x0 + 2, y + 16, Math.max(2, (S - 4) * clamp(q.prog / q.def.need, 0, 1)), 3, 1.5); ctx.fill();
+      ctx.globalAlpha = 1;
+      y += 28;
+    }
+    // Forget fade stamps for quests that left the journal (turned in/dropped).
+    for (const k of Object.keys(this.qtFade)) {
+      if (!jr.some(e => ((e.src === 'A' ? 'A' : 'L') + e.idx) === k)) delete this.qtFade[k];
+    }
+    ctx.restore();
   },
 
   drawMinimap(ctx, W, H) {
