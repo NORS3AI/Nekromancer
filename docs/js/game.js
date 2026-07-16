@@ -1422,6 +1422,9 @@ const Game = {
   },
 
   onBossDead(boss) {
+    // The Crypt remembers your deepest slain Guardian (achievements).
+    if (typeof Items !== 'undefined' && Items.cryptTier && Items.cryptTier() > 0)
+      Hero.cryptBest = Math.max(Hero.cryptBest || 0, Items.cryptTier());
     this.bossDead = true;
     World.portal = { x: boss.x, y: boss.y };
     World.linksClosed = true;   // the map's boss falls → its entrance/exit/cave seal
@@ -1706,6 +1709,7 @@ const Game = {
   },
 
   onPlayerDeath() {
+    Hero.deaths = (Hero.deaths || 0) + 1;
     this.playerDeadT = 0.01;
     // Death costs 10% of every equipped piece's max durability (D3 rule).
     Items.wearOnDeath();
@@ -1794,6 +1798,7 @@ const Game = {
         }
       } else if (o.type === 'shrine' && d < 42) {
         o.used = true;
+        Hero.shrinesTouched = (Hero.shrinesTouched || 0) + 1;
         AudioSys.sfx('shrine');
         const names = { empowered: 'Empowered: essence surges', frenzied: 'Frenzied: +25% damage', blessed: 'Blessed: -25% damage taken', fortune: 'Fortune: +100% gold find', fleetfoot: 'Fleetfoot: +100% move speed' };
         // Fleetfoot burns bright and brief on a map (owner rule: 30s).
@@ -2075,6 +2080,7 @@ const Game = {
     }
     if (pc.t >= 7) {
       World.townPortal = { x: pc.x, y: pc.y };
+      Hero.portalsUsed = (Hero.portalsUsed || 0) + 1;
       this.townPortalNear = true;         // hero is standing on it — step off to arm
       this.portalCast = null;
       // A blue flourish as the portal snaps open (matches its colour).
@@ -2121,6 +2127,9 @@ const Game = {
         AudioSys.setWeather(null);
       }
     }
+
+    // Lifetime play clock (achievements) — town and wilds alike.
+    if (this.state === 'town' || this.state === 'playing') Hero.playSeconds = (Hero.playSeconds || 0) + dt;
 
     // The fountain's shrine blessing (200g wish) burns down in real time —
     // in town AND out in the wilds — and rides across map changes.

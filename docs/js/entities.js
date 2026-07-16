@@ -276,6 +276,7 @@ class Player {
 
   drinkPotion() {
     if (this.potionCd > 0 || this.dead || this.hp >= this.maxHp) return;
+    Hero.potionsDrunk = (Hero.potionsDrunk || 0) + 1;
     this.potionCd = 25;
     this.heal(Math.round(this.maxHp * 0.55));
     fxHeal(this.x, this.y);
@@ -2597,6 +2598,7 @@ class Pickup {
       this.gone = true;
       if (this.kind === 'gold') {
         Hero.gold += this.amount;
+        Hero.goldEarned = (Hero.goldEarned || 0) + this.amount;
         AudioSys.sfx('gold');
         Particles.text(p.x, p.y - 34, '+' + this.amount, { color: '#ffd76a', size: 13 });
       } else if (this.kind === 'orb') {
@@ -2611,6 +2613,8 @@ class Pickup {
         });
         AudioSys.sfx('gem');
       } else if (this.kind === 'item') {
+        if (this.item.rarity === 6) Hero.artifactsFound = (Hero.artifactsFound || 0) + 1;
+        else if (this.item.rarity >= 4) Hero.legendariesFound = (Hero.legendariesFound || 0) + 1;
         Items.pickup(this.item);
       } else if (this.kind === 'gem') {
         Hero.gems.push(this.gem);

@@ -1374,55 +1374,167 @@ const Screens = {
   },
 
   // 🏆 ACHIEVEMENTS — earned live from the hero's lifetime counters.
+  // The 5,700-strong LEDGER OF DEEDS never changes at runtime — group it into
+  // its category → subcategory tree exactly once.
+  _achIndex: null,
+  achIndex() {
+    if (this._achIndex) return this._achIndex;
+    const cats = [], catMap = {}, subMap = {};
+    for (const a of ACHIEVEMENTS) {
+      let c = catMap[a.cat];
+      if (!c) { c = catMap[a.cat] = { cat: a.cat, subs: [], n: 0 }; cats.push(c); }
+      const k = a.cat + '|' + a.sub;
+      let s = subMap[k];
+      if (!s) { s = subMap[k] = { sub: a.sub, key: k, list: [] }; c.subs.push(s); }
+      s.list.push(a); c.n++;
+    }
+    return this._achIndex = cats;
+  },
+  // Earned tallies, cached half a second at a time — walking all 5,721
+  // progress callbacks every frame would burn the frame budget for nothing.
+  achCounts() {
+    const c = UI.sel.achCache;
+    if (c && Game.time - c.t < 0.5) return c;
+    const bySub = {}; let earned = 0;
+    for (const a of ACHIEVEMENTS) {
+      const k = a.cat + '|' + a.sub;
+      const b = bySub[k] || (bySub[k] = { e: 0, n: 0 });
+      b.n++;
+      if (a.cur() >= a.need) { b.e++; earned++; }
+    }
+    return UI.sel.achCache = { t: Game.time, earned, bySub };
+  },
+
+  // ACHIEVEMENTS (reworked v1.7.7, owner spec): a CATEGORY SIDEBAR on the left
+  // — tap a category to unfold its subcategories, tap a subcategory to fill
+  // the right-hand ladder. Both panes drag-scroll independently.
   achievements(ctx, W, H) {
     this.dim(ctx, W, H);
-    const earned = ACHIEVEMENTS.filter(a => a.cur() >= a.need).length;
-    const pw = Math.min(470, W - 24);
-    const px = W / 2 - pw / 2;
-    const ph = Math.min(560, H - (Game.state === 'town' ? 170 : 24));
-    const py = Math.max(10, Math.min(H / 2 - ph / 2, H - ph - (Game.state === 'town' ? 150 : 12)));
-    UI.panel(ctx, px, py, pw, ph, '🏆 ACHIEVEMENTS — ' + earned + ' / ' + ACHIEVEMENTS.length);
+    const idx = this.achIndex(), cc = this.achCounts();
+    if (!UI.sel.achSub) {
+      UI.sel.achCat = idx[0].cat;
+      UI.sel.achSub = idx[0].subs[0].key;
+    }
+    const pw = Math.min(720, W - 20), px = W / 2 - pw / 2;
+    const ph = Math.min(640, H - 20), py = Math.max(10, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, '🏆 ACHIEVEMENTS — ' +
+      cc.earned.toLocaleString() + ' / ' + ACHIEVEMENTS.length.toLocaleString());
 
-    const lx = px + 16, lw = pw - 32;
     const listTop = py + 56, viewBot = py + ph - 14, viewH = Math.max(50, viewBot - listTop);
+    ctx.textBaseline = 'alphabetic';
+
+    // ---- LEFT: the category sidebar (accordion; slimmer on phones) ----
+    const sw = Math.max(W < 480 ? 112 : 136, Math.min(210, Math.round(pw * 0.31)));
+    const showCnt = sw >= 130;   // per-sub earned counts need the room
+    const sx = px + 12;
+    const sScroll = clamp(UI.sel.scrollY2 || 0, 0, UI.sel.scrollMax2 || 0);
+    UI.sel.scrollY2 = sScroll;
+    UI.sel.scrollRegion2 = { x: sx - 6, y: listTop - 4, w: sw + 10, h: viewH + 8 };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(sx - 6, listTop - 4, sw + 10, viewH + 8); ctx.clip();
+    let c = listTop;
+    for (const cat of idx) {
+      const open = UI.sel.achCat === cat.cat;
+      const yy = c - sScroll;
+      if (yy + 30 > listTop && yy < viewBot) {
+        ctx.fillStyle = open ? 'rgba(44,38,28,0.7)' : 'rgba(28,24,38,0.55)';
+        rr(ctx, sx - 4, yy, sw + 6, 28, 6); ctx.fill();
+        ctx.textAlign = 'left'; ctx.font = 'bold ' + (sw < 130 ? 10.5 : 12) + 'px Cinzel, Georgia';
+        ctx.fillStyle = open ? '#d8c5a0' : '#9a9080';
+        ctx.fillText(this.fitText(ctx, cat.cat.toUpperCase(), sw - 22), sx + 4, yy + 19);
+        ctx.textAlign = 'right'; ctx.font = '10px Cinzel, Georgia';
+        ctx.fillStyle = '#6f6552';
+        ctx.fillText(open ? '▾' : '▸', sx + sw - 4, yy + 19);
+        const cName = cat.cat;
+        UI.register(sx - 6, yy, sw + 10, 30, () => {
+          UI.sel.achCat = (UI.sel.achCat === cName) ? null : cName;
+        });
+      }
+      c += 32;
+      if (open) {
+        for (const s of cat.subs) {
+          const on = UI.sel.achSub === s.key;
+          const sy = c - sScroll;
+          if (sy + 26 > listTop && sy < viewBot) {
+            if (on) {
+              ctx.fillStyle = 'rgba(207,200,184,0.13)';
+              rr(ctx, sx + 4, sy, sw - 2, 24, 5); ctx.fill();
+              ctx.strokeStyle = '#cfc8b8'; ctx.lineWidth = 1;
+              rr(ctx, sx + 4, sy, sw - 2, 24, 5); ctx.stroke();
+            }
+            const b = cc.bySub[s.key] || { e: 0, n: s.list.length };
+            ctx.textAlign = 'left'; ctx.font = (on ? 'bold ' : '') + '10px Cinzel, Georgia';
+            ctx.fillStyle = on ? '#e8e2d0' : (b.e >= b.n ? '#b8a76a' : '#8a8070');
+            ctx.fillText(this.fitText(ctx, s.sub, sw - (showCnt ? 62 : 22)), sx + 12, sy + 16);
+            if (showCnt) {
+              ctx.textAlign = 'right'; ctx.font = '8px Cinzel, Georgia';
+              ctx.fillStyle = b.e >= b.n ? '#ffd76a' : '#6f6552';
+              ctx.fillText(b.e + '/' + b.n, sx + sw - 2, sy + 16);
+            }
+            const sk = s.key;
+            UI.register(sx - 6, sy, sw + 10, 26, () => {
+              if (UI.sel.achSub !== sk) { UI.sel.achSub = sk; UI.sel.scrollY = 0; }
+            });
+          }
+          c += 26;
+        }
+        c += 6;
+      }
+    }
+    ctx.restore();
+    UI.sel.scrollMax2 = Math.max(0, (c - listTop) - viewH + 6);
+
+    // Divider between the panes.
+    const dx = sx + sw + 10;
+    ctx.strokeStyle = 'rgba(140,120,90,0.25)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(dx, listTop - 4); ctx.lineTo(dx, viewBot + 4); ctx.stroke();
+
+    // ---- RIGHT: the selected subcategory's escalating ladder ----
+    let sel = null;
+    for (const cat of idx) for (const s of cat.subs) if (s.key === UI.sel.achSub) sel = s;
+    if (!sel) sel = idx[0].subs[0];
+    const lx = dx + 12, lw = px + pw - 14 - lx;
+    // Narrow panes give the name more room: a slimmer bar, smaller reserve.
+    const res = lw < 250 ? 54 : 82, bw = lw < 250 ? 48 : 64;
     const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
     UI.sel.scrollY = scrollY;
     UI.sel.scrollRegion = { x: lx - 4, y: listTop - 4, w: lw + 8, h: viewH + 8 };
+    const gs = n => n >= 1e12 ? (Math.round(n / 1e11) / 10) + 't'
+      : n >= 1e9 ? (Math.round(n / 1e8) / 10) + 'b'
+      : n >= 1e6 ? (Math.round(n / 1e5) / 10) + 'm'
+      : n >= 10000 ? Math.round(n / 1000) + 'k' : n.toLocaleString();
     ctx.save();
     ctx.beginPath(); ctx.rect(lx - 4, listTop - 4, lw + 8, viewH + 8); ctx.clip();
-    let c = listTop;
-    const vis = (top, hh) => (top - scrollY + hh > listTop) && (top - scrollY < viewBot);
-
-    for (const a of ACHIEVEMENTS) {
-      const cur = a.cur();
-      const done = cur >= a.need;
-      const yy = c - scrollY;
-      if (vis(c, 44)) {
+    let r = listTop;
+    for (const a of sel.list) {
+      const yy = r - scrollY;
+      if (yy + 44 > listTop && yy < viewBot) {
+        const cur = a.cur();
+        const done = cur >= a.need;
         ctx.fillStyle = done ? 'rgba(42,38,24,0.75)' : 'rgba(28,24,38,0.6)';
         rr(ctx, lx - 4, yy, lw + 8, 40, 6); ctx.fill();
         if (done) { ctx.strokeStyle = 'rgba(255,215,106,0.5)'; ctx.lineWidth = 1; rr(ctx, lx - 4, yy, lw + 8, 40, 6); ctx.stroke(); }
-        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        ctx.textAlign = 'left';
         ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = done ? '#ffd76a' : '#8a8070';
-        ctx.fillText(this.fitText(ctx, a.name, lw - 78), lx + 4, yy + 15);
+        ctx.fillText(this.fitText(ctx, a.name, lw - res), lx + 4, yy + 15);
         ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = done ? '#b5ab94' : '#6f6552';
-        ctx.fillText(this.fitText(ctx, a.desc, lw - 78), lx + 4, yy + 30);
+        ctx.fillText(this.fitText(ctx, a.desc, lw - res), lx + 4, yy + 30);
         if (done) {
           ctx.textAlign = 'right'; ctx.font = 'bold 16px Cinzel, Georgia'; ctx.fillStyle = '#4ade80';
           ctx.fillText('✓', lx + lw - 4, yy + 24);
         } else {
-          UI.bar(ctx, lx + lw - 68, yy + 12, 64, 7, Math.min(1, cur / a.need), '#221d2e', '#8a6f2a');
+          UI.bar(ctx, lx + lw - bw - 4, yy + 12, bw, 7, Math.min(1, cur / a.need), '#221d2e', '#8a6f2a');
           ctx.textAlign = 'right'; ctx.font = '8px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-          const gs = n => n >= 1e6 ? (n / 1e6) + 'm' : n >= 10000 ? Math.round(n / 1000) + 'k' : n.toLocaleString();
           ctx.fillText(gs(cur) + ' / ' + gs(a.need), lx + lw - 4, yy + 30);
         }
       }
-      c += 46;
+      r += 46;
     }
     ctx.restore();
-    UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 6);
+    UI.sel.scrollMax = Math.max(0, (r - listTop) - viewH + 6);
     ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
-    if (scrollY > 1) ctx.fillText('▲ drag ▲', px + pw / 2, listTop + 2);
-    if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', px + pw / 2, viewBot - 2);
+    if (scrollY > 1) ctx.fillText('▲', lx + lw / 2, listTop + 2);
+    if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', lx + lw / 2, viewBot + 8);
   },
 
   // The one true way to dismiss a menu: a fat red ✕ (Escape works too).
@@ -1613,6 +1725,7 @@ const Screens = {
       afford ? 'TOSS 200 GOLD' : 'NEED 200 GOLD',
       afford ? () => {
         Hero.gold -= this.FOUNTAIN_COST;
+        Hero.fountainTosses = (Hero.fountainTosses || 0) + 1;
         const buff = pick(['empowered', 'frenzied', 'blessed', 'fortune', 'fleetfoot']);
         Game.fountainBuff = { buff, t: 600 };
         if (Game.player) {
