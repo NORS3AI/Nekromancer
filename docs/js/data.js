@@ -321,11 +321,19 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.92-alpha';
+const GAME_VERSION = 'v1.6.93-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.93-alpha', date: 'July 2026',
+    notes: [
+      'QUEST TRACKER — up to five of your journal quests now ride under the minimap in every dungeon with live progress bars. Finish one and it flashes GREEN, fades away, and the quests beneath bump up (the turn-in still waits with the giver)',
+      'The Waygate/Shroud difficulty stepper uses the owner\'s painted ARROW plates',
+      'Campaign: CONTINUE · ACT N and SELECT AN ACT are painted plates with live text'
+    ]
+  },
   {
     v: 'v1.6.92-alpha', date: 'July 2026',
     notes: [

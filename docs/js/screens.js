@@ -1700,12 +1700,25 @@ const Screens = {
     const atMax = Hero.difficulty >= maxDiff;
     const sdw = Math.min(440, pw - 24);
     const sdx = W / 2 - sdw / 2;
-    UI.btn(ctx, sdx, py + 44, 40, 32, '◀',
-      atMin ? null : () => { Hero.difficulty = Math.max(0, Hero.difficulty - 1); Hero.save(); },
-      { size: 14, disabled: atMin });
-    UI.btn(ctx, sdx + sdw - 40, py + 44, 40, 32, '▶',
-      atMax ? null : () => { Hero.difficulty = Math.min(maxDiff, Hero.difficulty + 1); Hero.save(); },
-      { size: 14, disabled: atMax });
+    // Painted arrow plates (owner art) step the difficulty; the procedural
+    // buttons stand in until the art loads.
+    const arrowBtn = (ax, key, glyph, cb, disabled) => {
+      const img = Game.uiImg ? Game.uiImg(key) : null;
+      if (img) {
+        const abw = 54, abh = Math.round(54 * (img.height / img.width));
+        const ay = py + 60 - abh / 2;
+        ctx.globalAlpha = disabled ? 0.35 : 1;
+        ctx.drawImage(img, ax, ay, abw, abh);
+        ctx.globalAlpha = 1;
+        if (!disabled && cb) UI.register(ax - 4, ay - 4, abw + 8, abh + 8, cb);
+      } else {
+        UI.btn(ctx, ax + 7, py + 44, 40, 32, glyph, disabled ? null : cb, { size: 14, disabled });
+      }
+    };
+    arrowBtn(sdx, 'arrow_left', '◀',
+      () => { Hero.difficulty = Math.max(0, Hero.difficulty - 1); Hero.save(); }, atMin);
+    arrowBtn(sdx + sdw - 54, 'arrow_right', '▶',
+      () => { Hero.difficulty = Math.min(maxDiff, Hero.difficulty + 1); Hero.save(); }, atMax);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 14px Georgia';
     ctx.fillStyle = Hero.difficulty >= 4 ? '#e04a5a' : '#ffd76a';
@@ -1754,9 +1767,8 @@ const Screens = {
     ctx.fillText(cleared + ' of 100 Acts cleared', W / 2, py + 52);
 
     // CONTINUE — pick up at the next uncleared Act.
-    UI.btn(ctx, px + 20, py + 70, pw - 40, 48, 'CONTINUE  ·  ACT ' + nextAct,
-      () => { UI.close(); Game.startStory(nextAct); },
-      { size: 16, color: '#ff8c2a', border: '#8a5a2a' });
+    UI.btnPlate(ctx, px + 20, py + 70, pw - 40, 44, 'CONTINUE  ·  ACT ' + nextAct,
+      () => { UI.close(); Game.startStory(nextAct); }, { size: 16 });
     ctx.font = '10px Georgia'; ctx.fillStyle = '#6f6552';
     ctx.fillText(cleared >= 100 ? 'You have conquered all 100 Acts — replay the finale.'
       : 'Continue your journey where you left off.', W / 2, py + 128);
@@ -1764,14 +1776,13 @@ const Screens = {
     // SELECT AN ACT — dropdown of cleared Acts (barred until one is cleared).
     const dy = py + 150;
     if (cleared <= 0) {
-      UI.btn(ctx, px + 20, dy, pw - 40, 40, 'SELECT AN ACT  —  none cleared yet', null, { size: 13, disabled: true });
+      UI.btnPlate(ctx, px + 20, dy, pw - 40, 38, 'SELECT AN ACT', null, { size: 13, disabled: true });
       ctx.textAlign = 'center'; ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#5c5569';
       ctx.fillText('Clear an Act to unlock replay.', W / 2, dy + 58);
       return;
     }
-    UI.btn(ctx, px + 20, dy, pw - 40, 40, 'SELECT AN ACT  ' + (UI.sel.actDropOpen ? '▲' : '▾'),
-      () => { UI.sel.actDropOpen = !UI.sel.actDropOpen; UI.sel.scrollY = 0; },
-      { size: 14, color: '#e0a24a', border: '#8a6f4a' });
+    UI.btnPlate(ctx, px + 20, dy, pw - 40, 38, 'SELECT AN ACT  ' + (UI.sel.actDropOpen ? '▲' : '▾'),
+      () => { UI.sel.actDropOpen = !UI.sel.actDropOpen; UI.sel.scrollY = 0; }, { size: 14 });
 
     if (!UI.sel.actDropOpen) {
       ctx.textAlign = 'center'; ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
