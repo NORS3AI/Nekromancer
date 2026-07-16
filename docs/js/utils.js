@@ -107,3 +107,15 @@ function rr(ctx, x, y, w, h, r) {
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
 }
+
+// Painted material icon (owner art v1.7.0): parts / dust / crystal / soul.
+// Draws centered at (x,y) sized s; colored-dot fallback until the art loads.
+function drawMatIcon(ctx, key, x, y, s) {
+  const img = (typeof Game !== 'undefined' && Game.matImg) ? Game.matImg(key) : null;
+  if (img && img.complete && img.naturalWidth) {
+    ctx.drawImage(img, x - s / 2, y - s / 2, s, s);
+  } else {
+    ctx.fillStyle = (typeof MATERIALS !== 'undefined' && MATERIALS[key] && MATERIALS[key].color) || '#9a9080';
+    ctx.beginPath(); ctx.arc(x, y, s * 0.32, 0, Math.PI * 2); ctx.fill();
+  }
+}

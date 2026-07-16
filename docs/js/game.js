@@ -390,6 +390,7 @@ const Game = {
     this.addyImg(); this.lyssaImg();
     for (const gd of ['m', 'f']) { this.heroImg(gd, 'front'); this.heroImg(gd, 'back'); this.heroImg(gd, 'side'); }
     for (const k of ['panel', 'close2', 'globe_red', 'globe_blue', 'button', 'plate2', 'enter', 'exit', 'talk', 'arrow_left', 'arrow_right', 'plus', 'minus', 'chip', 'circle', 'plate3', 'fountain']) this.uiImg(k);
+    for (const k of ['parts', 'dust', 'crystal', 'soul']) this.matImg(k);
     // Warm the active theme's plate (the rest load lazily in the theme picker).
     if (typeof THEMES !== 'undefined' && typeof Settings !== 'undefined' && Settings.g) {
       const th = THEMES[Settings.g.theme] || THEMES.void;
@@ -798,6 +799,19 @@ const Game = {
   // ---- The PLAYER'S PAINTED AVATAR (owner art): male/female, front & back
   // views, chroma-keyed and driven by Player.drawAvatarModel as the walking
   // top-down model (layered slices fake articulation/depth).
+  // ---- Material icons (owner art, v1.7.0): parts / dust / crystal / soul
+  // painted markers drawn wherever those reagents are named.
+  matArt: {},
+  matImg(key) {
+    let img = this.matArt[key];
+    if (!img) {
+      img = new Image();
+      img.src = 'art/mats/' + key + '.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
+      this.matArt[key] = img;
+    }
+    return img;
+  },
+
   // ---- UI-kit art (owner sheet, sliced offline): painted panel frame,
   // red ✕ plate, health/essence globes. Null until loaded (procedural
   // fallbacks draw in the meantime).
@@ -959,6 +973,55 @@ const Game = {
       ctx.strokeStyle = '#3a3448'; ctx.lineWidth = 2; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(-2, -2); ctx.quadraticCurveTo(-7, -8 - flap, -12, -4 - flap); ctx.stroke();
       ctx.fillStyle = '#e04a5a'; ctx.beginPath(); ctx.arc(6.6, -3.6, 0.8, 0, TAU); ctx.fill(); // eye
+    } else if (pet.id === 'graveHound') {
+      // The dog — a bone-grey hound trotting at heel, tail wagging.
+      ctx.translate(0, -7);
+      const wag = Math.sin(pet.bob * 6) * 3;
+      ctx.fillStyle = '#7a7468';
+      ctx.beginPath(); ctx.ellipse(0, -3, 9, 5, 0, 0, TAU); ctx.fill();            // body
+      ctx.beginPath(); ctx.ellipse(8, -7, 4.5, 3.4, 0.3, 0, TAU); ctx.fill();      // head/snout
+      ctx.beginPath(); ctx.moveTo(5.5, -10); ctx.lineTo(6.5, -13.5); ctx.lineTo(8.4, -10.4); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#7a7468'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-8, -5); ctx.quadraticCurveTo(-13, -9 + wag, -15, -12 + wag); ctx.stroke();
+      ctx.lineWidth = 2;
+      const trot = Math.sin(pet.bob * 7) * 2;
+      ctx.beginPath(); ctx.moveTo(-4, 1); ctx.lineTo(-4 - trot * 0.4, 5); ctx.moveTo(4, 1); ctx.lineTo(4 + trot * 0.4, 5); ctx.stroke();
+      ctx.fillStyle = '#ffb43a'; ctx.beginPath(); ctx.arc(9.4, -7.6, 0.9, 0, TAU); ctx.fill();
+    } else if (pet.id === 'ghostMoth') {
+      ctx.translate(0, -16 + bob);
+      const flap = 0.5 + Math.abs(Math.sin(pet.bob * 9)) * 0.6;
+      ctx.fillStyle = 'rgba(216,210,190,0.75)';
+      ctx.beginPath(); ctx.ellipse(-5, -1, 6 * flap, 4.4, -0.5, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(5, -1, 6 * flap, 4.4, 0.5, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#9a9080';
+      ctx.beginPath(); ctx.ellipse(0, 0, 2, 4.4, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(232,226,208,0.5)';
+      ctx.beginPath(); ctx.arc(0, 6, 2.4, 0, TAU); ctx.fill();
+    } else if (pet.id === 'marrowImp') {
+      ctx.translate(0, -8 + bob * 0.5);
+      ctx.fillStyle = '#8a5a5a';
+      ctx.beginPath(); ctx.ellipse(0, -2, 5.5, 6, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, -9, 4, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#8a5a5a'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-2.6, -12); ctx.lineTo(-4, -15); ctx.moveTo(2.6, -12); ctx.lineTo(4, -15); ctx.stroke();
+      const swish = Math.sin(pet.bob * 3) * 3;
+      ctx.beginPath(); ctx.moveTo(-5, 2); ctx.quadraticCurveTo(-10, 4 + swish, -12, 0 + swish); ctx.stroke();
+      ctx.fillStyle = '#ffd76a';
+      ctx.beginPath(); ctx.arc(-1.4, -9.4, 0.8, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(1.4, -9.4, 0.8, 0, TAU); ctx.fill();
+    } else if (pet.id === 'tombToad') {
+      const hop = Math.max(0, Math.sin(pet.bob * 4)) * 5;
+      ctx.translate(0, -4 - hop);
+      ctx.fillStyle = '#5a6f52';
+      ctx.beginPath(); ctx.ellipse(0, -3, 7.5, 5.5, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(-3.2, -8, 2, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(3.2, -8, 2, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#cfe08a';
+      ctx.beginPath(); ctx.arc(-3.2, -8.4, 1, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(3.2, -8.4, 1, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#4a5c44';
+      ctx.beginPath(); ctx.ellipse(-6, 1, 3, 2, 0.5, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(6, 1, 3, 2, -0.5, 0, TAU); ctx.fill();
     } else {   // cryptCat
       ctx.translate(0, -6);
       ctx.fillStyle = '#5a5560';

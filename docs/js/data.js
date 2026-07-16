@@ -46,7 +46,11 @@ const RUNE_ELEMENT = {
 const PETS = {
   skullWisp: { name: 'Skull Wisp',  desc: 'A faithful skull, wreathed in pale fire.' },
   boneRaven: { name: 'Bone Raven',  desc: 'A skeletal raven that rides your shoulder-wind.' },
-  cryptCat:  { name: 'Crypt Cat',   desc: 'A grave-grey cat. It fears nothing.' }
+  cryptCat:  { name: 'Crypt Cat',   desc: 'A grave-grey cat. It fears nothing.' },
+  graveHound: { name: 'Grave Hound', desc: 'A loyal bone-grey dog. Best friend even in death.' },
+  ghostMoth:  { name: 'Ghost Moth',  desc: 'A pale moth that drifts on grave-cold air.' },
+  marrowImp:  { name: 'Marrow Imp',  desc: 'A tiny horned mischief, sworn to your shadow.' },
+  tombToad:   { name: 'Tomb Toad',   desc: 'A squat toad that hops between the headstones.' }
 };
 const WINGS = {
   boneWings:   { name: 'Wings of Bone',  color: '#e8e0cc', glow: 'rgba(232,224,204,0.25)' },
@@ -325,11 +329,25 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.99-alpha';
+const GAME_VERSION = 'v1.7.0-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.0-alpha', date: 'July 2026',
+    notes: [
+      'PAINTED REAGENTS (owner art) — Reusable Parts, Arcane Dust, Veiled Crystals and Forgotten Souls now show as painted icons in the Character sheet, the Blacksmith, and the Soul Crucible; the Crucible reads far leaner and lost its ✕',
+      'The red ✕ plate now sits ON each menu\'s panel corner, not off in the screen corner — and it\'s gone entirely from the Crucible, Lukus, Addy, Lyssa and the artisan welcomes',
+      'The artisans greet you properly: Tharn the Blacksmith, Orren the Jeweler, Vessa the Enchantress — welcome splashes spaced out, flavor centered, no more "tap anywhere" whisper',
+      'TORCH BENCH reworked — wider, reagents fold into their own drawer, rarity tags gone, simple plates, the lit torch counts down, and the Nephalem Torch is now the ASCENDANT\'S TORCH',
+      'Craft Weapons & Armor — centered simple-plate slots, plain words for Standard and Masterwork, less clutter',
+      'Jeweler benches centered and widened; Craft a Gem fully restyled in bone white',
+      'The Enchantress\'s benches center their lists, her wardrobe grows FOUR new pets — including a loyal GRAVE HOUND',
+      'The fountain speaks in plain words, wraps its lines, and your blessing (with what it actually does) now shows on the Character sheet in bone white; Empowered now also doubles essence regen',
+      'The Stash lives in its own painted panel like the Inventory; the town MENU button rides the simple plate; menu rows Character→Achievements go simple (Settings stays gothic); vendors keep their wares clear of the plate edges'
+    ]
+  },
   {
     v: 'v1.6.99-alpha', date: 'July 2026',
     notes: [
@@ -2270,13 +2288,23 @@ const TORCH_TYPES = {
   wood:        { name: 'Wood Torch',           minutes: 12,  radius: 75,  color: '#ffb24a', rarity: 0, tier: 'Common',    tierColor: '#f4f4f4', recipe: { lumber: 10 } },
   iron:        { name: 'Iron Torch',           minutes: 37,  radius: 120, color: '#ffcf6a', rarity: 1, tier: 'Uncommon',  tierColor: '#4ade80', recipe: { lumber: 10, rivets: 15 } },
   wyrmbound:   { name: 'Wyrm-bound Torch',     minutes: 55,  radius: 192, color: '#7fe0ff', rarity: 2, tier: 'Magic',     tierColor: '#6a9aff', recipe: { lumber: 5, rivets: 10, wyrmscale: 5 } },
-  nephalem:    { name: 'Nephalem Torch',       minutes: 75,  radius: 264, color: '#d8b4f0', rarity: 3, tier: 'Rare',      tierColor: '#ffd76a', recipe: { lumber: 15, rivets: 30, heartstring: 3 } },
+  nephalem:    { name: "Ascendant's Torch",       minutes: 75,  radius: 264, color: '#d8b4f0', rarity: 3, tier: 'Rare',      tierColor: '#ffd76a', recipe: { lumber: 15, rivets: 30, heartstring: 3 } },
   masterlight: { name: "Master's Light Torch", minutes: 110, radius: 365, color: '#ffe6a0', rarity: 4, tier: 'Epic',      tierColor: '#b06adf', recipe: { rivets: 50, heartstring: 5, brain: 1 } },
   nekromancer: { name: "Nekromancer's Torch",  minutes: 180, radius: 520, color: '#c58bff', rarity: 5, tier: 'Legendary', tierColor: '#ff8c2a', recipe: { rathmasoul: 3 } }
 };
 // The lit/reveal radius (px) with no torch at all — deliberately tiny so the
 // dark presses right in until you craft one. Torches widen it (see TORCH_TYPES).
 const NO_TORCH_RADIUS = 20;
+
+// The Wishing Fountain's blessings, in PLAIN WORDS (owner rule — "I have no
+// idea what Essence Surges means"). Shared by the fountain screen and the
+// character sheet readout.
+const FOUNTAIN_BUFFS = {
+  empowered: 'Empowered — essence refills & regenerates twice as fast',
+  frenzied:  'Frenzied — you deal +25% damage',
+  blessed:   'Blessed — you take 25% less damage',
+  fortune:   'Fortune — enemies drop double gold'
+};
 
 // --------------------------------- gems ------------------------------------
 
