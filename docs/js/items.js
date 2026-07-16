@@ -149,6 +149,9 @@ const Items = {
   generate(mLvl, boost = 0, forceSlot = null, force = null) {
     const slot = forceSlot || pick(Object.keys(ITEM_SLOTS).filter(s => !ITEM_SLOTS[s].torch));
     const def = ITEM_SLOTS[slot];
+    // SHIELDS (v1.7.17 owner rule): half of all offhand drops are shields —
+    // block chance, tougher, life/vitality-leaning.
+    const shield = slot === 'offhand' && Math.random() < 0.5;
     const roll = force ? { r: force.rarity } : this.rollRarity(boost);
     let rarity = roll.r;
     let trash = !!roll.trash;           // grey junk
@@ -177,7 +180,8 @@ const Items = {
       // Clamp to the per-tier ceiling (owner rule): affixes never exceed the cap.
       stats[key] = Math.min((stats[key] || 0) + v, this.affixCap(capItem, key));
     };
-    setStat(def.primary, 1.6 * R.mult);
+    setStat(shield ? 'hp' : def.primary, 1.6 * R.mult);
+    if (shield) setStat('vit', 1.3 * R.mult);   // shields carry real vitality
     // DISTINCT secondary affixes (no stacking) so a SINGLE Mystic reroll can
     // always reach any value the item can hold. Count = rarity (+1 per star),
     // capped at the pool size. Restricted affixes never roll here.
@@ -205,10 +209,16 @@ const Items = {
     else if (rarity === 2) prefix = pick(RARE_PREFIX);
     else if (rarity === 1) prefix = pick(MAGIC_PREFIX);
     else prefix = '';
-    let name = (prefix ? prefix + ' ' : '') + pick(def.nouns);
+    let name = (prefix ? prefix + ' ' : '') + pick(shield ? SHIELD_NOUNS : def.nouns);
     if (stars) name += ' ' + '★'.repeat(stars);
 
     const item = { slot, rarity, name, stats, mLvl, sockets, gems: [] };
+    if (shield) {
+      item.shield = true;
+      // Block chance scales with rarity and stars, clamped to the cap.
+      stats.block = clamp(rand(0.04, 0.08) * (1 + rarity * 0.22 + stars * 0.12), 0.03,
+        this.affixCap(capItem, 'block'));
+    }
     if (stars) item.stars = stars;
     if (trash) item.trash = true;
     this.ensureDur(item);   // fresh gear arrives at full durability (aaa/bbb = max/max)
@@ -431,9 +441,14 @@ const Items = {
   // Craft a torch at the Blacksmith — consumes reagents, sends it to the bag
   // (torches persist in the bag WITHOUT taking a slot; see Hero.bagUsed()).
   craftTorch(type) {
-    Hero.torchesCrafted = (Hero.torchesCrafted || 0) + 1;
     const T = TORCH_TYPES[type];
     if (!T) return;
+    // A fresh stack needs a bag slot (owner bug report v1.7.17).
+    if (Hero.bagUsed() >= Hero.BAG_SIZE && !Hero.bag.some(it => it && it.torch === type)) {
+      UI.toast('Your bag is full — make room before crafting', '#e04a5a');
+      AudioSys.sfx('denied');
+      return;
+    }
     for (const [k, n] of Object.entries(T.recipe)) {
       if ((Hero.mats[k] || 0) < n) {
         UI.toast('Not enough ' + MATERIALS[k].name, '#9a9080');
@@ -441,6 +456,7 @@ const Items = {
         return;
       }
     }
+    Hero.torchesCrafted = (Hero.torchesCrafted || 0) + 1;
     this.addTorchToBag(this.makeTorch(type));
     for (const [k, n] of Object.entries(T.recipe)) Hero.mats[k] -= n;
     Hero.itemsCrafted = (Hero.itemsCrafted || 0) + 1;   // Lukus's quest counter
@@ -476,7 +492,9 @@ const Items = {
       const mins = Math.max(0, Math.round((item.burnT !== undefined ? item.burnT : T.minutes * 60) / 60));
       return ['🔥 Lights the darkness (radius ' + T.radius + ')', '⏳ ' + mins + ' min of fuel remaining'];
     }
-    const lines = Object.entries(item.stats).map(([k, v]) => AFFIX_ROLLS[k].label(v));
+    const lines = Object.entries(item.stats).map(([k, v]) => AFFIX_ROLLS[k] ? AFFIX_ROLLS[k].label(v) : null).filter(Boolean);
+    if ((item.rarity || 0) >= 4 && (item.stars || 0) >= 1)
+      lines.unshift((Hero.level || 1) >= 70 ? 'Requires level 70' : '🔒 Requires level 70');
     if (this.hasDurability(item)) {
       this.ensureDur(item);
       lines.unshift(item.dur <= 0
@@ -526,7 +544,9 @@ const Items = {
   },
   durMaxFor(it) {
     // Low-level commons land around ~20; endgame artifacts near ~900.
-    return Math.round(14 + (it.mLvl || 1) * 2.2 + (it.rarity || 0) * 30 + (it.stars || 0) * 90);
+    // Shields are half again as tough (owner rule v1.7.17).
+    return Math.round((14 + (it.mLvl || 1) * 2.2 + (it.rarity || 0) * 30 + (it.stars || 0) * 90)
+      * (it.shield ? 1.5 : 1));
   },
   ensureDur(it) {
     if (!this.hasDurability(it)) return;
@@ -818,6 +838,13 @@ const Items = {
   equip(item, targetSlot) {
     const idx = Hero.bag.indexOf(item);
     if (idx < 0) return;
+    // Starred legendaries and above are ENDGAME gear (owner rule v1.7.17):
+    // 1★+ at legendary rarity or higher demands level 70.
+    if ((item.rarity || 0) >= 4 && (item.stars || 0) >= 1 && (Hero.level || 1) < 70) {
+      UI.toast('Requires level 70 — ' + item.name, '#e04a5a');
+      AudioSys.sfx('denied');
+      return;
+    }
     const fam = this.slotFamily(item.slot);
     const slot = (targetSlot && fam.includes(targetSlot)) ? targetSlot : this.bestTargetSlot(item);
     if (this.uniqueConflict(item, slot)) {
@@ -1093,6 +1120,12 @@ const Items = {
   },
 
   craft(slot, master = false) {
+    // No forging past a full bag (owner bug report v1.7.17).
+    if (Hero.bagUsed() >= Hero.BAG_SIZE) {
+      UI.toast('Your bag is full — make room before crafting', '#e04a5a');
+      AudioSys.sfx('denied');
+      return;
+    }
     const cost = this.craftCost(master);
     if (!this.canAfford(cost)) {
       UI.toast('Not enough gold or materials', '#9a9080');
@@ -1148,7 +1181,20 @@ const Items = {
       AudioSys.sfx('denied');
       return;
     }
-    this.bulkSalvage(r => r >= 4, 0, 'Legendary/Set');
+    this.bulkSalvage(r => r === 4 || r === 5, 0, 'Legendary/Set');
+  },
+
+  // Bulk salvage for the beyond-legendary tiers (v1.7.17 owner rule) — the
+  // buttons only appear once the character has found one; same smith gate
+  // as Legendaries.
+  salvageHighTier(rarity, label) {
+    if (Hero.artisans.smith < this.BULK_SALVAGE_SMITH.legendary) {
+      UI.toast('Train the Blacksmith to level ' + this.BULK_SALVAGE_SMITH.legendary +
+        ' to bulk-salvage ' + label + 's — you can still break them down one at a time from your Inventory', '#ff8c2a');
+      AudioSys.sfx('denied');
+      return;
+    }
+    this.bulkSalvage(r => r === rarity, 0, label);
   },
 
   // Salvage every bag item matching `pred` (a rarity predicate) at once.
@@ -1474,7 +1520,7 @@ const Items = {
     // Core D3 attributes + attack speed (owner-queued stat systems).
     let intel = 0, vit = 0, atkSpeed = 0, elem = 0;
     // New gem stats (each gem grants two; see GEM_STATS in data.js).
-    let resAll = 0, cdr = 0, critDmg = 0, rcr = 0, lph = 0, flatDmg = 0;
+    let resAll = 0, cdr = 0, critDmg = 0, rcr = 0, lph = 0, flatDmg = 0, block = 0;
     const at70 = Hero.level >= MAX_LEVEL;
     const gather = (it, slot) => {
       if (!it) return;
@@ -1500,6 +1546,7 @@ const Items = {
       lph += it.stats.lph || 0;
       dnova += it.stats.dnova || 0;
       area += it.stats.area || 0;
+      block += it.stats.block || 0;
       for (const g of it.gems || []) {
         const gs = gemStats(g);            // { keyA: valA, keyB: valB }
         if (gs.flatDmg) flatDmg += gs.flatDmg;
@@ -1584,6 +1631,7 @@ const Items = {
       resourceCostReduction: clamp(rcr, 0, 0.60),// Topaz
       lifePerHit: Math.round(lph),               // Amethyst
       flatDmg: Math.round(flatDmg),              // Ruby — flat damage per hit
+      blockChance: clamp(block, 0, 0.40),   // shields (owner rule v1.7.17)
       setCount: setCountEff,
       setCountRaw: rawSet,
       powers
@@ -1634,6 +1682,7 @@ const Items = {
     p.areaDamage = s.areaDamage;
     p.pickupRadius = s.pickupRadius || 0;   // paragon pickup radius (fraction)
     p.speed = 180 * (1 + s.moveSpeed);   // base 180 + movement-speed affix
+    p.blockChance = s.blockChance || 0;
     p.setCount = s.setCount;
     p.powers = s.powers;
     p.essence = Math.min(p.essence ?? 60, p.maxEssence);

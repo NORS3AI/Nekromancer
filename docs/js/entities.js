@@ -286,6 +286,12 @@ class Player {
   hurt(dmg) {
     if (this.dead || this.invuln > 0 || this.dash) return;
     if (Hero.cheats.god) return;
+    // SHIELD BLOCK (v1.7.17): a raised shield can turn the whole hit away.
+    if (this.blockChance > 0 && Math.random() < this.blockChance) {
+      Particles.text(this.x, this.y - 44, 'BLOCK', { color: '#8fb0e8', size: 13, life: 0.8 });
+      this.invuln = 0.15;
+      return;
+    }
     if (Hero.hasPassive('standAlone') && Game.minions.length === 0) dmg *= 0.75;
     if (this.shrine && this.shrine.buff === 'blessed') dmg *= 0.75;
     if (this.boneArmorT > 0 && this.boneArmorDR > 0) dmg *= 1 - this.boneArmorDR;

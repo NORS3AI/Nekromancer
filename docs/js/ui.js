@@ -270,11 +270,12 @@ const UI = {
       // The owner's painted frame, 9-sliced: ornamental corners stay 1:1,
       // edge strips stretch, the middle is a flat dark fill (never stretch
       // the painted interior — it carries baked-in content).
-      ctx.fillStyle = 'rgba(9,7,12,0.94)';
+      // TOTAL BLACK interior (owner rule v1.7.17 — no purple rectangle).
+      ctx.fillStyle = 'rgba(2,1,4,0.96)';
       rr(ctx, x + 6, y + 6, w - 12, h - 12, 10); ctx.fill();
       this.drawNine(ctx, art, x, y, w, h, 46);
     } else {
-      ctx.fillStyle = 'rgba(10,7,14,0.94)';
+      ctx.fillStyle = 'rgba(2,1,4,0.96)';
       rr(ctx, x, y, w, h, 12); ctx.fill();
       ctx.strokeStyle = th.panel;
       ctx.lineWidth = 2;
