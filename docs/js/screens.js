@@ -1656,38 +1656,12 @@ const Screens = {
     const wp = UI.sel.wpFilter || null;
     const pw = Math.min(540, W - 20);
     const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 16, 540);
-    const py = Math.max(8, H / 2 - ph / 2);
-    UI.panel(ctx, px, py, pw, ph,
-      wp === 'blue' ? '✧ WAYGATE' : wp === 'purple' ? '✧ THE SHROUD' : '⛰ THE WILDS');
-
-    // Global difficulty stepper — set it once here for every mode below. The
-    // arrows grey out at the bounds (Normal has nothing lower; the top Torment
-    // has nothing higher).
-    const maxDiff = Hero.level >= MAX_LEVEL ? DIFFICULTIES.length - 1 : 3;
-    Hero.difficulty = Math.min(Hero.difficulty, maxDiff);
-    const atMin = Hero.difficulty <= 0;
-    const atMax = Hero.difficulty >= maxDiff;
-    const sdw = Math.min(320, pw - 40);
-    const sdx = W / 2 - sdw / 2;
-    UI.btn(ctx, sdx, py + 44, 40, 32, '◀',
-      atMin ? null : () => { Hero.difficulty = Math.max(0, Hero.difficulty - 1); Hero.save(); },
-      { size: 14, disabled: atMin });
-    UI.btn(ctx, sdx + sdw - 40, py + 44, 40, 32, '▶',
-      atMax ? null : () => { Hero.difficulty = Math.min(maxDiff, Hero.difficulty + 1); Hero.save(); },
-      { size: 14, disabled: atMax });
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 14px Georgia';
-    ctx.fillStyle = Hero.difficulty >= 4 ? '#e04a5a' : '#ffd76a';
-    ctx.fillText('Difficulty: ' + DIFFICULTIES[Hero.difficulty].name, W / 2, py + 54);
-    const D = DIFFICULTIES[Hero.difficulty];
-    ctx.font = 'bold 14px Georgia'; ctx.fillStyle = '#fff';
-    ctx.fillText('Monsters ×' + D.mult + '      Rewards ×' + D.reward +
-      (D.legBonus ? '      +' + (D.legBonus * 100).toFixed(1) + '% leg' : ''), W / 2, py + 74);
 
     // Modes UNLOCK by level (locked ones are hidden entirely, not greyed):
-    // Story Mode & The Rift from level 1; Bounties 20; Adventure 60; Nephalem
-    // Rift 70; Seasons once you hold a Master Key.
+    // Campaign & The Ossuary from level 1; Harvests 20; Expeditions 60;
+    // The Abyss 70; Blood Moon once you hold an Ashen Key. Rows and the keys
+    // footer are computed FIRST so the panel is sized to its content (owner
+    // rule: no giant empty box under two rows).
     const lvl = Hero.level;
     const rows = [];
     const show = tag => !wp || wp === tag;    // waypoint filter (null = show all)
@@ -1706,31 +1680,58 @@ const Screens = {
     if ((Hero.masterKeys || 0) > 0) Hero.seasonUnlocked = true;   // latch once earned
     if (show('purple') && Hero.seasonUnlocked) rows.push(['BLOOD MOON', SEASON.name, '#4ade80',
       () => UI.open('season')]);
-    if (!rows.length) {   // e.g. purple waypoint before level 1 has The Rift — never true, but guard
+    // Keys footer — each shown only once earned; nothing here otherwise.
+    const foot = [];
+    if ((Hero.riftKeys || 0) > 0) foot.push('◈ Crypt Keys: ' + Hero.riftKeys);
+    if ((Hero.masterKeys || 0) > 0) foot.push('◈ Ashen Keys: ' + Hero.masterKeys);
+
+    // Panel sized to its content.
+    const rowH = 54;
+    const ph = Math.min(H - 16, 104 + Math.max(1, rows.length) * rowH + (foot.length ? 34 : 14));
+    const py = Math.max(8, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph,
+      wp === 'blue' ? '✧ WAYGATE' : wp === 'purple' ? '✧ THE SHROUD' : '⛰ THE WILDS');
+
+    // Global difficulty stepper — set it once here for every mode below. Wide
+    // enough that the arrows never crowd the difficulty name.
+    const maxDiff = Hero.level >= MAX_LEVEL ? DIFFICULTIES.length - 1 : 3;
+    Hero.difficulty = Math.min(Hero.difficulty, maxDiff);
+    const atMin = Hero.difficulty <= 0;
+    const atMax = Hero.difficulty >= maxDiff;
+    const sdw = Math.min(440, pw - 24);
+    const sdx = W / 2 - sdw / 2;
+    UI.btn(ctx, sdx, py + 44, 40, 32, '◀',
+      atMin ? null : () => { Hero.difficulty = Math.max(0, Hero.difficulty - 1); Hero.save(); },
+      { size: 14, disabled: atMin });
+    UI.btn(ctx, sdx + sdw - 40, py + 44, 40, 32, '▶',
+      atMax ? null : () => { Hero.difficulty = Math.min(maxDiff, Hero.difficulty + 1); Hero.save(); },
+      { size: 14, disabled: atMax });
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'bold 14px Georgia';
+    ctx.fillStyle = Hero.difficulty >= 4 ? '#e04a5a' : '#ffd76a';
+    ctx.fillText(this.fitText(ctx, 'Difficulty: ' + DIFFICULTIES[Hero.difficulty].name, sdw - 96), W / 2, py + 54);
+    const D = DIFFICULTIES[Hero.difficulty];
+    ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#fff';
+    ctx.fillText('Monsters ×' + D.mult + '      Rewards ×' + D.reward +
+      (D.legBonus ? '      +' + (D.legBonus * 100).toFixed(1) + '% leg' : ''), W / 2, py + 76);
+
+    if (!rows.length) {
       ctx.textAlign = 'center'; ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#6f6552';
-      ctx.fillText('Nothing calls to you from this waypoint yet.', W / 2, py + 140);
+      ctx.fillText('Nothing calls to you from this waypoint yet.', W / 2, py + 120);
       return;
     }
 
-    let y = py + 92;
-    const avail = (py + ph - 24) - y;
-    const rowH = clamp(avail / rows.length, 44, 58);
+    let y = py + 96;
     for (const [label, desc, col, cb] of rows) {
       // No flavor line beneath (owner rule) — the plate name says it all;
       // the description survives as the desktop hover tip.
       UI.btnPlate(ctx, px + 16, y + 2, pw - 32, rowH - 18, label, cb, { size: 14, disabled: !cb, tip: desc });
       y += rowH;
     }
-    // Keys footer — each shown only once earned; nothing here otherwise.
-    const foot = [];
-    if ((Hero.riftKeys || 0) > 0) foot.push(['◈ Crypt Keys: ' + Hero.riftKeys, '#b06adf']);
-    if ((Hero.masterKeys || 0) > 0) foot.push(['◈ Ashen Keys: ' + Hero.masterKeys, '#d8b4f0']);
     if (foot.length) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 12px Georgia';
-      const joined = foot.map(f => f[0]).join('     ');
-      // draw in a single neutral colour (simple + always fits)
       ctx.fillStyle = '#c8b8e8';
-      ctx.fillText(joined, W / 2, y + 10);
+      ctx.fillText(foot.join('     '), W / 2, y + 12);
     }
   },
 
