@@ -408,6 +408,21 @@ loot at the artisans. The hero is persistent (localStorage).
   the Jeweler's `gemStackList` chips moved gothic→SIMPLE plate (owner
   correction). Character footer: PARAGON + **CAMPFIRE** (renamed from
   CHANGE HERO) on the simple plate.
+- **v1.7.5 (owner polish)**: fog on the creation screen REMOVED; the
+  showcase model is **hair-tinted live** via `Screens.showcaseTinted(gd,
+  hair)` (cached offscreen canvas: `source-atop` crown-centred radial in
+  `HAIR_COLORS[i].hex`, index 0 = untinted); the about panel is wider
+  (330/34%, 7 lines); a BACK simple plate (lower left) returns to
+  'select'; 'create' joined NO_CLOSE_X. **Names: letters only, max 12**
+  (`q.replace(/[^A-Za-z]/g,'').slice(0,12)`), default name is
+  **'Nekromancer'** (hero.js defaults renamed too). Select frames get a
+  black rounded backing inside the arch (`rgba(2,1,4,0.88)`, 85%×91.5%)
+  so heroes read; the retire ':(' is gone. **Bone-white hover glow** on
+  the campfire/creation menus only: `UI.boneGlow` fires from btnPlate2/3
+  when `UI.screen` is 'create'/'select'; gender medallions, gear, busts
+  and frames glow via canvas shadowBlur on hover. Settings is ONE padded
+  column (twoCol=false, colW=pw-96, body anchors at px+48). All art
+  confirmed WebP (0 PNGs).
 - **v1.7.4 — CREATION SCREEN PART 2 (owner art)**: `Screens.create`
   rebuilt as a full-screen stage over `create_bg`: LEFT panel = bronze
   GENDER medallions (`gender_m/f.webp`, spliced from the owner sheet;

@@ -142,10 +142,20 @@ const Screens = {
       const x0 = W / 2 - (fw * 3 + gap * 2) / 2 + i * (fw + gap);
       const snap = Profiles.slots[i];
       const selected = !delMode && UI.sel.pick === i && !!snap;
+      // A black backing INSIDE the frame so the hero reads clearly
+      // (owner rule v1.7.5) — kept within the arch's confines.
+      ctx.fillStyle = 'rgba(2,1,4,0.88)';
+      rr(ctx, x0 + fw * 0.075, y0 + fh * 0.045, fw * 0.85, fh * 0.915, fw * 0.10);
+      ctx.fill();
+      const mpf = (typeof Input !== 'undefined' && !Input.touchMode) ? Input.mousePos : null;
+      const fhov = !!(mpf && mpf.x >= x0 && mpf.x <= x0 + fw && mpf.y >= y0 && mpf.y <= y0 + fh);
       // The frame (procedural arch until the art loads).
       if (frame && frame.complete && frame.naturalWidth) {
+        ctx.save();
+        if (fhov) { ctx.shadowColor = 'rgba(232,226,208,0.55)'; ctx.shadowBlur = 20; }
         ctx.globalAlpha = selected ? 1 : 0.88;
         ctx.drawImage(frame, x0, y0, fw, fh);
+        ctx.restore();
         ctx.globalAlpha = 1;
       } else {
         ctx.strokeStyle = selected ? '#cfc8b8' : '#3a3448'; ctx.lineWidth = 2;
@@ -166,7 +176,7 @@ const Screens = {
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.font = '600 ' + Math.max(9, Math.round(fw * 0.062)) + 'px Cinzel, Georgia';
         ctx.fillStyle = selected ? '#ffd76a' : '#cfc8b8';
-        ctx.fillText(this.fitText(ctx, (snap.name || 'The Nekromancer').toUpperCase(), fw - 26), x0 + fw / 2, y0 + fh * 0.145);
+        ctx.fillText(this.fitText(ctx, (snap.name || 'Nekromancer').toUpperCase(), fw - 26), x0 + fw / 2, y0 + fh * 0.145);
         ctx.font = Math.max(8, Math.round(fw * 0.052)) + 'px Cinzel, Georgia';
         ctx.fillStyle = '#9a8f7a';
         ctx.fillText('Level ' + (snap.level || 1), x0 + fw / 2, y0 + fh * 0.195);
@@ -220,7 +230,7 @@ const Screens = {
     if (delMode && delId !== undefined && Profiles.slots[delId]) {
       const nm = Profiles.slots[delId].name || 'this hero';
       ctx.textAlign = 'center'; ctx.font = 'bold 15px Cinzel, Georgia'; ctx.fillStyle = '#e8e0cc';
-      ctx.fillText(this.fitText(ctx, 'Retire ' + nm + '? Are you sure? :(', W - 40), W / 2, H - 100);
+      ctx.fillText(this.fitText(ctx, 'Retire ' + nm + '? Are you sure?', W - 40), W / 2, H - 100);
       const bw = Math.min(150, (W - 48) / 2);
       UI.btnPlate2(ctx, W / 2 - bw - 6, H - 84, bw, 36, 'YES, RETIRE', () => {
         Profiles.remove(delId);
@@ -796,6 +806,33 @@ const Screens = {
 
   // Character creation: name your Nekromancer and choose your glowing-eye
   // colour. Opened from the title screen when starting a new hero.
+  // The showcase model with the chosen HAIR COLOR tinted in (cached per
+  // gender+hair; index 0 = the painting's own black).
+  _showTint: {},
+  showcaseTinted(gd, hair) {
+    if (!hair) return null;
+    const key = gd + ':' + hair;
+    if (this._showTint[key]) return this._showTint[key];
+    const src = Game.uiImg(gd === 'f' ? 'showcase_f' : 'showcase_m');
+    if (!src || !src.complete || !src.naturalWidth) return null;
+    const c = document.createElement('canvas');
+    c.width = src.width; c.height = src.height;
+    const g = c.getContext('2d');
+    g.drawImage(src, 0, 0);
+    const col = (HAIR_COLORS[hair] && HAIR_COLORS[hair].hex) || '#ffffff';
+    // A soft crown-centred radial, masked to the figure — reads as hair.
+    g.globalCompositeOperation = 'source-atop';
+    const hx = c.width / 2, hy = c.height * 0.045, hr = c.width * 0.30;
+    const rg = g.createRadialGradient(hx, hy, hr * 0.12, hx, hy, hr);
+    rg.addColorStop(0, col + 'aa');
+    rg.addColorStop(0.65, col + '55');
+    rg.addColorStop(1, col + '00');
+    g.fillStyle = rg;
+    g.fillRect(0, 0, c.width, c.height);
+    this._showTint[key] = c;
+    return c;
+  },
+
   create(ctx, W, H) {
     // CREATE YOUR NEKROMANCER, part 2 (owner art): painted vista behind,
     // gender medallions in their own left menu, the big SHOWCASE model
@@ -825,34 +862,18 @@ const Screens = {
     const show = Game.uiImg(gd === 'f' ? 'showcase_f' : 'showcase_m');
     const feet = H * (wide ? 0.74 : 0.58);
     const mh = H * (wide ? 0.56 : 0.40);
-    // Fog BEHIND the model: slow, low, rolling banks.
-    const fog = (front) => {
-      ctx.save();
-      for (let i = 0; i < 6; i++) {
-        const sp = 0.10 + (i % 3) * 0.045;
-        const fxp = cx + Math.sin(t * sp + i * 2.1) * (70 + i * 26) * (i % 2 ? 1 : -1);
-        const fyp = feet - 6 - (i % 3) * 9;
-        const frx = 90 + (i % 4) * 34, fry = 14 + (i % 3) * 5;
-        const g2 = ctx.createRadialGradient(fxp, fyp, 4, fxp, fyp, frx);
-        const al = (front ? 0.05 : 0.085) + 0.02 * Math.sin(t * 0.8 + i * 3);
-        g2.addColorStop(0, 'rgba(180,190,200,' + Math.max(0.02, al).toFixed(3) + ')');
-        g2.addColorStop(1, 'rgba(180,190,200,0)');
-        ctx.fillStyle = g2;
-        ctx.beginPath(); ctx.ellipse(fxp, fyp, frx, fry, 0, 0, TAU); ctx.fill();
-      }
-      ctx.restore();
-    };
-    fog(false);
     if (show && show.complete && show.naturalWidth) {
       const mw = mh * (show.width / show.height);
       const breath = Math.sin(t * 1.5) * 1.4;
-      ctx.drawImage(show, cx - mw / 2, feet - mh - breath, mw, mh + breath);
+      // LIVE HAIR COLOR (owner rule): the showcase is tinted at the head so
+      // the chosen hair color reads in real time (cached per gender+hair).
+      const tinted = this.showcaseTinted(gd, Hero.hair || 0);
+      ctx.drawImage(tinted || show, cx - mw / 2, feet - mh - breath, mw, mh + breath);
     } else {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = 'italic 11px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       ctx.fillText('the flesh takes shape…', cx, feet - mh / 2);
     }
-    fog(true);
 
     // ---- LEFT MENU: gender medallions + hair-colour busts ----
     const lpW = wide ? Math.min(210, W * 0.24) : Math.min(190, W * 0.44);
@@ -869,9 +890,14 @@ const Screens = {
       const gx2 = lpX + lpW / 2 + (gi === 0 ? -gsz - 8 : 8);
       const img = Game.uiImg(key);
       const on = gd === g3;
+      const mp2 = (typeof Input !== 'undefined' && !Input.touchMode) ? Input.mousePos : null;
+      const hov = !!(mp2 && mp2.x >= gx2 && mp2.x <= gx2 + gsz && mp2.y >= gy2 && mp2.y <= gy2 + gsz);
       if (img && img.complete && img.naturalWidth) {
-        ctx.globalAlpha = on ? 1 : 0.45;
+        ctx.save();
+        if (hov) { ctx.shadowColor = 'rgba(232,226,208,0.8)'; ctx.shadowBlur = 18; }
+        ctx.globalAlpha = on ? 1 : (hov ? 0.75 : 0.45);
         ctx.drawImage(img, gx2, gy2, gsz, gsz);
+        ctx.restore();
         ctx.globalAlpha = 1;
       } else {
         ctx.strokeStyle = on ? '#cfc8b8' : '#3a3448'; ctx.lineWidth = 2;
@@ -911,24 +937,30 @@ const Screens = {
         ctx.fillStyle = c.hex;
         ctx.beginPath(); ctx.arc(bx + sw / 2, by + sw / 2, sw * 0.28, 0, TAU); ctx.fill();
       }
-      ctx.strokeStyle = sel ? '#f2ecd8' : '#3a3448';
+      const mpb = (typeof Input !== 'undefined' && !Input.touchMode) ? Input.mousePos : null;
+      const bhov = !!(mpb && mpb.x >= bx && mpb.x <= bx + sw && mpb.y >= by && mpb.y <= by + sw);
+      ctx.save();
+      if (bhov && !sel) { ctx.shadowColor = 'rgba(232,226,208,0.7)'; ctx.shadowBlur = 12; }
+      ctx.strokeStyle = sel ? '#f2ecd8' : bhov ? '#cfc8b8' : '#3a3448';
       ctx.lineWidth = sel ? 2.5 : 1.2;
       rr(ctx, bx, by, sw, sw, 8); ctx.stroke();
+      ctx.restore();
       UI.register(bx, by, sw, sw, () => { Hero.hair = i; });
     });
 
     // ---- RIGHT MENU: the Nekromancer's lore + the four classic spells ----
     if (wide) {
-      const rpW = Math.min(270, W * 0.30);
-      const rpH = Math.min(430, H - 60);
-      const rpX = W - rpW - Math.max(10, W * 0.03);
+      // Wider about panel (owner rule) — the lore never clips.
+      const rpW = Math.min(330, W * 0.34);
+      const rpH = Math.min(450, H - 50);
+      const rpX = W - rpW - Math.max(10, W * 0.025);
       const rpY = H / 2 - rpH / 2;
       UI.panel(ctx, rpX, rpY, rpW, rpH, 'THE NEKROMANCER');
       ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
       ctx.font = 'italic 11px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
       let ry = this.wrapCentered(ctx,
         'A master of death and decay from the cult of Bellmahath. Where others see corpses, the Nekromancer sees an army waiting for orders. The dead obey.',
-        rpX + rpW / 2, rpY + 58, rpW - 40, 15, 5);
+        rpX + rpW / 2, rpY + 58, rpW - 44, 15, 7);
       ry += 14;
       ctx.font = '600 12px Cinzel, Georgia'; ctx.fillStyle = '#d8c5a0';
       ctx.fillText('— CLASSIC SPELLS —', rpX + rpW / 2, ry);
@@ -962,25 +994,33 @@ const Screens = {
     const ny = wide ? H * 0.79 : H * 0.64;
     ctx.fillText('NAME YOUR NEKROMANCER', cx, ny);
     const nw = Math.min(320, W * 0.5);
-    UI.btn(ctx, cx - nw / 2, ny + 10, nw, 34, this.fitText(ctx, Hero.name || 'Enter name…', nw - 30), () => {
+    UI.btn(ctx, cx - nw / 2, ny + 10, nw, 34, this.fitText(ctx, Hero.name || 'Nekromancer', nw - 30), () => {
       let q = null;
-      try { q = window.prompt('Name your Nekromancer:', Hero.name || ''); } catch (e) { /* blocked */ }
-      if (q !== null) { const t2 = q.trim().slice(0, 22); Hero.name = t2 || 'The Nekromancer'; }
+      try { q = window.prompt('Name your Nekromancer (letters only, max 12):', Hero.name || ''); } catch (e) { /* blocked */ }
+      // Letters only, no spaces/numbers/specials, max 12 (owner rules).
+      if (q !== null) { const t2 = q.replace(/[^A-Za-z]/g, '').slice(0, 12); Hero.name = t2 || 'Nekromancer'; }
     }, { size: 14, border: '#6b5f80', color: '#e8e0cc' });
     // CREATE on the ADVANCED plate — straight to New Haven (owner rule).
     UI.btnPlate3(ctx, cx - nw / 2, ny + 54, nw, 40, 'CREATE', () => {
-      if (!Hero.name) Hero.name = 'The Nekromancer';
+      if (!Hero.name) Hero.name = 'Nekromancer';
       if (!Hero.eyeColor) Hero.eyeColor = '#6ff7c3';
       Hero.save();
       Game.enterTown();
     }, { size: 15 });
+    // BACK to the hero-select campfire, lower left (simple plate).
+    UI.btnPlate2(ctx, 14, H - 42, 130, 28, 'BACK', () => UI.open('select'), { size: 11 });
 
     // ---- the SETTINGS gear medallion, lower right ----
     const gear = Game.uiImg('gear');
     const gr2 = wide ? 34 : 28;
     const gcx = W - gr2 - 16, gcy = H - gr2 - 16;
+    const mpg = (typeof Input !== 'undefined' && !Input.touchMode) ? Input.mousePos : null;
+    const ghov = !!(mpg && Math.hypot(mpg.x - gcx, mpg.y - gcy) < gr2 + 6);
     if (gear && gear.complete && gear.naturalWidth) {
+      ctx.save();
+      if (ghov) { ctx.shadowColor = 'rgba(232,226,208,0.8)'; ctx.shadowBlur = 18; }
       ctx.drawImage(gear, gcx - gr2, gcy - gr2, gr2 * 2, gr2 * 2);
+      ctx.restore();
     } else {
       ctx.strokeStyle = '#8a8070'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(gcx, gcy, gr2 - 4, 0, TAU); ctx.stroke();
@@ -5552,9 +5592,10 @@ const Screens = {
     // (red ✕ drawn globally by UI.draw, above all content)
     const pw = Math.min(560, W - 20);
     const px = W / 2 - pw / 2;
-    const twoCol = pw >= 480;
-    const ph = Math.min(H - 16, twoCol ? 470 : 720);
-    const compact = !twoCol && H < 720;   // tighten spacing on short phones
+    // ONE column, padded in from both edges (owner rule v1.7.5).
+    const twoCol = false;
+    const ph = Math.min(H - 16, 720);
+    const compact = H < 720;   // tighten spacing on short phones
     const audioStep = compact ? 36 : 42;
     const rowStep = compact ? 28 : 34;
     const py = Math.max(8, H / 2 - ph / 2);
@@ -5590,27 +5631,27 @@ const Screens = {
       ['ambience', 'Ambience FX'],
       ['weather', 'Weather FX']
     ];
-    const colW = twoCol ? (pw - 44) / 2 : pw - 32;
+    const colW = pw - 96;   // padded 48px each side (owner rule)
     let ay = py + 92 - sc;
     ctx.textAlign = 'left';
     ctx.font = '600 12px Cinzel, Georgia';
     ctx.fillStyle = '#d8c5a0';
-    ctx.fillText('— AUDIO —', px + 16, ay);
+    ctx.fillText('— AUDIO —', px + 48, ay);
     ay += 14;
     for (const [chan, label] of chans) {
       const a = Settings.audio[chan];
       ctx.font = '12px Cinzel, Georgia';
       ctx.fillStyle = '#c9bfa8';
       ctx.textAlign = 'left';
-      ctx.fillText(label, px + 16, ay + 6);
+      ctx.fillText(label, px + 48, ay + 6);
       ctx.textAlign = 'right';
       ctx.fillStyle = a.mute ? '#8a5a5a' : '#9a9080';
-      ctx.fillText(a.mute ? 'muted' : Math.round(a.v * 100) + '%', px + 16 + colW - 66, ay + 6);
-      UI.slider(ctx, px + 16, ay + 12, colW - 76, a.v, v => {
+      ctx.fillText(a.mute ? 'muted' : Math.round(a.v * 100) + '%', px + 48 + colW - 66, ay + 6);
+      UI.slider(ctx, px + 48, ay + 12, colW - 76, a.v, v => {
         a.v = v;
         Settings.save();
       });
-      UI.check(ctx, px + 16 + colW - 56, ay + 2, a.mute, () => {
+      UI.check(ctx, px + 48 + colW - 56, ay + 2, a.mute, () => {
         a.mute = !a.mute;
         Settings.save();
       }, 'mute');
@@ -5618,7 +5659,7 @@ const Screens = {
     }
     // Mono — fold the effects/ambience/weather/built-in score to one channel for
     // a single or mono Bluetooth speaker. (Uploaded music tracks are unaffected.)
-    UI.check(ctx, px + 16, ay - 2, Settings.g.mono, () => {
+    UI.check(ctx, px + 48, ay - 2, Settings.g.mono, () => {
       Settings.g.mono = !Settings.g.mono;
       Settings.save();
       AudioSys.applyOutputRouting();
@@ -5627,8 +5668,8 @@ const Screens = {
     ay += audioStep;
 
     // ---- gameplay (Diablo-Immortal-style options) ----
-    let gx = twoCol ? px + 28 + colW : px + 16;
-    let gy = twoCol ? py + 106 - sc : ay + 24;   // clear the last audio slider
+    let gx = px + 48;
+    let gy = ay + 24;   // clear the last audio slider
     ctx.textAlign = 'left';
     ctx.font = '600 12px Cinzel, Georgia';
     ctx.fillStyle = '#d8c5a0';

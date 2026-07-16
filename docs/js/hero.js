@@ -145,7 +145,7 @@ const Saves = {
 };
 
 const Hero = {
-  name: 'The Nekromancer',
+  name: 'Nekromancer',
   eyeColor: '#6ff7c3',      // glowing-eye colour, chosen at character creation
   level: 1,
   xp: 0,
@@ -212,7 +212,7 @@ const Hero = {
 
   fresh() {
     // name/eyeColor/gender/hair are chosen at character creation; keep any already set.
-    if (!this.name) this.name = 'The Nekromancer';
+    if (!this.name) this.name = 'Nekromancer';
     if (!this.eyeColor) this.eyeColor = '#6ff7c3';
     if (!this.gender) this.gender = 'm';
     if (!this.hair) this.hair = 0;
@@ -351,7 +351,7 @@ const Hero = {
   applySnapshot(d) {
     d = this.migrate(d);
     Object.assign(this, {
-      name: d.name || 'The Nekromancer', eyeColor: d.eyeColor || '#6ff7c3',
+      name: d.name || 'Nekromancer', eyeColor: d.eyeColor || '#6ff7c3',
       level: d.level || 1, xp: d.xp || 0, gold: d.gold || 0,
       paragon: d.paragon || 0, paragonXp: d.paragonXp || 0, np: d.np || 0,
       para: (d.para && typeof d.para === 'object') ? Object.assign({}, d.para) : {},
