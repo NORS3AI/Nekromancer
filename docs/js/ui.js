@@ -440,6 +440,13 @@ const UI = {
         // Inventory lives in the ☰ MENU.)
         if (Game.townPrompt) this.drawTownEnter(ctx, W, H, false);
       }
+      // FPS in town too, bottom-left (owner rule v1.7.18).
+      if (Settings.g.showFps) {
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.font = '11px Georgia';
+        ctx.fillStyle = '#57b894';
+        ctx.fillText(Math.round(Game.fps) + ' fps', 8 + (this.safe ? this.safe.left : 0), H - 12);
+      }
       this.drawToasts(ctx, W);
       this.drawTooltip(ctx, W, H);
       return;

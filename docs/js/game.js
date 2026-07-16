@@ -87,7 +87,13 @@ const Game = {
 
   init() {
     this.canvas = document.getElementById('game');
-    this.ctx = this.canvas.getContext('2d');
+    // Opaque canvas + browser-synced presentation (v1.7.18 owner report:
+    // screen tearing). Settings ▸ Rendering ▸ V-Sync toggles desynchronized
+    // (needs a reload to re-create the context). Settings load EARLY so the
+    // saved choice reaches the context attributes (load() is idempotent).
+    if (typeof Settings !== 'undefined' && Settings.load) Settings.load();
+    const vsync = !(typeof Settings !== 'undefined' && Settings.g && Settings.g.vsync === false);
+    this.ctx = this.canvas.getContext('2d', { alpha: false, desynchronized: !vsync });
     this.installFontScale(this.ctx);
     window.addEventListener('resize', () => this.resize());
     // Entering/leaving fullscreen changes the viewport → re-fit the canvas.
@@ -346,8 +352,8 @@ const Game = {
     [720, 375, 60,   745, 240, 180, 190, 'Enchantress',    '✦', '#b06adf', 'mystic'],
     [305, 745, 60,   250, 650, 210, 150, 'Smithy',         '⚒', '#ffb43a', 'smith'],
     [835, 725, 60,   885, 615, 180, 130, "Soul Crucible", '◈', '#ff5a4a', 'cube'],
-    [150, 485, 55,    95, 415, 180, 110, 'Weapons',        '⚔', '#e0724a', 'vendor', ['weapon', 'offhand']],
-    [435, 955, 60,   370, 860, 230, 160, 'Armor',          '🛡', '#8fb0e8', 'vendor', ['helm', 'chest', 'gloves', 'boots', 'shoulders', 'legs']],
+    [150, 485, 55,    95, 415, 180, 110, "The Reaper's Rack", '⚔', '#e0724a', 'vendor', ['weapon', 'offhand']],
+    [435, 955, 60,   370, 860, 230, 160, 'Gravewrought Armory', '🛡', '#8fb0e8', 'vendor', ['helm', 'chest', 'gloves', 'boots', 'shoulders', 'legs']],
     [1100, 765, 60, 1130, 680, 190, 140, 'Apothecary',     '⚗', '#9fd88a', 'vendor', null],   // closed for now (owner rule) — sells nothing
     [790, 945, 60,   800, 855, 230, 150, 'Jeweled Necessities', '💍', '#ffd76a', 'vendor', ['ring1', 'ring2', 'amulet']],
     [610, 1015, 55,  610, 930, 130, 140, 'Stash',          '▤', '#c9bfa8', 'stash'],
@@ -391,7 +397,7 @@ const Game = {
     this.lukusImg('helmed'); this.lukusImg('idle');
     this.addyImg(); this.lyssaImg();
     for (const gd of ['m', 'f']) { this.heroImg(gd, 'front'); this.heroImg(gd, 'back'); this.heroImg(gd, 'side'); }
-    for (const k of ['panel', 'close2', 'globe_red', 'globe_blue', 'button', 'plate2', 'enter', 'exit', 'talk', 'arrow_left', 'arrow_right', 'plus', 'minus', 'chip', 'circle', 'plate3', 'fountain', 'select_bg', 'create_bg', 'slot_frame', 'ghost', 'gender_m', 'gender_f', 'gear', 'showcase_m', 'showcase_f']) this.uiImg(k);
+    for (const k of ['panel', 'close2', 'globe_red', 'globe_blue', 'button', 'plate2', 'enter', 'exit', 'talk', 'arrow_left', 'arrow_right', 'plus', 'minus', 'chip', 'circle', 'plate3', 'fountain', 'select_bg', 'create_bg', 'harvests_bg', 'slot_frame', 'ghost', 'gender_m', 'gender_f', 'gear', 'showcase_m', 'showcase_f']) this.uiImg(k);
     for (const k of ['parts', 'dust', 'crystal', 'soul']) this.matImg(k);
     // Warm the active theme's plate (the rest load lazily in the theme picker).
     if (typeof THEMES !== 'undefined' && typeof Settings !== 'undefined' && Settings.g) {
@@ -429,14 +435,14 @@ const Game = {
       // A null slot list = the shop is CLOSED (owner rule: the Apothecary
       // sells nothing right now) — the counter shows, the shelves are bare.
       const sl = slots === 'all' ? this.ALL_SLOTS : (slots || []);
-      const o = { name: name.toUpperCase(), flavor, stock: sl.length ? this.rollVendorStock(sl, { boost: boost || 0 }) : [],
+      const o = { name: name.toUpperCase(), flavor, stock: sl.length ? this.rollVendorStock(sl, { boost: boost || 0, count: 12 }) : [],
                   slots: sl, boost: boost || 0, lvl: Hero.level, t: this.time };
       vendors.push(o);
       return () => { UI.open('vendor'); UI.sel.vendor = o; AudioSys.sfx('gold'); };
     };
     const FLAVOR = {
-      Weapons: '"Blades for the brave — and the doomed."',
-      Armor: '"Good steel between you and the grave."',
+      "The Reaper's Rack": '"Blades for the brave — and the doomed."',
+      'Gravewrought Armory': '"Good steel between you and the grave."',
       Apothecary: '"The cauldron\'s cold, friend. Nothing for sale — yet."',
       'Jeweled Necessities': '"Rings, chains and charms — worn once by the dead, priced for the living."'
     };
@@ -643,9 +649,11 @@ const Game = {
       ctx.drawImage(img, sw * (capF + 0.06), 0, sw * 0.08, sh, (it.x + xOff) - w / 2 + capW, dy, w - 2 * capW, dh);
       ctx.drawImage(img, sw * (1 - capF), 0, sw * capF, sh, (it.x + xOff) + w / 2 - capW, dy, capW, dh);
       ctx.fillStyle = 'rgba(0,0,0,0.65)';
-      ctx.fillText(txt, it.x + xOff, y + 1.5);
+      ctx.fillText(txt, it.x + xOff, y + 3.5);
       ctx.fillStyle = on ? '#f0e2bc' : '#d5c49e';
-      ctx.fillText(txt, it.x + xOff, y);
+      // +2px: the caps rode high in the plate (owner rule v1.7.18 — even
+      // padding above and below).
+      ctx.fillText(txt, it.x + xOff, y + 2);
       ctx.globalAlpha = 1;
       return;
     }
@@ -733,7 +741,8 @@ const Game = {
     // work to hand out (an offer exists and the 7-slot journal has room)
     let mark = null, col = '#ffd76a';
     if (typeof QUEST_LINE !== 'undefined' && Hero.questProgress) {
-      if ((Hero.journal || []).some(e => Hero.questProgress(e).done)) { mark = '✓'; col = '#4ade80'; }
+      // HIS deeds only (v1.7.18 fix: Addy's finished jobs lit his ✓ too).
+      if ((Hero.journal || []).some(e => e.src !== 'A' && Hero.questProgress(e).done)) { mark = '✓'; col = '#4ade80'; }
       else if (Hero.questOffer() >= 0 && Hero.journalCount() < QUEST_JOURNAL_MAX) mark = '!';
     }
     if (mark) {

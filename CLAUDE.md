@@ -410,6 +410,24 @@ loot at the artisans. The hero is persistent (localStorage).
   the Jeweler's `gemStackList` chips moved gothic→SIMPLE plate (owner
   correction). Character footer: PARAGON + **CAMPFIRE** (renamed from
   CHANGE HERO) on the simple plate.
+- **v1.7.18 — HARVESTS OF GHALLIA + VENDORS + FIXES (owner list)**:
+  (1) **`Screens.map` rebuilt**: pure-black + `harvests_bg.webp` cover-fit
+  (owner painting, recovered from a transcript queued_command attachment —
+  images sometimes land there, not in message.content), UI.panel titled
+  HARVESTS OF GHALLIA, painted arrow-plate difficulty stepper, land rows
+  on SIMPLE plates (inset 24), compact centered BACK TO TOWN, ✕ riding
+  the panel title bar. The old moving world backdrop is painted over.
+  (2) **Lukus ✓ fix**: his marker now filters `e.src !== 'A'` — Addy's
+  finished jobs no longer light him. (3) **Vendors**: renamed Weapons →
+  "The Reaper's Rack", Armor → "Gravewrought Armory" (TOWN_STATIONS
+  labels + vendorFlavor keys); stock count 12; `Screens.vendor` = TWO
+  columns of half-width simple plates (W≥560), 'Common' rarity never
+  printed, shields labeled Shield, panel TOP-anchored on desktop (py 16).
+  (4) **V-SYNC**: `Settings.g.vsync` (default true) under Settings ▸
+  — RENDERING —; `Game.init` getContext('2d', { alpha:false,
+  desynchronized: !vsync }) with an early idempotent Settings.load();
+  toggle needs a page reload. (5) Street-plate labels sit +2px lower
+  (even padding). ART: harvests_bg.webp is a NEW file — no ART_V bump.
 - **v1.7.17 — SHIELDS + GATES + FIXES (owner list)**: (1) **SHIELDS**:
   50% of offhand drops (`item.shield`, `SHIELD_NOUNS` in data.js) —
   primary rolls `hp` + a hot `vit` affix, `stats.block` (AFFIX_ROLLS

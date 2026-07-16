@@ -672,11 +672,20 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.17-alpha';
+const GAME_VERSION = 'v1.7.18-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.18-alpha', date: 'July 2026',
+    notes: [
+      'HARVESTS OF GHALLIA reborn — the owner\'s painted gothic vista fills the bounty screen (the old drifting backdrop is gone); the lands ride simple plates inside a proper panel, painted arrows step the difficulty, and the red ✕ sits on the panel like every other menu',
+      'FIX: Lukus no longer wears a green ✓ for ADDY\'s finished jobs — his checkmark now answers only for his own ledger',
+      'The vendors grew into their names: THE REAPER\'S RACK (weapons, phylacteries and shields) and the GRAVEWROUGHT ARMORY (armor of every slot) join Jeweled Necessities — each now stocks TWELVE wares in two tidy columns of half-width plates, and the word "Common" never sullies a label again',
+      'NEW Settings ▸ RENDERING: V-Sync (prevents screen tearing; applies after a reload). Street-plate names sit evenly in their plates now, and vendor menus anchor to the top on desktop'
+    ]
+  },
   {
     v: 'v1.7.17-alpha', date: 'July 2026',
     notes: [
