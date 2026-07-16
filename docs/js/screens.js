@@ -81,6 +81,7 @@ const Screens = {
       case 'season': this.season(ctx, W, H); break;
       case 'cube': this.cube(ctx, W, H); break;
       case 'fountain': this.fountain(ctx, W, H); break;
+      case 'cryptUnlock': this.cryptUnlock(ctx, W, H); break;
       case 'recipes': this.recipes(ctx, W, H); break;
       case 'wilds': this.wilds(ctx, W, H); break;
       case 'storyacts': this.storyMenu(ctx, W, H); break;
@@ -1537,6 +1538,33 @@ const Screens = {
       { size: 15 });
   },
 
+  // THE FORGOTTEN CRYPT unlock popup (owner rule v1.7.6): six worn
+  // Artifacts resonate — a new dark opens beneath Ascendant XVI.
+  cryptUnlock(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const t = Game.time || 0;
+    const pw = Math.min(440, W - 24);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 24, 320);
+    const py = Math.max(10, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const pulse = 0.75 + 0.25 * Math.sin(t * 3);
+    ctx.font = '600 22px Cinzel, Georgia';
+    ctx.shadowColor = 'rgba(232,226,208,' + (0.5 * pulse).toFixed(2) + ')';
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = '#e8e2d0';
+    ctx.fillText(this.fitText(ctx, 'THE FORGOTTEN CRYPT', pw - 40), W / 2, py + 62);
+    ctx.shadowBlur = 0;
+    ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#cfc8b8';
+    this.wrapCentered(ctx, 'The six Artifacts you wear resonate as one. A deeper dark has opened beneath Ascendant XVI.',
+      W / 2, py + 104, pw - 60, 17, 3);
+    ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
+    this.wrapCentered(ctx, 'Choose a Crypt Tier — I to CCL — at the Waygate or the Shroud. Each tier hardens the dead by half again… and sweetens what they carry.',
+      W / 2, py + 168, pw - 60, 15, 4);
+    UI.btnPlate3(ctx, px + pw / 2 - 110, py + ph - 60, 220, 40, 'SO BE IT', () => UI.close(), { size: 14 });
+  },
+
   // THE WISHING FOUNTAIN (v1.6.98 owner request): stand at New Haven's
   // fountain and toss 200 gold into the dark water for a RANDOM shrine
   // blessing that lasts 10 real minutes — it follows you into the wilds
@@ -1946,7 +1974,8 @@ const Screens = {
 
     // Panel sized to its content.
     const rowH = 54;
-    const ph = Math.min(H - 16, 132 + Math.max(1, rows.length) * rowH + (foot.length ? 34 : 14));
+    const cryptRow = (Hero.cryptUnlocked && Hero.difficulty >= DIFFICULTIES.length - 1) ? 70 : 0;
+    const ph = Math.min(H - 16, 132 + cryptRow + Math.max(1, rows.length) * rowH + (foot.length ? 34 : 14));
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph,
       wp === 'blue' ? 'WAYGATE' : wp === 'purple' ? 'THE SHROUD' : 'THE WILDS');
@@ -1991,13 +2020,33 @@ const Screens = {
     ctx.fillText('Monsters ×' + D.mult + '      Rewards ×' + D.reward +
       (D.legBonus ? '      +' + (D.legBonus * 100).toFixed(1) + '% leg' : ''), W / 2, py + 106);
 
+    // ---- FORGOTTEN CRYPT tier picker (owner spec v1.7.6): unlocked by six
+    // worn Artifacts, live only at Ascendant XVI. Tier 0 = closed.
+    let cryptH = 0;
+    if (Hero.cryptUnlocked && Hero.difficulty >= DIFFICULTIES.length - 1) {
+      cryptH = 70;
+      const cy2 = py + 136;
+      Hero.cryptTier = clamp(Hero.cryptTier || 0, 0, 250);
+      const ctv = Hero.cryptTier;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = '#cfc8b8';
+      ctx.fillText('FORGOTTEN CRYPT', W / 2, cy2);
+      ctx.font = 'bold 14px Cinzel, Georgia';
+      ctx.fillStyle = ctv > 0 ? '#e8e2d0' : '#6f6552';
+      ctx.fillText(ctv > 0 ? 'Tier ' + ctv + '   ·   monsters ×' + (Math.pow(1.5, ctv) >= 1e6 ? Math.pow(1.5, ctv).toExponential(1) : Math.round(Math.pow(1.5, ctv) * 10) / 10) : 'CLOSED', W / 2, cy2 + 24);
+      const step = (dx2, lbl, d2) => UI.chip(ctx, W / 2 + dx2 - 26, cy2 + 12, 52, 24, lbl,
+        () => { Hero.cryptTier = clamp((Hero.cryptTier || 0) + d2, 0, 250); Hero.save(); }, { size: 11 });
+      step(-pw / 2 + 58, '−10', -10); step(-pw / 2 + 116, '−1', -1);
+      step(pw / 2 - 116, '+1', 1); step(pw / 2 - 58, '+10', 10);
+    }
+
     if (!rows.length) {
       ctx.textAlign = 'center'; ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
-      ctx.fillText('Nothing calls to you from this waypoint yet.', W / 2, py + 146);
+      ctx.fillText('Nothing calls to you from this waypoint yet.', W / 2, py + 146 + cryptH);
       return;
     }
 
-    let y = py + 124;
+    let y = py + 124 + cryptH;
     for (const [label, desc, col, cb] of rows) {
       // SIMPLE plates for the mode rows (owner rule v1.7.2); the description
       // survives as the desktop hover tip.

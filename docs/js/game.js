@@ -937,11 +937,23 @@ const Game = {
     pet.bob += dt;
     // Heel position: behind-left of the hero's facing.
     const a = p.facing + 2.6;
-    const tx = p.x + Math.cos(a) * 44, ty = p.y + Math.sin(a) * 44;
+    let tx = p.x + Math.cos(a) * 44, ty = p.y + Math.sin(a) * 44;
+    // The pet SENSES loot (owner rule v1.7.6): gold, items and gems on the
+    // ground pull it off heel to go collect them for the player. Its senses
+    // (and the collect magnet in Pickup.update) share the hero's pickup
+    // radius, so paragon Pickup Radius widens the pet's reach too.
+    const sense = 360 * (1 + (p.pickupRadius || 0));
+    let bd = sense;
+    for (const pu of (this.pickups || [])) {
+      if (pu.gone) continue;
+      if (pu.kind === 'item' && !Items.canPickup(pu.item)) continue;   // full bag: leave it
+      const d2 = dist(pet.x, pet.y, pu.x, pu.y);
+      if (d2 < bd && dist(p.x, p.y, pu.x, pu.y) < 900) { bd = d2; tx = pu.x; ty = pu.y; }
+    }
     const d = dist(pet.x, pet.y, tx, ty);
-    if (d > 700) { pet.x = tx; pet.y = ty; }              // teleport if left behind
+    if (d > 900) { pet.x = tx; pet.y = ty; }              // teleport if left behind
     else if (d > 6) {
-      const sp = Math.min(d * 5, 320) * dt;
+      const sp = Math.min(d * 5, 340) * dt;
       const an = angleTo(pet.x, pet.y, tx, ty);
       pet.x += Math.cos(an) * sp; pet.y += Math.sin(an) * sp;
     }

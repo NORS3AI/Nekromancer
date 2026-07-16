@@ -288,6 +288,7 @@ function questReward(i) { return questRewardSrc('L', i); }
 // Earned state is computed LIVE from the hero's persistent lifetime counters —
 // no separate save data needed (the counters already snapshot).
 const ACHIEVEMENTS = [
+  { name: 'The Forgotten Crypt',     desc: 'Wear six Artifacts at once',         need: 1,      cur: () => Hero.cryptUnlocked ? 1 : 0 },
   { name: 'First Blood',             desc: 'Slay 100 monsters',                  need: 100,    cur: () => Hero.totalKills || 0 },
   { name: 'Gravekeeper',             desc: 'Slay 1,000 monsters',                need: 1000,   cur: () => Hero.totalKills || 0 },
   { name: 'Deathbringer',            desc: 'Slay 10,000 monsters',               need: 10000,  cur: () => Hero.totalKills || 0 },
@@ -329,11 +330,20 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.5-alpha';
+const GAME_VERSION = 'v1.7.6-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.6-alpha', date: 'July 2026',
+    notes: [
+      'PARAGON RISES TO 3500 — gentle to 250, then a brutal compounding climb; the final level alone demands TRILLIONS of XP. At the cap, the well is full',
+      'THE FORGOTTEN CRYPT — wear SIX Artifacts at once and the deep dark opens (a resonant popup marks the moment; it\'s an achievement too). At Ascendant XVI choose Crypt Tier I–CCL: each tier hardens monster HEALTH by half again (×1.5, compounding) — never their numbers',
+      'Crypt spoils: legendaries roll 1–5★ (5★ 5% · 4★ 10% · 1–3★ even); Artifacts climb in bands — 1–2★ from Tier 10, 3–4★ from Tier 76, and 5★ appears only in Tiers 181–250',
+      'Your pet now SENSES loot — gold, items and gems on the ground pull it off heel to fetch them; its senses share your pickup radius, so paragon Pickup Radius widens the pet\'s reach too'
+    ]
+  },
   {
     v: 'v1.7.5-alpha', date: 'July 2026',
     notes: [
@@ -3160,7 +3170,15 @@ const PARAGON_STATS = {
   pickup:       { cat: 'Utility', label: 'Pickup Radius',      per: 0.002, max: 50, fmt: 'pct', note: 'Pickup Radius' }
 };
 // XP to earn the NEXT paragon level — a level-70's worth, creeping up per level.
-const PARAGON_XP = plevel => Math.round(XP_CURVE(70) * (1 + plevel * 0.05));
+// Paragon cap (owner rule v1.7.6): 3500 levels. The climb is gentle to 250,
+// then turns BRUTAL — +0.4% compounding per level, so level 3500 demands
+// roughly 2.7 TRILLION XP for that single level.
+const MAX_PARAGON = 3500;
+const PARAGON_XP = plevel => {
+  const base = XP_CURVE(70) * (1 + plevel * 0.05);
+  if (plevel < 250) return Math.round(base);
+  return Math.round(base * Math.pow(1.004, plevel - 250));
+};
 
 // Rifts: filled by slaughter, capped by a Guardian.
 //  - 'normal' rifts (levels 1–69): open to all; Guardians may drop Rift Keys.

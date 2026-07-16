@@ -764,7 +764,9 @@ class Enemy {
       * eliteMul * (this.unique ? 9 : 1) * (t.hpMul || 1) * lvlDiff * depthMul;
     this.x = x; this.y = y;
     this.r = t.r + (this.elite ? 2 : 0) + (this.rare ? 2 : 0) + (this.unique ? 6 : 0);
-    this.maxHp = Math.round(t.hp * scale);
+    // FORGOTTEN CRYPT tiers multiply HEALTH ONLY (owner rule): ×1.5 per tier.
+    const cryptHp = (typeof Items !== 'undefined' && Items.cryptTier) ? Math.pow(1.5, Items.cryptTier()) : 1;
+    this.maxHp = Math.round(t.hp * scale * cryptHp);
     this.hp = this.maxHp;
     this.speed = t.speed * (1 + 0.008 * mLvl) * rand(0.9, 1.1) * (opts.speedMul || 1);
     this.dmg = Math.round(t.dmg * (1 + 0.11 * (mLvl - 1)) * Math.sqrt(diff.mult) * lvlDiff * depthMul * (this.rare ? 1.5 : this.elite ? 1.3 : 1) * (this.unique ? 1.6 : 1));

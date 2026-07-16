@@ -74,6 +74,45 @@ const Items = {
     return 0;
   },
 
+  // ---- THE FORGOTTEN CRYPT (owner spec v1.7.6) ----
+  // Active tier: only once unlocked, a tier is chosen, and the difficulty
+  // stands at Ascendant XVI. 0 = the Crypt is closed.
+  cryptTier() {
+    return (typeof Hero !== 'undefined' && Hero.cryptUnlocked && (Hero.cryptTier || 0) > 0 &&
+      tormentTier() >= 16) ? Hero.cryptTier : 0;
+  },
+
+  // Crypt legendaries roll 1–5★: 5★ 5% · 4★ 10% · 1–3★ split evenly (owner).
+  cryptLegendaryStars() {
+    const x = Math.random();
+    if (x < 0.05) return 5;
+    if (x < 0.15) return 4;
+    return 1 + Math.min(2, Math.floor((x - 0.15) / (0.85 / 3)));
+  },
+
+  // Crypt artifact stars come in TIER BANDS (owner spec):
+  //   tiers  10–75 : 1–2★ 5%
+  //   tiers 76–180 : 3–4★ 5% · 1–2★ 25%
+  //   tiers 181–250: 5★ 3% · 3–4★ 25% · 1–2★ 35%
+  cryptArtifactStars(tier) {
+    const x = Math.random();
+    const lo = () => Math.random() < 0.5 ? 1 : 2;
+    const mid = () => Math.random() < 0.5 ? 3 : 4;
+    if (tier >= 181) {
+      if (x < 0.03) return 5;
+      if (x < 0.28) return mid();
+      if (x < 0.63) return lo();
+      return 0;
+    }
+    if (tier >= 76) {
+      if (x < 0.05) return mid();
+      if (x < 0.30) return lo();
+      return 0;
+    }
+    if (tier >= 10) return x < 0.05 ? lo() : 0;
+    return this.artifactStars();
+  },
+
   // `force` = {rarity, stars} skips the drop table entirely (quest/daily
   // rewards with promised odds, e.g. Addy's daily).
   generate(mLvl, boost = 0, forceSlot = null, force = null) {
@@ -85,9 +124,10 @@ const Items = {
     const tt = tormentTier();
     // Star tier is gated by Torment band, not by the rarity roll (owner spec).
     let stars = 0;
+    const ct = this.cryptTier();
     if (force && force.stars != null) stars = force.stars;
-    else if (rarity === 4) stars = this.legendaryStars(tt);
-    else if (rarity === 6) stars = this.artifactStars();
+    else if (rarity === 4) stars = ct ? this.cryptLegendaryStars() : this.legendaryStars(tt);
+    else if (rarity === 6) stars = ct ? this.cryptArtifactStars(ct) : this.artifactStars();
     const R = RARITIES[rarity];
     const lvlScale = 1 + mLvl * 0.11;
     // Artifacts and starred legendaries roll a little hotter.
@@ -177,6 +217,8 @@ const Items = {
   // Torment (owner spec): legendary bands 0–3 below T16, an artifact-grade
   // roll (0–5★) at T16 — so quality varies from legendary up to artifact-5★.
   tieredStars() {
+    const ct = this.cryptTier();
+    if (ct) return this.cryptArtifactStars(ct);
     const tt = tormentTier();
     return tt >= 16 ? this.artifactStars() : this.legendaryStars(tt);
   },
@@ -1486,6 +1528,17 @@ const Items = {
 
   // Fold the derived stats into the live Player entity.
   apply() {
+    // THE FORGOTTEN CRYPT unlocks the moment SIX worn pieces are Artifacts
+    // (owner rule v1.7.6) — a big popup + a permanent achievement.
+    if (typeof Hero !== 'undefined' && !Hero.cryptUnlocked) {
+      const nArt = Object.values(Hero.equipped || {}).filter(it => it && it.rarity === 6).length;
+      if (nArt >= 6) {
+        Hero.cryptUnlocked = true;
+        Hero.save();
+        if (typeof AudioSys !== 'undefined') AudioSys.sfx('setdrop');
+        if (typeof UI !== 'undefined' && UI.open) UI.open('cryptUnlock');
+      }
+    }
     const p = Game.player;
     if (!p) return;
     const s = this.computeStats();
