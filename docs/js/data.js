@@ -325,11 +325,19 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.96-alpha';
+const GAME_VERSION = 'v1.6.97-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.97-alpha', date: 'July 2026',
+    notes: [
+      'Five more painted UI pieces (owner art): the red ✕ close plate everywhere a window closes, painted PLUS and MINUS plates (Settings font size, the Keys tab\'s add-binding, the Paragon spend buttons)',
+      'The little empty value plate now backs Settings\' value chips — camera view, loot text position & style, cursor size, corpse limit — and the Game creator / patch version row',
+      'Every skill, rune and passive now sits in the painted round frame: the in-game action bar, the Skills & Passives slots, and the full chooser (skills and rune stones alike)'
+    ]
+  },
   {
     v: 'v1.6.96-alpha', date: 'July 2026',
     notes: [

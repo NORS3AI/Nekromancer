@@ -1258,10 +1258,12 @@ const Screens = {
     const x = opts.x !== undefined ? opts.x : W - 26;
     const y = opts.y !== undefined ? opts.y : 26;
     const cb = opts.cb || (() => UI.close());
-    const img = (typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg('close') : null;
-    if (img) {
-      // The owner's painted red ✕ plate (UI kit).
-      ctx.drawImage(img, x - 17, y - 17, 34, 34);
+    const img = (typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg('close2') : null;
+    if (img && img.complete && img.naturalWidth) {
+      // The owner's painted red ✕ plate (v1.6.97 art — a wider notched
+      // frame, drawn at its own aspect).
+      const dh = 34, dw = dh * (img.width / img.height);
+      ctx.drawImage(img, x - dw / 2, y - dh / 2, dw, dh);
     } else {
       ctx.fillStyle = '#7a1220';
       ctx.beginPath(); ctx.arc(x, y, 16, 0, TAU); ctx.fill();
@@ -2739,9 +2741,13 @@ const Screens = {
       const selected = UI.sel.slotIdx === i;
       ctx.fillStyle = selected ? '#2e2a3a' : '#16121d';
       ctx.beginPath(); ctx.arc(bx, cyc, cr, 0, TAU); ctx.fill();
-      ctx.strokeStyle = selected ? '#6ff7c3' : SKILL_CATS[cat].color;
-      ctx.lineWidth = selected ? 3 : 2;
-      ctx.beginPath(); ctx.arc(bx, cyc, cr, 0, TAU); ctx.stroke();
+      // Painted round frame (v1.6.97 owner rule); selection keeps its glow ring.
+      const framed = UI.circleFrame(ctx, bx, cyc, cr);
+      if (selected || !framed) {
+        ctx.strokeStyle = selected ? '#6ff7c3' : SKILL_CATS[cat].color;
+        ctx.lineWidth = selected ? 3 : 2;
+        ctx.beginPath(); ctx.arc(bx, cyc, cr, 0, TAU); ctx.stroke();
+      }
       const id = Hero.loadout[i];
       if (id) drawSkillIcon(ctx, id, bx, cyc, cr - 3);
       else {
@@ -2848,9 +2854,12 @@ const Screens = {
       ctx.globalAlpha = locked ? 0.4 : 1;
       ctx.fillStyle = '#16121d';
       ctx.beginPath(); ctx.arc(sx, y + sR, sR, 0, TAU); ctx.fill();
-      ctx.strokeStyle = sel ? '#ffd76a' : catDef.color;
-      ctx.lineWidth = sel ? 3.5 : 1.5;
-      ctx.beginPath(); ctx.arc(sx, y + sR, sR, 0, TAU); ctx.stroke();
+      const sfr = UI.circleFrame(ctx, sx, y + sR, sR);
+      if (sel || !sfr) {
+        ctx.strokeStyle = sel ? '#ffd76a' : catDef.color;
+        ctx.lineWidth = sel ? 3.5 : 1.5;
+        ctx.beginPath(); ctx.arc(sx, y + sR, sR, 0, TAU); ctx.stroke();
+      }
       drawSkillIcon(ctx, id, sx, y + sR, sR - 3);
       ctx.globalAlpha = 1;
       // Unlock-level badge on top so the art never clips it.
@@ -2889,12 +2898,15 @@ const Screens = {
       const locked = rune.lvl && Hero.level < rune.lvl;
       const sel = UI.sel.chRune === rune.id;
       ctx.globalAlpha = locked ? 0.4 : 1;
+      const rfr = UI.circleFrame(ctx, rx, y + rR, rR);
       if (ri === 0) {
         // "No Rune" — a plain empty socket.
-        ctx.strokeStyle = sel ? '#6ff7c3' : '#6b5f80'; ctx.lineWidth = sel ? 3 : 1.5;
-        ctx.beginPath(); ctx.arc(rx, y + rR, rR - 2, 0, TAU); ctx.stroke();
+        if (sel || !rfr) {
+          ctx.strokeStyle = sel ? '#6ff7c3' : '#6b5f80'; ctx.lineWidth = sel ? 3 : 1.5;
+          ctx.beginPath(); ctx.arc(rx, y + rR, rR - 2, 0, TAU); ctx.stroke();
+        }
       } else {
-        drawRuneStone(ctx, rx, y + rR, rR, 0, runeBase + ri);
+        drawRuneStone(ctx, rx, y + rR, rR * 0.86, 0, runeBase + ri);
         if (sel) {
           ctx.strokeStyle = '#6ff7c3'; ctx.lineWidth = 3;
           ctx.beginPath(); ctx.arc(rx, y + rR, rR + 2, 0, TAU); ctx.stroke();
@@ -3007,9 +3019,12 @@ const Screens = {
       ctx.globalAlpha = locked ? 0.35 : 1;
       ctx.fillStyle = selected ? '#2e2a3a' : '#16121d';
       ctx.beginPath(); ctx.arc(bx, sy + 34, pcr, 0, TAU); ctx.fill();
-      ctx.strokeStyle = selected ? '#b06adf' : '#3a3448';
-      ctx.lineWidth = selected ? 3 : 2;
-      ctx.beginPath(); ctx.arc(bx, sy + 34, pcr, 0, TAU); ctx.stroke();
+      const pfr = UI.circleFrame(ctx, bx, sy + 34, pcr);
+      if (selected || !pfr) {
+        ctx.strokeStyle = selected ? '#b06adf' : '#3a3448';
+        ctx.lineWidth = selected ? 3 : 2;
+        ctx.beginPath(); ctx.arc(bx, sy + 34, pcr, 0, TAU); ctx.stroke();
+      }
       const id = Hero.passives[i];
       ctx.textAlign = 'center';
       if (locked) {
@@ -4174,8 +4189,10 @@ const Screens = {
       // A single "+" — enabled ONLY while viewing the unlocked category (rotation).
       const bw = 34, by = y + (rowH - 8) / 2 - 14;
       const canAdd = viewingActive && (Hero.np || 0) > 0 && !capped;
-      UI.btn(ctx, px + pw - 30 - bw, by, bw, 28, '+', canAdd ? () => Hero.spendParagon(k) : null,
-        { size: 17, disabled: !canAdd, border: '#8a6f2a', color: '#ffd76a' });
+      if (!UI.iconPlate(ctx, 'plus', px + pw - 30 - bw, by, bw, 28, canAdd ? () => Hero.spendParagon(k) : null,
+        { disabled: !canAdd, label: 'para+' }))
+        UI.btn(ctx, px + pw - 30 - bw, by, bw, 28, '+', canAdd ? () => Hero.spendParagon(k) : null,
+          { size: 17, disabled: !canAdd, border: '#8a6f2a', color: '#ffd76a' });
     });
     ctx.restore();
     if (!viewingActive && (Hero.np || 0) > 0) {
@@ -5416,7 +5433,7 @@ const Screens = {
     // Diablo-3-style tilted-down angle, more personal with monsters & bosses).
     ctx.textAlign = 'left'; ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
     ctx.fillText('Camera view', gx, gy + 14);
-    UI.btn(ctx, gx + colW - 118, gy + 1, 118, 26, Settings.g.viewMode === 'topdown' ? 'TOP DOWN' : "BIRD'S EYE", () => {
+    UI.chip(ctx, gx + colW - 118, gy + 1, 118, 26, Settings.g.viewMode === 'topdown' ? 'TOP DOWN' : "BIRD'S EYE", () => {
       Settings.g.viewMode = Settings.g.viewMode === 'topdown' ? 'birdseye' : 'topdown';
       Settings.save();
       UI.toast(Settings.g.viewMode === 'topdown' ? 'Top Down — closer, tilted (Diablo-style)' : "Bird's Eye — classic straight-down", '#6ff7c3');
@@ -5427,14 +5444,14 @@ const Screens = {
     const lpos = ['bottom', 'middle', 'top'];
     ctx.textAlign = 'left'; ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
     ctx.fillText('Loot text position', gx, gy + 14);
-    UI.btn(ctx, gx + colW - 118, gy + 1, 118, 26, (Settings.g.lootPos || 'bottom').toUpperCase(), () => {
+    UI.chip(ctx, gx + colW - 118, gy + 1, 118, 26, (Settings.g.lootPos || 'bottom').toUpperCase(), () => {
       Settings.g.lootPos = lpos[(lpos.indexOf(Settings.g.lootPos || 'bottom') + 1) % lpos.length];
       Settings.save();
     }, { size: 12, border: '#8a6f4a', color: '#ffd76a' });
     gy += 30;
     ctx.textAlign = 'left'; ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
     ctx.fillText('Loot text style', gx, gy + 14);
-    UI.btn(ctx, gx + colW - 118, gy + 1, 118, 26, (Settings.g.lootStyle || 'line') === 'arc' ? 'ARC' : 'STRAIGHT', () => {
+    UI.chip(ctx, gx + colW - 118, gy + 1, 118, 26, (Settings.g.lootStyle || 'line') === 'arc' ? 'ARC' : 'STRAIGHT', () => {
       Settings.g.lootStyle = (Settings.g.lootStyle || 'line') === 'line' ? 'arc' : 'line';
       Settings.save();
     }, { size: 12, border: '#8a6f4a', color: '#ffd76a' });
@@ -5444,7 +5461,7 @@ const Screens = {
     const cscale = clamp(Settings.g.cursorScale || 1, 1, 3);
     ctx.textAlign = 'left'; ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
     ctx.fillText('Bone cursor size', gx, gy + 14);
-    UI.btn(ctx, gx + colW - 118, gy + 1, 118, 26, cscale + '×', () => {
+    UI.chip(ctx, gx + colW - 118, gy + 1, 118, 26, cscale + '×', () => {
       Settings.g.cursorScale = (cscale % 3) + 1;   // 1 → 2 → 3 → 1
       Settings.save();
       if (typeof Game !== 'undefined') Game.applyCursor();
@@ -5456,14 +5473,20 @@ const Screens = {
     const fsz = clamp(Settings.g.fontSize || 13, 8, 22);
     ctx.textAlign = 'left'; ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
     ctx.fillText('Font size', gx, gy + 14);
-    UI.btn(ctx, gx + colW - 118, gy + 1, 34, 26, '–',
+    if (!UI.iconPlate(ctx, 'minus', gx + colW - 118, gy + 1, 34, 26,
       fsz > 8 ? () => { Settings.g.fontSize = clamp(fsz - 1, 8, 22); Settings.save(); } : null,
-      { size: 15, disabled: fsz <= 8, border: '#8a6f4a', color: '#ffd76a' });
+      { disabled: fsz <= 8, label: 'font-' }))
+      UI.btn(ctx, gx + colW - 118, gy + 1, 34, 26, '–',
+        fsz > 8 ? () => { Settings.g.fontSize = clamp(fsz - 1, 8, 22); Settings.save(); } : null,
+        { size: 15, disabled: fsz <= 8, border: '#8a6f4a', color: '#ffd76a' });
     ctx.textAlign = 'center'; ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#ffd76a';
     ctx.fillText(String(fsz), gx + colW - 59, gy + 15);
-    UI.btn(ctx, gx + colW - 34, gy + 1, 34, 26, '+',
+    if (!UI.iconPlate(ctx, 'plus', gx + colW - 34, gy + 1, 34, 26,
       fsz < 22 ? () => { Settings.g.fontSize = clamp(fsz + 1, 8, 22); Settings.save(); } : null,
-      { size: 15, disabled: fsz >= 22, border: '#8a6f4a', color: '#ffd76a' });
+      { disabled: fsz >= 22, label: 'font+' }))
+      UI.btn(ctx, gx + colW - 34, gy + 1, 34, 26, '+',
+        fsz < 22 ? () => { Settings.g.fontSize = clamp(fsz + 1, 8, 22); Settings.save(); } : null,
+        { size: 15, disabled: fsz >= 22, border: '#8a6f4a', color: '#ffd76a' });
     gy += 30;
 
     // Corpse limit — corpses linger until this many exist, then the oldest fade.
@@ -5473,7 +5496,7 @@ const Screens = {
     ctx.font = '12px Georgia';
     ctx.fillStyle = '#c9bfa8';
     ctx.fillText('Corpse limit', gx, gy + 14);
-    UI.btn(ctx, gx + colW - 118, gy + 1, 118, 26, curCap.toLocaleString(), () => {
+    UI.chip(ctx, gx + colW - 118, gy + 1, 118, 26, curCap.toLocaleString(), () => {
       Settings.g.corpseCap = caps[(caps.indexOf(curCap) + 1) % caps.length];
       Settings.save();
     }, { size: 12, border: '#8a6f4a', color: '#ffd76a' });
@@ -5492,10 +5515,8 @@ const Screens = {
     gy += 14;
     const abw = (colW - 8) / 2;
     const abh = compact ? 28 : 30;
-    UI.btn(ctx, gx, gy, abw, abh, 'Game creator', () => UI.open('devconfirm'),
-      { size: 11, border: '#6b5f80' });
-    UI.btn(ctx, gx + abw + 8, gy, abw, abh, GAME_VERSION, () => UI.open('patchnotes'),
-      { size: 11, border: '#57b894', color: '#6ff7c3' });
+    UI.chip(ctx, gx, gy, abw, abh, 'Game creator', () => UI.open('devconfirm'), { size: 11 });
+    UI.chip(ctx, gx + abw + 8, gy, abw, abh, GAME_VERSION, () => UI.open('patchnotes'), { size: 11 });
     ctx.restore();   // end scroll clip
 
     // How far the content overruns the panel body → the scrollable range.
@@ -5626,7 +5647,7 @@ const Screens = {
           ctx.font = 'bold 10px Georgia';
           const name = keyName(code);
           const chw = Math.min(58, ctx.measureText(name).width + 12);
-          if (cxp + chw > addX - 4) {
+          if (cxp + chw > addX - 18) {   // clear the painted ＋ plate
             ctx.fillStyle = '#6f6552'; ctx.font = '10px Georgia';
             ctx.fillText('…', cxp, y + rowH / 2);
             break;
@@ -5642,16 +5663,19 @@ const Screens = {
           cxp += chw + 4;
         }
       }
-      // ＋ add — enter listening mode for the next keypress.
-      ctx.fillStyle = 'rgba(28,40,32,0.95)';
-      rr(ctx, addX, chipY, 18, 18, 4); ctx.fill();
-      ctx.strokeStyle = '#3a7a4a'; ctx.lineWidth = 1;
-      rr(ctx, addX, chipY, 18, 18, 4); ctx.stroke();
-      ctx.fillStyle = '#6ff7c3'; ctx.font = 'bold 14px Georgia';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('+', addX + 9, chipY + 9);
+      // ＋ add — enter listening mode for the next keypress. Painted plus
+      // plate (v1.6.97 owner rule), procedural chip until the art loads.
+      if (!UI.iconPlate(ctx, 'plus', addX - 14, chipY, 32, 18, () => { UI.sel.rebindAction = id; }, { label: 'bind+' })) {
+        ctx.fillStyle = 'rgba(28,40,32,0.95)';
+        rr(ctx, addX, chipY, 18, 18, 4); ctx.fill();
+        ctx.strokeStyle = '#3a7a4a'; ctx.lineWidth = 1;
+        rr(ctx, addX, chipY, 18, 18, 4); ctx.stroke();
+        ctx.fillStyle = '#6ff7c3'; ctx.font = 'bold 14px Georgia';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('+', addX + 9, chipY + 9);
+        UI.register(addX, chipY, 18, 18, () => { UI.sel.rebindAction = id; });
+      }
       ctx.textAlign = 'left';
-      UI.register(addX, chipY, 18, 18, () => { UI.sel.rebindAction = id; });
     });
 
     UI.btnPlate2(ctx, px + 16, py + ph - 38, pw - 32, 28, 'RESET TO DEFAULTS', () => {
