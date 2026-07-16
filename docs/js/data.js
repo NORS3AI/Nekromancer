@@ -325,11 +325,21 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.97-alpha';
+const GAME_VERSION = 'v1.6.98-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.98-alpha', date: 'July 2026',
+    notes: [
+      'THE WISHING FOUNTAIN — stand at New Haven\'s fountain (a skeleton-hand medallion beckons) and toss 200 gold into the dark water for a random shrine blessing that lasts 10 minutes and follows you into the wilds',
+      'A new GOTHIC plate (owner art — thorned caps, twin skull crests) carries the ☰ MENU rows, APPLY & CANCEL in the skill chooser (Accept is now Apply), Delete Hero, and the artisans\' inner benches: salvage, craft toggles & slots, torch rows, gem chips, gear picks, pets/wings/themes, stash Deposit & Upgrade, and the Soul Crucible leaflet',
+      'The simple plate now backs the three town vendors\' wares, Lyssa\'s gamble table, the stash filter & sort chips, and the Golden Mirror transmute; the little empty plate carries torch CRAFT, individual repairs, stash WITHDRAW & SALVAGE, and Lukus\'s & Addy\'s DROP',
+      'Lukus\'s and Addy\'s quest rows breathe — taller rows, nothing squished; the chooser page count is gone',
+      'The Soul Crucible menu is wider (Forgotten Souls no longer cut off) and its street plate now floats above the cube'
+    ]
+  },
   {
     v: 'v1.6.97-alpha', date: 'July 2026',
     notes: [

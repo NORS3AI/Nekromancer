@@ -470,9 +470,12 @@ const UI = {
     // NPCs get a speech verb instead of a doorway verb (owner rule: walking up
     // to Lukus turns the button into "Talk to Lukus").
     const talk = !inside && it && (it.kind === 'lukus' || it.kind === 'addy' || it.kind === 'lyssa');
-    const lbl = inside ? 'EXIT' : talk ? 'TALK' : 'ENTER';
+    // The fountain gets its own medallion — a skeleton hand tossing a coin
+    // (v1.6.98 owner art).
+    const wish = !inside && it && it.kind === 'fountain';
+    const lbl = inside ? 'EXIT' : talk ? 'TALK' : wish ? 'WISH' : 'ENTER';
     const art = (typeof Game !== 'undefined' && Game.uiImg)
-      ? Game.uiImg(inside ? 'exit' : talk ? 'talk' : 'enter') : null;
+      ? Game.uiImg(inside ? 'exit' : talk ? 'talk' : wish ? 'fountain' : 'enter') : null;
     if (art) {
       // The owner's painted medallions: lit doorway = ENTER, dark = EXIT,
       // speech-bubble ring = TALK (NPCs).
@@ -652,6 +655,55 @@ const UI = {
       this.hits[this.hits.length - 1].label = label;
       if (o.tip !== false) this.tip(x, y, w, h, o.tipTitle || label, o.tip || '');
     }
+    return true;
+  },
+
+  // The GOTHIC plate (v1.6.98 owner art, `plate3.webp`): spiked thorn caps,
+  // a small skull crest at the top AND bottom of centre, cracked-stone bar.
+  // Same 5-slice discipline as the ornate plate — caps and crest stay 1:1,
+  // the two clean bar runs stretch; the crests overhang ~1.48× the button
+  // rect. Carries the ☰ MENU rows, artisan bench interiors, Apply/Cancel.
+  btnPlate3(ctx, x, y, w, h, label, cb, o = {}) {
+    const img = (typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg('plate3') : null;
+    if (!img || !img.complete || !img.naturalWidth) return this.btn(ctx, x, y, w, h, label, cb, o);
+    const mp = (typeof Input !== 'undefined' && !Input.touchMode) ? Input.mousePos : null;
+    const hover = !!(mp && cb && !o.disabled &&
+      mp.x >= x && mp.x <= x + w && mp.y >= y && mp.y <= y + h);
+    const sw = img.width, sh = img.height;
+    const capF = 0.14, sk0 = 0.45, sk1 = 0.55;
+    const dh = h * 1.48, dy = y - (dh - h) / 2;
+    const scale = dh / sh;
+    let capW = sw * capF * scale, skW = sw * (sk1 - sk0) * scale;
+    const k = Math.min(1, (w * 0.72) / (capW * 2 + skW));
+    capW *= k; skW *= k;
+    const runW = Math.max(0, (w - 2 * capW - skW) / 2);
+    if (o.disabled) ctx.globalAlpha = 0.45;
+    let dx = x;
+    ctx.drawImage(img, 0, 0, sw * capF, sh, dx, dy, capW, dh); dx += capW;
+    ctx.drawImage(img, sw * 0.20, 0, sw * 0.08, sh, dx, dy, runW, dh); dx += runW;
+    ctx.drawImage(img, sw * sk0, 0, sw * (sk1 - sk0), sh, dx, dy, skW, dh); dx += skW;
+    ctx.drawImage(img, sw * 0.72, 0, sw * 0.08, sh, dx, dy, runW, dh); dx += runW;
+    ctx.drawImage(img, sw * (1 - capF), 0, sw * capF, sh, dx, dy, capW, dh);
+    let size = o.size || 15;
+    const maxW = w - capW * 2 - 12;
+    const text = String(label).toUpperCase();
+    ctx.font = `600 ${size}px Cinzel, Georgia`;
+    while (size > 9 && ctx.measureText(text).width > maxW) {
+      size--; ctx.font = `600 ${size}px Cinzel, Georgia`;
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.fillText(text, x + w / 2, y + h / 2 + 2.5);
+    ctx.fillStyle = o.disabled ? '#6f6552' :
+      (hover ? '#f4e6c4' : (o.color || '#dcc9a2'));
+    ctx.fillText(text, x + w / 2, y + h / 2 + 1);
+    ctx.globalAlpha = 1;
+    if (!o.disabled && cb) {
+      this.register(x, y, w, h, cb);
+      this.hits[this.hits.length - 1].label = label;
+      if (o.tip !== false) this.tip(x, y, w, h, o.tipTitle || label, o.tip || '');
+    }
+    return true;
   },
 
   // Small painted ICON PLATES (v1.6.97 owner art): plus / minus etc. Drawn

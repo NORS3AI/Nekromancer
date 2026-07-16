@@ -80,6 +80,7 @@ const Screens = {
       case 'patchnotes': this.patchnotes(ctx, W, H); break;
       case 'season': this.season(ctx, W, H); break;
       case 'cube': this.cube(ctx, W, H); break;
+      case 'fountain': this.fountain(ctx, W, H); break;
       case 'recipes': this.recipes(ctx, W, H); break;
       case 'wilds': this.wilds(ctx, W, H); break;
       case 'storyacts': this.storyMenu(ctx, W, H); break;
@@ -220,11 +221,11 @@ const Screens = {
     }
 
     // Delete / cancel toggle, lower-left (its own row, clear of PLAY / YES-NO).
-    UI.btnPlate(ctx, 10, H - 30, 104, 22, delMode ? 'CANCEL' : 'DELETE HERO', () => {
+    UI.btnPlate3(ctx, 14, H - 42, 150, 28, delMode ? 'CANCEL' : 'DELETE HERO', () => {
       UI.sel.delMode = !delMode;
       UI.sel.delConfirm = undefined;
       if (!delMode) UI.sel.pick = null;   // entering delete mode clears the play selection
-    }, { size: 9, color: delMode ? '#c9bfa8' : '#e04a5a' });
+    }, { size: 11, color: delMode ? '#c9bfa8' : '#e04a5a' });
 
     // Still, low-lying fog drifts across the foreground.
     this.drawForegroundFog(ctx, W, H, t);
@@ -1060,8 +1061,9 @@ const Screens = {
     UI.panel(ctx, px, py, pw, ph, 'MENU');
     let y = py + 56;
     for (const [label, target] of rows) {
-      // Painted plate buttons (owner kit) — clean Trajan caps, no emoji.
-      UI.btnPlate(ctx, px + 16, y, pw - 32, btnH, label.replace(/^[^A-Z]*/, ''), () => UI.open(target),
+      // The gothic plate (v1.6.98 owner art) carries the menu rows; the
+      // ABANDON row below keeps the old ornate skull plate.
+      UI.btnPlate3(ctx, px + 16, y, pw - 32, btnH, label.replace(/^[^A-Z]*/, ''), () => UI.open(target),
         { size: H < 520 ? 13 : 15 });
       y += rowH;
     }
@@ -1315,9 +1317,10 @@ const Screens = {
 
   cube(ctx, W, H) {
     this.dim(ctx, W, H);
-    const pw = Math.min(440, W - 20);
+    // Wider + roomier (v1.6.98 owner rule — nothing gets cut off).
+    const pw = Math.min(520, W - 20);
     const px = W / 2 - pw / 2;
-    const ph = Math.min(H - 24, 470);
+    const ph = Math.min(H - 24, 490);
     const py = Math.max(12, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, 'SOUL CRUCIBLE');
 
@@ -1349,19 +1352,82 @@ const Screens = {
 
     // Extracted-power summary (the Golden Mirror now lives at the END of the
     // Instruction Leaflet, not here).
-    let y = py + 194;
+    let y = py + 196;
     const rowW = pw - 40, rx = px + 20;
     const active = (Hero.cubeActive || []).length, banked = (Hero.cubePowers || []).length;
-    UI.panel(ctx, rx, y, rowW, 56);
+    UI.panel(ctx, rx, y, rowW, 62);
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#ff8c2a';
-    ctx.fillText('Legendary powers extracted: ' + banked, rx + 14, y + 20);
+    ctx.fillText('Legendary powers extracted: ' + banked, rx + 16, y + 22);
     ctx.font = '11px Georgia'; ctx.fillStyle = active ? '#ffb86a' : '#9a9080';
-    ctx.fillText(active + ' / 4 powers active — swap them in the leaflet.', rx + 14, y + 40);
-    y += 68;
+    ctx.fillText(active + ' / 4 powers active — swap them in the leaflet.', rx + 16, y + 42);
+    y += 80;
 
-    UI.btn(ctx, rx, y, rowW, 44, 'INSTRUCTION LEAFLET', () => { UI.open('recipes'); UI.sel.scrollY = 0; },
-      { size: 15, color: '#e0a24a', border: '#8a6f4a' });
+    UI.btnPlate3(ctx, rx, y, rowW, 44, 'INSTRUCTION LEAFLET', () => { UI.open('recipes'); UI.sel.scrollY = 0; },
+      { size: 15, color: '#e0a24a' });
+  },
+
+  // THE WISHING FOUNTAIN (v1.6.98 owner request): stand at New Haven's
+  // fountain and toss 200 gold into the dark water for a RANDOM shrine
+  // blessing that lasts 10 real minutes — it follows you into the wilds
+  // (Game.fountainBuff, copied onto each fresh Player in startLand).
+  FOUNTAIN_COST: 200,
+  fountain(ctx, W, H) {
+    this.dim(ctx, W, H);
+    const pw = Math.min(420, W - 24);
+    const px = W / 2 - pw / 2;
+    const ph = Math.min(H - 24, 400);
+    const py = Math.max(10, H / 2 - ph / 2);
+    UI.panel(ctx, px, py, pw, ph, 'THE FOUNTAIN');
+
+    // The skeleton-hand medallion (owner art), gently bobbing.
+    const art = Game.uiImg && Game.uiImg('fountain');
+    const my = py + 122;
+    if (art && art.complete && art.naturalWidth) {
+      const d = 128 + Math.sin(Game.time * 1.4) * 3;
+      ctx.drawImage(art, W / 2 - d / 2, my - d / 2, d, d);
+    }
+
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.fillText(this.fitText(ctx, 'Coins glint far below the dark water. The dead are listening.', pw - 40), W / 2, py + 208);
+
+    let y = py + 232;
+    const fb = Game.fountainBuff;
+    const names = { empowered: 'Empowered — essence surges', frenzied: 'Frenzied — +25% damage', blessed: 'Blessed — −25% damage taken', fortune: 'Fortune — +100% gold find' };
+    if (fb && fb.t > 0) {
+      const mins = Math.floor(fb.t / 60), secs = Math.floor(fb.t % 60);
+      ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#6ff7c3';
+      ctx.fillText(this.fitText(ctx, '✦ ' + names[fb.buff] + '  ·  ' + mins + ':' + String(secs).padStart(2, '0') + ' left', pw - 36), W / 2, y);
+    } else {
+      ctx.font = '11px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.fillText('No blessing upon you.', W / 2, y);
+    }
+    y += 26;
+
+    const afford = Hero.gold >= this.FOUNTAIN_COST;
+    // The toss rides the little empty plate (owner rule: second image plate).
+    UI.chip(ctx, px + 30, y, pw - 60, 38,
+      afford ? 'TOSS 200 GOLD' : 'NEED 200 GOLD',
+      afford ? () => {
+        Hero.gold -= this.FOUNTAIN_COST;
+        const buff = pick(['empowered', 'frenzied', 'blessed', 'fortune']);
+        Game.fountainBuff = { buff, t: 600 };
+        if (Game.player) {
+          Game.player.shrine = { buff, t: 600 };
+          if (buff === 'empowered') Game.player.essence = Game.player.maxEssence;
+        }
+        Hero.save();
+        AudioSys.sfx('shrine');
+        UI.toast('The water stirs… ' + names[buff] + ' (10 min)', '#6ff7c3');
+        Particles.ring(W / 2, my, 80, '#8fd0ff', 5, 0.6);
+      } : null,
+      { size: 13, disabled: !afford, color: '#ffd76a' });
+    y += 48;
+    ctx.font = '10px Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.fillText(this.fitText(ctx, 'A random shrine blessing · lasts 10 minutes · follows you into the wilds', pw - 36), W / 2, y);
+    ctx.textAlign = 'right'; ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#ffd76a';
+    ctx.fillText(Hero.gold.toLocaleString() + ' g', px + pw - 18, py + 30);
   },
 
   // The Instruction Leaflet: Instruction of Rathma (extract legendary powers into
@@ -1370,7 +1436,8 @@ const Screens = {
     this.dim(ctx, W, H);
     // Tablet/desktop: scale the leaflet's text + row spacing up via k.
     const big = W >= 760, k = big ? 1.32 : 1;
-    const pw = Math.min(big ? 600 : 460, W - 20);
+    // Wider (v1.6.98 owner rule — Forgotten Souls was getting cut off).
+    const pw = Math.min(big ? 640 : 520, W - 20);
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 24, big ? 580 : 500);
     const py = Math.max(12, H / 2 - ph / 2);
@@ -1410,13 +1477,20 @@ const Screens = {
     else y += 26 * k;
     const c = Items.extractCost();
     ctx.font = (10 * k) + 'px Georgia';
-    if (vis(y, 14 * k)) {
+    {
+      // Cost tokens FLOW-WRAP so the last one (Forgotten Souls) is never
+      // clipped on narrow panels (owner report).
       let cxx = rx;
       for (const [mk, n] of Object.entries(c)) {
         const have = (Hero.mats[mk] || 0) >= n;
-        ctx.fillStyle = have ? MATERIALS[mk].color : '#a05a5a';
         const txt = n + ' ' + MATERIALS[mk].name;
-        ctx.fillText(txt, cxx, y + 8 * k); cxx += ctx.measureText(txt).width + 12;
+        const tw2 = ctx.measureText(txt).width;
+        if (cxx > rx && cxx + tw2 > rx + rw) { cxx = rx; y += 14 * k; }
+        if (vis(y, 14 * k)) {
+          ctx.fillStyle = have ? MATERIALS[mk].color : '#a05a5a';
+          ctx.fillText(txt, cxx, y + 8 * k);
+        }
+        cxx += tw2 + 12;
       }
     }
     y += 20 * k;
@@ -1485,11 +1559,11 @@ const Screens = {
       ctx.font = (10 * k) + 'px Georgia'; ctx.fillStyle = '#9a9080';
       if (vis(y, 14 * k)) ctx.fillText('Transmute to auto-collect every purple orb.', rx, y + 10 * k);
       y += 18 * k;
-      if (vis(y, 28 * k)) UI.btn(ctx, rx, y, rw, 26 * k, 'TRANSMUTE GOLDEN MIRROR', () => {
+      if (vis(y, 28 * k)) UI.btnPlate2(ctx, rx, y, rw, 26 * k, 'TRANSMUTE GOLDEN MIRROR', () => {
         Hero.goldenMirror = false; Hero.orbAutoPickup = true; Hero.save();
         UI.toast('The Golden Mirror dissolves — purple orbs now come to you', '#ffd76a');
         AudioSys.sfx('level');
-      }, { size: 12 * k, color: '#ffd76a', border: '#8a6f2a' });
+      }, { size: 12 * k, color: '#ffd76a' });
       y += 32 * k;
     } else {
       ctx.font = 'italic ' + (10 * k) + 'px Georgia'; ctx.fillStyle = '#57503f';
@@ -2836,8 +2910,7 @@ const Screens = {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = 'bold 17px Georgia'; ctx.fillStyle = catDef.color;
     ctx.fillText(catDef.name.toUpperCase(), W / 2, selY + 15);
-    ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
-    ctx.fillText((catIdx + 1) + ' / ' + LOADOUT_CATS.length, W / 2, selY + 30);
+
 
     // ---- section 1: skills of this category ----
     let y = selY + 46;
@@ -2961,7 +3034,7 @@ const Screens = {
     // ---- accept / cancel ----
     const skillLocked = chSkill && chSkill.lvl > Hero.level;
     const bw = (pw - 44) / 2;
-    UI.btn(ctx, px + 16, y, bw, 40, skillLocked ? 'LOCKED — LVL ' + chSkill.lvl : 'ACCEPT',
+    UI.btnPlate3(ctx, px + 16, y, bw, 40, skillLocked ? 'LOCKED — LVL ' + chSkill.lvl : 'APPLY',
       skillLocked ? null : () => {
         const elective = typeof Settings !== 'undefined' && Settings.g && Settings.g.electiveMode;
         // Elective: write to the slot the chooser was opened from (any category).
@@ -2982,7 +3055,7 @@ const Screens = {
         UI.sel.tab = 'actives';
         UI.sel.slotIdx = targetSlot;
       }, { size: 14, disabled: skillLocked, color: '#6ff7c3', border: '#3a7a6a' });
-    UI.btn(ctx, px + 28 + bw, y, bw, 40, 'CANCEL', () => {
+    UI.btnPlate3(ctx, px + 28 + bw, y, bw, 40, 'CANCEL', () => {
       const backSlot = UI.sel.chSlot != null ? UI.sel.chSlot : catIdx;
       UI.open('skills');
       UI.sel.tab = 'actives';
@@ -3150,14 +3223,14 @@ const Screens = {
     const q = (pw - 32 - 3 * 8) / 2;
     const epicLvl = Items.BULK_SALVAGE_SMITH.epic, legLvl = Items.BULK_SALVAGE_SMITH.legendary;
     const epicOk = Hero.artisans.smith >= epicLvl, legOk = Hero.artisans.smith >= legLvl;
-    UI.btn(ctx, px + 16, 138, q, 44, 'COMMON + MAGIC', () => Items.salvageJunk(),
-      { size: 12, border: '#8a6f4a', color: '#ffb43a' });
-    UI.btn(ctx, px + 24 + q, 138, q, 44, 'RARES', () => Items.salvageRares(),
-      { size: 12, border: '#8a6f4a', color: '#ffd76a' });
-    UI.btn(ctx, px + 16, 190, q, 44, epicOk ? 'EPICS' : 'EPICS  (smith ' + epicLvl + ')', () => Items.salvageEpics(),
-      { size: 12, border: '#7a4a8f', color: epicOk ? '#b06adf' : '#6f5a7a', disabled: !epicOk });
-    UI.btn(ctx, px + 24 + q, 190, q, 44, legOk ? 'LEGENDARIES' : 'LEGENDARIES  (smith ' + legLvl + ')', () => Items.salvageLegendaries(),
-      { size: 12, border: '#8a5a2a', color: legOk ? '#ff8c2a' : '#7a5f45', disabled: !legOk });
+    UI.btnPlate3(ctx, px + 16, 138, q, 44, 'COMMON + MAGIC', () => Items.salvageJunk(),
+      { size: 12, color: '#ffb43a' });
+    UI.btnPlate3(ctx, px + 24 + q, 138, q, 44, 'RARES', () => Items.salvageRares(),
+      { size: 12, color: '#ffd76a' });
+    UI.btnPlate3(ctx, px + 16, 190, q, 44, epicOk ? 'EPICS' : 'EPICS  (smith ' + epicLvl + ')', () => Items.salvageEpics(),
+      { size: 12, color: epicOk ? '#b06adf' : '#6f5a7a', disabled: !epicOk });
+    UI.btnPlate3(ctx, px + 24 + q, 190, q, 44, legOk ? 'LEGENDARIES' : 'LEGENDARIES  (smith ' + legLvl + ')', () => Items.salvageLegendaries(),
+      { size: 12, color: legOk ? '#ff8c2a' : '#7a5f45', disabled: !legOk });
     ctx.textAlign = 'center'; ctx.font = '10px Georgia'; ctx.fillStyle = '#6f6552';
     ctx.fillText(this.fitText(ctx, 'Single items always salvage free from the Inventory wheel, any rarity.', pw - 24), px + pw / 2, 258);
   },
@@ -3199,9 +3272,9 @@ const Screens = {
         ctx.font = '10px Georgia'; ctx.fillStyle = broken ? '#e04a5a' : '#9a9080';
         ctx.fillText((broken ? 'BROKEN — ' : '') + 'Durability ' + it.dur + '/' + it.durMax, px + 22, yy + 26);
         const cost = Items.repairCost(it);
-        UI.btn(ctx, px + pw - 118, yy + 5, 100, 26, cost + 'g',
+        UI.chip(ctx, px + pw - 118, yy + 5, 100, 26, cost + 'g',
           Hero.gold >= cost ? () => Items.repairItem(it) : null,
-          { size: 11, disabled: Hero.gold < cost, border: '#57b894', color: '#6ff7c3' });
+          { size: 11, disabled: Hero.gold < cost, color: '#a8d9be' });
       }
       c += 42;
     }
@@ -3225,13 +3298,11 @@ const Screens = {
     if (UI.sel.master === undefined) UI.sel.master = false;
     const half = (pw - 40) / 2;
     const stdCost = Items.craftCost(false), mwCost = Items.craftCost(true);
-    UI.btn(ctx, px + 16, 92, half, 42, '', () => { UI.sel.master = false; },
-      { bg: !UI.sel.master ? 'rgba(60,52,78,0.95)' : undefined, border: !UI.sel.master ? '#c9bfa8' : undefined });
-    UI.btn(ctx, px + 24 + half, 92, half, 42, '', () => { UI.sel.master = true; },
-      { bg: UI.sel.master ? 'rgba(70,54,30,0.95)' : undefined, border: UI.sel.master ? '#ffd76a' : undefined });
-    ctx.textAlign = 'center'; ctx.font = 'bold 12px Georgia';
-    ctx.fillStyle = '#c9bfa8'; ctx.fillText('STANDARD', px + 16 + half / 2, 106);
-    ctx.fillStyle = '#ffd76a'; ctx.fillText('MASTERWORK', px + 24 + half * 1.5, 106);
+    UI.btnPlate3(ctx, px + 16, 92, half, 42, '', () => { UI.sel.master = false; });
+    UI.btnPlate3(ctx, px + 24 + half, 92, half, 42, '', () => { UI.sel.master = true; });
+    ctx.textAlign = 'center'; ctx.font = '600 12px Cinzel, Georgia';
+    ctx.fillStyle = !UI.sel.master ? '#f0dcae' : '#8a8070'; ctx.fillText('STANDARD', px + 16 + half / 2, 106);
+    ctx.fillStyle = UI.sel.master ? '#ffd76a' : '#8a8070'; ctx.fillText('MASTERWORK', px + 24 + half * 1.5, 106);
     ctx.font = '9px Georgia'; ctx.fillStyle = '#8a8070';
     ctx.fillText(this.fitText(ctx, this.costLabel(stdCost), half - 12), px + 16 + half / 2, 122);
     ctx.fillText(this.fitText(ctx, this.costLabel(mwCost), half - 12), px + 24 + half * 1.5, 122);
@@ -3249,8 +3320,8 @@ const Screens = {
     slots.forEach((slot, i) => {
       const bx = px + 16 + (i % cols) * (bw + 8);
       const by = 162 + Math.floor(i / cols) * 40;
-      UI.btn(ctx, bx, by, bw, 34, ITEM_SLOTS[slot].label, () => Items.craft(slot, UI.sel.master),
-        { size: 11, disabled: !afford, border: UI.sel.master ? '#8a6f4a' : undefined });
+      UI.btnPlate3(ctx, bx, by, bw, 34, ITEM_SLOTS[slot].label, () => Items.craft(slot, UI.sel.master),
+        { size: 11, disabled: !afford });
     });
     ctx.textAlign = 'center'; ctx.font = '10px Georgia'; ctx.fillStyle = '#6f6552';
     ctx.fillText('Crafted gear goes to your bag.', px + pw / 2, 162 + rows * 40 + 12);
@@ -3325,11 +3396,14 @@ const Screens = {
       if (y + rowH - 8 < listTop || y > listBot) return;   // off view: skip draw + hit
       const T = TORCH_TYPES[type];
       const can = Items.canCraftTorch(type);
-      ctx.fillStyle = 'rgba(28,24,38,0.92)';
-      rr(ctx, px + 16, y, pw - 32, rowH - 8, 8); ctx.fill();
-      ctx.strokeStyle = can ? T.tierColor : '#3a3448';
-      ctx.lineWidth = 1.5;
-      rr(ctx, px + 16, y, pw - 32, rowH - 8, 8); ctx.stroke();
+      // Torch rows ride the gothic plate (v1.6.98 owner rule).
+      if (!UI.btnPlate3(ctx, px + 16, y, pw - 32, rowH - 8, '', null)) {
+        ctx.fillStyle = 'rgba(28,24,38,0.92)';
+        rr(ctx, px + 16, y, pw - 32, rowH - 8, 8); ctx.fill();
+        ctx.strokeStyle = can ? T.tierColor : '#3a3448';
+        ctx.lineWidth = 1.5;
+        rr(ctx, px + 16, y, pw - 32, rowH - 8, 8); ctx.stroke();
+      }
       // Name + rarity-tier badge. Colour = the RARITY colour (matches inventory).
       ctx.textAlign = 'left';
       ctx.font = 'bold 13px Georgia';
@@ -3352,9 +3426,9 @@ const Screens = {
         rx += ctx.measureText(label).width + 12;
       }
       // Craft button.
-      UI.btn(ctx, px + pw - 118, y + 12, 92, rowH - 32, can ? 'CRAFT' : 'NEED MATS',
+      UI.chip(ctx, px + pw - 118, y + 12, 92, rowH - 32, can ? 'CRAFT' : 'NEED MATS',
         can ? () => Items.craftTorch(type) : null,
-        { size: 11, disabled: !can, border: T.tierColor, color: can ? T.tierColor : '#5c5569' });
+        { size: 11, disabled: !can, color: can ? T.tierColor : '#5c5569' });
     });
     ctx.restore();
     if (scrollMax > 0) {
@@ -3368,8 +3442,8 @@ const Screens = {
     ctx.fillStyle = '#6f6552';
     ctx.fillText(this.fitText(ctx, 'Forged torches go to your inventory (no bag slot). Equip one from the Inventory wheel.', pw - 24),
       px + pw / 2, footTop + 8);
-    UI.btn(ctx, px + 16, footTop + 18, pw - 32, 26, '«  BACK TO FORGE', () => UI.open('smith'),
-      { size: 11, border: '#6b5f80' });
+    UI.btnPlate3(ctx, px + 16, footTop + 18, pw - 32, 26, 'BACK TO FORGE', () => UI.open('smith'),
+      { size: 11 });
   },
 
   // JEWELER — art-first hub with five gem benches (owner rule).
@@ -3391,15 +3465,15 @@ const Screens = {
     // Filter chips (All + 5 types) and a sort-direction toggle.
     const types = Object.keys(GEM_TYPES);
     const chipW = (pw - 32 - 64) / (types.length + 1);
-    UI.btn(ctx, px + 16, top, chipW - 4, 24, 'All', () => { UI.sel.gemFilter = null; UI.sel.gemKey = null; },
-      { size: 9, bg: !UI.sel.gemFilter ? 'rgba(70,44,90,0.95)' : undefined });
+    UI.btnPlate3(ctx, px + 16, top, chipW - 4, 24, 'All', () => { UI.sel.gemFilter = null; UI.sel.gemKey = null; },
+      { size: 9, color: !UI.sel.gemFilter ? '#f0dcae' : '#8a8070' });
     types.forEach((t, ti) => {
       const on = UI.sel.gemFilter === t;
-      UI.btn(ctx, px + 16 + (ti + 1) * chipW, top, chipW - 4, 24, GEM_TYPES[t].name.slice(0, 4),
+      UI.btnPlate3(ctx, px + 16 + (ti + 1) * chipW, top, chipW - 4, 24, GEM_TYPES[t].name.slice(0, 4),
         () => { UI.sel.gemFilter = on ? null : t; UI.sel.gemKey = null; },
-        { size: 9, color: GEM_TYPES[t].color, bg: on ? 'rgba(70,44,90,0.95)' : undefined, border: on ? GEM_TYPES[t].color : undefined });
+        { size: 9, color: on ? GEM_TYPES[t].color : '#8a8070' });
     });
-    UI.btn(ctx, px + pw - 74, top, 58, 24, UI.sel.gemSortAsc ? '▲ tier' : '▼ tier',
+    UI.btnPlate3(ctx, px + pw - 74, top, 58, 24, UI.sel.gemSortAsc ? '▲ tier' : '▼ tier',
       () => { UI.sel.gemSortAsc = !UI.sel.gemSortAsc; }, { size: 9 });
 
     const groups = {};
@@ -3533,8 +3607,8 @@ const Screens = {
     y += 8;
     for (const t of Object.keys(GEM_TYPES)) {
       const gm = GEM_TYPES[t];
-      UI.btn(ctx, px + 16, y, pw - 32, 40, '', afford ? () => Items.craftGem(t) : null,
-        { disabled: !afford, border: gm.color });
+      UI.btnPlate3(ctx, px + 16, y, pw - 32, 40, '', afford ? () => Items.craftGem(t) : null,
+        { disabled: !afford });
       drawGemIcon(ctx, t, spec.tier, px + 38, y + 20, 12);
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 13px Georgia'; ctx.fillStyle = gm.color;
@@ -3697,8 +3771,7 @@ const Screens = {
     let y = 92;
     const row = (label, desc, id, color) => {
       const on = current === id;
-      UI.btn(ctx, px + 16, y, pw - 32, 44, '', () => onPick(id),
-        { bg: on ? 'rgba(60,52,78,0.95)' : undefined, border: on ? (color || '#6ff7c3') : undefined });
+      UI.btnPlate3(ctx, px + 16, y, pw - 32, 44, '', () => onPick(id));
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 13px Georgia'; ctx.fillStyle = color || '#e8e0cc';
       ctx.fillText((on ? '✔  ' : '') + label, px + 30, y + 15);
@@ -3770,7 +3843,7 @@ const Screens = {
       for (const slot of slots) {
         const it = Hero.equipped[slot];
         if (y + rowBoxH > listTop && y < listBot) {   // only draw visible rows
-          UI.btn(ctx, px + 16, y, pw - 32, rowBoxH, '', it ? () => {
+          UI.btnPlate3(ctx, px + 16, y, pw - 32, rowBoxH, '', it ? () => {
             UI.sel.item = it;
             UI.sel.affix = null;
             UI.sel.scrollY = 0;   // detail view starts at the top
@@ -4290,30 +4363,25 @@ const Screens = {
     const gs = n => n >= 1e6 ? (n / 1e6) + 'm' : n >= 1000 ? (n / 1000) + 'k' : '' + n;
     const upCost = Hero.stashUpgradeCost();
     const half = (pw - 8) / 2;
-    UI.btn(ctx, px, y, half, 26, 'DEPOSIT BAG (' + Hero.bagUsed() + ')',
+    UI.btnPlate3(ctx, px, y, half, 26, 'DEPOSIT BAG (' + Hero.bagUsed() + ')',
       Hero.bagUsed() ? () => Items.depositAll() : null,
-      { size: 10, disabled: !Hero.bagUsed(), border: '#57b894', color: '#6ff7c3' });
-    UI.btn(ctx, px + half + 8, y, half, 26,
+      { size: 10, disabled: !Hero.bagUsed(), color: '#a8d9be' });
+    UI.btnPlate3(ctx, px + half + 8, y, half, 26,
       upCost === null ? 'STASH MAXED'
         : 'UPGRADE → ' + STASH_PER_SLOT[Hero.stashTier + 1].toLocaleString() + ' (' + gs(upCost) + ' g)',
       upCost !== null && Hero.gold >= upCost ? () => Hero.buyStashUpgrade() : null,
-      { size: 9, disabled: upCost === null || Hero.gold < upCost, border: '#8a6f4a', color: '#ffd76a' });
+      { size: 9, disabled: upCost === null || Hero.gold < upCost, color: '#ffd76a' });
     y += 34;
 
     // Filter chips (flow-wrapped): ALL + one per group.
     let chX = px, chY = y;
+    // Filter/sort chips ride the SIMPLE plate (v1.6.98 owner rule).
     const chip = (label, on, cb, hue) => {
       ctx.font = 'bold 9px Georgia';
-      const cw = ctx.measureText(label).width + 16;
+      const cw = ctx.measureText(label).width + 26;
       if (chX + cw > px + pw + 1) { chX = px; chY += 24; }
-      ctx.fillStyle = on ? 'rgba(52,66,102,0.95)' : 'rgba(28,24,38,0.9)';
-      rr(ctx, chX, chY, cw, 20, 10); ctx.fill();
-      ctx.strokeStyle = on ? (hue || '#8fb0e8') : '#3a3448'; ctx.lineWidth = 1.2;
-      rr(ctx, chX, chY, cw, 20, 10); ctx.stroke();
-      ctx.fillStyle = on ? '#dbeafe' : '#9a9080';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(label, chX + cw / 2, chY + 10.5);
-      UI.register(chX, chY, cw, 20, cb);
+      UI.btnPlate2(ctx, chX, chY, cw, 20, label, cb,
+        { size: 9, color: on ? (hue || '#f0dcae') : '#8a8070', tip: false });
       chX += cw + 6;
     };
     const setFilter = f => { UI.sel.stashFilter = f; UI.sel.scrollY = 0; UI.sel.stashItem = null; };
@@ -4387,12 +4455,12 @@ const Screens = {
           ctx.fillText(this.fitText(ctx, ITEM_SLOTS[it.slot].label + ' · lvl ' + it.mLvl + '  ·  tap to inspect', pw - bw * 2 - 26), px + 10, yy + 30);
           // Tap the card area (left of the buttons) to inspect the item.
           UI.register(px, yy, pw - bw * 2 - 16, 38, () => { UI.sel.stashItem = expanded ? null : it; });
-          UI.btn(ctx, px + pw - bw * 2 - 12, yy + 5, bw, 28, 'WITHDRAW',
-            () => Items.fromStash(it), { size: 9, border: '#57b894', color: '#6ff7c3' });
+          UI.chip(ctx, px + pw - bw * 2 - 12, yy + 5, bw, 28, 'WITHDRAW',
+            () => Items.fromStash(it), { size: 9, color: '#a8d9be' });
           const canSalv = Items.canSalvage(it);
-          UI.btn(ctx, px + pw - bw - 6, yy + 5, bw, 28, 'SALVAGE',
+          UI.chip(ctx, px + pw - bw - 6, yy + 5, bw, 28, 'SALVAGE',
             canSalv ? () => { const k = Hero.stash.indexOf(it); if (k >= 0) { Hero.stash.splice(k, 1); Items.grantSalvage(it); Hero.saveStash(); Hero.save(); if (UI.sel.stashItem === it) UI.sel.stashItem = null; } } : null,
-            { size: 9, disabled: !canSalv, border: '#8a6f4a', color: '#ffb43a' });
+            { size: 9, disabled: !canSalv, color: '#ffb43a' });
         }
         c += 42;
         // Expanded inspect card: full stats + upgrade arrows vs what's equipped.
@@ -4540,20 +4608,21 @@ const Screens = {
       const def = qp.def, milestone = def.tid === 'reach';
       const expanded = UI.sel.qInfo === entry.idx;
       const yy = c - scrollY;
-      if (vis(c, 46)) {
+      // Roomier rows (v1.6.98 owner rule — "so it doesn't look so squished").
+      if (vis(c, 54)) {
         ctx.fillStyle = expanded ? 'rgba(46,42,58,0.8)' : 'rgba(28,24,38,0.6)';
-        rr(ctx, lx - 4, yy, lw + 8, 42, 6); ctx.fill();
+        rr(ctx, lx - 4, yy, lw + 8, 50, 6); ctx.fill();
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
         ctx.font = 'bold 11px Georgia'; ctx.fillStyle = milestone ? '#b06adf' : '#e8e0cc';
-        ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name, lw - 102), lx + 4, yy + 14);
-        UI.bar(ctx, lx + 4, yy + 21, lw - 106, 9, qp.prog / def.need, '#221d2e', qp.done ? '#4ade80' : '#8a6f2a');
+        ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name, lw - 108), lx + 4, yy + 16);
+        UI.bar(ctx, lx + 4, yy + 25, lw - 112, 9, qp.prog / def.need, '#221d2e', qp.done ? '#4ade80' : '#8a6f2a');
         ctx.font = '8px Georgia'; ctx.fillStyle = '#9a9080';
-        ctx.fillText(qp.prog + ' / ' + def.need + '  ·  tap for details', lx + 4, yy + 39);
+        ctx.fillText(qp.prog + ' / ' + def.need + '  ·  tap for details', lx + 4, yy + 45);
         // Tap the row body (left of the buttons) for full details + reward.
-        UI.register(lx - 4, yy, lw - 96, 42, () => { UI.sel.qInfo = expanded ? null : entry.idx; });
+        UI.register(lx - 4, yy, lw - 102, 50, () => { UI.sel.qInfo = expanded ? null : entry.idx; });
         if (qp.done) {
           // Turn in right from the journal row.
-          UI.btn(ctx, lx + lw - 94, yy + 4, 90, 34, '✔ TURN IN', () => {
+          UI.btn(ctx, lx + lw - 94, yy + 8, 90, 34, '✔ TURN IN', () => {
             const rw = Hero.completeQuest(entry);
             if (!rw) return;
             if (rw.gemGot) UI.toast('Lukus presses a gem into your hand: ' + gemName(rw.gemGot), GEM_TYPES[rw.gemGot.type].color);
@@ -4562,13 +4631,14 @@ const Screens = {
           }, { size: 10, border: '#3a7a4a', color: '#4ade80' });
         } else if (!def.abs) {
           // Dropping returns the quest to Lukus's queue — nothing is lost.
-          UI.btnPlate2(ctx, lx + lw - 50, yy + 10, 46, 22, 'DROP', () => {
+          // The little empty plate carries DROP (v1.6.98 owner rule).
+          UI.chip(ctx, lx + lw - 56, yy + 13, 52, 24, 'DROP', () => {
             Hero.abandonQuest(entry);
             UI.toast('Returned to Lukus: ' + def.name, '#9a9080');
-          }, { size: 8, border: '#7a4a4a', color: '#c98a8a' });
+          }, { size: 9, color: '#c98a8a' });
         }
       }
-      c += 50;
+      c += 58;
       // Expanded details: the full deed + the EXACT reward it will pay
       // (compact reward text WRAPS onto two lines — never runs off, owner rule).
       if (expanded) {
@@ -4820,18 +4890,18 @@ const Screens = {
         const def = qp.def;
         const expanded = UI.sel.qInfo === 'A' + entry.idx;
         const yy = c - scrollY;
-        if (vis(c, 46)) {
+        if (vis(c, 54)) {
           ctx.fillStyle = expanded ? 'rgba(46,42,58,0.8)' : 'rgba(28,24,38,0.6)';
-          rr(ctx, lx - 4, yy, lw + 8, 42, 6); ctx.fill();
+          rr(ctx, lx - 4, yy, lw + 8, 50, 6); ctx.fill();
           ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
           ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#e8e0cc';
-          ctx.fillText(this.fitText(ctx, def.name, lw - 102), lx + 4, yy + 14);
-          UI.bar(ctx, lx + 4, yy + 21, lw - 106, 9, qp.prog / def.need, '#221d2e', qp.done ? '#4ade80' : '#7a4a8f');
+          ctx.fillText(this.fitText(ctx, def.name, lw - 108), lx + 4, yy + 16);
+          UI.bar(ctx, lx + 4, yy + 25, lw - 112, 9, qp.prog / def.need, '#221d2e', qp.done ? '#4ade80' : '#7a4a8f');
           ctx.font = '8px Georgia'; ctx.fillStyle = '#9a9080';
-          ctx.fillText(qp.prog + ' / ' + def.need + '  ·  tap for details', lx + 4, yy + 39);
-          UI.register(lx - 4, yy, lw - 96, 42, () => { UI.sel.qInfo = expanded ? null : 'A' + entry.idx; });
+          ctx.fillText(qp.prog + ' / ' + def.need + '  ·  tap for details', lx + 4, yy + 45);
+          UI.register(lx - 4, yy, lw - 102, 50, () => { UI.sel.qInfo = expanded ? null : 'A' + entry.idx; });
           if (qp.done) {
-            UI.btn(ctx, lx + lw - 94, yy + 4, 90, 34, '✔ TURN IN', () => {
+            UI.btn(ctx, lx + lw - 94, yy + 8, 90, 34, '✔ TURN IN', () => {
               const rw = Hero.completeQuest(entry);
               if (!rw) return;
               if (rw.gemGot) UI.toast('She flips you a gem: ' + gemName(rw.gemGot), GEM_TYPES[rw.gemGot.type].color);
@@ -4839,13 +4909,13 @@ const Screens = {
               AudioSys.sfx('level');
             }, { size: 10, border: '#3a7a4a', color: '#4ade80' });
           } else {
-            UI.btnPlate2(ctx, lx + lw - 50, yy + 10, 46, 22, 'DROP', () => {
+            UI.chip(ctx, lx + lw - 56, yy + 13, 52, 24, 'DROP', () => {
               Hero.abandonQuest(entry);
               UI.toast('Returned to Addy: ' + def.name, '#9a9080');
-            }, { size: 8, border: '#7a4a4a', color: '#c98a8a' });
+            }, { size: 9, color: '#c98a8a' });
           }
         }
-        c += 50;
+        c += 58;
         if (expanded) {
           const eh = 92;
           const ey = c - scrollY;
@@ -5020,10 +5090,10 @@ const Screens = {
       const afford = (Hero.amOrbs || 0) >= cost;
       const yy = c - scrollY;
       if (vis(c, 38)) {
-        UI.btn(ctx, lx - 4, yy, lw + 8, 34, '', afford ? () => {
+        UI.btnPlate2(ctx, lx - 4, yy, lw + 8, 34, '', afford ? () => {
           const it = Items.gambleItem(key);
           if (it) UI.sel.lastGamble = it;
-        } : null, { disabled: !afford, border: afford ? '#7a4a8f' : undefined });
+        } : null, { disabled: !afford });
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
         ctx.font = 'bold 12px Georgia'; ctx.fillStyle = afford ? '#e8e0cc' : '#6f6552';
         ctx.fillText(label, lx + 8, yy + 17);
@@ -5074,9 +5144,9 @@ const Screens = {
     o.stock.forEach(entry => {
       const it = entry.item;
       const selected = UI.sel.buy === entry;
-      UI.btn(ctx, px + 14, y, pw - 28, 34, '', entry.sold ? null : () => {
+      UI.btnPlate2(ctx, px + 14, y, pw - 28, 34, '', entry.sold ? null : () => {
         UI.sel.buy = selected ? null : entry;
-      }, { disabled: entry.sold, bg: selected ? 'rgba(70,54,44,0.95)' : undefined, border: selected ? '#ffd76a' : undefined });
+      }, { disabled: entry.sold });
       ctx.textAlign = 'left';
       ctx.font = 'bold 12px Georgia';
       ctx.fillStyle = entry.sold ? '#544d44' : RARITIES[it.rarity].color;

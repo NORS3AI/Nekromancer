@@ -349,6 +349,7 @@ const Game = {
     [1100, 765, 60, 1130, 680, 190, 140, 'Apothecary',     '⚗', '#9fd88a', 'vendor', null],   // closed for now (owner rule) — sells nothing
     [790, 945, 60,   800, 855, 230, 150, 'Jeweled Necessities', '💍', '#ffd76a', 'vendor', ['ring1', 'ring2', 'amulet']],
     [610, 1015, 55,  610, 930, 130, 140, 'Stash',          '▤', '#c9bfa8', 'stash'],
+    [600, 712, 55,     0, 0, 0, 0, 'Fountain',             '⛲', '#8fd0ff', 'fountain'],   // wish for a shrine blessing (200g)
     // NPC plates show the SHORT name only (owner rule) — the full name + title
     // appears once you talk to them.
     [718, 668, 55,     0, 0, 0, 0, 'Lukus',                '⚔', '#ffd76a', 'lukus'],   // the knight quest-giver
@@ -388,7 +389,7 @@ const Game = {
     this.lukusImg('helmed'); this.lukusImg('idle');
     this.addyImg(); this.lyssaImg();
     for (const gd of ['m', 'f']) { this.heroImg(gd, 'front'); this.heroImg(gd, 'back'); this.heroImg(gd, 'side'); }
-    for (const k of ['panel', 'close2', 'globe_red', 'globe_blue', 'button', 'plate2', 'enter', 'exit', 'talk', 'arrow_left', 'arrow_right', 'plus', 'minus', 'chip', 'circle']) this.uiImg(k);
+    for (const k of ['panel', 'close2', 'globe_red', 'globe_blue', 'button', 'plate2', 'enter', 'exit', 'talk', 'arrow_left', 'arrow_right', 'plus', 'minus', 'chip', 'circle', 'plate3', 'fountain']) this.uiImg(k);
     // Warm the active theme's plate (the rest load lazily in the theme picker).
     if (typeof THEMES !== 'undefined' && typeof Settings !== 'undefined' && Settings.g) {
       const th = THEMES[Settings.g.theme] || THEMES.void;
@@ -441,6 +442,7 @@ const Game = {
       else if (kind === 'gate') { open = () => this.returnToWilds(); cond = () => !!this.townPortalReturn; }
       else if (kind === 'cube') { open = () => UI.open('cube'); cond = () => Hero.hasCube; }
       else if (kind === 'addy') open = () => UI.open('addy');
+      else if (kind === 'fountain') open = () => UI.open('fountain');
       else if (kind === 'lyssa') open = () => UI.open('lyssa');
       else open = () => UI.open(kind);
       interacts.push({ x: px, y: py, r: pr, label, icon, color, open, cond, kind });
@@ -596,7 +598,9 @@ const Game = {
 
   drawTownPlate(ctx, it, on) {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const y = it.y - 92;
+    // The Soul Crucible plate rides high so it clears the painted cube
+    // (owner rule: "above the cube on the town map").
+    const y = it.y - (it.kind === 'cube' ? 185 : 92);
     // Street signs are ALWAYS the unlit plate (owner rule: the lit theme
     // plate exists only under a hovering mouse — nothing else lights it);
     // standing at a pad brightens the label text only.
@@ -1109,6 +1113,9 @@ const Game = {
     this.player = new Player(World.spawn.x, World.spawn.y);
     Items.apply();
     this.player.hp = this.player.maxHp;
+    // The fountain's blessing follows the hero into the wilds.
+    if (this.fountainBuff && this.fountainBuff.t > 0)
+      this.player.shrine = { buff: this.fountainBuff.buff, t: this.fountainBuff.t };
     this.camera.x = this.player.x - this.W / 2;
     this.camera.y = this.player.y - this.H / 2;
 
@@ -2036,6 +2043,13 @@ const Game = {
         AudioSys.setAmbience('camp');
         AudioSys.setWeather(null);
       }
+    }
+
+    // The fountain's shrine blessing (200g wish) burns down in real time —
+    // in town AND out in the wilds — and rides across map changes.
+    if (this.fountainBuff) {
+      this.fountainBuff.t -= dt;
+      if (this.fountainBuff.t <= 0) { this.fountainBuff = null; UI.toast('The fountain\'s blessing fades.', '#9a9080'); }
     }
 
     if (this.state === 'town') { this.updateTown(dt); return; }
