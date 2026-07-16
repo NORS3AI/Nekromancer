@@ -61,7 +61,17 @@ const PETS = {
 const WINGS = {
   boneWings:   { name: 'Wings of Bone',  color: '#e8e0cc', glow: 'rgba(232,224,204,0.25)' },
   shadowWings: { name: 'Shadow Wings',   color: '#6b4a8f', glow: 'rgba(107,74,143,0.35)' },
-  emberWings:  { name: 'Ember Wings',    color: '#ff8c2a', glow: 'rgba(255,140,42,0.35)' }
+  emberWings:  { name: 'Ember Wings',    color: '#ff8c2a', glow: 'rgba(255,140,42,0.35)' },
+  // OWNER SPRITE WINGS (v1.7.11): 16 painted frames (docs/art/wings/imp0..15
+  // .webp, spliced from the owner's 4×4 sheet, offline flat-black cutout +
+  // per-frame recentering). `seq` is the flap order — the frames sorted by
+  // wingspan and ping-ponged open↔closed — CROSS-FADED one into the next,
+  // ALWAYS animating (owner rule), even standing still.
+  impWings:    { name: 'Imp Wings',      color: '#b8452f', glow: 'rgba(184,69,47,0.35)',
+    desc: 'Torn crimson devil-wings of bone and sinew, ever beating.',
+    art: 'imp', frames: 16,
+    seq: [12, 0, 4, 13, 1, 5, 14, 2, 15, 6, 3, 7, 8, 9, 10, 11,
+          10, 9, 8, 7, 3, 6, 15, 2, 14, 5, 1, 13, 4, 0] }
 };
 // UI themes (owner art, v1.6.83): each theme carries its own PAINTED BUTTON
 // PLATE (docs/art/ui/button_<plate>.webp — the owner's glow recolors) plus
@@ -389,11 +399,18 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.10-alpha';
+const GAME_VERSION = 'v1.7.11-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.11-alpha', date: 'July 2026',
+    notes: [
+      'NINE HEROES — the roster grows from three to NINE: painted arrows left and right of the Choose Your Hero frames page through three trios, with page dots beneath. Your old heroes keep their places',
+      'IMP WINGS — the Enchantress\'s wardrobe gains the owner\'s painted devil-wings: sixteen torn crimson frames spliced from the sheet, cross-fading one into the next in a slow open-and-close beat that NEVER stops — walking, fighting or standing still'
+    ]
+  },
   {
     v: 'v1.7.10-alpha', date: 'July 2026',
     notes: [

@@ -128,19 +128,29 @@ const Screens = {
       ctx.fillText('RETIRE A HERO — tap the hero you wish to retire', W / 2, H * 0.285);
     }
 
-    // ---- three slot frames, centered ----
+    // ---- three slot frames per PAGE (v1.7.11 owner rule: up to 9 heroes,
+    // paged 3 at a time with painted arrows left and right) ----
     const frame = Game.uiImg('slot_frame');
     const ghost = Game.uiImg('ghost');
     const plus = Game.uiImg('plus');
     const FA = frame && frame.naturalWidth ? frame.width / frame.height : 0.60;
     const short = H < 480;
     const gap = Math.max(10, W * 0.02);
+    const gutter = 46;                   // side room reserved for the arrows
     let fh = Math.min(H * (short ? 0.46 : 0.52), 430);
     let fw = fh * FA;
-    if (fw * 3 + gap * 2 > W - 20) { fw = (W - 20 - gap * 2) / 3; fh = fw / FA; }
+    if (fw * 3 + gap * 2 > W - 8 - gutter * 2) { fw = (W - 8 - gutter * 2 - gap * 2) / 3; fh = fw / FA; }
     const y0 = H * (short ? 0.50 : 0.56) - fh / 2;
-    for (let i = 0; i < (Profiles.MAX || 3); i++) {
-      const x0 = W / 2 - (fw * 3 + gap * 2) / 2 + i * (fw + gap);
+    const pages = Math.ceil((Profiles.MAX || 3) / 3);
+    if (UI.sel.selPage === undefined) {
+      const home = Profiles.slots[Profiles.active] ? Profiles.active : Profiles.firstFilled();
+      UI.sel.selPage = Math.floor(clamp(home, 0, (Profiles.MAX || 3) - 1) / 3);
+    }
+    const page = clamp(UI.sel.selPage, 0, pages - 1);
+    UI.sel.selPage = page;
+    for (let k = 0; k < 3; k++) {
+      const i = page * 3 + k;
+      const x0 = W / 2 - (fw * 3 + gap * 2) / 2 + k * (fw + gap);
       const snap = Profiles.slots[i];
       const selected = !delMode && UI.sel.pick === i && !!snap;
       // A black backing INSIDE the frame so the hero reads clearly
@@ -230,6 +240,39 @@ const Screens = {
         if (!delMode) UI.register(x0, y0, fw, fh, () => {
           if (Profiles.create(i)) UI.open('create');
         });
+      }
+    }
+
+    // ---- page arrows (painted plates) + page dots ----
+    if (pages > 1) {
+      const rowL = W / 2 - (fw * 3 + gap * 2) / 2;
+      const ayc = y0 + fh / 2;
+      const drawArrow = (key, glyph, ax, cb) => {
+        const img = Game.uiImg(key);
+        if (img) {
+          const abw = Math.min(44, gutter - 4), abh = Math.round(abw * (img.height / img.width));
+          const mpa = (typeof Input !== 'undefined' && !Input.touchMode) ? Input.mousePos : null;
+          const hov = !!(mpa && mpa.x >= ax && mpa.x <= ax + abw && mpa.y >= ayc - abh && mpa.y <= ayc + abh);
+          ctx.save();
+          if (hov) { ctx.shadowColor = 'rgba(232,226,208,0.6)'; ctx.shadowBlur = 16; }
+          ctx.globalAlpha = hov ? 1 : 0.85;
+          ctx.drawImage(img, ax, ayc - abh / 2, abw, abh);
+          ctx.restore();
+          ctx.globalAlpha = 1;
+          UI.register(ax - 8, ayc - abh / 2 - 14, abw + 16, abh + 28, cb);
+        } else {
+          UI.btn(ctx, ax, ayc - 18, 38, 36, glyph, cb, { size: 16 });
+        }
+      };
+      drawArrow('arrow_left', '◀', Math.max(2, rowL - gutter + 2),
+        () => { UI.sel.selPage = (page + pages - 1) % pages; AudioSys.sfx('click'); });
+      drawArrow('arrow_right', '▶', Math.min(W - 2 - Math.min(44, gutter - 4), rowL + fw * 3 + gap * 2 + 2),
+        () => { UI.sel.selPage = (page + 1) % pages; AudioSys.sfx('click'); });
+      // Page dots beneath the frames — the current page burns bone-bright.
+      const dotY = y0 + fh + (short ? 8 : 12);
+      for (let d = 0; d < pages; d++) {
+        ctx.fillStyle = d === page ? '#cfc8b8' : 'rgba(207,200,184,0.28)';
+        ctx.beginPath(); ctx.arc(W / 2 + (d - (pages - 1) / 2) * 18, dotY, d === page ? 3.4 : 2.4, 0, TAU); ctx.fill();
       }
     }
 

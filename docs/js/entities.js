@@ -709,6 +709,31 @@ class Player {
   drawWings(ctx, upright) {
     const def = (typeof WINGS !== 'undefined' && Hero.wings) ? WINGS[Hero.wings] : null;
     if (!def) return;
+    // PAINTED SPRITE WINGS (v1.7.11, owner art — Imp Wings): the frames in
+    // def.seq CROSS-FADE one into the next in a slow open↔closed flap,
+    // driven by Game.time so they ALWAYS beat (owner rule), even standing.
+    if (def.art && typeof Game !== 'undefined' && Game.wingImg) {
+      const seq = def.seq, n = seq.length;
+      const f = (Game.time * 10) % n;           // 10 fade-steps a second
+      const i0 = Math.floor(f), k = f - i0;
+      const a = Game.wingImg(def.art, seq[i0]);
+      const b = Game.wingImg(def.art, seq[(i0 + 1) % n]);
+      if (a && b) {
+        const scale = upright ? 1 : 0.8;
+        const dw = 116 * scale, dh = dw * (a.height / a.width);
+        const oy = upright ? -34 : -4;          // shoulder anchor
+        ctx.save();
+        ctx.translate(0, oy);
+        ctx.globalAlpha = 1 - k;
+        ctx.drawImage(a, -dw / 2, -dh * 0.54, dw, dh);
+        ctx.globalAlpha = k;
+        ctx.drawImage(b, -dw / 2, -dh * 0.54, dw, dh);
+        ctx.globalAlpha = 1;
+        ctx.restore();
+        return;
+      }
+      // frames still downloading — the procedural wings stand in below
+    }
     const flap = Math.sin(this.anim * 2.2) * 0.14;
     const oy = upright ? -34 : -4;      // shoulder height (upright) vs sprite centre
     const scale = upright ? 1 : 0.8;

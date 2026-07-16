@@ -909,11 +909,13 @@ const Hero = {
   }
 };
 
-// The character roster: up to 3 heroes at once, chosen from the campfire
-// select scene. The shared Stash is common to all of them.
+// The character roster: up to 9 heroes at once (v1.7.11, owner rule — the
+// select screen pages through them 3 at a time), chosen from the select
+// scene. The shared Stash is common to all of them. Old 3-slot rosters are
+// padded up to 9 on load.
 const Profiles = {
-  MAX: 3,
-  slots: [null, null, null],
+  MAX: 9,
+  slots: new Array(9).fill(null),
   active: 0,
 
   load() {
