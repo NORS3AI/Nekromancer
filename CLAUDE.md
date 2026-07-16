@@ -410,6 +410,19 @@ loot at the artisans. The hero is persistent (localStorage).
   the Jeweler's `gemStackList` chips moved gothic→SIMPLE plate (owner
   correction). Character footer: PARAGON + **CAMPFIRE** (renamed from
   CHANGE HERO) on the simple plate.
+- **v1.7.12 — REPAINTED HERO FRAME (owner art)**: `slot_frame.webp` is the
+  owner's new thorned arch, cut offline with the interior KEPT OPAQUE BLACK
+  (owner rule "keep the interior black background") — the v1.7.9/1.7.10
+  procedural arch-shaped backing is DELETED from `Screens.select`. The
+  sheet's baked ghost was ERASED from the frame (claimed slots stay clean)
+  and re-cut as the standalone `ghost.webp` (531×1140), drawn SMALLER by
+  code (fh·0.62, bottom-anchored fh·0.90) so the crown stays clear — owner
+  rule "shrink the ghost so the name and level fit". Name/level moved to
+  fh·0.185/0.232 (below the skull medallion's hanging gem, which reaches
+  ~0.16). Both files REPLACED existing art → **ART_V 7→8**. Select-screen
+  arrows: on narrow screens (W<640) the side gutters are dropped (frames
+  keep full width) and the arrows sit BELOW the frames beside the page
+  dots at `y0+fh+24`.
 - **v1.7.11 — NINE HEROES + IMP WINGS (owner spec)**: (1) `Profiles.MAX`
   3→9 (old 3-slot rosters pad up on `load()`); `Screens.select` pages the
   frames THREE AT A TIME — `UI.sel.selPage` (defaults to the active hero's
