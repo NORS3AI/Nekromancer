@@ -410,6 +410,25 @@ loot at the artisans. The hero is persistent (localStorage).
   the Jeweler's `gemStackList` chips moved gothic→SIMPLE plate (owner
   correction). Character footer: PARAGON + **CAMPFIRE** (renamed from
   CHANGE HERO) on the simple plate.
+- **v1.7.11 — NINE HEROES + IMP WINGS (owner spec)**: (1) `Profiles.MAX`
+  3→9 (old 3-slot rosters pad up on `load()`); `Screens.select` pages the
+  frames THREE AT A TIME — `UI.sel.selPage` (defaults to the active hero's
+  page), painted `arrow_left`/`arrow_right` plates at the row's sides
+  (46px gutters reserved so frames never collide; wrap-around; procedural
+  ◀ ▶ fallback) and page DOTS beneath (current = bone-bright). Slot index
+  `i = page*3 + k` stays absolute everywhere (create/pick/delete).
+  (2) **IMP WINGS** — the owner's 4×4 wing-pair sheet spliced into
+  `docs/art/wings/imp0..15.webp` (480×352 canvases, full-sheet flat-black
+  cutout with per-component cell assignment so neighbours' tips don't
+  bleed in, each frame recentered horizontally). `WINGS.impWings` carries
+  `art:'imp'`, `frames:16` and `seq` — the frames sorted by wingspan and
+  ping-ponged (30 steps) into a slow open↔close flap. `Player.drawWings`
+  CROSS-FADES seq[i]→seq[i+1] at 10 steps/s driven by `Game.time` so the
+  wings ALWAYS beat (owner rule), even standing; `Game.wingImg(key,i)`
+  lazy-loads frames (procedural wings stand in until loaded) and
+  `preloadArt` warms the whole flap for any roster hero wearing sprite
+  wings. Sheet recovered from the session transcript (uploads dir only
+  materializes some pastes).
 - **v1.7.9 — TOP DOWN IS THE ONLY CAMERA (owner rule)**: Bird's Eye is
   retired — `Game.topDown()` is hard-wired `true` (the function stays so all
   branches keep working; a saved `viewMode:'birdseye'` blob is inert), the

@@ -410,6 +410,10 @@ const Game = {
           const gd = s.gender === 'f' ? 'f' : 'm';
           this.heroImg(gd, 'front', s.hair); this.heroImg(gd, 'back', s.hair);
         }
+        // Painted wing frames (Imp Wings): warm the whole flap if any roster
+        // hero wears sprite wings, so the beat never pops in late.
+        const wd = s && s.wings && typeof WINGS !== 'undefined' ? WINGS[s.wings] : null;
+        if (wd && wd.art) for (let i = 0; i < wd.frames; i++) this.wingImg(wd.art, i);
       }
     }
     if (typeof Screens !== 'undefined' && Screens.preloadShops) Screens.preloadShops();
@@ -825,6 +829,21 @@ const Game = {
       img = new Image();
       img.src = 'art/ui/' + key + '.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
       this.uiArt[key] = img;
+    }
+    return (img.complete && img.naturalWidth) ? img : null;
+  },
+
+  // Painted cosmetic-wing frames (v1.7.11 owner art — docs/art/wings/
+  // <key><i>.webp). Lazy: the first draw request starts the download and
+  // the procedural wings stand in until the frames arrive.
+  wingArt: {},
+  wingImg(key, i) {
+    const k = key + i;
+    let img = this.wingArt[k];
+    if (!img) {
+      img = new Image();
+      img.src = 'art/wings/' + key + i + '.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
+      this.wingArt[k] = img;
     }
     return (img.complete && img.naturalWidth) ? img : null;
   },
