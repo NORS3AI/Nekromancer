@@ -325,11 +325,22 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.98-alpha';
+const GAME_VERSION = 'v1.6.99-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.99-alpha', date: 'July 2026',
+    notes: [
+      'PARAGON UNCHAINED — spend your points in ANY category, any order; the rotation lock, its banner and the ✦ marker are gone. Core→Utility tabs ride the simple plate, Undo Last / Reset All the little empty plate',
+      'The PASSIVES are now a grid of round medallions — five columns on desktop, four on tablet, three on phones — each in the painted circle frame with its name beneath; chosen ones ring in faded bone white',
+      'Every selection ring (skills, passives, runes) is now a faded bone white — no more bright green, purple or yellow circles',
+      'The whole interface — every menu and vendor — now speaks Cinzel, the Trajan-style face of the plates',
+      'Inventory: EXPAND BAG rides the simple plate, the filter chips the little empty plate; the Jeweler\'s gem filter & tier chips settle onto the simple plate',
+      'Character sheet: PARAGON and CAMPFIRE (renamed from Change Hero) on the simple plate; CHOOSE SKILLS has more breathing room'
+    ]
+  },
   {
     v: 'v1.6.98-alpha', date: 'July 2026',
     notes: [

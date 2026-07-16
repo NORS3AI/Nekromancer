@@ -753,29 +753,22 @@ const Hero = {
     return PARAGON_ROTATION[base];
   },
 
-  // Spend ONE Nekromancer Point on `key` — only allowed if that stat sits in the
-  // currently-unlocked rotation category (owner rule: one point at a time, cycling
-  // Core → Defense → Offense → Utility). Intelligence & Vitality are uncapped.
+  // Spend ONE Nekromancer Point on `key` — FREE SPEND (v1.6.99 owner rule:
+  // "allow the player to spend in whatever order they want"). The old
+  // Core→Defense→Offense→Utility rotation lock is gone; paraOrder still
+  // records every point so Undo Last stays LIFO-accurate.
   spendParagon(key) {
     const st = PARAGON_STATS[key];
     if (!st) return;
     if ((this.np || 0) <= 0) { AudioSys.sfx('denied'); return; }
-    const cat = this.paragonCat();
-    if (st.cat !== cat) {
-      if (typeof UI !== 'undefined') UI.toast('Spend your point in ' + cat + ' first', '#9a9080');
-      AudioSys.sfx('denied');
-      return;
-    }
     const cur = this.para[key] || 0;
     if (st.max && cur >= st.max) { AudioSys.sfx('denied'); return; }
-    // Reconcile any legacy free-spend history BEFORE recording this point — the
-    // old order (sync AFTER incrementing) desynced the history every spend, so a
-    // later rebuild canonicalized it and "Undo last" could refund the WRONG stat.
+    // Reconcile any legacy history BEFORE recording this point so "Undo
+    // last" always refunds the right stat.
     this.syncParaOrder();
     this.para[key] = cur + 1;
     this.paraOrder.push(key);
     this.np--;
-    if (typeof UI !== 'undefined' && UI.sel) UI.sel.paraCat = this.paragonCat();   // advance the view
     if (typeof Items !== 'undefined') Items.apply();
     AudioSys.sfx('gem');
     this.save();
@@ -789,7 +782,6 @@ const Hero = {
     this.para[key] = Math.max(0, (this.para[key] || 0) - 1);
     if (this.para[key] === 0) delete this.para[key];
     this.np++;
-    if (typeof UI !== 'undefined' && UI.sel) UI.sel.paraCat = this.paragonCat();
     if (typeof Items !== 'undefined') Items.apply();
     AudioSys.sfx('gem');
     this.save();
@@ -802,7 +794,6 @@ const Hero = {
     this.np += spent;
     this.para = {};
     this.paraOrder = [];
-    if (typeof UI !== 'undefined' && UI.sel) UI.sel.paraCat = this.paragonCat();
     if (typeof Items !== 'undefined') Items.apply();
     AudioSys.sfx('gem');
     this.save();

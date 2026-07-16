@@ -156,13 +156,13 @@ const Screens = {
     }
 
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold ' + Math.min(30, W * 0.07) + 'px Georgia';
+    ctx.font = 'bold ' + Math.min(30, W * 0.07) + 'px Cinzel, Georgia';
     ctx.fillStyle = delMode ? '#e04a5a' : '#e8d8b0';
     ctx.fillText(delMode ? 'RETIRE A HERO' : 'CHOOSE YOUR HERO', W / 2, H * 0.1);
     // (The "up to 3 Nekromancers" subtitle is DELETED, owner rule — only the
     // delete-mode hint remains.)
     if (delMode) {
-      ctx.font = '12px Georgia'; ctx.fillStyle = '#9a8f7a';
+      ctx.font = '12px Cinzel, Georgia'; ctx.fillStyle = '#9a8f7a';
       ctx.fillText('Tap the hero you wish to retire', W / 2, H * 0.1 + 26);
     }
 
@@ -197,7 +197,7 @@ const Screens = {
     if (delMode && delId !== undefined && Profiles.slots[delId]) {
       // Confirm retire.
       const nm = Profiles.slots[delId].name || 'this hero';
-      ctx.textAlign = 'center'; ctx.font = 'bold 15px Georgia'; ctx.fillStyle = '#e8e0cc';
+      ctx.textAlign = 'center'; ctx.font = 'bold 15px Cinzel, Georgia'; ctx.fillStyle = '#e8e0cc';
       ctx.fillText(this.fitText(ctx, 'Retire ' + nm + '? Are you sure? :(', W - 40), W / 2, H - 100);
       const bw = Math.min(150, (W - 48) / 2);
       UI.btn(ctx, W / 2 - bw - 6, H - 84, bw, 36, 'YES, RETIRE', () => {
@@ -209,9 +209,9 @@ const Screens = {
       // Selected hero → name/level + a green pulsing PLAY button.
       const snap = Profiles.slots[pick];
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold ' + (short ? 15 : 18) + 'px Georgia'; ctx.fillStyle = '#ffd76a';
+      ctx.font = 'bold ' + (short ? 15 : 18) + 'px Cinzel, Georgia'; ctx.fillStyle = '#ffd76a';
       ctx.fillText(this.fitText(ctx, snap.name || 'The Nekromancer', W - 40), W / 2, H - (short ? 94 : 118));
-      ctx.font = (short ? 11 : 12) + 'px Georgia'; ctx.fillStyle = '#9a8f7a';
+      ctx.font = (short ? 11 : 12) + 'px Cinzel, Georgia'; ctx.fillStyle = '#9a8f7a';
       ctx.fillText('Level ' + (snap.level || 1) + ' Necromancer', W / 2, H - (short ? 79 : 100));
       const bw = Math.min(240, W - 70), bh = short ? 34 : 42, bx = W / 2 - bw / 2, byy = H - (short ? 66 : 86);
       // PLAY lands you in New Haven — the town is the first map after
@@ -633,10 +633,10 @@ const Screens = {
         ? (short ? sp.y - 96 * scale : sp.y + 80 * scale)
         : Math.max(sp.y - 96 * scale, (Game.H || 600) * 0.16 + 12);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 14px Georgia';
+      ctx.font = 'bold 14px Cinzel, Georgia';
       ctx.fillStyle = selRing ? '#ffd76a' : '#e8e0cc';
       ctx.fillText(this.fitText(ctx, snap.name || 'The Nekromancer', 150), sp.x, ny);
-      ctx.font = '11px Georgia'; ctx.fillStyle = '#9a8f7a';
+      ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#9a8f7a';
       ctx.fillText('Level ' + (snap.level || 1) + ' Necromancer', sp.x, ny + 16);
       // Tap: select for play, or mark for retire in delete mode.
       UI.register(sp.x - R * 0.6, sp.y - R, R * 1.2, R * 1.6, () => {
@@ -647,9 +647,9 @@ const Screens = {
       // Empty plinth — a faint hooded ghost + "＋ New". (Not deletable.)
       this.drawNecroFigure(ctx, sp.x, sp.y, scale, '#5a6f9a', false, true);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 22px Georgia'; ctx.fillStyle = '#6ff7c3';
+      ctx.font = 'bold 22px Cinzel, Georgia'; ctx.fillStyle = '#6ff7c3';
       ctx.fillText('＋', sp.x, sp.y - 6 * scale);
-      ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#8fb0e8';
+      ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = '#8fb0e8';
       const shortE = (Game.H || 600) < 480;
       ctx.fillText('New Nekromancer', sp.x,
         sp.front ? (shortE ? sp.y - 84 * scale : sp.y + 82 * scale)
@@ -822,7 +822,7 @@ const Screens = {
       ctx.restore();
     } else {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.font = 'italic 11px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       ctx.fillText('the flesh takes shape…', cx, py + 110);
     }
 
@@ -835,7 +835,7 @@ const Screens = {
       { size: 12, border: gd === 'f' ? '#e08ae0' : '#3a3448', color: gd === 'f' ? '#e08ae0' : '#8a8070' });
     y += 44;
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
     ctx.fillText('NAME', px + 16, y);
     UI.btn(ctx, px + 16, y + 10, pw - 32, 34, this.fitText(ctx, Hero.name || 'The Nekromancer', pw - 60), () => {
       let q = null;
@@ -847,7 +847,7 @@ const Screens = {
     // Hair-colour swatches (owner rule: hair color instead of glowing eyes) —
     // each picks the matching avatar art variant, shown live in the preview.
     ctx.textAlign = 'left';
-    ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
     ctx.fillText('HAIR COLOR', px + 16, y);
     y += 12;
     HAIR_COLORS.forEach((c, i) => {
@@ -876,7 +876,7 @@ const Screens = {
       ctx.lineWidth = sel ? 3 : 1.5;
       rr(ctx, bx, by, sw, sw, 8); ctx.stroke();
       ctx.fillStyle = sel ? '#f2ecd8' : '#8a8070';
-      ctx.font = '9px Georgia'; ctx.textAlign = 'center';
+      ctx.font = '9px Cinzel, Georgia'; ctx.textAlign = 'center';
       ctx.fillText(c.name, bx + sw / 2, by + sw + 9);
       UI.register(bx, by, sw, sw + 14, () => { Hero.hair = i; });
     });
@@ -975,22 +975,22 @@ const Screens = {
     let iy = by - 16 - 5 * 17;   // up to 5 wrapped info lines
 
     ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
     ctx.fillText('—  ' + I.npc + '  —', W / 2, iy - 44);
-    ctx.font = 'bold ' + (W < 520 ? 20 : 26) + 'px Georgia';
+    ctx.font = 'bold ' + (W < 520 ? 20 : 26) + 'px Cinzel, Georgia';
     ctx.fillStyle = I.color;
     ctx.shadowColor = I.color; ctx.shadowBlur = 16;
     ctx.fillText(this.fitText(ctx, I.welcome, W - 30), W / 2, iy - 16);
     ctx.shadowBlur = 0;
     ctx.textAlign = 'left';
-    ctx.font = 'italic ' + (W < 520 ? 11 : 12) + 'px Georgia'; ctx.fillStyle = '#e8e0cc';
+    ctx.font = 'italic ' + (W < 520 ? 11 : 12) + 'px Cinzel, Georgia'; ctx.fillStyle = '#e8e0cc';
     const iw = Math.min(470, W - 48);
     wrapText(ctx, I.info, W / 2 - iw / 2, iy, iw, 17, 5);
 
     const pulse = 0.6 + 0.4 * Math.sin(Game.time * 3.5);
     UI.btnPlate(ctx, bx, by, bw, 40, I.enter, () => { UI.sel.inside = true; AudioSys.sfx('gold'); },
       { size: 13 });
-    ctx.textAlign = 'center'; ctx.font = '9px Georgia';
+    ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia';
     ctx.fillStyle = 'rgba(201,191,168,' + (0.35 + 0.3 * pulse).toFixed(2) + ')';
     ctx.fillText('tap anywhere to step inside', W / 2, by + 52);
   },
@@ -1010,7 +1010,7 @@ const Screens = {
     const py = Math.max(10, H - ph - (Game.state === 'town' ? 150 : 24));
     UI.panel(ctx, px, py, pw, ph, title);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.font = 'italic 11px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
     ctx.fillText(this.fitText(ctx, npcLine, pw - 30), W / 2, py + 52);
     let y = py + 66;
     if (showTrain) { this.artisanRow(ctx, px, pw, y + 8, trainKey.k, trainKey.label); y += 34; }
@@ -1021,7 +1021,7 @@ const Screens = {
       const cb = typeof target === 'function' ? target : () => UI.open(target);
       UI.btnPlate2(ctx, px + 14, y + 2, pw - 28, rowH - 24, String(label).replace(/^[^A-Za-z]*/, ''), cb, { size: 14, tip: desc });
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'italic 9px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.font = 'italic 9px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
       ctx.fillText(this.fitText(ctx, desc, pw - 60), px + pw / 2, y + rowH - 11);
       y += rowH;
     }
@@ -1119,14 +1119,14 @@ const Screens = {
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
         ctx.font = '600 10px Cinzel, Georgia'; ctx.fillStyle = '#d8c5a0';
         ctx.fillText(this.fitText(ctx, g.tag, lw - 96), lx, c - scrollY + 10);
-        ctx.textAlign = 'right'; ctx.font = '9px Georgia'; ctx.fillStyle = '#9a9080';
+        ctx.textAlign = 'right'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
         ctx.fillText(g.list.length + '/' + QUEST_JOURNAL_MAX + ' · ' + g.done + '/' + g.total + ' done', lx + lw, c - scrollY + 10);
         UI.bar(ctx, lx, c - scrollY + 16, lw, 3, g.done / g.total, '#221d2e', g.barCol);
       }
       c += 28;
       if (!g.list.length) {
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
+        ctx.font = 'italic 10px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
         ctx.fillText(g.src === 'A'
           ? (Hero.level >= 70 ? 'No quests from Addy right now.' : "Addy's ledger opens at level 70.")
           : 'No deeds from Lukus right now.', lx, c - scrollY + 9);
@@ -1148,19 +1148,19 @@ const Screens = {
           rr(ctx, lx - 4, yy, 3, 58, 2); ctx.fill();
           if (expanded) { ctx.strokeStyle = milestone ? '#b06adf' : g.barCol; ctx.lineWidth = 1.2; rr(ctx, lx - 4, yy, lw + 8, 58, 6); ctx.stroke(); }
           ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-          ctx.font = 'bold 11px Georgia'; ctx.fillStyle = milestone ? '#b06adf' : g.nameCol;
+          ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = milestone ? '#b06adf' : g.nameCol;
           ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name, lw - 60), lx + 4, yy + 14);
-          ctx.font = '9px Georgia'; ctx.fillStyle = '#8a8070';
+          ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
           ctx.fillText(this.fitText(ctx, def.desc, lw - 60), lx + 4, yy + 27);
           UI.bar(ctx, lx + 4, yy + 33, lw - 64, 9, qp.prog / def.need, '#221d2e', qp.done ? '#4ade80' : g.barCol);
-          ctx.font = '8px Georgia'; ctx.fillStyle = '#9a9080';
+          ctx.font = '8px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
           ctx.fillText(qp.prog + ' / ' + def.need + '  ·  tap for details', lx + 4, yy + 52);
           // Tap the row body (left of the buttons) for full details + reward.
           UI.register(lx - 4, yy, lw - 56, 58, () => { UI.sel.qInfo = expanded ? null : qKey; });
           if (qp.done) {
-            ctx.textAlign = 'right'; ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#4ade80';
+            ctx.textAlign = 'right'; ctx.font = 'bold 9px Cinzel, Georgia'; ctx.fillStyle = '#4ade80';
             ctx.fillText('✔ READY', lx + lw - 2, yy + 30);
-            ctx.font = '8px Georgia'; ctx.fillStyle = '#7ab88a';
+            ctx.font = '8px Cinzel, Georgia'; ctx.fillStyle = '#7ab88a';
             ctx.fillText(g.see, lx + lw - 2, yy + 42);
           } else if (!def.abs) {
             UI.btnPlate2(ctx, lx + lw - 50, yy + 18, 48, 22, 'DROP', () => {
@@ -1180,14 +1180,14 @@ const Screens = {
             ctx.fillStyle = 'rgba(18,14,26,0.85)';
             rr(ctx, lx - 4, ey, lw + 8, eh - 6, 6); ctx.fill();
             ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-            ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
+            ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
             wrapText(ctx, def.desc, lx + 4, ey + 16, lw - 8, 14, 2);
-            ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#8a8070';
+            ctx.font = 'bold 9px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
             ctx.fillText('REWARD', lx + 4, ey + 52);
-            ctx.font = 'bold 10px Georgia'; ctx.fillStyle = g.color;
+            ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = g.color;
             // Compact + wrapped (2 lines) so the reward can never run off the card.
             wrapText(ctx, questRewardTextFor(entry, true), lx + 4, ey + 66, lw - 8, 13, 2);
-            ctx.font = 'italic 9px Georgia'; ctx.fillStyle = '#6f6552';
+            ctx.font = 'italic 9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
             wrapText(ctx, (entry.src === 'A' ? "Addy's quest " : "Lukus's quest ") + (entry.idx + 1) + ' of ' + g.total +
               (milestone ? ' · ★ milestone — tracks itself, cannot be dropped' : ''), lx + 4, ey + 94, lw - 8, 11, 1);
           }
@@ -1198,7 +1198,7 @@ const Screens = {
     }
     ctx.restore();
     UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 6);
-    ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
     if (scrollY > 1) ctx.fillText('▲ drag ▲', px + pw / 2, listTop + 2);
     if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', px + pw / 2, viewBot - 2);
   },
@@ -1232,16 +1232,16 @@ const Screens = {
         rr(ctx, lx - 4, yy, lw + 8, 40, 6); ctx.fill();
         if (done) { ctx.strokeStyle = 'rgba(255,215,106,0.5)'; ctx.lineWidth = 1; rr(ctx, lx - 4, yy, lw + 8, 40, 6); ctx.stroke(); }
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        ctx.font = 'bold 11px Georgia'; ctx.fillStyle = done ? '#ffd76a' : '#8a8070';
+        ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = done ? '#ffd76a' : '#8a8070';
         ctx.fillText(this.fitText(ctx, a.name, lw - 78), lx + 4, yy + 15);
-        ctx.font = '9px Georgia'; ctx.fillStyle = done ? '#b5ab94' : '#6f6552';
+        ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = done ? '#b5ab94' : '#6f6552';
         ctx.fillText(this.fitText(ctx, a.desc, lw - 78), lx + 4, yy + 30);
         if (done) {
-          ctx.textAlign = 'right'; ctx.font = 'bold 16px Georgia'; ctx.fillStyle = '#4ade80';
+          ctx.textAlign = 'right'; ctx.font = 'bold 16px Cinzel, Georgia'; ctx.fillStyle = '#4ade80';
           ctx.fillText('✓', lx + lw - 4, yy + 24);
         } else {
           UI.bar(ctx, lx + lw - 68, yy + 12, 64, 7, Math.min(1, cur / a.need), '#221d2e', '#8a6f2a');
-          ctx.textAlign = 'right'; ctx.font = '8px Georgia'; ctx.fillStyle = '#9a9080';
+          ctx.textAlign = 'right'; ctx.font = '8px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
           const gs = n => n >= 1e6 ? (n / 1e6) + 'm' : n >= 10000 ? Math.round(n / 1000) + 'k' : n.toLocaleString();
           ctx.fillText(gs(cur) + ' / ' + gs(a.need), lx + lw - 4, yy + 30);
         }
@@ -1250,7 +1250,7 @@ const Screens = {
     }
     ctx.restore();
     UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 6);
-    ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
     if (scrollY > 1) ctx.fillText('▲ drag ▲', px + pw / 2, listTop + 2);
     if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', px + pw / 2, viewBot - 2);
   },
@@ -1347,7 +1347,7 @@ const Screens = {
     ctx.restore();
 
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
     ctx.fillText('An ancient artifact of transmutation.', W / 2, py + 168);
 
     // Extracted-power summary (the Golden Mirror now lives at the END of the
@@ -1357,9 +1357,9 @@ const Screens = {
     const active = (Hero.cubeActive || []).length, banked = (Hero.cubePowers || []).length;
     UI.panel(ctx, rx, y, rowW, 62);
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#ff8c2a';
+    ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = '#ff8c2a';
     ctx.fillText('Legendary powers extracted: ' + banked, rx + 16, y + 22);
-    ctx.font = '11px Georgia'; ctx.fillStyle = active ? '#ffb86a' : '#9a9080';
+    ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = active ? '#ffb86a' : '#9a9080';
     ctx.fillText(active + ' / 4 powers active — swap them in the leaflet.', rx + 16, y + 42);
     y += 80;
 
@@ -1389,7 +1389,7 @@ const Screens = {
     }
 
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
     ctx.fillText(this.fitText(ctx, 'Coins glint far below the dark water. The dead are listening.', pw - 40), W / 2, py + 208);
 
     let y = py + 232;
@@ -1397,10 +1397,10 @@ const Screens = {
     const names = { empowered: 'Empowered — essence surges', frenzied: 'Frenzied — +25% damage', blessed: 'Blessed — −25% damage taken', fortune: 'Fortune — +100% gold find' };
     if (fb && fb.t > 0) {
       const mins = Math.floor(fb.t / 60), secs = Math.floor(fb.t % 60);
-      ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#6ff7c3';
+      ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = '#6ff7c3';
       ctx.fillText(this.fitText(ctx, '✦ ' + names[fb.buff] + '  ·  ' + mins + ':' + String(secs).padStart(2, '0') + ' left', pw - 36), W / 2, y);
     } else {
-      ctx.font = '11px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       ctx.fillText('No blessing upon you.', W / 2, y);
     }
     y += 26;
@@ -1424,9 +1424,9 @@ const Screens = {
       } : null,
       { size: 13, disabled: !afford, color: '#ffd76a' });
     y += 48;
-    ctx.font = '10px Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
     ctx.fillText(this.fitText(ctx, 'A random shrine blessing · lasts 10 minutes · follows you into the wilds', pw - 36), W / 2, y);
-    ctx.textAlign = 'right'; ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#ffd76a';
+    ctx.textAlign = 'right'; ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = '#ffd76a';
     ctx.fillText(Hero.gold.toLocaleString() + ' g', px + pw - 18, py + 30);
   },
 
@@ -1455,7 +1455,7 @@ const Screens = {
 
     // ---- Your extraction reagents, at the top ----
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold ' + (10 * k) + 'px Georgia';
+    ctx.font = 'bold ' + (10 * k) + 'px Cinzel, Georgia';
     if (vis(y, 14 * k)) {
       let mxx = rx;
       for (const mk of ['parts', 'dust', 'crystal', 'soul']) {
@@ -1469,14 +1469,14 @@ const Screens = {
     y += 22 * k;
 
     // ---- Instruction of Rathma (extraction) ----
-    ctx.font = 'bold ' + (14 * k) + 'px Georgia'; ctx.fillStyle = '#ff5a4a';
+    ctx.font = 'bold ' + (14 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#ff5a4a';
     if (vis(y, 20 * k)) ctx.fillText('Instruction of Rathma', rx, y + 6 * k);
     y += 20 * k;
-    ctx.font = (10 * k) + 'px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.font = (10 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
     if (vis(y, 24 * k)) y = wrapText(ctx, 'Rip the legendary power from a LOOSE item in your bag (not equipped, not stashed) into the Cube. The item is consumed.', rx, y + 8 * k, rw, 13 * k, 3) + 2 * k;
     else y += 26 * k;
     const c = Items.extractCost();
-    ctx.font = (10 * k) + 'px Georgia';
+    ctx.font = (10 * k) + 'px Cinzel, Georgia';
     {
       // Cost tokens FLOW-WRAP so the last one (Forgotten Souls) is never
       // clipped on narrow panels (owner report).
@@ -1496,7 +1496,7 @@ const Screens = {
     y += 20 * k;
     const items = Items.extractable();
     if (!items.length) {
-      ctx.font = 'italic ' + (11 * k) + 'px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.font = 'italic ' + (11 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       if (vis(y, 16 * k)) ctx.fillText('No loose legendary with an unclaimed power in your bag.', rx, y + 10 * k);
       y += 22 * k;
     } else {
@@ -1505,9 +1505,9 @@ const Screens = {
         if (vis(y, rh)) {
           ctx.fillStyle = 'rgba(28,24,38,0.9)'; rr(ctx, rx, y, rw, rh, 6); ctx.fill();
           ctx.strokeStyle = '#8a3f3a'; ctx.lineWidth = 1; rr(ctx, rx, y, rw, rh, 6); ctx.stroke();
-          ctx.textAlign = 'left'; ctx.font = 'bold ' + (11 * k) + 'px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
+          ctx.textAlign = 'left'; ctx.font = 'bold ' + (11 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
           ctx.fillText(this.fitText(ctx, it.name, rw - 96 * k), rx + 10, y + 15 * k);
-          ctx.font = (9 * k) + 'px Georgia'; ctx.fillStyle = '#b06adf';
+          ctx.font = (9 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#b06adf';
           ctx.fillText(this.fitText(ctx, LEGENDARY_POWERS[it.power].name, rw - 96 * k), rx + 10, y + 29 * k);
           const can = Object.entries(c).every(([mk, n]) => (Hero.mats[mk] || 0) >= n);
           UI.btn(ctx, rx + rw - 84 * k, y + 5 * k, 78 * k, 28 * k, can ? 'EXTRACT' : 'NEED MATS',
@@ -1519,12 +1519,12 @@ const Screens = {
     y += 10 * k;
 
     // ---- Powers in the Cube — toggle up to 4 active ----
-    ctx.textAlign = 'left'; ctx.font = 'bold ' + (13 * k) + 'px Georgia'; ctx.fillStyle = '#ff8c2a';
+    ctx.textAlign = 'left'; ctx.font = 'bold ' + (13 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#ff8c2a';
     if (vis(y, 18 * k)) ctx.fillText('Powers in the Cube (' + (Hero.cubeActive || []).length + '/4 active)', rx, y + 6 * k);
     y += 20 * k;
     const bank = Hero.cubePowers || [];
     if (!bank.length) {
-      ctx.font = 'italic ' + (11 * k) + 'px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.font = 'italic ' + (11 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       if (vis(y, 16 * k)) ctx.fillText('Extract a power above to bank it here.', rx, y + 10 * k);
       y += 22 * k;
     } else {
@@ -1535,9 +1535,9 @@ const Screens = {
         if (vis(y, rh)) {
           ctx.fillStyle = on ? 'rgba(70,44,26,0.95)' : 'rgba(24,20,30,0.9)'; rr(ctx, rx, y, rw, rh, 6); ctx.fill();
           ctx.strokeStyle = on ? '#ff8c2a' : '#3a3448'; ctx.lineWidth = on ? 1.6 : 1; rr(ctx, rx, y, rw, rh, 6); ctx.stroke();
-          ctx.textAlign = 'left'; ctx.font = 'bold ' + (11 * k) + 'px Georgia'; ctx.fillStyle = on ? '#ffb86a' : '#c9bfa8';
+          ctx.textAlign = 'left'; ctx.font = 'bold ' + (11 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = on ? '#ffb86a' : '#c9bfa8';
           ctx.fillText((on ? '◈ ' : '') + P.name, rx + 10, y + 14 * k);
-          ctx.font = (9 * k) + 'px Georgia'; ctx.fillStyle = '#9a9080';
+          ctx.font = (9 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
           wrapText(ctx, P.desc, rx + 10, y + 26 * k, rw - 96 * k, 11 * k, 2);
           UI.btn(ctx, rx + rw - 84 * k, y + 8 * k, 78 * k, 28 * k, on ? 'ACTIVE' : 'ACTIVATE',
             () => Items.toggleCubePower(bk), { size: 10 * k, bg: on ? 'rgba(90,54,26,0.9)' : undefined, border: '#8a6f4a', color: on ? '#ffb86a' : '#c9bfa8' });
@@ -1548,15 +1548,15 @@ const Screens = {
     y += 12 * k;
 
     // ---- Golden Mirror (moved to the END of the leaflet) ----
-    ctx.textAlign = 'left'; ctx.font = 'bold ' + (13 * k) + 'px Georgia'; ctx.fillStyle = '#ffd76a';
+    ctx.textAlign = 'left'; ctx.font = 'bold ' + (13 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#ffd76a';
     if (vis(y, 18 * k)) ctx.fillText('Golden Mirror', rx, y + 6 * k);
     y += 18 * k;
     if (Hero.orbAutoPickup) {
-      ctx.font = (11 * k) + 'px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.font = (11 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
       if (vis(y, 16 * k)) y = wrapText(ctx, '✦ Transmuted — purple orbs (Rifts & Seasons) now collect instantly.', rx, y + 10 * k, rw, 13 * k, 2) + 4 * k;
       else y += 20 * k;
     } else if (Hero.goldenMirror) {
-      ctx.font = (10 * k) + 'px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.font = (10 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
       if (vis(y, 14 * k)) ctx.fillText('Transmute to auto-collect every purple orb.', rx, y + 10 * k);
       y += 18 * k;
       if (vis(y, 28 * k)) UI.btnPlate2(ctx, rx, y, rw, 26 * k, 'TRANSMUTE GOLDEN MIRROR', () => {
@@ -1566,7 +1566,7 @@ const Screens = {
       }, { size: 12 * k, color: '#ffd76a' });
       y += 32 * k;
     } else {
-      ctx.font = 'italic ' + (10 * k) + 'px Georgia'; ctx.fillStyle = '#57503f';
+      ctx.font = 'italic ' + (10 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#57503f';
       if (vis(y, 14 * k)) ctx.fillText('Not found — the Treasure Goblin sometimes carries it (10%).', rx, y + 10 * k);
       y += 18 * k;
     }
@@ -1574,7 +1574,7 @@ const Screens = {
     ctx.restore();
     UI.sel.scrollMax = Math.max(0, (y + scrollY) - bodyTop - viewH + 12);
     if ((UI.sel.scrollMax || 0) > 0) {
-      ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       if (scrollY > 1) ctx.fillText('▲ drag ▲', W / 2, bodyTop + 2);
       if (scrollY < UI.sel.scrollMax - 1) ctx.fillText('▼ drag for more ▼', W / 2, bodyBot - 2);
     }
@@ -1606,7 +1606,7 @@ const Screens = {
     drawGameLogo(ctx, cx, lyC, lw, 0);
     ctx.restore();
     // Tagline below the art.
-    ctx.font = 'italic 15px Georgia';
+    ctx.font = 'italic 15px Cinzel, Georgia';
     ctx.fillStyle = '#a06adf';
     ctx.fillText('~ A Sanctuary of the Dead ~', cx, lyC + lhpx / 2 + 22);
 
@@ -1617,16 +1617,16 @@ const Screens = {
     UI.btnPlate(ctx, cx - bw / 2, by, bw, 46, has ? 'CHOOSE YOUR HERO' : 'BEGIN',
       () => UI.open('select'), { size: 16 });
     if (has) {
-      ctx.font = '11px Georgia'; ctx.fillStyle = '#6f6552'; ctx.textAlign = 'center';
+      ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#6f6552'; ctx.textAlign = 'center';
       ctx.fillText(Profiles.count() + ' / ' + Profiles.MAX + ' Nekromancers by the fire', cx, by + 62);
     }
-    ctx.font = '11px Georgia';
+    ctx.font = '11px Cinzel, Georgia';
     ctx.fillStyle = '#6f6552';
     ctx.textAlign = 'center';
     ctx.fillText('Left thumb: move · Right thumb: aim & cast · Tap portrait: gear', cx, H - 62);
 
     // Developer credit — taps open the dev panel gate.
-    ctx.font = 'italic 11px Georgia';
+    ctx.font = 'italic 11px Cinzel, Georgia';
     ctx.fillStyle = '#8a8070';
     const credit = 'Sterling Grant, 2026 | A fan-built game made with love for the Necromancer’s of Rathma';
     ctx.fillText(this.fitText(ctx, credit, W - 90), cx, H - 36);
@@ -1635,7 +1635,7 @@ const Screens = {
     });
 
     // Version — taps open the patch notes.
-    ctx.font = 'bold 11px Georgia';
+    ctx.font = 'bold 11px Cinzel, Georgia';
     ctx.fillStyle = '#57b894';
     ctx.textAlign = 'right';
     ctx.fillText(GAME_VERSION, W - 12, H - 14);
@@ -1647,7 +1647,7 @@ const Screens = {
 
   camp(ctx, W, H) {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 26px Georgia';
+    ctx.font = 'bold 26px Cinzel, Georgia';
     ctx.fillStyle = '#c9bfa8';
     ctx.fillText("SURVIVOR'S CAMP", W / 2, 34);
 
@@ -1659,25 +1659,25 @@ const Screens = {
     UI.panel(ctx, px, 56, pw, panelH);
     UI.register(px, 56, pw, panelH, () => UI.open('character'));
     ctx.textAlign = 'left';
-    ctx.font = 'bold 15px Georgia';
+    ctx.font = 'bold 15px Cinzel, Georgia';
     ctx.fillStyle = '#ffd76a';
     ctx.fillText(this.fitText(ctx, Hero.name + '  ·  Level ' + Hero.level, pw - 120), px + 14, 76);
-    ctx.font = '12px Georgia';
+    ctx.font = '12px Cinzel, Georgia';
     ctx.fillStyle = '#c9bfa8';
     ctx.fillText(`${Hero.gold} gold  ·  ${Hero.totalKills} slain  ·  ${Hero.gems.length} gems`, px + 14, 96);
     if (narrow) {
       UI.bar(ctx, px + 14, 106, pw - 110, 8, Hero.xp / XP_CURVE(Hero.level), '#8a6f2a', '#ffd76a');
-      ctx.font = '11px Georgia';
+      ctx.font = '11px Cinzel, Georgia';
       ctx.fillStyle = '#9a9080';
       ctx.fillText('XP', px + pw - 88, 110);
     } else {
       UI.bar(ctx, px + pw * 0.55, 70, pw * 0.42, 8, Hero.xp / XP_CURVE(Hero.level), '#8a6f2a', '#ffd76a');
-      ctx.font = '11px Georgia';
+      ctx.font = '11px Cinzel, Georgia';
       ctx.fillStyle = '#9a9080';
       ctx.fillText(`XP ${Hero.xp} / ${XP_CURVE(Hero.level)}`, px + pw * 0.55, 92);
     }
     ctx.textAlign = 'right';
-    ctx.font = 'italic 11px Georgia';
+    ctx.font = 'italic 11px Cinzel, Georgia';
     ctx.fillStyle = '#57b894';
     ctx.fillText('tap for full stats ▸', px + pw - 12, 56 + panelH - 12);
 
@@ -1714,7 +1714,7 @@ const Screens = {
         ctx.beginPath(); ctx.arc(ex, ey, 8, 0, TAU); ctx.fill();
         ctx.strokeStyle = '#12080a'; ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.arc(ex, ey, 8, 0, TAU); ctx.stroke();
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 12px Georgia';
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 12px Cinzel, Georgia';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText('!', ex, ey + 0.5);
       }
@@ -1797,16 +1797,16 @@ const Screens = {
     arrowBtn(sdx + sdw - 54, 'arrow_right', '▶',
       () => { Hero.difficulty = Math.min(maxDiff, Hero.difficulty + 1); Hero.save(); }, atMax);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 14px Georgia';
+    ctx.font = 'bold 14px Cinzel, Georgia';
     ctx.fillStyle = Hero.difficulty >= 4 ? '#e04a5a' : '#ffd76a';
     ctx.fillText(this.fitText(ctx, 'Difficulty: ' + DIFFICULTIES[Hero.difficulty].name, sdw - 96), W / 2, py + 54);
     const D = DIFFICULTIES[Hero.difficulty];
-    ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#fff';
+    ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = '#fff';
     ctx.fillText('Monsters ×' + D.mult + '      Rewards ×' + D.reward +
       (D.legBonus ? '      +' + (D.legBonus * 100).toFixed(1) + '% leg' : ''), W / 2, py + 76);
 
     if (!rows.length) {
-      ctx.textAlign = 'center'; ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.textAlign = 'center'; ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       ctx.fillText('Nothing calls to you from this waypoint yet.', W / 2, py + 120);
       return;
     }
@@ -1819,7 +1819,7 @@ const Screens = {
       y += rowH;
     }
     if (foot.length) {
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 12px Georgia';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 12px Cinzel, Georgia';
       ctx.fillStyle = '#c8b8e8';
       ctx.fillText(foot.join('     '), W / 2, y + 12);
     }
@@ -1840,13 +1840,13 @@ const Screens = {
     const nextAct = Math.min(100, cleared + 1);
 
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
     ctx.fillText(cleared + ' of 100 Acts cleared', W / 2, py + 52);
 
     // CONTINUE — pick up at the next uncleared Act.
     UI.btnPlate(ctx, px + 20, py + 70, pw - 40, 44, 'CONTINUE  ·  ACT ' + nextAct,
       () => { UI.close(); Game.startStory(nextAct); }, { size: 16 });
-    ctx.font = '10px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
     ctx.fillText(cleared >= 100 ? 'You have conquered all 100 Acts — replay the finale.'
       : 'Continue your journey where you left off.', W / 2, py + 128);
 
@@ -1854,7 +1854,7 @@ const Screens = {
     const dy = py + 150;
     if (cleared <= 0) {
       UI.btnPlate(ctx, px + 20, dy, pw - 40, 38, 'SELECT AN ACT', null, { size: 13, disabled: true });
-      ctx.textAlign = 'center'; ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#5c5569';
+      ctx.textAlign = 'center'; ctx.font = 'italic 10px Cinzel, Georgia'; ctx.fillStyle = '#5c5569';
       ctx.fillText('Clear an Act to unlock replay.', W / 2, dy + 58);
       return;
     }
@@ -1862,7 +1862,7 @@ const Screens = {
       () => { UI.sel.actDropOpen = !UI.sel.actDropOpen; UI.sel.scrollY = 0; }, { size: 14 });
 
     if (!UI.sel.actDropOpen) {
-      ctx.textAlign = 'center'; ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.textAlign = 'center'; ctx.font = 'italic 10px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       ctx.fillText('Tap to choose a cleared Act to replay.', W / 2, dy + 58);
       return;
     }
@@ -1891,7 +1891,7 @@ const Screens = {
     }
     ctx.restore();
     if (scrollY < scrollMax - 1) {
-      ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       ctx.fillText('▼ drag for more ▼', W / 2, listBot - 2);
     }
   },
@@ -1900,7 +1900,7 @@ const Screens = {
 
   map(ctx, W, H) {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 24px Georgia';
+    ctx.font = 'bold 24px Cinzel, Georgia';
     ctx.fillStyle = '#c9bfa8';
     ctx.fillText('HARVESTS OF SANCTUARY', W / 2, 30);
 
@@ -1917,10 +1917,10 @@ const Screens = {
       Hero.difficulty = Math.min(maxDiff, Hero.difficulty + 1); Hero.save();
     }, { size: 15, disabled: atMax });
     ctx.fillStyle = Hero.difficulty >= 4 ? '#e04a5a' : '#ffd76a';
-    ctx.font = 'bold 16px Georgia';
+    ctx.font = 'bold 16px Cinzel, Georgia';
     ctx.fillText(DIFFICULTIES[Hero.difficulty].name, W / 2, 68);
     const D = DIFFICULTIES[Hero.difficulty];
-    ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#fff';
+    ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = '#fff';
     ctx.fillText(`Monsters ×${D.mult}      Rewards ×${D.reward}` +
       (D.legBonus ? `      +${(D.legBonus * 100).toFixed(1)}% leg` : ''), W / 2, 88);
 
@@ -1934,14 +1934,14 @@ const Screens = {
         border: i === Math.min(Hero.zonesCleared, ZONES.length - 1) ? '#57b894' : undefined
       });
       ctx.textAlign = 'left';
-      ctx.font = 'bold 14px Georgia';
+      ctx.font = 'bold 14px Cinzel, Georgia';
       ctx.fillStyle = locked ? '#5c5569' : '#e8e0cc';
       ctx.fillText((locked ? '🔒  ' : '') + z.name, px + 14, y + 17);
-      ctx.font = '11px Georgia';
+      ctx.font = '11px Cinzel, Georgia';
       ctx.fillStyle = locked ? '#453f52' : '#9a9080';
       ctx.fillText(this.fitText(ctx, locked ? 'Clear the previous land to unlock' : z.desc, pw - 100), px + 14, y + 35);
       ctx.textAlign = 'right';
-      ctx.font = 'bold 11px Georgia';
+      ctx.font = 'bold 11px Cinzel, Georgia';
       ctx.fillStyle = locked ? '#453f52' : '#ffb43a';
       ctx.fillText(z.kind === 'dungeon' ? 'CRYPT' : 'WILDS', px + pw - 12, y + 17);
       ctx.fillStyle = locked ? '#453f52' : '#c9bfa8';
@@ -2064,7 +2064,7 @@ const Screens = {
     }
 
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold ' + (narrow ? 14 : 17) + 'px Georgia';
+    ctx.font = 'bold ' + (narrow ? 14 : 17) + 'px Cinzel, Georgia';
     ctx.fillStyle = '#c9bfa8';
     ctx.fillText('EQUIPMENT', cx, cy - R - chipR - 8);
 
@@ -2110,10 +2110,10 @@ const Screens = {
       ctx.textBaseline = 'middle';
       for (const [lbl, val, col] of rows) {
         ctx.textAlign = 'left';
-        ctx.font = labF + 'px Georgia';
+        ctx.font = labF + 'px Cinzel, Georgia';
         ctx.fillStyle = '#8a8070';
         ctx.fillText(lbl, 10 + sf2.left, sy);
-        ctx.font = 'bold ' + valF + 'px Georgia';
+        ctx.font = 'bold ' + valF + 'px Cinzel, Georgia';
         ctx.fillStyle = col;
         ctx.fillText(val, valX + sf2.left, sy);
         sy += step;
@@ -2188,7 +2188,7 @@ const Screens = {
         ctx.strokeStyle = '#12080a'; ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.arc(ex, ey, 7.5, 0, TAU); ctx.stroke();
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 11px Georgia';
+        ctx.font = 'bold 11px Cinzel, Georgia';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText('!', ex, ey + 0.5);
       }
@@ -2214,7 +2214,7 @@ const Screens = {
     const fam = Items.slotFamily(slot);
 
     ctx.textAlign = 'left';
-    ctx.font = 'bold 13px Georgia';
+    ctx.font = 'bold 13px Cinzel, Georgia';
     ctx.fillStyle = '#9a9080';
     ctx.fillText(ITEM_SLOTS[slot].label.toUpperCase() + ' — EQUIPPED', dx, dy);
     dy += 10;
@@ -2241,7 +2241,7 @@ const Screens = {
         afford ? () => Hero.buyBagUpgrade() : null,
         { size: 10, disabled: !afford, border: '#8a6f4a', color: '#ffd76a' });
     } else {
-      ctx.textAlign = 'left'; ctx.font = '11px Georgia'; ctx.fillStyle = '#8a8070';
+      ctx.textAlign = 'left'; ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
       ctx.fillText('INVENTORY ' + Hero.bagUsed() + '/' + Hero.BAG_SIZE + ' (max size)', dx, dy + 16);
     }
     dy += 34;
@@ -2273,13 +2273,13 @@ const Screens = {
     const vis = (top, h) => (top - scrollY + h > listTop) && (top - scrollY < viewBot);
 
     ctx.textAlign = 'left';
-    ctx.font = 'bold 13px Georgia';
+    ctx.font = 'bold 13px Cinzel, Georgia';
     ctx.fillStyle = '#9a9080';
     ctx.fillText('IN BAG (' + bagItems.length + ')', dx, c - scrollY + 14);
     c += 24;
 
     if (!bagItems.length) {
-      ctx.font = '12px Georgia';
+      ctx.font = '12px Cinzel, Georgia';
       ctx.fillStyle = '#6f6552';
       ctx.fillText('No ' + ITEM_SLOTS[slot].label.toLowerCase() + ' items in your bag.', dx, c - scrollY + 12);
       c += 22;
@@ -2295,12 +2295,12 @@ const Screens = {
           if (now) UI.sel.scrollToBottom = true;   // auto-reveal its action buttons
         }, { bg: selected ? 'rgba(60,52,78,0.95)' : 'rgba(28,24,38,0.92)' });
         ctx.textAlign = 'left';
-        ctx.font = 'bold 12px Georgia';
+        ctx.font = 'bold 12px Cinzel, Georgia';
         ctx.fillStyle = RARITIES[it.rarity].color;
         const bagNm = it.name + (it.torch && (it.count || 1) > 1 ? '  ×' + it.count : '');
         ctx.fillText(this.fitText(ctx, bagNm, dw - 70), dx + 10, yy + 15);
         ctx.textAlign = 'right';
-        ctx.font = 'bold 13px Georgia';
+        ctx.font = 'bold 13px Cinzel, Georgia';
         if (arrows === 3) {
           // Best-in-slot upgrades: the ▲▲▲ bob up/down and pulse green, all in
           // sync (shared Game.time phase) so the eye is drawn straight to them.
@@ -2372,7 +2372,7 @@ const Screens = {
     if (UI.sel.scrollToBottom) { UI.sel.scrollY = UI.sel.scrollMax; UI.sel.scrollToBottom = false; }
     // Fade hints when there's more content above/below the fold.
     ctx.textAlign = 'center';
-    ctx.font = '9px Georgia';
+    ctx.font = '9px Cinzel, Georgia';
     ctx.fillStyle = '#6f6552';
     if (scrollY > 1) ctx.fillText('▲ drag ▲', dx + dw / 2, listTop + 4);
     if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', dx + dw / 2, viewBot - 1);
@@ -2408,9 +2408,9 @@ const Screens = {
     if (up) {
       const afford = Hero.gold >= up.cost;
       const gshort = n => n >= 1e6 ? (n / 1e6) + 'm' : n >= 1000 ? (n / 1000) + 'k' : '' + n;
-      UI.btn(ctx, px, y, pw, 26, 'EXPAND BAG → ' + up.size + ' slots  (' + gshort(up.cost) + ' g)',
+      UI.btnPlate2(ctx, px, y, pw, 26, 'EXPAND BAG → ' + up.size + ' slots  (' + gshort(up.cost) + ' g)',
         afford ? () => Hero.buyBagUpgrade() : null,
-        { size: 10, disabled: !afford, border: '#8a6f4a', color: '#ffd76a' });
+        { size: 10, disabled: !afford, color: '#ffd76a' });
       y += 32;
     }
 
@@ -2422,18 +2422,13 @@ const Screens = {
       ? Hero.bag.filter(it => it && it.torch)
       : Hero.bag.filter(it => it && !it.torch && it.slot === s);
     let chX = px, chY = y;
+    // Filter chips ride the little empty plate (v1.6.99 owner rule).
     const chip = (label, on, cb) => {
-      ctx.font = 'bold 9px Georgia';
-      const cw = ctx.measureText(label).width + 16;
+      ctx.font = 'bold 9px Cinzel, Georgia';
+      const cw = ctx.measureText(label).width + 26;
       if (chX + cw > px + pw + 1) { chX = px; chY += 24; }
-      ctx.fillStyle = on ? 'rgba(52,66,102,0.95)' : 'rgba(28,24,38,0.9)';
-      rr(ctx, chX, chY, cw, 20, 10); ctx.fill();
-      ctx.strokeStyle = on ? '#6ff7c3' : '#3a3448'; ctx.lineWidth = 1.2;
-      rr(ctx, chX, chY, cw, 20, 10); ctx.stroke();
-      ctx.fillStyle = on ? '#dbeafe' : '#9a9080';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(label, chX + cw / 2, chY + 10.5);
-      UI.register(chX, chY, cw, 20, cb);
+      UI.chip(ctx, chX, chY, cw, 20, label, cb,
+        { size: 9, color: on ? '#f0dcae' : '#8a8070' });
       chX += cw + 6;
     };
     chip('ALL', filter === 'all', () => setFilter('all'));
@@ -2462,15 +2457,15 @@ const Screens = {
         rr(ctx, px, yy, pw, 30, 6); ctx.fill();
         if (selected) { ctx.strokeStyle = RARITIES[it.rarity].color; ctx.lineWidth = 1.5; rr(ctx, px, yy, pw, 30, 6); ctx.stroke(); }
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold 12px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
+        ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
         const nm = it.name + (it.torch && (it.count || 1) > 1 ? '  ×' + it.count : '');
         ctx.fillText(this.fitText(ctx, nm, pw - 96), px + 10, yy + 15);
         ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
         if (isEq) {
-          ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#4ade80';
+          ctx.font = 'bold 9px Cinzel, Georgia'; ctx.fillStyle = '#4ade80';
           ctx.fillText('EQUIPPED', px + pw - 10, yy + 15);
         } else if (!it.torch) {
-          ctx.font = 'bold 13px Georgia';
+          ctx.font = 'bold 13px Cinzel, Georgia';
           ctx.fillStyle = arrows > 0 ? '#4ade80' : arrows < 0 ? '#e04a5a' : '#9a9080';
           ctx.fillText(arrows > 0 ? '▲'.repeat(Math.min(3, arrows)) : arrows < 0 ? '▼'.repeat(Math.min(3, -arrows)) : '—', px + pw - 10, yy + 15);
         }
@@ -2540,13 +2535,13 @@ const Screens = {
     }
     if (!anything) {
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       ctx.fillText('Nothing here yet — loot the wilds.', px, c - scrollY + 14);
       c += 24;
     }
     ctx.restore();
     UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 6);
-    ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
     if (scrollY > 1) ctx.fillText('▲ drag ▲', px + pw / 2, listTop + 3);
     if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', px + pw / 2, viewBot - 1);
 
@@ -2596,7 +2591,7 @@ const Screens = {
     this.closeX(ctx, W, { x: px + pw - 20, y: py + 20, cb: close });
 
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 12px Georgia';
+    ctx.font = 'bold 12px Cinzel, Georgia';
     ctx.fillStyle = RARITIES[target.rarity].color;
     ctx.fillText(this.fitText(ctx, target.name, pw - 32), px + 16, py + 50);
     let y = py + 64;
@@ -2605,7 +2600,7 @@ const Screens = {
     // chip colour says which gem; the info card has the full name.)
     gems.forEach((g, gi) => {
       const gm = GEM_TYPES[g.type];
-      ctx.font = '11px Georgia';
+      ctx.font = '11px Cinzel, Georgia';
       ctx.fillStyle = gm.color;
       ctx.fillText(this.fitText(ctx, '◆ ' + GEM_TIERS[g.tier] + ' — ' + gemStatText(g), pw - 150), px + 16, y + 8);
       UI.btn(ctx, px + pw - 136, y - 6, 120, 24, 'UNSOCKET', () => {
@@ -2615,7 +2610,7 @@ const Screens = {
       y += 30;
     });
     if (emptyCount > 0) {
-      ctx.font = 'italic 10px Georgia';
+      ctx.font = 'italic 10px Cinzel, Georgia';
       ctx.fillStyle = '#6f6552';
       ctx.fillText('◇ ' + emptyCount + ' empty socket' + (emptyCount > 1 ? 's' : ''), px + 16, y + 8);
       y += 18;
@@ -2638,13 +2633,13 @@ const Screens = {
 
     // Gem pouch grid — tap to read what each does.
     if (!shown.length) {
-      ctx.font = 'italic 12px Georgia';
+      ctx.font = 'italic 12px Cinzel, Georgia';
       ctx.fillStyle = '#544d44';
       ctx.fillText(Hero.gems.length ? 'No gems match this filter.' : 'No gems in your pouch — monsters, chests and rifts drop them.', px + 16, y + 14);
       y += 36;
     } else {
       if (groups.length > 12) {
-        ctx.font = '10px Georgia';
+        ctx.font = '10px Cinzel, Georgia';
         ctx.fillStyle = '#9a9080';
         ctx.fillText('+' + (groups.length - 12) + ' more', px + 16, y);
       }
@@ -2666,9 +2661,9 @@ const Screens = {
         });
         drawGemIcon(ctx, grp.type, grp.tier, gx + 13, gy + 15, 8);
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold 10px Georgia'; ctx.fillStyle = gcol;
+        ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = gcol;
         ctx.fillText(GEM_TYPES[grp.type].name + (grp.count > 1 ? ' ×' + grp.count : ''), gx + 24, gy + 10);
-        ctx.font = '8px Georgia'; ctx.fillStyle = '#8a8070';
+        ctx.font = '8px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
         ctx.fillText(GEM_TIERS[grp.tier], gx + 24, gy + 21);
       });
       ctx.textAlign = 'left';
@@ -2686,13 +2681,13 @@ const Screens = {
       rr(ctx, px + 16, y, pw - 32, 62, 6); ctx.stroke();
       drawGemIcon(ctx, g.type, g.tier, px + pw - 46, y + 31, 18);
       ctx.textAlign = 'left';
-      ctx.font = 'bold 13px Georgia';
+      ctx.font = 'bold 13px Cinzel, Georgia';
       ctx.fillStyle = gm.color;
       ctx.fillText('◆ ' + gemName(g) + (selGroup.count > 1 ? '  (×' + selGroup.count + ')' : ''), px + 28, y + 16);
-      ctx.font = '12px Georgia';
+      ctx.font = '12px Cinzel, Georgia';
       ctx.fillStyle = '#b5ab94';
       ctx.fillText(this.fitText(ctx, gemStatText(g), pw - 70), px + 32, y + 33);
-      ctx.font = '11px Georgia';
+      ctx.font = '11px Cinzel, Georgia';
       ctx.fillStyle = '#8a6f4a';
       ctx.fillText(emptyCount > 0 ? 'Fills an empty socket' : 'No empty socket — unsocket one first', px + 32, y + 49);
       y += 70;
@@ -2714,7 +2709,7 @@ const Screens = {
       ctx.fillStyle = 'rgba(20,17,28,0.9)';
       rr(ctx, x, y, w, 34, 6); ctx.fill();
       ctx.textAlign = 'left';
-      ctx.font = 'italic 12px Georgia';
+      ctx.font = 'italic 12px Cinzel, Georgia';
       ctx.fillStyle = '#544d44';
       ctx.fillText('— nothing equipped —', x + 12, y + 18);
       return y + 42;
@@ -2731,16 +2726,16 @@ const Screens = {
     ctx.lineWidth = 1.5;
     rr(ctx, x, y, w, h, 6); ctx.stroke();
     ctx.textAlign = 'left';
-    ctx.font = 'bold 13px Georgia';
+    ctx.font = 'bold 13px Cinzel, Georgia';
     ctx.fillStyle = rareCol;
     const cardNm = item.name + (item.torch && (item.count || 1) > 1 ? '  ×' + item.count : '');
     ctx.fillText(this.fitText(ctx, cardNm, w - 116), x + 12, y + 15);
     ctx.textAlign = 'right';
-    ctx.font = '10px Georgia';
+    ctx.font = '10px Cinzel, Georgia';
     ctx.fillStyle = '#6f6552';
     ctx.fillText(torchT ? rareName : rareName + ' · lvl ' + item.mLvl, x + w - 10, y + 15);
     ctx.textAlign = 'left';
-    ctx.font = '12px Georgia';
+    ctx.font = '12px Cinzel, Georgia';
     lines.forEach((ln, i) => {
       ctx.fillStyle = ln[0] === '◆' ? '#8fe8c8' : ln[0] === '◇' ? '#6f6552'
         : ln[0] === '❢' ? '#ff9a6a' : ln[0] === '★' ? '#ff8c2a'
@@ -2783,13 +2778,13 @@ const Screens = {
       const fy = H - 84;
       UI.panel(ctx, px, fy, pw, 76);
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      ctx.font = 'bold 13px Georgia';
+      ctx.font = 'bold 13px Cinzel, Georgia';
       ctx.fillStyle = '#b06adf';
       ctx.fillText(this.fitText(ctx, s.name + '  ·  Passive', pw - 24), px + 12, fy + 16);
-      ctx.font = '12px Georgia'; ctx.fillStyle = '#b5ab94';
+      ctx.font = '12px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
       wrapText(ctx, s.desc, px + 12, fy + 33, pw - 24, 14, 2);
       if (s.lvl > Hero.level) {
-        ctx.fillStyle = '#6f6552'; ctx.font = '11px Georgia';
+        ctx.fillStyle = '#6f6552'; ctx.font = '11px Cinzel, Georgia';
         ctx.fillText(this.fitText(ctx, 'unlocks at level ' + s.lvl, pw - 24), px + 12, fy + 65);
       }
     }
@@ -2801,7 +2796,7 @@ const Screens = {
   skillsActives(ctx, W, H, px, pw) {
     const sy = 112;
     ctx.textAlign = 'left';
-    ctx.font = 'bold 12px Georgia';
+    ctx.font = 'bold 12px Cinzel, Georgia';
     ctx.fillStyle = '#9a9080';
     ctx.fillText('ACTION BAR — one skill per category', px, sy - 14);
 
@@ -2818,14 +2813,15 @@ const Screens = {
       // Painted round frame (v1.6.97 owner rule); selection keeps its glow ring.
       const framed = UI.circleFrame(ctx, bx, cyc, cr);
       if (selected || !framed) {
-        ctx.strokeStyle = selected ? '#6ff7c3' : SKILL_CATS[cat].color;
+        // Selection ring: faded bone white (owner rule — no bright green).
+        ctx.strokeStyle = selected ? '#cfc8b8' : SKILL_CATS[cat].color;
         ctx.lineWidth = selected ? 3 : 2;
         ctx.beginPath(); ctx.arc(bx, cyc, cr, 0, TAU); ctx.stroke();
       }
       const id = Hero.loadout[i];
       if (id) drawSkillIcon(ctx, id, bx, cyc, cr - 3);
       else {
-        ctx.fillStyle = '#3a3448'; ctx.font = '22px Georgia'; ctx.textAlign = 'center';
+        ctx.fillStyle = '#3a3448'; ctx.font = '22px Cinzel, Georgia'; ctx.textAlign = 'center';
         ctx.fillText('+', bx, cyc + 1);
       }
       // In Elective Mode a slot can hold any category, so label it by the skill
@@ -2833,7 +2829,7 @@ const Screens = {
       const elective = typeof Settings !== 'undefined' && Settings.g && Settings.g.electiveMode;
       const lblCat = (elective && id) ? (SKILL_DATA.find(s => s.id === id) || {}).cat || cat : cat;
       ctx.fillStyle = SKILL_CATS[lblCat].color;
-      ctx.font = '8px Georgia'; ctx.textAlign = 'center';
+      ctx.font = '8px Cinzel, Georgia'; ctx.textAlign = 'center';
       ctx.fillText(elective ? SKILL_CATS[lblCat].name.toUpperCase().slice(0, 9) : this.slotCatLabels[i], bx, cyc + cr + 12);
       UI.register(bx - sw / 2 + 2, sy - 4, sw - 4, cr * 2 + 30, () => {
         UI.sel.slotIdx = i;
@@ -2845,11 +2841,11 @@ const Screens = {
     // A prominent button opens the fleshed-out category chooser for the
     // selected slot (skills browsable by category, with their runes).
     const slot = UI.sel.slotIdx == null ? 0 : UI.sel.slotIdx;
-    const by = cyc + cr + 26;
+    const by = cyc + cr + 44;   // breathing room below the slots (owner rule)
     UI.btnPlate(ctx, px + pw * 0.12, by, pw * 0.76, 44, 'CHOOSE SKILLS',
       () => Screens.openChooser(slot, Hero.loadout[slot], null),
       { size: 15, color: '#6ff7c3', border: '#3a7a6a' });
-    ctx.textAlign = 'center'; ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.textAlign = 'center'; ctx.font = 'italic 11px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
     ctx.fillText('Browse every skill & rune by category — they unlock as you level.', W / 2, by + 62);
   },
 
@@ -2908,7 +2904,7 @@ const Screens = {
     chArrow(px + 14, 'arrow_left', '◀', () => stepCat(-1));
     chArrow(px + pw - 60, 'arrow_right', '▶', () => stepCat(1));
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 17px Georgia'; ctx.fillStyle = catDef.color;
+    ctx.font = 'bold 17px Cinzel, Georgia'; ctx.fillStyle = catDef.color;
     ctx.fillText(catDef.name.toUpperCase(), W / 2, selY + 15);
 
 
@@ -2929,7 +2925,7 @@ const Screens = {
       ctx.beginPath(); ctx.arc(sx, y + sR, sR, 0, TAU); ctx.fill();
       const sfr = UI.circleFrame(ctx, sx, y + sR, sR);
       if (sel || !sfr) {
-        ctx.strokeStyle = sel ? '#ffd76a' : catDef.color;
+        ctx.strokeStyle = sel ? '#cfc8b8' : catDef.color;
         ctx.lineWidth = sel ? 3.5 : 1.5;
         ctx.beginPath(); ctx.arc(sx, y + sR, sR, 0, TAU); ctx.stroke();
       }
@@ -2941,12 +2937,12 @@ const Screens = {
         ctx.beginPath(); ctx.arc(sx, y - 1, 10, 0, TAU); ctx.fill();
         ctx.strokeStyle = '#e0402f'; ctx.lineWidth = 1.3;
         ctx.beginPath(); ctx.arc(sx, y - 1, 10, 0, TAU); ctx.stroke();
-        ctx.fillStyle = '#ff6a5a'; ctx.font = 'bold 11px Georgia';
+        ctx.fillStyle = '#ff6a5a'; ctx.font = 'bold 11px Cinzel, Georgia';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(s.lvl, sx, y - 0.5); ctx.textBaseline = 'alphabetic';
       }
       ctx.fillStyle = locked ? '#6f6552' : sel ? '#ffd76a' : '#b5ab94';
-      ctx.font = (sel ? 'bold ' : '') + '9px Georgia'; ctx.textAlign = 'center';
+      ctx.font = (sel ? 'bold ' : '') + '9px Cinzel, Georgia'; ctx.textAlign = 'center';
       this.wrapLabel(ctx, s.name, sx, y + sR * 2 + 12, sCell - 4, 2, 9);
       // Selecting a locked skill is allowed (to READ it); ACCEPT stays disabled
       // until you reach the unlock level.
@@ -2975,19 +2971,19 @@ const Screens = {
       if (ri === 0) {
         // "No Rune" — a plain empty socket.
         if (sel || !rfr) {
-          ctx.strokeStyle = sel ? '#6ff7c3' : '#6b5f80'; ctx.lineWidth = sel ? 3 : 1.5;
+          ctx.strokeStyle = sel ? '#cfc8b8' : '#6b5f80'; ctx.lineWidth = sel ? 3 : 1.5;
           ctx.beginPath(); ctx.arc(rx, y + rR, rR - 2, 0, TAU); ctx.stroke();
         }
       } else {
         drawRuneStone(ctx, rx, y + rR, rR * 0.86, 0, runeBase + ri);
         if (sel) {
-          ctx.strokeStyle = '#6ff7c3'; ctx.lineWidth = 3;
+          ctx.strokeStyle = '#cfc8b8'; ctx.lineWidth = 3;
           ctx.beginPath(); ctx.arc(rx, y + rR, rR + 2, 0, TAU); ctx.stroke();
         }
       }
       ctx.globalAlpha = 1;
       ctx.fillStyle = locked ? '#6f6552' : sel ? '#6ff7c3' : '#b5ab94';
-      ctx.font = (sel ? 'bold ' : '') + '8px Georgia'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.font = (sel ? 'bold ' : '') + '8px Cinzel, Georgia'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
       this.wrapLabel(ctx, ri === 0 ? 'No Rune' : rune.name, rx, y + rR * 2 + 10, rCell - 2, 2, 8);
       // Unlock-level badge drawn ON TOP (a dark chip) so the rune art never clips it.
       if (locked && rune.lvl) {
@@ -2996,7 +2992,7 @@ const Screens = {
         ctx.beginPath(); ctx.arc(bx, byy, 9, 0, TAU); ctx.fill();
         ctx.strokeStyle = '#e0402f'; ctx.lineWidth = 1.2;
         ctx.beginPath(); ctx.arc(bx, byy, 9, 0, TAU); ctx.stroke();
-        ctx.fillStyle = '#ff6a5a'; ctx.font = 'bold 10px Georgia';
+        ctx.fillStyle = '#ff6a5a'; ctx.font = 'bold 10px Cinzel, Georgia';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(rune.lvl, bx, byy + 0.5);
         ctx.textBaseline = 'alphabetic';
@@ -3016,16 +3012,16 @@ const Screens = {
     UI.panel(ctx, px + 16, y, pw - 32, cardH);
     drawSkillIcon(ctx, UI.sel.chSkill, px + 16 + 28, y + cardH / 2, 20);
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 14px Georgia'; ctx.fillStyle = catDef.color;
+    ctx.font = 'bold 14px Cinzel, Georgia'; ctx.fillStyle = catDef.color;
     ctx.fillText(chSkill ? chSkill.name : '', px + 64, y + 16);
     // Element tag for the previewed skill+rune (a converting rune wins).
     const chElem = (RUNE_ELEMENT[UI.sel.chRune]) || (SKILL_ELEMENT[UI.sel.chSkill]) || 'physical';
     if (ELEMENTS[chElem]) {
-      ctx.textAlign = 'right'; ctx.font = 'bold 10px Georgia'; ctx.fillStyle = ELEMENTS[chElem].color;
+      ctx.textAlign = 'right'; ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = ELEMENTS[chElem].color;
       ctx.fillText('◆ ' + ELEMENTS[chElem].name, px + pw - 28, y + 16);
       ctx.textAlign = 'left';
     }
-    ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
+    ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
     // Wrap the rune name + description onto up to THREE lines instead of clipping.
     wrapText(ctx, (chRune && chRune.id !== 'base' ? '◈ ' + chRune.name + ' — ' : '') +
       (chRune ? chRune.desc : ''), px + 64, y + 32, pw - 84, 13, 3);
@@ -3066,7 +3062,7 @@ const Screens = {
   // A centered section header with flanking rules (used by the chooser).
   chooserLabel(ctx, px, pw, y, text) {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#8a7f6c';
+    ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = '#8a7f6c';
     const cx = px + pw / 2;
     ctx.fillText(text, cx, y + 8);
     const tw = ctx.measureText(text).width;
@@ -3079,7 +3075,7 @@ const Screens = {
     const sy = 112;
     const nSlots = Hero.passiveSlots();
     ctx.textAlign = 'left';
-    ctx.font = 'bold 12px Georgia';
+    ctx.font = 'bold 12px Cinzel, Georgia';
     ctx.fillStyle = '#9a9080';
     ctx.fillText(`PASSIVE SLOTS (${nSlots} unlocked)`, px, sy - 14);
     const nPassiveSlots = PASSIVE_SLOT_LEVELS.length;
@@ -3094,7 +3090,7 @@ const Screens = {
       ctx.beginPath(); ctx.arc(bx, sy + 34, pcr, 0, TAU); ctx.fill();
       const pfr = UI.circleFrame(ctx, bx, sy + 34, pcr);
       if (selected || !pfr) {
-        ctx.strokeStyle = selected ? '#b06adf' : '#3a3448';
+        ctx.strokeStyle = selected ? '#cfc8b8' : '#3a3448';
         ctx.lineWidth = selected ? 3 : 2;
         ctx.beginPath(); ctx.arc(bx, sy + 34, pcr, 0, TAU); ctx.stroke();
       }
@@ -3102,38 +3098,64 @@ const Screens = {
       ctx.textAlign = 'center';
       if (locked) {
         ctx.fillStyle = '#5c5569';
-        ctx.font = '10px Georgia';
+        ctx.font = '10px Cinzel, Georgia';
         ctx.fillText('lvl ' + PASSIVE_SLOT_LEVELS[i], bx, sy + 35);
       } else if (id) {
         const pd = PASSIVE_DATA.find(x => x.id === id);
         ctx.fillStyle = '#b06adf';
-        ctx.font = 'bold 9px Georgia';
+        ctx.font = 'bold 9px Cinzel, Georgia';
         const words = pd.name.split(' ');
         words.forEach((wd, wi) => ctx.fillText(wd, bx, sy + 28 + wi * 11));
       } else {
         ctx.fillStyle = '#3a3448';
-        ctx.font = '20px Georgia';
+        ctx.font = '20px Cinzel, Georgia';
         ctx.fillText('+', bx, sy + 35);
       }
       ctx.globalAlpha = 1;
       if (!locked) UI.register(bx - 25, sy + 9, 50, 52, () => { UI.sel.slotIdx = i; });
     }
 
-    // More columns when the screen is too short for one tall list. Rows are
-    // taller on desktop so the passives read bigger.
-    const gy = sy + 76;
-    const rh = UI.desktop ? 40 : 30;
-    const rowsFit = Math.max(3, Math.floor((H - gy - 100) / rh));
-    const listCols = Math.min(3, Math.max(1, Math.ceil(PASSIVE_DATA.length / rowsFit)));
-    const colW2 = (pw - (listCols - 1) * 8) / listCols;
+    // The passives are a GRID of circle-framed medallions (v1.6.99 owner
+    // rule — not a column): 5 columns on desktop, 4 on tablet, 3 on phones,
+    // each passive in the painted round frame; name beneath, chosen ones
+    // ringed in faded bone white.
+    const gy = sy + 84;
+    const listCols = UI.desktop ? 5 : (W >= 760 ? 4 : 3);
+    const cellW = pw / listCols;
+    const rowsN = Math.ceil(PASSIVE_DATA.length / listCols);
+    const availH = Math.max(120, H - gy - 100);
+    const cellH = Math.min(112, availH / rowsN);
+    const gr = Math.min(30, cellW / 2 - 12, (cellH - 34) / 2);
     PASSIVE_DATA.forEach((s, i) => {
-      const cx2 = px + (i % listCols) * (colW2 + 8);
-      const y = gy + Math.floor(i / listCols) * rh;
-      if (y > H - 96) return;
+      const cx2 = px + (i % listCols) * cellW + cellW / 2;
+      const cy2 = gy + Math.floor(i / listCols) * cellH + gr;
       const locked = s.lvl > Hero.level;
       const active = Hero.passives.includes(s.id);
-      UI.tip(cx2, y, colW2, rh - 4, s.name + (locked ? '  (lvl ' + s.lvl + ')' : ''), s.desc);
-      UI.btn(ctx, cx2, y, colW2, rh - 4, '', locked ? null : () => {
+      ctx.globalAlpha = locked ? 0.45 : 1;
+      ctx.fillStyle = active ? '#2e2a3a' : '#16121d';
+      ctx.beginPath(); ctx.arc(cx2, cy2, gr, 0, TAU); ctx.fill();
+      const fr = UI.circleFrame(ctx, cx2, cy2, gr);
+      if (active || !fr) {
+        ctx.strokeStyle = active ? '#cfc8b8' : '#3a3448';
+        ctx.lineWidth = active ? 3 : 1.5;
+        ctx.beginPath(); ctx.arc(cx2, cy2, gr, 0, TAU); ctx.stroke();
+      }
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      if (locked) {
+        ctx.fillStyle = '#8a8070'; ctx.font = 'bold 9px Cinzel, Georgia';
+        ctx.fillText('lvl ' + s.lvl, cx2, cy2);
+      } else if (active) {
+        ctx.fillStyle = '#e8e2d0'; ctx.font = 'bold 12px Cinzel, Georgia';
+        ctx.fillText('✔', cx2, cy2);
+      }
+      ctx.globalAlpha = locked ? 0.6 : 1;
+      ctx.fillStyle = locked ? '#5c5569' : (active ? '#e8e2d0' : '#c9bfa8');
+      ctx.font = '600 ' + (UI.desktop ? 11 : 9) + 'px Cinzel, Georgia';
+      this.wrapLabel(ctx, s.name, cx2, cy2 + gr + 14, cellW - 10, 2, UI.desktop ? 12 : 10);
+      ctx.globalAlpha = 1;
+      UI.tip(cx2 - cellW / 2 + 2, cy2 - gr - 4, cellW - 4, gr * 2 + 30,
+        s.name + (locked ? '  (lvl ' + s.lvl + ')' : ''), s.desc);
+      if (!locked) UI.register(cx2 - cellW / 2 + 2, cy2 - gr - 4, cellW - 4, gr * 2 + 30, () => {
         UI.sel.info = s;
         const slot = clamp(UI.sel.slotIdx, 0, Math.max(0, nSlots - 1));
         const existing = Hero.passives.indexOf(s.id);
@@ -3144,26 +3166,7 @@ const Screens = {
         }
         Hero.save();
         Items.apply();
-      }, {
-        disabled: locked,
-        bg: active ? 'rgba(70,44,90,0.85)' : undefined
       });
-      ctx.textAlign = 'left';
-      ctx.font = 'bold ' + (UI.desktop ? 14 : 12) + 'px Georgia';
-      ctx.fillStyle = locked ? '#5c5569' : (active ? '#d8b4f0' : '#c9bfa8');
-      const name = s.name + (locked ? '  (lvl ' + s.lvl + ')' : '');
-      // Wrap long passive names to 2 lines rather than clipping with "…".
-      this.wrapLabel(ctx, name, cx2 + 10, y + (rh - 4) / 2, colW2 - 30, 2, UI.desktop ? 14 : 12);
-      const nameW = ctx.measureText(name).width;
-      ctx.textAlign = 'right';
-      ctx.font = '10px Georgia';
-      ctx.fillStyle = locked ? '#453f52' : '#8a8070';
-      // On phones (or multi-column mode) the description lives in the footer.
-      if (W < 640 || listCols > 1) {
-        ctx.fillText('›', cx2 + colW2 - 12, y + 13);
-      } else {
-        ctx.fillText(this.fitText(ctx, s.desc, colW2 - nameW - 40), cx2 + colW2 - 10, y + 13);
-      }
     });
   },
 
@@ -3185,7 +3188,7 @@ const Screens = {
     // salvage) must always be visible, so nothing gets dropped off the end.
     let size = 11, gap = 12;
     for (; size >= 8; size--) {
-      ctx.font = 'bold ' + size + 'px Georgia';
+      ctx.font = 'bold ' + size + 'px Cinzel, Georgia';
       gap = size >= 10 ? 12 : 7;
       let total = -gap;
       for (const [txt] of parts) total += ctx.measureText(txt).width + gap;
@@ -3217,7 +3220,7 @@ const Screens = {
     const px = W / 2 - pw / 2;
     UI.panel(ctx, px, 46, pw, Math.min(H - 56, 300), 'SALVAGE');
     this.matsRow(ctx, px + 16, 92, pw - 32);
-    ctx.textAlign = 'left'; ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.textAlign = 'left'; ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
     // Two lines on narrow panels — never ellipsize the explainer.
     wrapText(ctx, 'Bulk-melt everything of a rarity in your bag. Gems survive the forge.', px + 16, 116, pw - 32, 13, 2);
     const q = (pw - 32 - 3 * 8) / 2;
@@ -3231,7 +3234,7 @@ const Screens = {
       { size: 12, color: epicOk ? '#b06adf' : '#6f5a7a', disabled: !epicOk });
     UI.btnPlate3(ctx, px + 24 + q, 190, q, 44, legOk ? 'LEGENDARIES' : 'LEGENDARIES  (smith ' + legLvl + ')', () => Items.salvageLegendaries(),
       { size: 12, color: legOk ? '#ff8c2a' : '#7a5f45', disabled: !legOk });
-    ctx.textAlign = 'center'; ctx.font = '10px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.textAlign = 'center'; ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
     ctx.fillText(this.fitText(ctx, 'Single items always salvage free from the Inventory wheel, any rarity.', pw - 24), px + pw / 2, 258);
   },
 
@@ -3244,7 +3247,7 @@ const Screens = {
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 56, 430);
     UI.panel(ctx, px, 46, pw, ph, 'REPAIR');
-    ctx.textAlign = 'right'; ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#ffd76a';
+    ctx.textAlign = 'right'; ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = '#ffd76a';
     ctx.fillText(Hero.gold + ' g', px + pw - 16, 92);
     const list = Items.damagedGear();
     const total = Items.repairAllCost();
@@ -3267,9 +3270,9 @@ const Screens = {
         ctx.fillStyle = broken ? 'rgba(60,20,26,0.92)' : 'rgba(28,24,38,0.92)';
         rr(ctx, px + 12, yy, pw - 24, 36, 6); ctx.fill();
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold 12px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
+        ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
         ctx.fillText(this.fitText(ctx, it.name, pw - 220), px + 22, yy + 12);
-        ctx.font = '10px Georgia'; ctx.fillStyle = broken ? '#e04a5a' : '#9a9080';
+        ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = broken ? '#e04a5a' : '#9a9080';
         ctx.fillText((broken ? 'BROKEN — ' : '') + 'Durability ' + it.dur + '/' + it.durMax, px + 22, yy + 26);
         const cost = Items.repairCost(it);
         UI.chip(ctx, px + pw - 118, yy + 5, 100, 26, cost + 'g',
@@ -3280,7 +3283,7 @@ const Screens = {
     }
     if (!list.length) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       ctx.fillText('Every buckle shines. Come back after a real fight.', px + pw / 2, listTop + 30);
     }
     ctx.restore();
@@ -3303,12 +3306,12 @@ const Screens = {
     ctx.textAlign = 'center'; ctx.font = '600 12px Cinzel, Georgia';
     ctx.fillStyle = !UI.sel.master ? '#f0dcae' : '#8a8070'; ctx.fillText('STANDARD', px + 16 + half / 2, 106);
     ctx.fillStyle = UI.sel.master ? '#ffd76a' : '#8a8070'; ctx.fillText('MASTERWORK', px + 24 + half * 1.5, 106);
-    ctx.font = '9px Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
     ctx.fillText(this.fitText(ctx, this.costLabel(stdCost), half - 12), px + 16 + half / 2, 122);
     ctx.fillText(this.fitText(ctx, this.costLabel(mwCost), half - 12), px + 24 + half * 1.5, 122);
     const afford = Items.canAfford(Items.craftCost(UI.sel.master));
     const [flo, fhi] = Items.smithRange();
-    ctx.font = '10px Georgia'; ctx.textAlign = 'left'; ctx.fillStyle = '#ffb43a';
+    ctx.font = '10px Cinzel, Georgia'; ctx.textAlign = 'left'; ctx.fillStyle = '#ffb43a';
     const bandTxt = 'Forges lvl ' + flo + '–' + fhi + '.  ';
     ctx.fillText(bandTxt, px + 16, 148);
     const bandW = ctx.measureText(bandTxt).width;
@@ -3323,7 +3326,7 @@ const Screens = {
       UI.btnPlate3(ctx, bx, by, bw, 34, ITEM_SLOTS[slot].label, () => Items.craft(slot, UI.sel.master),
         { size: 11, disabled: !afford });
     });
-    ctx.textAlign = 'center'; ctx.font = '10px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.textAlign = 'center'; ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
     ctx.fillText('Crafted gear goes to your bag.', px + pw / 2, 162 + rows * 40 + 12);
   },
 
@@ -3346,7 +3349,7 @@ const Screens = {
     // Reagent tally — only reagents the player actually holds (no teasing the
     // ones they haven't found yet).
     ctx.textAlign = 'left';
-    ctx.font = 'bold 11px Georgia';
+    ctx.font = 'bold 11px Cinzel, Georgia';
     const reagents = ['lumber', 'rivets', 'heartstring', 'wyrmscale', 'brain', 'rathmasoul'].filter(k => (Hero.mats[k] || 0) > 0);
     let tx = px + 16, ty = 96;
     for (const k of reagents) {
@@ -3361,7 +3364,7 @@ const Screens = {
 
     // Current torch status.
     const eq = Hero.equipped.torch;
-    ctx.font = '11px Georgia';
+    ctx.font = '11px Cinzel, Georgia';
     if (eq && eq.burnT !== undefined) {
       const mins = Math.floor(eq.burnT / 60), secs = Math.floor(eq.burnT % 60);
       const T = TORCH_TYPES[eq.torch] || TORCH_TYPES.wood;
@@ -3381,7 +3384,7 @@ const Screens = {
     const viewH = Math.max(60, listBot - listTop);
     const order = Object.keys(TORCH_TYPES).filter(t => Items.canCraftTorch(t));
     if (!order.length) {
-      ctx.textAlign = 'left'; ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.textAlign = 'left'; ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       ctx.fillText('Gather reagents to forge a torch.', px + 16, listTop + 14);
     }
     const rowH = 72;
@@ -3406,15 +3409,15 @@ const Screens = {
       }
       // Name + rarity-tier badge. Colour = the RARITY colour (matches inventory).
       ctx.textAlign = 'left';
-      ctx.font = 'bold 13px Georgia';
+      ctx.font = 'bold 13px Cinzel, Georgia';
       ctx.fillStyle = T.tierColor;
       ctx.fillText(T.name + '  ·  ' + T.tier, px + 28, y + 18);
-      ctx.font = '10px Georgia';
+      ctx.font = '10px Cinzel, Georgia';
       ctx.fillStyle = '#9a9080';
       ctx.fillText('Burns ' + T.minutes + ' min  ·  light radius ' + T.radius, px + 28, y + 34);
       // Recipe (owned / needed per component).
       const shortMat = { lumber: 'Lumber', rivets: 'Rivets', heartstring: 'Heart', wyrmscale: 'Wyrm', brain: 'Brain', rathmasoul: 'Rathma' };
-      ctx.font = (pw < 420 ? 10 : 11) + 'px Georgia';
+      ctx.font = (pw < 420 ? 10 : 11) + 'px Cinzel, Georgia';
       let rx = px + 28;
       const recipeRight = px + pw - 128;
       for (const [k, n] of Object.entries(T.recipe)) {
@@ -3432,13 +3435,13 @@ const Screens = {
     });
     ctx.restore();
     if (scrollMax > 0) {
-      ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       if (scrollY > 1) ctx.fillText('▲ drag ▲', px + pw / 2, listTop + 2);
       if (scrollY < scrollMax - 1) ctx.fillText('▼ drag for more ▼', px + pw / 2, listBot - 1);
     }
 
     ctx.textAlign = 'center';
-    ctx.font = 'italic 10px Georgia';
+    ctx.font = 'italic 10px Cinzel, Georgia';
     ctx.fillStyle = '#6f6552';
     ctx.fillText(this.fitText(ctx, 'Forged torches go to your inventory (no bag slot). Equip one from the Inventory wheel.', pw - 24),
       px + pw / 2, footTop + 8);
@@ -3465,15 +3468,15 @@ const Screens = {
     // Filter chips (All + 5 types) and a sort-direction toggle.
     const types = Object.keys(GEM_TYPES);
     const chipW = (pw - 32 - 64) / (types.length + 1);
-    UI.btnPlate3(ctx, px + 16, top, chipW - 4, 24, 'All', () => { UI.sel.gemFilter = null; UI.sel.gemKey = null; },
+    UI.btnPlate2(ctx, px + 16, top, chipW - 4, 24, 'All', () => { UI.sel.gemFilter = null; UI.sel.gemKey = null; },
       { size: 9, color: !UI.sel.gemFilter ? '#f0dcae' : '#8a8070' });
     types.forEach((t, ti) => {
       const on = UI.sel.gemFilter === t;
-      UI.btnPlate3(ctx, px + 16 + (ti + 1) * chipW, top, chipW - 4, 24, GEM_TYPES[t].name.slice(0, 4),
+      UI.btnPlate2(ctx, px + 16 + (ti + 1) * chipW, top, chipW - 4, 24, GEM_TYPES[t].name.slice(0, 4),
         () => { UI.sel.gemFilter = on ? null : t; UI.sel.gemKey = null; },
         { size: 9, color: on ? GEM_TYPES[t].color : '#8a8070' });
     });
-    UI.btnPlate3(ctx, px + pw - 74, top, 58, 24, UI.sel.gemSortAsc ? '▲ tier' : '▼ tier',
+    UI.btnPlate2(ctx, px + pw - 74, top, 58, 24, UI.sel.gemSortAsc ? '▲ tier' : '▼ tier',
       () => { UI.sel.gemSortAsc = !UI.sel.gemSortAsc; }, { size: 9 });
 
     const groups = {};
@@ -3489,7 +3492,7 @@ const Screens = {
     });
     const listTop = top + 32;
     if (!keys.length) {
-      ctx.textAlign = 'left'; ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#544d44';
+      ctx.textAlign = 'left'; ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#544d44';
       ctx.fillText(Hero.gems.length ? 'No gems match this filter.' : 'No gems in your pouch yet.', px + 16, listTop + 16);
       return { groups, listBot: listTop };
     }
@@ -3512,14 +3515,14 @@ const Screens = {
         { bg: selected ? 'rgba(70,44,90,0.9)' : undefined, border: selected ? gm.color : undefined });
       drawGemIcon(ctx, type, tier, px + 34, ry + rowH / 2 - 3, 11);
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 12px Georgia'; ctx.fillStyle = gm.color;
+      ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = gm.color;
       ctx.fillText(gm.name + ' · ' + GEM_TIERS[tier] + '  ×' + n, px + 50, ry + rowH / 2 - 3);
-      ctx.textAlign = 'right'; ctx.font = '10px Georgia'; ctx.fillStyle = '#8a8070';
+      ctx.textAlign = 'right'; ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
       ctx.fillText(selected ? '▾' : 'tap', px + pw - 26, ry + rowH / 2 - 3);
     });
     ctx.restore();
     if (scrollMax > 0) {
-      ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       if (scrollY > 1) ctx.fillText('▲ drag ▲', px + pw / 2, listTop + 3);
       if (scrollY < scrollMax - 1) ctx.fillText('▼ drag ▼', px + pw / 2, listBot - 1);
     }
@@ -3542,7 +3545,7 @@ const Screens = {
       const canCombine = n >= 3 && tier < GEM_TIERS.length - 1;
       const cost = 500 * (tier + 1);
       let y = listBot + 8;
-      ctx.textAlign = 'left'; ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
+      ctx.textAlign = 'left'; ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
       ctx.fillText(this.fitText(ctx, 'Now: ' + gemStatText({ type, tier }), pw - 40), px + 20, y + 8);
       ctx.fillStyle = tier < GEM_MAX_TIER ? '#4ade80' : '#8a8070';
       ctx.fillText(this.fitText(ctx, tier < GEM_MAX_TIER ? 'Next: ' + gemStatText({ type, tier: tier + 1 }) : 'Already Marquise — the top tier.', pw - 40), px + 20, y + 26);
@@ -3564,7 +3567,7 @@ const Screens = {
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 56, 470);
     UI.panel(ctx, px, 46, pw, ph, 'SELL GEMS');
-    ctx.textAlign = 'right'; ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#ffd76a';
+    ctx.textAlign = 'right'; ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = '#ffd76a';
     ctx.fillText(Hero.gold.toLocaleString() + ' g', px + pw - 16, 80);
     const sel = UI.sel.gemKey;
     const detailNeed = sel ? 64 : 0;
@@ -3595,13 +3598,13 @@ const Screens = {
     const afford = Items.canAfford(cost);
     // Flavor WRAPPED over its own lines (owner rule: no more cut-off text).
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.font = 'italic 11px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
     let y = wrapText(ctx, '"Choose a stone and Orren cuts it fresh. The finer my training, the finer the cut."',
       px + 20, 94, pw - 40, 15, 3);
-    ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#4ecbe0';
+    ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = '#4ecbe0';
     y = wrapText(ctx, 'Jeweler level ' + (Hero.artisans.jeweler || 1) + ' cuts ' + GEM_TIERS[spec.tier].toUpperCase() + ' gems.',
       px + 20, y + 4, pw - 40, 14, 2);
-    ctx.font = 'bold 12px Georgia'; ctx.fillStyle = afford ? '#ffd76a' : '#a05a5a';
+    ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = afford ? '#ffd76a' : '#a05a5a';
     y = wrapText(ctx, 'Cost: ' + this.costLabel(cost) + '  ·  you have ' + Hero.gold.toLocaleString() + 'g',
       px + 20, y + 4, pw - 40, 14, 2);
     y += 8;
@@ -3611,9 +3614,9 @@ const Screens = {
         { disabled: !afford });
       drawGemIcon(ctx, t, spec.tier, px + 38, y + 20, 12);
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 13px Georgia'; ctx.fillStyle = gm.color;
+      ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = gm.color;
       ctx.fillText(gm.name, px + 58, y + 14);
-      ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
       ctx.fillText(this.fitText(ctx, gemStatText({ type: t, tier: spec.tier }).replace(/\s*\/\s*/, ' · '), pw - 90), px + 58, y + 29);
       y += 46;
     }
@@ -3625,7 +3628,7 @@ const Screens = {
     const px = W / 2 - pw / 2;
     const ph = Math.min(H - 56, 470);
     UI.panel(ctx, px, 46, pw, ph, 'SOCKET A GEM');
-    ctx.textAlign = 'left'; ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.textAlign = 'left'; ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
     ctx.fillText(this.fitText(ctx, 'Gear with sockets (equipped ◈ and bagged). Tap one to choose its gem.', pw - 32), px + 16, 86);
     const rows = [];
     for (const slot of Object.keys(ITEM_SLOTS)) {
@@ -3634,7 +3637,7 @@ const Screens = {
     }
     for (const it of Hero.bag) if (it && !it.torch && (it.sockets || 0) > 0) rows.push({ it, equipped: false });
     if (!rows.length) {
-      ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#544d44';
+      ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#544d44';
       ctx.fillText('No socketed gear yet — sockets roll on drops, or the Mystic can add one.', px + 16, 116);
     }
     const rowH = 44, listTop = 98, listBot = 46 + ph - 14;
@@ -3653,17 +3656,17 @@ const Screens = {
         UI.sel.gemTarget = it; UI.sel.gemPick = true; UI.sel.gemKey = undefined;
       }, { border: RARITIES[it.rarity].color });
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 12px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
+      ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
       ctx.fillText(this.fitText(ctx, it.name, pw - 190), px + 28, ry + 13);
-      ctx.font = '10px Georgia'; ctx.fillStyle = '#8a8070';
+      ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
       ctx.fillText((equipped ? 'EQUIPPED · ' : 'in bag · ') + ITEM_SLOTS[it.slot].label, px + 28, ry + 28);
-      ctx.textAlign = 'right'; ctx.font = 'bold 11px Georgia';
+      ctx.textAlign = 'right'; ctx.font = 'bold 11px Cinzel, Georgia';
       ctx.fillStyle = free > 0 ? '#6ff7c3' : '#8a8070';
       ctx.fillText(free > 0 ? free + ' empty ◇' : 'full', px + pw - 28, ry + rowH / 2 - 3);
     });
     ctx.restore();
     if (scrollMax > 0 && !UI.sel.gemPick) {
-      ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       if (scrollY < scrollMax - 1) ctx.fillText('▼ drag ▼', px + pw / 2, listBot - 1);
     }
     // The proven gem-choosing popup does the actual socketing.
@@ -3683,7 +3686,7 @@ const Screens = {
     }
     for (const it of Hero.bag) if (it && it.gems) it.gems.forEach((g, gi) => rows.push({ it, gi, g, equipped: false }));
     if (!rows.length) {
-      ctx.textAlign = 'left'; ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#544d44';
+      ctx.textAlign = 'left'; ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#544d44';
       ctx.fillText('Nothing is socketed right now.', px + 16, 100);
       return;
     }
@@ -3705,14 +3708,14 @@ const Screens = {
       // Just the ITEM the gem sits in — the icon already says which gem
       // (owner rule: the "Gem Name in" prefix was redundant).
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = '11px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
+      ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
       ctx.fillText(this.fitText(ctx, it.name + (equipped ? '' : '  (bag)'), pw - 200), px + 46, ry + rowH / 2 - 3);
       UI.btn(ctx, px + pw - 128, ry + 4, 112, rowH - 14, 'UNSOCKET', () => Items.unsocket(it, gi),
         { size: 10, border: '#7a4a8f', color: '#b06adf' });
     });
     ctx.restore();
     if (scrollMax > 0) {
-      ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       if (scrollY < scrollMax - 1) ctx.fillText('▼ drag ▼', px + pw / 2, listBot - 1);
     }
   },
@@ -3721,7 +3724,7 @@ const Screens = {
   artisanRow(ctx, px, pw, y, which, label) {
     const lvl = Hero.artisans[which];
     ctx.textAlign = 'left';
-    ctx.font = 'bold 11px Georgia';
+    ctx.font = 'bold 11px Cinzel, Georgia';
     ctx.fillStyle = '#ffd76a';
     ctx.fillText(label + '  ·  LEVEL ' + lvl + ' / 10' + (lvl >= 10 ? '  (MAX)' : ''), px + 16, y + 8);
     if (lvl < 10) {
@@ -3773,9 +3776,9 @@ const Screens = {
       const on = current === id;
       UI.btnPlate3(ctx, px + 16, y, pw - 32, 44, '', () => onPick(id));
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 13px Georgia'; ctx.fillStyle = color || '#e8e0cc';
+      ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = color || '#e8e0cc';
       ctx.fillText((on ? '✔  ' : '') + label, px + 30, y + 15);
-      ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
       ctx.fillText(this.fitText(ctx, desc, pw - 60), px + 30, y + 31);
       y += 52;
     };
@@ -3819,7 +3822,7 @@ const Screens = {
     // ---- pick an item ----
     if (!UI.sel.item) {
       ctx.textAlign = 'left';
-      ctx.font = (big ? 14 : 12) + 'px Georgia';
+      ctx.font = (big ? 14 : 12) + 'px Cinzel, Georgia';
       ctx.fillStyle = '#9a9080';
       ctx.fillText('Choose an item, then a property to reroll. Each reroll', px + 16, big ? 114 : 112);
       ctx.fillText('stays in that property\'s group — you see the exact odds.', px + 16, big ? 134 : 128);
@@ -3849,12 +3852,12 @@ const Screens = {
             UI.sel.scrollY = 0;   // detail view starts at the top
           } : null, { disabled: !it });
           ctx.textAlign = 'left';
-          ctx.font = 'bold ' + rowF + 'px Georgia';
+          ctx.font = 'bold ' + rowF + 'px Cinzel, Georgia';
           ctx.fillStyle = it ? RARITIES[it.rarity].color : '#453f52';
           ctx.fillText(this.fitText(ctx, ITEM_SLOTS[slot].label + ':  ' + (it ? it.name : '—'), pw - 90), px + 26, y + rowBoxH / 2);
           if (it && it.enchants) {
             ctx.textAlign = 'right';
-            ctx.font = (big ? 12 : 10) + 'px Georgia';
+            ctx.font = (big ? 12 : 10) + 'px Cinzel, Georgia';
             ctx.fillStyle = '#b06adf';
             ctx.fillText('✦ ' + it.enchants, px + pw - 26, y + rowBoxH / 2);
           }
@@ -3872,7 +3875,7 @@ const Screens = {
     const it = UI.sel.item;
     UI.btn(ctx, px + 16, 88, 92, 28, '‹ BACK', () => { UI.sel.item = null; UI.sel.affix = null; UI.sel.scrollY = 0; }, { size: 12 });
     ctx.textAlign = 'right';
-    ctx.font = '11px Georgia';
+    ctx.font = '11px Cinzel, Georgia';
     ctx.fillStyle = '#9a9080';
     ctx.fillText((it.enchants || 0) + ' enchant' + (it.enchants === 1 ? '' : 's') + ' so far', px + pw - 16, 102);
 
@@ -3900,7 +3903,7 @@ const Screens = {
 
     c = this.itemCard(ctx, px + 16, c - scrollY, pw - 32, it, null, true) + scrollY;
     ctx.textAlign = 'left';
-    ctx.font = 'bold 12px Georgia';
+    ctx.font = 'bold 12px Cinzel, Georgia';
     ctx.fillStyle = '#b06adf';
     ctx.fillText('CHOOSE WHICH PROPERTY TO REROLL:', px + 16, c - scrollY + 8);
     c += 18;
@@ -3917,11 +3920,11 @@ const Screens = {
           UI.sel.affix = selected ? null : key;
         } : null, { bg: selected ? 'rgba(70,44,90,0.95)' : undefined, border: selected ? '#b06adf' : maxed ? '#8a6f2a' : undefined, disabled: !grp });
         ctx.textAlign = 'left';
-        ctx.font = 'bold ' + rowF + 'px Georgia';
+        ctx.font = 'bold ' + rowF + 'px Cinzel, Georgia';
         ctx.fillStyle = !grp ? '#6f6552' : maxed ? '#ffd76a' : selected ? '#d8b4f0' : '#b5ab94';
         ctx.fillText(AFFIX_ROLLS[key].label(v), px + 28, yy + rowBoxH / 2);
         ctx.textAlign = 'right';
-        ctx.font = (big ? 13 : 11) + 'px Georgia';
+        ctx.font = (big ? 13 : 11) + 'px Cinzel, Georgia';
         ctx.fillStyle = !grp ? '#544d44' : selected ? '#b06adf' : maxed ? '#ffd76a' : '#6a8a5a';
         ctx.fillText(!grp ? 'signature' : selected ? 'will be rerolled ✦' : maxed ? 'maxed ✓' : AFFIX_GROUP_NAME[grp], px + pw - 28, yy + rowBoxH / 2);
       }
@@ -3932,7 +3935,7 @@ const Screens = {
     // close to a perfect roll they can get (owner rule).
     c += 6;
     ctx.textAlign = 'left';
-    ctx.font = 'bold 11px Georgia';
+    ctx.font = 'bold 11px Cinzel, Georgia';
     ctx.fillStyle = '#9a9080';
     if (UI.sel.affix) {
       if (vis(c, 14)) ctx.fillText('REROLL ODDS  ·  ' + AFFIX_GROUP_NAME[affixGroup(UI.sel.affix)] + ' group', px + 16, c - scrollY + 6);
@@ -3942,7 +3945,7 @@ const Screens = {
         if (vis(c, 26)) {
           const yy = c - scrollY;
           ctx.textAlign = 'left';
-          ctx.font = '11px Georgia';
+          ctx.font = '11px Cinzel, Georgia';
           ctx.fillStyle = o.current ? '#d8b4f0' : '#b5ab94';
           ctx.fillText('•  ' + shortAffix[o.key] + (o.current ? '  (new value)' : ''), px + 24, yy + 4);
           ctx.textAlign = 'right';
@@ -3950,7 +3953,7 @@ const Screens = {
           ctx.fillText(Math.round(o.chance * 100) + '%', px + pw - 24, yy + 4);
           // Range line: min–max the roll can land on, plus the current value.
           ctx.textAlign = 'left';
-          ctx.font = '10px Georgia';
+          ctx.font = '10px Cinzel, Georgia';
           ctx.fillStyle = '#8a7f6c';
           // For the current affix, never show a max BELOW the item's own value
           // (a legacy item may sit above the fresh-roll range).
@@ -3970,7 +3973,7 @@ const Screens = {
     const room = (it.sockets || 0) < maxS;
     if (vis(c, 14)) {
       ctx.textAlign = 'left';
-      ctx.font = '11px Georgia';
+      ctx.font = '11px Cinzel, Georgia';
       ctx.fillStyle = room ? '#6ff7c3' : '#6f6552';
       ctx.fillText(room
         ? `Rare 10% chance: uncover a gem slot  (${it.sockets || 0}/${maxS})`
@@ -3983,7 +3986,7 @@ const Screens = {
     UI.sel.scrollMax = Math.max(0, (c - scrollTop) - viewH + 4);
     // Scroll affordances.
     ctx.textAlign = 'center';
-    ctx.font = '9px Georgia';
+    ctx.font = '9px Cinzel, Georgia';
     ctx.fillStyle = '#6f6552';
     if (scrollY > 1) ctx.fillText('▲ drag ▲', px + pw / 2, scrollTop + 2);
     if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag for more ▼', px + pw / 2, viewBot - 1);
@@ -3993,7 +3996,7 @@ const Screens = {
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(px + 12, footerTop); ctx.lineTo(px + pw - 12, footerTop); ctx.stroke();
     ctx.textAlign = 'left';
-    ctx.font = '11px Georgia';
+    ctx.font = '11px Cinzel, Georgia';
     let cxp = px + 16;
     ctx.fillStyle = '#9a9080';
     ctx.fillText('Cost: ', cxp, footerTop + 14); cxp += ctx.measureText('Cost: ').width;
@@ -4055,11 +4058,11 @@ const Screens = {
 
     const line = (x, yv, label, value, color = '#e8e0cc') => {
       ctx.textAlign = 'left';
-      ctx.font = (12 * k) + 'px Georgia';
+      ctx.font = (12 * k) + 'px Cinzel, Georgia';
       ctx.fillStyle = '#8a8070';
       ctx.fillText(label, x, yv);
       ctx.textAlign = 'right';
-      ctx.font = 'bold ' + (12 * k) + 'px Georgia';
+      ctx.font = 'bold ' + (12 * k) + 'px Cinzel, Georgia';
       ctx.fillStyle = color;
       ctx.fillText(value, x + colW, yv);
       return yv + 19 * k;
@@ -4120,7 +4123,7 @@ const Screens = {
     // Active POWERS — equipped legendary powers, Cube-extracted powers and live
     // set bonuses, so the player sees exactly what's shaping their build.
     ry = header(rx, ry, '— ACTIVE POWERS —', '#ff8c2a');
-    ctx.textAlign = 'left'; ctx.font = (11 * k) + 'px Georgia';
+    ctx.textAlign = 'left'; ctx.font = (11 * k) + 'px Cinzel, Georgia';
     const cubeSel = (Hero.cubeActive && Hero.cubeActive.slice()) || [];
     const powerKeys = Object.keys(s.powers || {});
     if (!powerKeys.length && !cubeSel.length && s.setCount < 2) {
@@ -4131,12 +4134,12 @@ const Screens = {
         const P = LEGENDARY_POWERS[pk]; if (!P) continue;
         const cubed = cubeSel.includes(pk);
         ctx.fillStyle = cubed ? '#ff5a4a' : '#ffb86a';
-        ctx.font = (11 * k) + 'px Georgia';
+        ctx.font = (11 * k) + 'px Cinzel, Georgia';
         ry = wrapText(ctx, (cubed ? '◈ ' : '★ ') + P.name + (cubed ? ' (Cube)' : ''), rx, ry, colW, 14 * k, 2) + 2 * k;
       }
       if (s.setCount >= 2) {
         ctx.fillStyle = '#4ade80';
-        ctx.font = (11 * k) + 'px Georgia';
+        ctx.font = (11 * k) + 'px Cinzel, Georgia';
         for (const bonus of INARIUS_SET.bonuses) {
           if (s.setCount >= bonus.pieces) ry = wrapText(ctx, '◈ Inarius ' + bonus.pieces + 'pc active', rx, ry, colW, 14 * k, 1) + 2 * k;
         }
@@ -4147,7 +4150,7 @@ const Screens = {
     // Analysis — every tip is drawn; the body scrolls if it overflows.
     ry = header(rx, ry, '— ANALYSIS —', '#e04a5a');
     ctx.textAlign = 'left';
-    ctx.font = (11 * k) + 'px Georgia';
+    ctx.font = (11 * k) + 'px Cinzel, Georgia';
     ctx.fillStyle = '#b5ab94';
     for (const tip of this.analyze(s)) {
       ry = wrapText(ctx, '• ' + tip, rx, ry, colW, 14 * k, 3) + 3 * k;
@@ -4157,7 +4160,7 @@ const Screens = {
     // Scroll extent (from the taller column) + drag hints.
     const contentBot = Math.max(ly, ry) + scrollY;
     UI.sel.scrollMax = Math.max(0, (contentBot - (bodyTop + 14)) - viewH + 16);
-    ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
     if (scrollY > 1) ctx.fillText('▲ drag ▲', W / 2, bodyTop + 2);
     if (scrollY < UI.sel.scrollMax - 1) ctx.fillText('▼ drag for more ▼', W / 2, footTop - 2);
 
@@ -4167,15 +4170,15 @@ const Screens = {
     if (showPara) {
       const half = (fbW - 8) / 2;
       const np = Hero.np || 0;
-      UI.btn(ctx, px + 16, fbY, half, 30, '✦ PARAGON' + (np ? ' (' + np + ' NP)' : ''), () => { UI.open('paragon'); UI.sel.paraCat = 'Core'; UI.sel.scrollY = 0; },
-        { size: 12, border: '#8a6f2a', color: np ? '#ffd76a' : '#c9a04a' });
-      UI.btn(ctx, px + 16 + half + 8, fbY, half, 30, '⌂  CHANGE HERO', () => {
+      UI.btnPlate2(ctx, px + 16, fbY, half, 30, 'PARAGON' + (np ? ' (' + np + ' NP)' : ''), () => { UI.open('paragon'); UI.sel.paraCat = 'Core'; UI.sel.scrollY = 0; },
+        { size: 12, color: np ? '#ffd76a' : '#c9a04a' });
+      UI.btnPlate2(ctx, px + 16 + half + 8, fbY, half, 30, 'CAMPFIRE', () => {
         Hero.save(); Game.state = 'menu'; UI.open('select');
-      }, { size: 12, border: '#c8722a', color: '#ffb24a' });
+      }, { size: 12, color: '#ffb24a' });
     } else {
-      UI.btnPlate(ctx, px + 16, fbY, fbW, 30, 'CAMPFIRE', () => {
+      UI.btnPlate2(ctx, px + 16, fbY, fbW, 30, 'CAMPFIRE', () => {
         Hero.save(); Game.state = 'menu'; UI.open('select');
-      }, { size: 12, border: '#c8722a', color: '#ffb24a' });
+      }, { size: 12, color: '#ffb24a' });
     }
   },
 
@@ -4190,7 +4193,7 @@ const Screens = {
     UI.panel(ctx, px, py, pw, ph, 'PARAGON');
     // Header: level, NP, XP-to-next bar.
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#ff8c2a';
+    ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = '#ff8c2a';
     ctx.fillText('Paragon ' + (Hero.paragon || 0), px + 16, py + 60);
     ctx.textAlign = 'right'; ctx.fillStyle = (Hero.np || 0) ? '#ffd76a' : '#9a9080';
     ctx.fillText((Hero.np || 0) + ' NP to spend', px + pw - 16, py + 60);
@@ -4198,42 +4201,30 @@ const Screens = {
     const frac = clamp((Hero.paragonXp || 0) / need, 0, 1);
     ctx.fillStyle = '#241f30'; rr(ctx, px + 16, py + 68, pw - 32, 8, 4); ctx.fill();
     ctx.fillStyle = '#ff8c2a'; rr(ctx, px + 16, py + 68, (pw - 32) * frac, 8, 4); ctx.fill();
-    ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
     ctx.fillText(Math.floor(Hero.paragonXp || 0).toLocaleString() + ' / ' + need.toLocaleString() + ' XP to next', W / 2, py + 90);
 
-    // The category the next point MUST go into (D3-style rotation lock).
-    const activeCat = Hero.paragonCat();
-    if (!UI.sel.paraCat) UI.sel.paraCat = activeCat;
-
-    // "Now spending" banner — makes the rotation lock obvious.
-    ctx.textAlign = 'center'; ctx.font = 'bold 11px Georgia';
-    ctx.fillStyle = (Hero.np || 0) > 0 ? '#6ff7c3' : '#6f6552';
-    ctx.fillText((Hero.np || 0) > 0 ? '▶ Now spending in:  ' + activeCat.toUpperCase()
-      : 'No points to spend — earn Paragon levels', W / 2, py + 112);
-
-    // Category tabs (rotation order). The UNLOCKED category glows even when you're
-    // viewing another; the viewed one is filled.
+    // FREE SPEND (v1.6.99 owner rule) — no rotation lock, no banner. The
+    // tabs are plain category views on the simple plate.
+    if (!UI.sel.paraCat) UI.sel.paraCat = PARAGON_CATS[0];
     const tabW = (pw - 32) / PARAGON_CATS.length;
     PARAGON_CATS.forEach((cat, i) => {
       const on = UI.sel.paraCat === cat;
-      const isActive = cat === activeCat;
-      UI.btn(ctx, px + 16 + i * tabW, py + 120, tabW - 4, 26, (isActive ? '✦ ' : '') + cat, () => { UI.sel.paraCat = cat; },
-        { size: 10, bg: on ? 'rgba(90,54,26,0.95)' : undefined,
-          color: on ? '#ffd76a' : (isActive ? '#6ff7c3' : '#c9bfa8'),
-          border: on ? '#ff8c2a' : (isActive ? '#4ea88a' : undefined) });
+      UI.btnPlate2(ctx, px + 16 + i * tabW, py + 106, tabW - 4, 26, cat, () => { UI.sel.paraCat = cat; },
+        { size: 10, color: on ? '#f0dcae' : '#8a8070' });
     });
 
-    // Footer (undo / reset), pinned above the bottom edge.
+    // Footer (undo / reset) on the little empty plate, pinned above the edge.
     const footY = py + ph - 40;
     const spent = Hero.paragonSpent();
-    UI.btn(ctx, px + 16, footY, (pw - 40) / 2, 28, '↶ Undo last', spent > 0 ? () => Hero.refundLastParagon() : null,
-      { size: 11, disabled: spent <= 0, border: '#6b5f80', color: '#c9bfa8' });
-    UI.btn(ctx, px + 24 + (pw - 40) / 2, footY, (pw - 40) / 2, 28, 'Reset all', spent > 0 ? () => Hero.resetParagon() : null,
-      { size: 11, disabled: spent <= 0, border: '#7a4a4a', color: '#e0a0a0' });
+    UI.chip(ctx, px + 16, footY, (pw - 40) / 2, 28, 'Undo last', spent > 0 ? () => Hero.refundLastParagon() : null,
+      { size: 11, disabled: spent <= 0, color: '#c9bfa8' });
+    UI.chip(ctx, px + 24 + (pw - 40) / 2, footY, (pw - 40) / 2, 28, 'Reset all', spent > 0 ? () => Hero.resetParagon() : null,
+      { size: 11, disabled: spent <= 0, color: '#e0a0a0' });
 
     // Stat rows for the VIEWED category (drag-scroll in case of short screens).
     const keys = Object.keys(PARAGON_STATS).filter(k => PARAGON_STATS[k].cat === UI.sel.paraCat);
-    const listTop = py + 154, listBot = footY - 10;
+    const listTop = py + 144, listBot = footY - 10;
     const viewH = listBot - listTop;
     const rowH = 62;
     const scrollMax = Math.max(0, keys.length * rowH - viewH);
@@ -4242,7 +4233,7 @@ const Screens = {
     UI.sel.scrollRegion = { x: px + 14, y: listTop, w: pw - 28, h: viewH };
     ctx.save();
     ctx.beginPath(); ctx.rect(px + 14, listTop, pw - 28, viewH); ctx.clip();
-    const viewingActive = UI.sel.paraCat === activeCat;
+
     keys.forEach((k, i) => {
       const y = listTop + i * rowH - scrollY;
       if (y + rowH - 8 < listTop || y > listBot) return;
@@ -4251,28 +4242,25 @@ const Screens = {
       const capped = st.max && pts >= st.max;
       ctx.fillStyle = 'rgba(24,20,30,0.92)'; rr(ctx, px + 16, y, pw - 32, rowH - 8, 8); ctx.fill();
       ctx.strokeStyle = pts > 0 ? '#8a6f2a' : '#3a3448'; ctx.lineWidth = 1; rr(ctx, px + 16, y, pw - 32, rowH - 8, 8); ctx.stroke();
-      ctx.textAlign = 'left'; ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#ffd76a';
+      ctx.textAlign = 'left'; ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = '#ffd76a';
       ctx.fillText(st.label, px + 28, y + 18);
-      ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
       const bonus = (Hero.paragonBonus(k) * 100);
       const bTxt = '+' + (bonus % 1 ? bonus.toFixed(1) : bonus) + '% ' + st.note + (st.max ? '' : '  (∞)');
       ctx.fillText(bTxt, px + 28, y + 34);
-      ctx.font = '9px Georgia'; ctx.fillStyle = capped ? '#e0a24a' : '#6f6552';
+      ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = capped ? '#e0a24a' : '#6f6552';
       ctx.fillText(pts + (st.max ? ' / ' + st.max + ' pts' : ' pts'), px + 28, y + 47);
-      // A single "+" — enabled ONLY while viewing the unlocked category (rotation).
+      // A single "+" — live whenever points remain (free spend, owner rule).
       const bw = 34, by = y + (rowH - 8) / 2 - 14;
-      const canAdd = viewingActive && (Hero.np || 0) > 0 && !capped;
+      const canAdd = (Hero.np || 0) > 0 && !capped;
       if (!UI.iconPlate(ctx, 'plus', px + pw - 30 - bw, by, bw, 28, canAdd ? () => Hero.spendParagon(k) : null,
         { disabled: !canAdd, label: 'para+' }))
         UI.btn(ctx, px + pw - 30 - bw, by, bw, 28, '+', canAdd ? () => Hero.spendParagon(k) : null,
           { size: 17, disabled: !canAdd, border: '#8a6f2a', color: '#ffd76a' });
     });
     ctx.restore();
-    if (!viewingActive && (Hero.np || 0) > 0) {
-      ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
-      ctx.fillText('Locked — your next point goes in ' + activeCat, W / 2, listBot + 1);
-    } else if (scrollMax > 0 && scrollY < scrollMax - 1) {
-      ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+    if (scrollMax > 0 && scrollY < scrollMax - 1) {
+      ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       ctx.fillText('▼ drag for more ▼', W / 2, listBot + 1);
     }
   },
@@ -4355,7 +4343,7 @@ const Screens = {
     ctx.font = '600 16px Cinzel, Georgia'; ctx.fillStyle = '#dcc9a2';
     ctx.fillText('STASH', px, y);
     // Right-aligned clear of the red ✕ in the corner.
-    ctx.textAlign = 'right'; ctx.font = '11px Georgia'; ctx.fillStyle = '#8fb0e8';
+    ctx.textAlign = 'right'; ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#8fb0e8';
     ctx.fillText(total + ' stored  ·  ' + Hero.stashPerSlot().toLocaleString() + '/type', px + pw - 54, y);
     y += 10;
 
@@ -4377,7 +4365,7 @@ const Screens = {
     let chX = px, chY = y;
     // Filter/sort chips ride the SIMPLE plate (v1.6.98 owner rule).
     const chip = (label, on, cb, hue) => {
-      ctx.font = 'bold 9px Georgia';
+      ctx.font = 'bold 9px Cinzel, Georgia';
       const cw = ctx.measureText(label).width + 26;
       if (chX + cw > px + pw + 1) { chX = px; chY += 24; }
       UI.btnPlate2(ctx, chX, chY, cw, 20, label, cb,
@@ -4395,7 +4383,7 @@ const Screens = {
 
     // Sort picker.
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.font = 'bold 9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
     ctx.fillText('SORT', px, y + 10);
     chX = px + 34; chY = y;
     for (const [key, label] of this.STASH_SORTS) {
@@ -4424,7 +4412,7 @@ const Screens = {
 
     if (!shown.length) {
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       ctx.fillText(total ? 'Nothing in this group.' : 'The vault is empty — deposit your bag here.', px, c - scrollY + 14);
       c += 24;
     }
@@ -4434,7 +4422,7 @@ const Screens = {
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
         ctx.font = '600 11px Cinzel, Georgia'; ctx.fillStyle = '#d8c5a0';
         ctx.fillText(g.label.toUpperCase(), px + 2, c - scrollY + 13);
-        ctx.textAlign = 'right'; ctx.font = '10px Georgia'; ctx.fillStyle = '#6f6552';
+        ctx.textAlign = 'right'; ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
         ctx.fillText(g.items.length + '', px + pw - 2, c - scrollY + 13);
         ctx.strokeStyle = 'rgba(143,176,232,0.25)'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(px, c - scrollY + 18); ctx.lineTo(px + pw, c - scrollY + 18); ctx.stroke();
@@ -4448,10 +4436,10 @@ const Screens = {
           rr(ctx, px, yy, pw, 38, 6); ctx.fill();
           if (expanded) { ctx.strokeStyle = RARITIES[it.rarity].color; ctx.lineWidth = 1.5; rr(ctx, px, yy, pw, 38, 6); ctx.stroke(); }
           ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-          ctx.font = 'bold 12px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
+          ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
           const bw = 76;   // wide enough for WITHDRAW at 9px — never ellipsized
           ctx.fillText(this.fitText(ctx, it.name, pw - bw * 2 - 26), px + 10, yy + 15);
-          ctx.font = '10px Georgia'; ctx.fillStyle = '#8a8070';
+          ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
           ctx.fillText(this.fitText(ctx, ITEM_SLOTS[it.slot].label + ' · lvl ' + it.mLvl + '  ·  tap to inspect', pw - bw * 2 - 26), px + 10, yy + 30);
           // Tap the card area (left of the buttons) to inspect the item.
           UI.register(px, yy, pw - bw * 2 - 16, 38, () => { UI.sel.stashItem = expanded ? null : it; });
@@ -4474,7 +4462,7 @@ const Screens = {
     }
     ctx.restore();
     UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 6);
-    ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
     if (scrollY > 1) ctx.fillText('▲ drag ▲', px + pw / 2, listTop + 3);
     if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', px + pw / 2, viewBot - 1);
   },
@@ -4546,7 +4534,7 @@ const Screens = {
     // header may run a little past the column into the empty black above the
     // knight — that space is always clear.)
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold ' + (nr ? 14 : W < 520 ? 15 : 18) + 'px Georgia'; ctx.fillStyle = '#ffd76a';
+    ctx.font = 'bold ' + (nr ? 14 : W < 520 ? 15 : 18) + 'px Cinzel, Georgia'; ctx.fillStyle = '#ffd76a';
     ctx.shadowColor = 'rgba(255,215,106,0.45)'; ctx.shadowBlur = 12;
     ctx.fillText('⚔ LUKUS, BRINGER OF LIGHT', lx, y);
     ctx.shadowBlur = 0;
@@ -4559,7 +4547,7 @@ const Screens = {
     y += 22;
 
     // His words.
-    ctx.font = 'italic ' + (nr ? 12 : 13) + 'px Georgia'; ctx.fillStyle = '#e8e0cc';
+    ctx.font = 'italic ' + (nr ? 12 : 13) + 'px Cinzel, Georgia'; ctx.fillStyle = '#e8e0cc';
     const greet = allDone
       ? '"Five hundred deeds. Every one of them yours. New Haven will sing of you until the sun burns out, friend."'
       : '"Good day! I am Lukus, Bringer of Light and protectorate of New Haven. The Light keeps a ledger of five hundred deeds — shall we work through it together?"';
@@ -4568,7 +4556,7 @@ const Screens = {
 
     // Ledger header: turn-ins across the 500-quest line. The count drops to
     // its own line when the column is too narrow to share one (no overlap).
-    ctx.font = 'bold ' + (nr ? 10 : 11) + 'px Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.font = 'bold ' + (nr ? 10 : 11) + 'px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
     const llbl = nr ? 'LEDGER OF LIGHT' : 'THE LEDGER OF LIGHT';
     const lcnt = doneCount + (nr ? '/' : ' OF ') + QUEST_COUNT + ' DONE';
     ctx.fillText(llbl, lx, y);
@@ -4594,11 +4582,11 @@ const Screens = {
     const vis = (top, hh) => (top - scrollY + hh > listTop) && (top - scrollY < viewBot);
 
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
     ctx.fillText('JOURNAL — ' + journal.length + ' / ' + QUEST_JOURNAL_MAX + ' of mine', lx, c - scrollY + 8);
     c += 16;
     if (!journal.length) {
-      ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.font = 'italic 10px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       ctx.fillText(allDone ? 'Every deed is done. Walk in the Light.' : 'Empty — take up a deed below.', lx, c - scrollY + 9);
       c += 20;
     }
@@ -4613,10 +4601,10 @@ const Screens = {
         ctx.fillStyle = expanded ? 'rgba(46,42,58,0.8)' : 'rgba(28,24,38,0.6)';
         rr(ctx, lx - 4, yy, lw + 8, 50, 6); ctx.fill();
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        ctx.font = 'bold 11px Georgia'; ctx.fillStyle = milestone ? '#b06adf' : '#e8e0cc';
+        ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = milestone ? '#b06adf' : '#e8e0cc';
         ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name, lw - 108), lx + 4, yy + 16);
         UI.bar(ctx, lx + 4, yy + 25, lw - 112, 9, qp.prog / def.need, '#221d2e', qp.done ? '#4ade80' : '#8a6f2a');
-        ctx.font = '8px Georgia'; ctx.fillStyle = '#9a9080';
+        ctx.font = '8px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
         ctx.fillText(qp.prog + ' / ' + def.need + '  ·  tap for details', lx + 4, yy + 45);
         // Tap the row body (left of the buttons) for full details + reward.
         UI.register(lx - 4, yy, lw - 102, 50, () => { UI.sel.qInfo = expanded ? null : entry.idx; });
@@ -4648,11 +4636,11 @@ const Screens = {
           ctx.fillStyle = 'rgba(18,14,26,0.85)';
           rr(ctx, lx - 4, ey - 4, lw + 8, eh - 4, 6); ctx.fill();
           ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-          ctx.font = '10px Georgia'; ctx.fillStyle = '#b5ab94';
+          ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
           wrapText(ctx, def.desc, lx + 4, ey + 10, lw - 8, 13, 2);
-          ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#ffd76a';
+          ctx.font = 'bold 9px Cinzel, Georgia'; ctx.fillStyle = '#ffd76a';
           wrapText(ctx, 'REWARD:  ' + questRewardTextFor(entry, true), lx + 4, ey + 42, lw - 8, 11, 3);
-          ctx.font = 'italic 8px Georgia'; ctx.fillStyle = '#6f6552';
+          ctx.font = 'italic 8px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
           ctx.fillText('Quest ' + (entry.idx + 1) + ' of ' + QUEST_COUNT + (milestone ? '  ·  ★ milestone' : ''), lx + 4, ey + 84);
         }
         c += eh;
@@ -4673,14 +4661,14 @@ const Screens = {
       const rwText = 'Reward:  ' + questRewardText(offerIdx, true);
 
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
+      ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
       ctx.fillText('NEXT DEED', lx, c - scrollY + 6); c += 14;
-      ctx.font = 'bold 13px Georgia'; ctx.fillStyle = milestone ? '#b06adf' : '#ffd76a';
+      ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = milestone ? '#b06adf' : '#ffd76a';
       ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name.toUpperCase(), lw), lx, c - scrollY + 10); c += 16;
-      ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
+      ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
       const dBot = wrapText(ctx, def.desc, lx, c - scrollY + 10, lw, 15, nr ? 3 : 2);
       c += (dBot - (c - scrollY + 10)) + 4;
-      ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
       // Wrapped (2 lines) so the offer's reward can never run off the column.
       const rBot = wrapText(ctx, rwText, lx, c - scrollY + 8, lw, 12, 2);
       c += (rBot - (c - scrollY + 8)) + 8;
@@ -4704,19 +4692,19 @@ const Screens = {
       c += 48;
       if (!full && !gateOk) {
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
+        ctx.font = 'italic 10px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
         ctx.fillText('"Grow a little stronger first — the Light can wait."', lx, c - scrollY + 4);
         c += 16;
       }
     } else if (!journal.length) {
-      ctx.font = '12px Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.font = '12px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
       ctx.fillText('There is nothing left in the ledger.', lx, c - scrollY + 8);
       c += 20;
     }
 
     ctx.restore();
     UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 8);
-    ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
     if (scrollY > 1) ctx.fillText('▲ drag ▲', lx + lw / 2, listTop + 2);
     if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', lx + lw / 2, viewBot - 2);
   },
@@ -4775,7 +4763,7 @@ const Screens = {
 
     // Name — full title only HERE (the street plate says just "Addy").
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold ' + (nr ? 13 : W < 520 ? 15 : 18) + 'px Georgia'; ctx.fillStyle = '#c86adf';
+    ctx.font = 'bold ' + (nr ? 13 : W < 520 ? 15 : 18) + 'px Cinzel, Georgia'; ctx.fillStyle = '#c86adf';
     ctx.shadowColor = 'rgba(200,106,223,0.45)'; ctx.shadowBlur = 12;
     ctx.fillText('🗡 ADDY, QUEEN OF THE UNDERWORLD', lx, y);
     ctx.shadowBlur = 0;
@@ -4786,7 +4774,7 @@ const Screens = {
     ctx.beginPath(); ctx.moveTo(lx, y); ctx.lineTo(lx + lw, y); ctx.stroke();
     y += 22;
 
-    ctx.font = 'italic ' + (nr ? 12 : 13) + 'px Georgia'; ctx.fillStyle = '#e8e0cc';
+    ctx.font = 'italic ' + (nr ? 12 : 13) + 'px Cinzel, Georgia'; ctx.fillStyle = '#e8e0cc';
     const greet = !lvl70
       ? '"Not yet, little corpse-raiser. The Underworld deals with professionals — come find me at level 70, and we\'ll talk business."'
       : '"So the Light\'s errand-runner finally graduated. I keep a different ledger — five hundred quests, paid better. And each day, one special quest for one very special stone."';
@@ -4795,7 +4783,7 @@ const Screens = {
 
     // Her ledger. The count drops to its own line when the column is too
     // narrow to share one (no overlap).
-    ctx.font = 'bold ' + (nr ? 10 : 11) + 'px Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.font = 'bold ' + (nr ? 10 : 11) + 'px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
     const albl = nr ? 'UNDERWORLD LEDGER' : 'THE UNDERWORLD LEDGER';
     const acnt = doneCount + (nr ? '/' : ' OF ') + ADDY_QUEST_COUNT + ' DONE';
     ctx.fillText(albl, lx, y);
@@ -4821,7 +4809,7 @@ const Screens = {
 
     if (!lvl70) {
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.font = 'italic 11px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       ctx.fillText('Her ledger opens at level 70.', lx, c - scrollY + 12);
       c += 24;
     } else {
@@ -4829,7 +4817,7 @@ const Screens = {
       const st = Hero.dailyState();
       const dd = dailyDeed(st.date);
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
+      ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
       ctx.fillText(this.fitText(ctx, 'DAILY QUEST — "THE QUEEN\'S ERRAND"', lw), lx, c - scrollY + 8);
       c += 14;
       const dh = st.done ? 34 : st.base !== null ? 74 : 92;
@@ -4841,17 +4829,17 @@ const Screens = {
         rr(ctx, lx - 4, dy2, lw + 8, dh - 4, 6); ctx.stroke();
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
         if (st.done) {
-          ctx.font = 'italic 11px Georgia'; ctx.fillStyle = '#9a9080';
+          ctx.font = 'italic 11px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
           ctx.fillText('Paid in full. Come back tomorrow.', lx + 4, dy2 + 19);
         } else if (st.base !== null) {
           const prog = clamp(dd.counter() - st.base, 0, dd.need);
           const done = prog >= dd.need;
-          ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#e8b3f2';
+          ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = '#e8b3f2';
           ctx.fillText(this.fitText(ctx, dd.desc, lw - 100), lx + 4, dy2 + 15);
           UI.bar(ctx, lx + 4, dy2 + 22, lw - 106, 9, prog / dd.need, '#221d2e', done ? '#4ade80' : '#7a4a8f');
-          ctx.font = '8px Georgia'; ctx.fillStyle = '#9a9080';
+          ctx.font = '8px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
           ctx.fillText(prog + ' / ' + dd.need, lx + 4, dy2 + 41);
-          ctx.font = 'italic 8px Georgia'; ctx.fillStyle = '#b08ab8';
+          ctx.font = 'italic 8px Cinzel, Georgia'; ctx.fillStyle = '#b08ab8';
           ctx.fillText(this.fitText(ctx, 'Pays: a Marquise gem + a legendary (or better)', lw - 100), lx + 4, dy2 + 56);
           if (done) {
             UI.btn(ctx, lx + lw - 94, dy2 + 6, 90, 34, '✔ COLLECT', () => {
@@ -4862,9 +4850,9 @@ const Screens = {
             }, { size: 10, border: '#3a7a4a', color: '#4ade80' });
           }
         } else {
-          ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#e8b3f2';
+          ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = '#e8b3f2';
           ctx.fillText(this.fitText(ctx, dd.desc, lw - 8), lx + 4, dy2 + 15);
-          ctx.font = 'italic 9px Georgia'; ctx.fillStyle = '#b08ab8';
+          ctx.font = 'italic 9px Cinzel, Georgia'; ctx.fillStyle = '#b08ab8';
           wrapText(ctx, 'Pays: one random MARQUISE gem, plus a legendary — 90% plain, 6% 1–3★, 3% 4–5★, 1% ARTIFACT.', lx + 4, dy2 + 30, lw - 8, 12, 3);
           UI.btn(ctx, lx, dy2 + 62, lw, 24, 'DAILY QUEST', () => {
             const acc = Hero.acceptDaily();
@@ -4876,11 +4864,11 @@ const Screens = {
 
       // Her journal rows.
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
+      ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
       ctx.fillText('JOURNAL — ' + journal.length + ' / ' + QUEST_JOURNAL_MAX + ' of mine', lx, c - scrollY + 8);
       c += 16;
       if (!journal.length) {
-        ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
+        ctx.font = 'italic 10px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
         ctx.fillText('No quests of mine in your book yet.', lx, c - scrollY + 9);
         c += 20;
       }
@@ -4894,10 +4882,10 @@ const Screens = {
           ctx.fillStyle = expanded ? 'rgba(46,42,58,0.8)' : 'rgba(28,24,38,0.6)';
           rr(ctx, lx - 4, yy, lw + 8, 50, 6); ctx.fill();
           ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-          ctx.font = 'bold 11px Georgia'; ctx.fillStyle = '#e8e0cc';
+          ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = '#e8e0cc';
           ctx.fillText(this.fitText(ctx, def.name, lw - 108), lx + 4, yy + 16);
           UI.bar(ctx, lx + 4, yy + 25, lw - 112, 9, qp.prog / def.need, '#221d2e', qp.done ? '#4ade80' : '#7a4a8f');
-          ctx.font = '8px Georgia'; ctx.fillStyle = '#9a9080';
+          ctx.font = '8px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
           ctx.fillText(qp.prog + ' / ' + def.need + '  ·  tap for details', lx + 4, yy + 45);
           UI.register(lx - 4, yy, lw - 102, 50, () => { UI.sel.qInfo = expanded ? null : 'A' + entry.idx; });
           if (qp.done) {
@@ -4923,11 +4911,11 @@ const Screens = {
             ctx.fillStyle = 'rgba(18,14,26,0.85)';
             rr(ctx, lx - 4, ey - 4, lw + 8, eh - 4, 6); ctx.fill();
             ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-            ctx.font = '10px Georgia'; ctx.fillStyle = '#b5ab94';
+            ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
             wrapText(ctx, def.desc, lx + 4, ey + 10, lw - 8, 13, 2);
-            ctx.font = 'bold 9px Georgia'; ctx.fillStyle = '#c86adf';
+            ctx.font = 'bold 9px Cinzel, Georgia'; ctx.fillStyle = '#c86adf';
             wrapText(ctx, 'REWARD:  ' + questRewardTextFor(entry, true), lx + 4, ey + 42, lw - 8, 11, 3);
-            ctx.font = 'italic 8px Georgia'; ctx.fillStyle = '#6f6552';
+            ctx.font = 'italic 8px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
             ctx.fillText('Quest ' + (entry.idx + 1) + ' of ' + ADDY_QUEST_COUNT, lx + 4, ey + 84);
           }
           c += eh;
@@ -4943,14 +4931,14 @@ const Screens = {
         const def = ADDY_QUEST_LINE[offerIdx];
         const full = journal.length >= QUEST_JOURNAL_MAX;   // HER slots only — Lukus's ride separately
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
+        ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
         ctx.fillText('NEXT QUEST', lx, c - scrollY + 6); c += 14;
-        ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#c86adf';
+        ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = '#c86adf';
         ctx.fillText(this.fitText(ctx, def.name.toUpperCase(), lw), lx, c - scrollY + 10); c += 16;
-        ctx.font = '11px Georgia'; ctx.fillStyle = '#b5ab94';
+        ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
         const dBot = wrapText(ctx, def.desc, lx, c - scrollY + 10, lw, 15, nr ? 3 : 2);
         c += (dBot - (c - scrollY + 10)) + 4;
-        ctx.font = '10px Georgia'; ctx.fillStyle = '#9a9080';
+        ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
         const rBot = wrapText(ctx, 'Reward:  ' + questRewardTextSrc('A', offerIdx, true), lx, c - scrollY + 8, lw, 12, 2);
         c += (rBot - (c - scrollY + 8)) + 8;
         if (vis(c, 44)) {
@@ -4966,7 +4954,7 @@ const Screens = {
         }
         c += 48;
       } else if (!journal.length) {
-        ctx.font = '12px Georgia'; ctx.fillStyle = '#9a9080';
+        ctx.font = '12px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
         ctx.fillText('The Underworld ledger is closed. Impressive.', lx, c - scrollY + 8);
         c += 20;
       }
@@ -4974,7 +4962,7 @@ const Screens = {
 
     ctx.restore();
     UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 8);
-    ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
     if (scrollY > 1) ctx.fillText('▲ drag ▲', lx + lw / 2, listTop + 2);
     if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', lx + lw / 2, viewBot - 2);
   },
@@ -5028,7 +5016,7 @@ const Screens = {
 
     // Name — full title only HERE (the street plate says just "Lyssa").
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold ' + (nr ? 13 : W < 520 ? 15 : 18) + 'px Georgia'; ctx.fillStyle = '#c88bf0';
+    ctx.font = 'bold ' + (nr ? 13 : W < 520 ? 15 : 18) + 'px Cinzel, Georgia'; ctx.fillStyle = '#c88bf0';
     ctx.shadowColor = 'rgba(200,139,240,0.45)'; ctx.shadowBlur = 12;
     ctx.fillText('✦ LYSSA, MISTRESS OF FATE', lx, y);
     ctx.shadowBlur = 0;
@@ -5039,16 +5027,16 @@ const Screens = {
     ctx.beginPath(); ctx.moveTo(lx, y); ctx.lineTo(lx + lw, y); ctx.stroke();
     y += 22;
 
-    ctx.font = 'italic ' + (nr ? 12 : 13) + 'px Georgia'; ctx.fillStyle = '#e8e0cc';
+    ctx.font = 'italic ' + (nr ? 12 : 13) + 'px Cinzel, Georgia'; ctx.fillStyle = '#e8e0cc';
     y = wrapText(ctx,
       '"Every Amidrassi Orb hums with a rift boss\'s dying breath. Give them to me and fate deals you a hand — no refunds, no promises. Only chance."',
       lx, y, lw, nr ? 16 : 19, nr ? 7 : 5);
     y += 12;
 
     // Orb purse.
-    ctx.font = 'bold ' + (nr ? 12 : 14) + 'px Georgia'; ctx.fillStyle = '#c88bf0';
+    ctx.font = 'bold ' + (nr ? 12 : 14) + 'px Cinzel, Georgia'; ctx.fillStyle = '#c88bf0';
     ctx.fillText('◉ ' + (Hero.amOrbs || 0).toLocaleString() + ' Amidrassi Orbs', lx, y + 4);
-    ctx.font = (nr ? 8 : 9) + 'px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.font = (nr ? 8 : 9) + 'px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
     ctx.fillText('Rift & Season bosses drop 1–10', lx, y + (nr ? 17 : 19));
     y += nr ? 28 : 32;
 
@@ -5068,7 +5056,7 @@ const Screens = {
     if (UI.sel.lastGamble) {
       const it = UI.sel.lastGamble;
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
+      ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
       ctx.fillText('FATE DEALT', lx, c - scrollY + 8);
       c += 14;
       const cardH = 30 + Items.statLines(it).length * 15 + 8;
@@ -5077,7 +5065,7 @@ const Screens = {
     }
 
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold 10px Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
     ctx.fillText('GAMBLE — PICK A SLOT', lx, c - scrollY + 8);
     c += 16;
     const table = [
@@ -5095,17 +5083,17 @@ const Screens = {
           if (it) UI.sel.lastGamble = it;
         } : null, { disabled: !afford });
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold 12px Georgia'; ctx.fillStyle = afford ? '#e8e0cc' : '#6f6552';
+        ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = afford ? '#e8e0cc' : '#6f6552';
         ctx.fillText(label, lx + 8, yy + 17);
         ctx.textAlign = 'right';
-        ctx.font = 'bold 11px Georgia'; ctx.fillStyle = afford ? '#c88bf0' : '#5a4a66';
+        ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = afford ? '#c88bf0' : '#5a4a66';
         ctx.fillText('◉ ' + cost, lx + lw - 6, yy + 17);
       }
       c += 38;
     }
     ctx.restore();
     UI.sel.scrollMax = Math.max(0, (c - listTop) - viewH + 8);
-    ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+    ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
     if (scrollY > 1) ctx.fillText('▲ drag ▲', lx + lw / 2, listTop + 2);
     if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag to scroll ▼', lx + lw / 2, viewBot - 2);
   },
@@ -5122,22 +5110,22 @@ const Screens = {
     UI.panel(ctx, px, py, pw, ph, o.name || 'WANDERING MERCHANT');
     // The flavor line shares its row with the gold readout — fit it to the
     // space that's actually left so neither ever overlaps or runs off-panel.
-    ctx.font = 'bold 12px Georgia';
+    ctx.font = 'bold 12px Cinzel, Georgia';
     const goldTxt = Hero.gold + ' gold';
     const goldW = ctx.measureText(goldTxt).width;
     ctx.textAlign = 'left';
-    ctx.font = 'italic 11px Georgia';
+    ctx.font = 'italic 11px Cinzel, Georgia';
     ctx.fillStyle = '#9a9080';
     ctx.fillText(this.fitText(ctx, o.flavor || '"Fine wares! Mostly. No refunds."', pw - 44 - goldW), px + 16, py + 52);
     ctx.textAlign = 'right';
-    ctx.font = 'bold 12px Georgia';
+    ctx.font = 'bold 12px Cinzel, Georgia';
     ctx.fillStyle = '#ffd76a';
     ctx.fillText(goldTxt, px + pw - 16, py + 52);
 
     let y = py + 66;
     if (!o.stock.length) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'italic 12px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.font = 'italic 12px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       ctx.fillText('The shelves are bare. Come back another day.', px + pw / 2, y + 14);
       y += 34;
     }
@@ -5148,14 +5136,14 @@ const Screens = {
         UI.sel.buy = selected ? null : entry;
       }, { disabled: entry.sold });
       ctx.textAlign = 'left';
-      ctx.font = 'bold 12px Georgia';
+      ctx.font = 'bold 12px Cinzel, Georgia';
       ctx.fillStyle = entry.sold ? '#544d44' : RARITIES[it.rarity].color;
       ctx.fillText(this.fitText(ctx, it.name, pw - 130), px + 26, y + 12);
-      ctx.font = '10px Georgia';
+      ctx.font = '10px Cinzel, Georgia';
       ctx.fillStyle = entry.sold ? '#453f52' : '#8a8070';
       ctx.fillText(ITEM_SLOTS[it.slot].label + ' · ' + RARITIES[it.rarity].name, px + 26, y + 25);
       ctx.textAlign = 'right';
-      ctx.font = 'bold 12px Georgia';
+      ctx.font = 'bold 12px Cinzel, Georgia';
       ctx.fillStyle = entry.sold ? '#453f52' : (Hero.gold >= entry.price ? '#ffd76a' : '#8a5a5a');
       ctx.fillText(entry.sold ? 'SOLD' : entry.price + ' g', px + pw - 26, y + 17);
       y += 40;
@@ -5222,12 +5210,12 @@ const Screens = {
     const cd = Math.floor(remain / 60) + ':' + String(Math.floor(remain % 60)).padStart(2, '0');
 
     ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold ' + (big ? 15 : 13) + 'px Georgia'; ctx.fillStyle = '#ffd76a';
+    ctx.font = 'bold ' + (big ? 15 : 13) + 'px Cinzel, Georgia'; ctx.fillStyle = '#ffd76a';
     ctx.fillText(Hero.gold.toLocaleString() + ' g', px + pw - 16, py + 88);
 
     // Merchant flavour — the BUY greeting carries the live restock countdown.
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.font = 'italic ' + (big ? 12 : 11) + 'px Georgia'; ctx.fillStyle = '#b5ab94';
+    ctx.font = 'italic ' + (big ? 12 : 11) + 'px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
     let fBot;
     if (buying) {
       const flavor = 'Good to see you! I will have new items for ya in ' + cd + '. Why don\'t you look at what I\'ve got to sell ya, eh?';
@@ -5243,11 +5231,11 @@ const Screens = {
       ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
       if (arrows === 3) {
         const phz = (Game.time || 0) * 4.2, bob = Math.sin(phz) * 2, pul = 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(phz));
-        ctx.font = 'bold ' + (big ? 14 : 12) + 'px Georgia';
+        ctx.font = 'bold ' + (big ? 14 : 12) + 'px Cinzel, Georgia';
         ctx.fillStyle = `rgba(74,222,128,${pul.toFixed(3)})`;
         ctx.fillText('▲▲▲', ax, ay + bob);
       } else {
-        ctx.font = 'bold ' + (big ? 13 : 11) + 'px Georgia';
+        ctx.font = 'bold ' + (big ? 13 : 11) + 'px Cinzel, Georgia';
         ctx.fillStyle = arrows > 0 ? '#4ade80' : arrows < 0 ? '#e04a5a' : '#9a9080';
         ctx.fillText(arrows > 0 ? '▲'.repeat(arrows) : arrows < 0 ? '▼'.repeat(-arrows) : '—', ax, ay);
       }
@@ -5277,12 +5265,12 @@ const Screens = {
             UI.toast('Bought ' + entry.qty + ' ' + mm.name, mm.color); AudioSys.sfx('gold'); Hero.save();
           }, { disabled: entry.sold });
           ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-          ctx.font = 'bold ' + nameF + 'px Georgia';
+          ctx.font = 'bold ' + nameF + 'px Cinzel, Georgia';
           ctx.fillStyle = entry.sold ? '#544d44' : mm.color;
           ctx.fillText(mm.name + '  ×' + entry.qty, px + 28, y + rowH / 2 - 7);
-          ctx.font = subF + 'px Georgia'; ctx.fillStyle = entry.sold ? '#453f52' : '#8a8070';
+          ctx.font = subF + 'px Cinzel, Georgia'; ctx.fillStyle = entry.sold ? '#453f52' : '#8a8070';
           ctx.fillText('Reagent  ·  ' + Math.round(entry.price / entry.qty) + 'g each', px + 28, y + rowH / 2 + 8);
-          ctx.textAlign = 'right'; ctx.font = 'bold ' + nameF + 'px Georgia';
+          ctx.textAlign = 'right'; ctx.font = 'bold ' + nameF + 'px Cinzel, Georgia';
           ctx.fillStyle = entry.sold ? '#453f52' : (afford ? '#ffd76a' : '#8a5a5a');
           ctx.fillText(entry.sold ? 'SOLD' : entry.price + ' g', px + pw - 30, y + rowH / 2);
           return;
@@ -5291,12 +5279,12 @@ const Screens = {
         UI.btn(ctx, px + 16, y, pw - 32, rowH - 6, '', entry.sold ? null : () => { UI.sel.pick = sel ? null : entry; },
           { disabled: entry.sold, bg: sel ? 'rgba(70,54,44,0.95)' : undefined, border: sel ? '#ffd76a' : undefined });
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold ' + nameF + 'px Georgia';
+        ctx.font = 'bold ' + nameF + 'px Cinzel, Georgia';
         ctx.fillStyle = entry.sold ? '#544d44' : RARITIES[it.rarity].color;
         ctx.fillText(this.fitText(ctx, it.name, pw - 170), px + 28, y + rowH / 2 - 7);
-        ctx.font = subF + 'px Georgia'; ctx.fillStyle = entry.sold ? '#453f52' : '#8a8070';
+        ctx.font = subF + 'px Cinzel, Georgia'; ctx.fillStyle = entry.sold ? '#453f52' : '#8a8070';
         ctx.fillText(ITEM_SLOTS[it.slot].label + ' · ' + RARITIES[it.rarity].name, px + 28, y + rowH / 2 + 8);
-        ctx.textAlign = 'right'; ctx.font = 'bold ' + nameF + 'px Georgia';
+        ctx.textAlign = 'right'; ctx.font = 'bold ' + nameF + 'px Cinzel, Georgia';
         ctx.fillStyle = entry.sold ? '#453f52' : (Hero.gold >= entry.price ? '#ffd76a' : '#8a5a5a');
         ctx.fillText(entry.sold ? 'SOLD' : entry.price + ' g', px + pw - 30, y + rowH / 2 - 7);
         if (!entry.sold) drawArrows(px + pw - 30, y + rowH / 2 + 9, Items.compareArrows(it, Hero.equipped[it.slot]));
@@ -5320,7 +5308,7 @@ const Screens = {
       const items = Hero.bag.filter(it => it && !it.torch)
         .sort((a, b) => Items.sellValue(b) - Items.sellValue(a));   // highest sell price on top
       if (!items.length) {
-        ctx.textAlign = 'center'; ctx.font = 'italic ' + (big ? 14 : 12) + 'px Georgia'; ctx.fillStyle = '#544d44';
+        ctx.textAlign = 'center'; ctx.font = 'italic ' + (big ? 14 : 12) + 'px Cinzel, Georgia'; ctx.fillStyle = '#544d44';
         ctx.fillText('Your bag has no gear to sell.', W / 2, bodyTop + 30);
       } else {
         const scrollMax = Math.max(0, items.length * rowH - viewH);
@@ -5335,9 +5323,9 @@ const Screens = {
           ctx.fillStyle = 'rgba(28,24,38,0.92)';
           rr(ctx, px + 16, y, pw - 32, rowH - 6, 6); ctx.fill();
           ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-          ctx.font = 'bold ' + nameF + 'px Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
+          ctx.font = 'bold ' + nameF + 'px Cinzel, Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
           ctx.fillText(this.fitText(ctx, it.name, pw - 200), px + 28, y + rowH / 2 - 7);
-          ctx.font = subF + 'px Georgia'; ctx.fillStyle = '#8a8070';
+          ctx.font = subF + 'px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
           ctx.fillText(ITEM_SLOTS[it.slot].label + (it.stars ? '  ' + '★'.repeat(it.stars) : ''), px + 28, y + rowH / 2 + 8);
           UI.btn(ctx, px + pw - 158, y + (rowH - 6 - 28) / 2, 136, 28, 'SELL  ' + val + 'g',
             () => {
@@ -5349,7 +5337,7 @@ const Screens = {
       }
     }
     if ((UI.sel.scrollMax || 0) > 0 && !detailH) {
-      ctx.textAlign = 'center'; ctx.font = '9px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.textAlign = 'center'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       ctx.fillText('▼ drag for more ▼', W / 2, bodyBot - 2);
     }
   },
@@ -5408,7 +5396,7 @@ const Screens = {
     ay += 14;
     for (const [chan, label] of chans) {
       const a = Settings.audio[chan];
-      ctx.font = '12px Georgia';
+      ctx.font = '12px Cinzel, Georgia';
       ctx.fillStyle = '#c9bfa8';
       ctx.textAlign = 'left';
       ctx.fillText(label, px + 16, ay + 6);
@@ -5501,7 +5489,7 @@ const Screens = {
 
     // Camera view — Bird's Eye (classic straight-down) vs Top Down (a closer,
     // Diablo-3-style tilted-down angle, more personal with monsters & bosses).
-    ctx.textAlign = 'left'; ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
+    ctx.textAlign = 'left'; ctx.font = '12px Cinzel, Georgia'; ctx.fillStyle = '#c9bfa8';
     ctx.fillText('Camera view', gx, gy + 14);
     UI.chip(ctx, gx + colW - 118, gy + 1, 118, 26, Settings.g.viewMode === 'topdown' ? 'TOP DOWN' : "BIRD'S EYE", () => {
       Settings.g.viewMode = Settings.g.viewMode === 'topdown' ? 'birdseye' : 'topdown';
@@ -5512,14 +5500,14 @@ const Screens = {
 
     // Loot announcement — position and layout style.
     const lpos = ['bottom', 'middle', 'top'];
-    ctx.textAlign = 'left'; ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
+    ctx.textAlign = 'left'; ctx.font = '12px Cinzel, Georgia'; ctx.fillStyle = '#c9bfa8';
     ctx.fillText('Loot text position', gx, gy + 14);
     UI.chip(ctx, gx + colW - 118, gy + 1, 118, 26, (Settings.g.lootPos || 'bottom').toUpperCase(), () => {
       Settings.g.lootPos = lpos[(lpos.indexOf(Settings.g.lootPos || 'bottom') + 1) % lpos.length];
       Settings.save();
     }, { size: 12, border: '#8a6f4a', color: '#ffd76a' });
     gy += 30;
-    ctx.textAlign = 'left'; ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
+    ctx.textAlign = 'left'; ctx.font = '12px Cinzel, Georgia'; ctx.fillStyle = '#c9bfa8';
     ctx.fillText('Loot text style', gx, gy + 14);
     UI.chip(ctx, gx + colW - 118, gy + 1, 118, 26, (Settings.g.lootStyle || 'line') === 'arc' ? 'ARC' : 'STRAIGHT', () => {
       Settings.g.lootStyle = (Settings.g.lootStyle || 'line') === 'line' ? 'arc' : 'line';
@@ -5529,7 +5517,7 @@ const Screens = {
 
     // Bone-hand mouse cursor size (desktop pointer). 1× / 2× / 3×.
     const cscale = clamp(Settings.g.cursorScale || 1, 1, 3);
-    ctx.textAlign = 'left'; ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
+    ctx.textAlign = 'left'; ctx.font = '12px Cinzel, Georgia'; ctx.fillStyle = '#c9bfa8';
     ctx.fillText('Bone cursor size', gx, gy + 14);
     UI.chip(ctx, gx + colW - 118, gy + 1, 118, 26, cscale + '×', () => {
       Settings.g.cursorScale = (cscale % 3) + 1;   // 1 → 2 → 3 → 1
@@ -5541,7 +5529,7 @@ const Screens = {
     // Global UI font size — – / + between 8 and 22 (owner request). Scales ALL
     // on-screen text live, so the change is visible immediately.
     const fsz = clamp(Settings.g.fontSize || 13, 8, 22);
-    ctx.textAlign = 'left'; ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
+    ctx.textAlign = 'left'; ctx.font = '12px Cinzel, Georgia'; ctx.fillStyle = '#c9bfa8';
     ctx.fillText('Font size', gx, gy + 14);
     if (!UI.iconPlate(ctx, 'minus', gx + colW - 118, gy + 1, 34, 26,
       fsz > 8 ? () => { Settings.g.fontSize = clamp(fsz - 1, 8, 22); Settings.save(); } : null,
@@ -5549,7 +5537,7 @@ const Screens = {
       UI.btn(ctx, gx + colW - 118, gy + 1, 34, 26, '–',
         fsz > 8 ? () => { Settings.g.fontSize = clamp(fsz - 1, 8, 22); Settings.save(); } : null,
         { size: 15, disabled: fsz <= 8, border: '#8a6f4a', color: '#ffd76a' });
-    ctx.textAlign = 'center'; ctx.font = 'bold 13px Georgia'; ctx.fillStyle = '#ffd76a';
+    ctx.textAlign = 'center'; ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = '#ffd76a';
     ctx.fillText(String(fsz), gx + colW - 59, gy + 15);
     if (!UI.iconPlate(ctx, 'plus', gx + colW - 34, gy + 1, 34, 26,
       fsz < 22 ? () => { Settings.g.fontSize = clamp(fsz + 1, 8, 22); Settings.save(); } : null,
@@ -5563,7 +5551,7 @@ const Screens = {
     const caps = [100, 500, 1000, 2500, 5000, 10000];
     const curCap = Settings.g.corpseCap || 100;
     ctx.textAlign = 'left';
-    ctx.font = '12px Georgia';
+    ctx.font = '12px Cinzel, Georgia';
     ctx.fillStyle = '#c9bfa8';
     ctx.fillText('Corpse limit', gx, gy + 14);
     UI.chip(ctx, gx + colW - 118, gy + 1, 118, 26, curCap.toLocaleString(), () => {
@@ -5572,14 +5560,14 @@ const Screens = {
     }, { size: 12, border: '#8a6f4a', color: '#ffd76a' });
     gy += 30;
     ctx.textAlign = 'left';   // UI.btn left it centered
-    ctx.font = '10px Georgia';
+    ctx.font = '10px Cinzel, Georgia';
     ctx.fillStyle = '#6f6552';
     ctx.fillText(this.fitText(ctx, 'Bodies linger as necro fuel; raise it to stress-test.', colW), gx, gy + 2);
     gy += compact ? 16 : 22;
 
     // About — the game's creator (dev panel) and version (patch notes).
     ctx.textAlign = 'left';
-    ctx.font = 'bold 12px Georgia';
+    ctx.font = 'bold 12px Cinzel, Georgia';
     ctx.fillStyle = '#57b894';
     ctx.fillText('— ABOUT —', gx, gy + 6);
     gy += 14;
@@ -5593,7 +5581,7 @@ const Screens = {
     UI.sel.scrollMax = Math.max(0, (gy + sc + abh + 12) - bodyBot);
     if (UI.sel.scrollMax > 0) {
       ctx.textAlign = 'center';
-      ctx.font = '9px Georgia';
+      ctx.font = '9px Cinzel, Georgia';
       ctx.fillStyle = '#6f6552';
       if (sc > 1) ctx.fillText('▲ drag ▲', W / 2, bodyTop + 3);
       if (sc < UI.sel.scrollMax - 1) ctx.fillText('▼ drag to scroll ▼', W / 2, bodyBot - 3);
@@ -5647,7 +5635,7 @@ const Screens = {
 
     if (!saves.length) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'italic 12px Georgia';
+      ctx.font = 'italic 12px Cinzel, Georgia';
       ctx.fillStyle = '#544d44';
       ctx.fillText('No manual saves yet. The game still autosaves constantly.', W / 2, py + 174);
       return;
@@ -5659,10 +5647,10 @@ const Screens = {
       ctx.fillStyle = 'rgba(28,24,38,0.92)';
       rr(ctx, px + 16, y, pw - 32, rowH - 4, 5); ctx.fill();
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 11px Georgia';
+      ctx.font = 'bold 11px Cinzel, Georgia';
       ctx.fillStyle = '#e8e0cc';
       ctx.fillText(this.fitText(ctx, s.name, pw - 240), px + 26, y + rowH / 2 - 2);
-      ctx.font = '10px Georgia';
+      ctx.font = '10px Cinzel, Georgia';
       ctx.fillStyle = '#8a8070';
       ctx.textAlign = 'right';
       ctx.fillText(s.date || '', px + pw - 148, y + rowH / 2 - 2);
@@ -5673,7 +5661,7 @@ const Screens = {
       y += rowH;
     });
     ctx.textAlign = 'center';
-    ctx.font = '10px Georgia';
+    ctx.font = '10px Cinzel, Georgia';
     ctx.fillStyle = '#6f6552';
     ctx.fillText('Saves live in this browser (localStorage). Loading replaces your current hero.', W / 2, py + ph - 14);
   },
@@ -5683,7 +5671,7 @@ const Screens = {
   keysTab(ctx, W, H, px, py, pw, ph) {
     const narrow = pw < 480;
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.font = '11px Georgia'; ctx.fillStyle = '#9a9080';
+    ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
     ctx.fillText(narrow ? 'Keyboard controls (desktop).'
       : 'Keyboard controls (desktop) — tap a key to remove it, ＋ to add one.',
       px + 16, py + 86);
@@ -5703,22 +5691,22 @@ const Screens = {
       const y = listTop + row * rowH;
       const labelW = colW * 0.40;
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = '11px Georgia'; ctx.fillStyle = '#c9bfa8';
+      ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#c9bfa8';
       ctx.fillText(this.fitText(ctx, label, labelW - 4), x, y + rowH / 2);
 
       const chipY = y + (rowH - 18) / 2;
       const addX = x + colW - 20;
       let cxp = x + labelW;
       if (UI.sel.rebindAction === id) {
-        ctx.fillStyle = '#6ff7c3'; ctx.font = 'italic 11px Georgia';
+        ctx.fillStyle = '#6ff7c3'; ctx.font = 'italic 11px Cinzel, Georgia';
         ctx.fillText('press a key…', cxp, y + rowH / 2);
       } else {
         for (const code of (Settings.keys[id] || [])) {
-          ctx.font = 'bold 10px Georgia';
+          ctx.font = 'bold 10px Cinzel, Georgia';
           const name = keyName(code);
           const chw = Math.min(58, ctx.measureText(name).width + 12);
           if (cxp + chw > addX - 18) {   // clear the painted ＋ plate
-            ctx.fillStyle = '#6f6552'; ctx.font = '10px Georgia';
+            ctx.fillStyle = '#6f6552'; ctx.font = '10px Cinzel, Georgia';
             ctx.fillText('…', cxp, y + rowH / 2);
             break;
           }
@@ -5740,7 +5728,7 @@ const Screens = {
         rr(ctx, addX, chipY, 18, 18, 4); ctx.fill();
         ctx.strokeStyle = '#3a7a4a'; ctx.lineWidth = 1;
         rr(ctx, addX, chipY, 18, 18, 4); ctx.stroke();
-        ctx.fillStyle = '#6ff7c3'; ctx.font = 'bold 14px Georgia';
+        ctx.fillStyle = '#6ff7c3'; ctx.font = 'bold 14px Cinzel, Georgia';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText('+', addX + 9, chipY + 9);
         UI.register(addX, chipY, 18, 18, () => { UI.sel.rebindAction = id; });
@@ -5765,19 +5753,19 @@ const Screens = {
     const py = Math.max(16, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, 'THE CREATOR');
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 19px Georgia';
+    ctx.font = 'bold 19px Cinzel, Georgia';
     ctx.fillStyle = '#6ff7c3';
     ctx.fillText('NEKROMANCER', W / 2, py + 48);
-    ctx.font = 'italic 11px Georgia';
+    ctx.font = 'italic 11px Cinzel, Georgia';
     ctx.fillStyle = '#9a9080';
     ctx.fillText('A Diablo-inspired dungeon-crawling ARPG', W / 2, py + 68);
-    ctx.font = 'bold 13px Georgia';
+    ctx.font = 'bold 13px Cinzel, Georgia';
     ctx.fillStyle = '#ffd76a';
     ctx.fillText('Created by Sterling Grant', W / 2, py + 96);
-    ctx.font = '11px Georgia';
+    ctx.font = '11px Cinzel, Georgia';
     ctx.fillStyle = '#b5ab94';
     wrapText(ctx, 'A fan-built game made with love for the Necromancers of Rathma.  ·  2026', W / 2, py + 116, pw - 54, 15, 3);
-    ctx.font = '10px Georgia';
+    ctx.font = '10px Cinzel, Georgia';
     ctx.fillStyle = '#6f6552';
     ctx.fillText('Pure HTML / CSS / JS · no engine · everything procedural', W / 2, py + 158);
     ctx.fillStyle = '#57b894';
@@ -5849,7 +5837,7 @@ const Screens = {
       y += 12;
       if (vis(18)) {
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#57b894';
+        ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = '#57b894';
         ctx.fillText('— ' + title + ' —', px + 16, sy() + 9);
       }
       y += 24;
@@ -5869,9 +5857,9 @@ const Screens = {
     check('Infinite essence (mana/rage/energy)', Hero.cheats.essence, () => { Hero.cheats.essence = !Hero.cheats.essence; Hero.save(); });
     // Enemy spawn boost slider — multiplies pack sizes/counts, +0%…+1000%.
     if (vis(30)) {
-      ctx.textAlign = 'left'; ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
+      ctx.textAlign = 'left'; ctx.font = '12px Cinzel, Georgia'; ctx.fillStyle = '#c9bfa8';
       ctx.fillText('Enemy spawn boost', px + 16, sy() + 6);
-      ctx.textAlign = 'right'; ctx.font = 'bold 12px Georgia'; ctx.fillStyle = '#ffb43a';
+      ctx.textAlign = 'right'; ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = '#ffb43a';
       ctx.fillText('+' + Math.round((Hero.cheats.spawn || 0) * 100) + '%', px + pw - 16, sy() + 6);
       UI.slider(ctx, px + 16, sy() + 12, pw - 32, clamp((Hero.cheats.spawn || 0) / 10, 0, 1), v => {
         Hero.cheats.spawn = Math.round(v * 100) / 10; Hero.save();
@@ -5962,7 +5950,7 @@ const Screens = {
     // Footer note (scrolls with the content).
     y += 8;
     if (vis(16)) {
-      ctx.textAlign = 'center'; ctx.font = 'italic 10px Georgia'; ctx.fillStyle = '#6f6552';
+      ctx.textAlign = 'center'; ctx.font = 'italic 10px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
       ctx.fillText('Everything here is saved with the hero.', px + pw / 2, sy() + 8);
     }
     y += 18;
@@ -6009,11 +5997,11 @@ const Screens = {
     let y = top + 8 - UI.sel.scrollY;
     for (const patch of PATCH_NOTES) {
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 14px Georgia';
+      ctx.font = 'bold 14px Cinzel, Georgia';
       ctx.fillStyle = '#57b894';
       ctx.fillText(patch.v + '   —   ' + patch.date, px + 16, y);
       y += 22;
-      ctx.font = '11px Georgia';
+      ctx.font = '11px Cinzel, Georgia';
       for (const n of patch.notes) {
         ctx.fillStyle = '#b5ab94';
         // Generous line budget: never ellipsize a note.
@@ -6068,12 +6056,12 @@ const Screens = {
     let c = scrollTop + 12;
 
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'italic 12px Georgia';
+    ctx.font = 'italic 12px Cinzel, Georgia';
     ctx.fillStyle = '#9a9080';
     c = wrapText(ctx, SEASON.desc, W / 2, c - scrollY, pw - 40, 16, 8) + scrollY + 10;
 
     const owned = Hero.setPiecesOwned();
-    ctx.font = 'bold 14px Georgia';
+    ctx.font = 'bold 14px Cinzel, Georgia';
     ctx.fillStyle = '#4ade80';
     ctx.textAlign = 'center';
     ctx.fillText('GRACE OF INARIUS  —  ' + owned.size + ' / 6', W / 2, c - scrollY);
@@ -6081,18 +6069,18 @@ const Screens = {
     for (const [slot, name] of Object.entries(INARIUS_SET.pieces)) {
       const has = owned.has(slot);
       ctx.textAlign = 'left';
-      ctx.font = 'bold 12px Georgia';
+      ctx.font = 'bold 12px Cinzel, Georgia';
       ctx.fillStyle = has ? '#4ade80' : '#544d44';
       ctx.fillText((has ? '◆  ' : '◇  ') + name, px + 24, c - scrollY);
       ctx.textAlign = 'right';
-      ctx.font = '10px Georgia';
+      ctx.font = '10px Cinzel, Georgia';
       ctx.fillStyle = has ? '#3a7a4a' : '#453f52';
       ctx.fillText(ITEM_SLOTS[slot].label, px + pw - 24, c - scrollY);
       c += 22;
     }
     c += 6;
     ctx.textAlign = 'left';
-    ctx.font = '11px Georgia';
+    ctx.font = '11px Cinzel, Georgia';
     for (const b of INARIUS_SET.bonuses) {
       const active = Items.setCount() >= b.pieces;
       ctx.fillStyle = active ? '#4ade80' : '#6f6552';
@@ -6102,7 +6090,7 @@ const Screens = {
 
     UI.sel.scrollMax = Math.max(0, (c - scrollTop) - viewH + 6);
     ctx.textAlign = 'center';
-    ctx.font = '9px Georgia';
+    ctx.font = '9px Cinzel, Georgia';
     ctx.fillStyle = '#6f6552';
     if (scrollY > 1) ctx.fillText('▲ drag ▲', W / 2, scrollTop + 2);
     if (scrollY < (UI.sel.scrollMax || 0) - 1) ctx.fillText('▼ drag for more ▼', W / 2, viewBot - 1);
@@ -6118,7 +6106,7 @@ const Screens = {
       hasMaster ? () => { UI.close(); Game.startRift('season'); } : null,
       { size: 13, disabled: !hasMaster, border: '#3a7a4a', color: '#4ade80' });
     ctx.textAlign = 'center';
-    ctx.font = '10px Georgia';
+    ctx.font = '10px Cinzel, Georgia';
     ctx.fillStyle = '#6f6552';
     ctx.fillText(this.fitText(ctx, '◈ Ashen Keys: ' + Hero.masterKeys + '  ·  Abyss Guardians drop them & set pieces', pw - 24), W / 2, footerTop + 60);
   },
@@ -6132,7 +6120,7 @@ const Screens = {
     const cx = W / 2 - bw / 2;
     let y = H * 0.24;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 22px Georgia';
+    ctx.font = 'bold 22px Cinzel, Georgia';
     ctx.fillStyle = '#c9bfa8';
     ctx.fillText(Game.zone ? Game.zone.name : 'PAUSED', W / 2, y - 24);
     UI.btn(ctx, cx, y, bw, 44, 'RESUME', () => UI.close(), { size: 15, border: '#57b894', color: '#6ff7c3' });
@@ -6163,7 +6151,7 @@ const Screens = {
     ctx.strokeText('YOU HAVE FALLEN', cx, cy);
     ctx.fillStyle = '#c22843';
     ctx.fillText('YOU HAVE FALLEN', cx, cy);
-    ctx.font = 'italic 14px Georgia';
+    ctx.font = 'italic 14px Cinzel, Georgia';
     ctx.fillStyle = '#c9bfa8';
     ctx.fillText(this.fitText(ctx, 'The dead reclaim their own... but Rathma\'s work is not done.', W - 30), cx, cy + 36);
     if (Game.playerDeadT > 1) {
@@ -6181,15 +6169,15 @@ const Screens = {
     const py = H / 2 - ph / 2;
     UI.panel(ctx, px, py, pw, ph, Game.rewardTitle || 'BOUNTY COMPLETE');
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'bold 15px Georgia';
+    ctx.font = 'bold 15px Cinzel, Georgia';
     ctx.fillStyle = '#ffb43a';
     ctx.fillText(Game.zone ? Game.zone.boss + '  slain' : 'The bounty is done', W / 2, py + 60);
-    ctx.font = '13px Georgia';
+    ctx.font = '13px Cinzel, Georgia';
     ctx.fillStyle = '#c9bfa8';
     ctx.fillText(Game.rewardTitle === 'SEASON COMPLETE' ? 'Season cache:' : 'Forgotten Reliquary:', W / 2, py + 86);
     (Game.rewardLines || []).forEach((ln, i) => {
       ctx.fillStyle = ln[1];
-      ctx.font = 'bold 13px Georgia';
+      ctx.font = 'bold 13px Cinzel, Georgia';
       ctx.fillText(ln[0], W / 2, py + 110 + i * 20);
     });
     const by = py + ph - 56;
@@ -6211,12 +6199,12 @@ const Screens = {
     UI.panel(ctx, px, py, pw, ph, Game.rewardTitle || 'ACT COMPLETE');
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
-    ctx.font = 'bold 15px Georgia'; ctx.fillStyle = '#ffb43a';
+    ctx.font = 'bold 15px Cinzel, Georgia'; ctx.fillStyle = '#ffb43a';
     ctx.fillText((Game.zone && Game.zone.boss ? Game.zone.boss : 'The Act boss') + ' is slain', W / 2, py + 52);
-    ctx.font = '12px Georgia'; ctx.fillStyle = '#c9bfa8';
+    ctx.font = '12px Cinzel, Georgia'; ctx.fillStyle = '#c9bfa8';
     ctx.fillText('Act cache:', W / 2, py + 74);
     lines.forEach((ln, i) => {
-      ctx.fillStyle = ln[1]; ctx.font = 'bold 12px Georgia';
+      ctx.fillStyle = ln[1]; ctx.font = 'bold 12px Cinzel, Georgia';
       ctx.fillText(ln[0], W / 2, py + 94 + i * 19);
     });
 
@@ -6228,7 +6216,7 @@ const Screens = {
     const sdw = Math.min(300, pw - 40), sdx = W / 2 - sdw / 2;
     UI.btn(ctx, sdx, dy, 40, 30, '◀', atMin ? null : () => { Hero.difficulty = Math.max(0, Hero.difficulty - 1); Hero.save(); }, { size: 14, disabled: atMin });
     UI.btn(ctx, sdx + sdw - 40, dy, 40, 30, '▶', atMax ? null : () => { Hero.difficulty = Math.min(maxDiff, Hero.difficulty + 1); Hero.save(); }, { size: 14, disabled: atMax });
-    ctx.font = 'bold 13px Georgia'; ctx.fillStyle = Hero.difficulty >= 4 ? '#e04a5a' : '#ffd76a';
+    ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = Hero.difficulty >= 4 ? '#e04a5a' : '#ffd76a';
     ctx.fillText(DIFFICULTIES[Hero.difficulty].name, W / 2, dy + 15);
 
     // CONTINUE → the next Act.  TOWN → bank progress, come back later.
