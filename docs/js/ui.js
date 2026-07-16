@@ -170,6 +170,11 @@ const UI = {
   //  · recipes → Cube, skillChooser → skills, storyacts → wilds
   // Returns a callback so both the ✕ and the Escape key run identical logic.
   closeAction() {
+    // Settings opened from the creation screen's gear returns there.
+    if (this.screen === 'settings' && this.settingsBack) {
+      const back = this.settingsBack;
+      return () => { this.settingsBack = null; this.open(back); };
+    }
     if (this.screen === 'recipes') return () => this.open('cube');
     if (this.screen === 'skillChooser') return () => this.open('skills');
     if (this.screen === 'storyacts') return () => this.open('wilds');
@@ -531,7 +536,9 @@ const UI = {
     // that draw no panel fall back to the screen corner.
     // Integrated INTO the title bar (owner rule v1.7.2): the ✕ sits on the
     // same band as the menu title, flush with the panel's right edge.
-    const pr = (this.panelRects && this.panelRects[0]) || null;
+    // The creation screen's panels are side menus — its ✕ stays in the
+    // screen corner instead of riding the gender panel.
+    const pr = this.screen === 'create' ? null : (this.panelRects && this.panelRects[0]) || null;
     const x = pr ? Math.min(W - 26 - s.right, pr.x + pr.w - 30) : W - 26 - s.right;
     const y = pr ? pr.y + 22 : 26 + s.top;
     // ✕ and Escape share one navigation policy (see closeAction).

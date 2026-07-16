@@ -329,11 +329,21 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.3-alpha';
+const GAME_VERSION = 'v1.7.4-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.4-alpha', date: 'July 2026',
+    notes: [
+      'CREATION SCREEN, PART TWO (owner art) — bronze GENDER medallions in their own left menu (female by default), the chosen Nekromancer stands CENTRE-STAGE as a full painted model over low, rolling ground fog',
+      'Hair color picks by painted head-bust, right where gender lives; no faces, skins or eye colors to fuss over',
+      'NAME YOUR NEKROMANCER sits beneath the model with CREATE on the advanced plate — straight into New Haven with your new hero',
+      'A lore panel tells the Nekromancer\'s tale and the four CLASSIC SPELLS — Corpse Explosion, Death Nova, Bone Armor, Command Skeletons — each in its circle frame with what it does',
+      'The bronze GEAR medallion (lower right) opens Settings from the creation screen'
+    ]
+  },
   {
     v: 'v1.7.3-alpha', date: 'July 2026',
     notes: [

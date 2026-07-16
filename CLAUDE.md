@@ -408,6 +408,25 @@ loot at the artisans. The hero is persistent (localStorage).
   the Jeweler's `gemStackList` chips moved gothic→SIMPLE plate (owner
   correction). Character footer: PARAGON + **CAMPFIRE** (renamed from
   CHANGE HERO) on the simple plate.
+- **v1.7.4 — CREATION SCREEN PART 2 (owner art)**: `Screens.create`
+  rebuilt as a full-screen stage over `create_bg`: LEFT panel = bronze
+  GENDER medallions (`gender_m/f.webp`, spliced from the owner sheet;
+  selected = full alpha + teal breath ring, other dimmed 0.45) +
+  HAIR COLOR bust grid (3-wide) — no face/skin/eye pickers; CENTRE = the
+  full painted SHOWCASE model (`showcase_{m,f}.webp`, alpha-cut;
+  **defaults FEMALE** via a `UI.sel._cinit` one-shot that sets
+  Hero.gender='f') breathing over PROCEDURAL ROLLING GROUND FOG (6
+  radial-gradient banks drifting on sin waves, drawn behind AND in front
+  at lower alpha); BELOW = NAME YOUR NEKROMANCER (prompt-based input as
+  before) + **CREATE on the gothic plate → `Game.enterTown()` directly**;
+  RIGHT panel (wide screens only) = Nekromancer lore blip + the four
+  CLASSIC SPELLS (corpseExplosion/deathNova/boneArmor/commandSkeletons)
+  each in a `UI.circleFrame` with wrapped rich-text descriptions;
+  BOTTOM-RIGHT = the `gear.webp` medallion → Settings (`UI.settingsBack
+  = 'create'`, consumed by closeAction so its ✕ returns to create).
+  `drawGlobalClose` skips panel-anchoring on 'create' (the panels are
+  side menus — the ✕ stays in the screen corner). The campfire select
+  (v1.7.3 frames) is unchanged: pick + PLAY → town.
 - **v1.7.3 — CHARACTER SELECT REBORN (owner art)**: `Screens.select` no
   longer draws the campfire scene (those helpers are dead code) — it
   draws `docs/art/ui/select_bg.webp` (painted "CHOOSE YOUR HERO — the
