@@ -1287,7 +1287,7 @@ const RUNE_IMAGES = [];
   if (typeof Image === 'undefined') return;
   for (let i = 0; i < RUNE_IMAGE_COUNT; i++) {
     const img = new Image();
-    img.src = 'art/runes/rune' + i + '.png';
+    img.src = 'art/runes/rune' + i + '.webp';
     RUNE_IMAGES.push(img);
   }
 })();
@@ -1382,7 +1382,7 @@ function loadSkillIcons() {
   for (const id of SKILL_ICON_FILES) {
     if (!SKILL_ICONS[id]) continue;               // ignore unknown ids
     const img = new Image();
-    img.src = 'art/icons/' + id + '.png';
+    img.src = 'art/icons/' + id + '.webp';
     SKILL_ICON_IMAGES[id] = img;
   }
 }

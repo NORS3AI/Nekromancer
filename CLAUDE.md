@@ -39,8 +39,9 @@ loot at the artisans. The hero is persistent (localStorage).
   so phones keep the paintings cached across game releases. `Game.preloadArt()`
   (called in boot) + `Screens.preloadShops()` + `World.loadTiles()` start every
   heavy download at the title screen; `drawTown` shows "New Haven emerges from
-  the dark…" until the map arrives. Small art (gems/icons/runes/ui) is still
-  PNG with `?v=BUILD`.
+  the dark…" until the map arrives. Small art is ALL WebP too as of v1.7.1 (runes
+  `rune0..N.webp`, skill icons `icons/<id>.webp` — the PNGs live only in
+  git history).
 - **PAINTED HERO AVATARS (v1.6.70, owner art; v1.6.71 BAKED ALPHA; v1.6.75
   NEW FULL MODELS + REAL SIDE PROFILES)**:
   `docs/art/hero/{m,f}_{front,back,side}.webp` — male & female Nekromancer
@@ -407,6 +408,23 @@ loot at the artisans. The hero is persistent (localStorage).
   the Jeweler's `gemStackList` chips moved gothic→SIMPLE plate (owner
   correction). Character footer: PARAGON + **CAMPFIRE** (renamed from
   CHANGE HERO) on the simple plate.
+- **v1.7.1 (owner list)**: (1) The last PNGs (20 runes + 21 skill icons,
+  1.6MB→272KB) converted to WebP; loaders in skills.js now request
+  `.webp`. (2) **MOVE SPEED HARD CAP 25%** — `computeStats.moveSpeed`
+  clamps to 0.25 (boots + paragon + everything); the ONLY exception is
+  the new **FLEETFOOT** shrine buff (+100% move speed — Player.update
+  multiplies past the cap): in the map-shrine pool (30s, world.js pick +
+  game.js duration branch) and the fountain pool (10 min,
+  FOUNTAIN_BUFFS). (3) **PARAGON**: every capped stat now max 50 (move
+  included); `maxMana` label is MAXIMUM ESSENCE; Int/Vit per-point
+  0.02→0.005 (uncapped). (4) **Character sheet = ONE wide scrolling
+  column** (`twoCol = false`, pw ≤720). (5) **PATCH NOTES**: collapsed
+  one-line rows (tap to expand; newest open via `UI.sel.pnOpen`),
+  grouped by month header, off-screen notes get estimated heights (no
+  wrapText) — 61fps; screen added to MENU_SCREENS (no round EXIT).
+  (6) Campfire select: heading + YES RETIRE / NO KEEP on simple plates,
+  'select' in NO_CLOSE_X. (7) Settings: Keys explainer = two centered
+  lines; SAVE HERO is 62% width, centered.
 - **v1.7.0 (owner mega-list)**: (1) **MATERIAL ICONS** — owner art in
   `docs/art/mats/{parts,dust,crystal,soul}.webp` (square-padded 96px),
   loaded by `Game.matImg`, drawn by global `drawMatIcon(ctx,key,x,y,s)`
