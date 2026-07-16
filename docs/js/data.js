@@ -321,11 +321,17 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.6.94-alpha';
+const GAME_VERSION = 'v1.6.95-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.6.95-alpha', date: 'July 2026',
+    notes: [
+      'The death screen joins the set — YOU HAVE FALLEN letters in Cinzel, and RISE AT THE ENTRANCE / RETURN TO TOWN are painted plates'
+    ]
+  },
   {
     v: 'v1.6.94-alpha', date: 'July 2026',
     notes: [

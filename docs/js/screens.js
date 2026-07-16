@@ -6059,20 +6059,20 @@ const Screens = {
     ctx.fillRect(0, 0, W, H);
     const cx = W / 2, cy = H * 0.36;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = `bold ${Math.min(44, W * 0.085)}px Georgia`;
+    // The death title wears the chosen face (Cinzel, owner rule).
+    ctx.font = `700 ${Math.min(44, W * 0.085)}px Cinzel, Georgia`;
     ctx.lineWidth = 5;
     ctx.strokeStyle = 'rgba(0,0,0,0.9)';
     ctx.strokeText('YOU HAVE FALLEN', cx, cy);
     ctx.fillStyle = '#c22843';
     ctx.fillText('YOU HAVE FALLEN', cx, cy);
-    ctx.font = '14px Georgia';
+    ctx.font = 'italic 14px Georgia';
     ctx.fillStyle = '#c9bfa8';
-    ctx.fillText('The dead reclaim their own... but Rathma\'s work is not done.', cx, cy + 36);
+    ctx.fillText(this.fitText(ctx, 'The dead reclaim their own... but Rathma\'s work is not done.', W - 30), cx, cy + 36);
     if (Game.playerDeadT > 1) {
-      const bw = Math.min(250, W * 0.6);
-      UI.btn(ctx, cx - bw / 2, cy + 66, bw, 42, 'RISE AT THE ENTRANCE', () => Game.respawn(),
-        { size: 13, border: '#57b894', color: '#6ff7c3' });
-      UI.btn(ctx, cx - bw / 2, cy + 118, bw, 38, 'RETURN TO TOWN', () => Game.toCamp(), { size: 13 });
+      const bw = Math.min(280, W * 0.72);
+      UI.btnPlate(ctx, cx - bw / 2, cy + 66, bw, 42, 'RISE AT THE ENTRANCE', () => Game.respawn(), { size: 14 });
+      UI.btnPlate(ctx, cx - bw / 2, cy + 122, bw, 38, 'RETURN TO TOWN', () => Game.toCamp(), { size: 13 });
     }
   },
 
