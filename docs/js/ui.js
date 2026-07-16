@@ -654,6 +654,71 @@ const UI = {
     }
   },
 
+  // Small painted ICON PLATES (v1.6.97 owner art): plus / minus etc. Drawn
+  // contain-fit in the rect, centered. Returns false when the art isn't
+  // loaded yet so the caller can draw its procedural fallback instead.
+  iconPlate(ctx, key, x, y, w, h, cb, o = {}) {
+    const img = (typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg(key) : null;
+    if (!img || !img.complete || !img.naturalWidth) return false;
+    const k = Math.min(w / img.width, h / img.height);
+    const dw = img.width * k, dh = img.height * k;
+    if (o.disabled) ctx.globalAlpha = 0.4;
+    ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+    ctx.globalAlpha = 1;
+    if (!o.disabled && cb) {
+      this.register(x, y, w, h, cb);
+      this.hits[this.hits.length - 1].label = o.label || key;
+    }
+    return true;
+  },
+
+  // The small EMPTY VALUE PLATE (v1.6.97 owner art, `chip.webp`): notched-
+  // corner frame, blank leather — for little value buttons (Settings' Top
+  // Down / Bottom / Straight / cursor 1×, Game creator, patch version).
+  // Flat 3-slice + the usual Cinzel label. Falls back to UI.btn.
+  chip(ctx, x, y, w, h, label, cb, o = {}) {
+    const img = (typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg('chip') : null;
+    if (!img || !img.complete || !img.naturalWidth) return this.btn(ctx, x, y, w, h, label, cb, o);
+    const sw = img.width, sh = img.height;
+    const capF = 0.18;
+    let capW = sw * capF * (h / sh);
+    capW = Math.min(capW, w * 0.3);
+    if (o.disabled) ctx.globalAlpha = 0.45;
+    ctx.drawImage(img, 0, 0, sw * capF, sh, x, y, capW, h);
+    ctx.drawImage(img, sw * 0.40, 0, sw * 0.20, sh, x + capW, y, w - 2 * capW, h);
+    ctx.drawImage(img, sw * (1 - capF), 0, sw * capF, sh, x + w - capW, y, capW, h);
+    let size = o.size || 12;
+    const maxW = w - capW * 2 - 8;
+    const text = String(label).toUpperCase();
+    ctx.font = `600 ${size}px Cinzel, Georgia`;
+    while (size > 8 && ctx.measureText(text).width > maxW) {
+      size--; ctx.font = `600 ${size}px Cinzel, Georgia`;
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillText(text, x + w / 2, y + h / 2 + 2);
+    ctx.fillStyle = o.disabled ? '#6f6552' : (o.color || '#dcc9a2');
+    ctx.fillText(text, x + w / 2, y + h / 2 + 0.5);
+    ctx.globalAlpha = 1;
+    if (!o.disabled && cb) {
+      this.register(x, y, w, h, cb);
+      this.hits[this.hits.length - 1].label = label;
+    }
+    return true;
+  },
+
+  // The round SKILL FRAME (v1.6.97 owner art, `circle.webp`): drawn BEHIND
+  // every skill / rune / passive icon circle. The frame's leather centre is
+  // ~56% of the art, so 2.35× the icon radius leaves a visible ring of
+  // chrome around the glyph. Returns false until the art loads.
+  circleFrame(ctx, cx, cy, r) {
+    const img = (typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg('circle') : null;
+    if (!img || !img.complete || !img.naturalWidth) return false;
+    const d = r * 2.35;
+    ctx.drawImage(img, cx - d / 2, cy - d / 2, d, d);
+    return true;
+  },
+
   // 9-slice a painted frame over a rect: corners 1:1, THIN text-free strips
   // (not the full spans, which carry baked-in content) stretched for edges.
   drawNine(ctx, img, x, y, w, h, c) {
@@ -1229,6 +1294,9 @@ const UI = {
       g.addColorStop(1, '#0d0a12');
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
+      // The painted round frame wraps every skill slot (v1.6.97 owner rule).
+      ctx.globalAlpha = 1;
+      const framed = this.circleFrame(ctx, b.x, b.y, b.r);
 
       // Desktop action bar: the bound key under each slot (LMB · 1-4 · RMB).
       if (this.desktop) {
@@ -1240,9 +1308,11 @@ const UI = {
 
       if (!s) {
         ctx.globalAlpha = 0.5;
-        ctx.strokeStyle = '#3a3448';
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.stroke();
+        if (!framed) {
+          ctx.strokeStyle = '#3a3448';
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.stroke();
+        }
         ctx.fillStyle = '#3a3448';
         ctx.font = `${Math.round(b.r * 0.8)}px Georgia`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';

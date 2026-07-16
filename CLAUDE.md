@@ -344,6 +344,24 @@ loot at the artisans. The hero is persistent (localStorage).
   jungle,ember}.webp`, 740×218, scratchpad `plate2themes.py` — owner:
   "when a theme is chosen and only in specific places I want you to use
   them. Just splice them and store them for now").
+- **SMALL PAINTED UI BITS (v1.6.97, owner art — five pieces, scratchpad
+  `uibits.py`)**: `docs/art/ui/{minus,plus,close2,chip,circle}.webp`.
+  (1) `close2` = the NEW red ✕ plate — `Screens.closeX` draws it at its own
+  aspect (h 34, w ≈ 51); the old `close.webp` is dead but left on disk (no
+  ART_V bump — all five are new files). (2) `UI.iconPlate(ctx,key,x,y,w,h,
+  cb,o)` contain-fits plus/minus art in a rect, returns false until loaded
+  (callers keep procedural fallbacks): Settings font-size −/+, Keys tab's
+  add-binding ＋ (drawn 32×18 at `addX-14`; the key-chip overflow guard
+  clears it at `addX-18`), Paragon per-row ＋. (3) `UI.chip(...)` = the
+  EMPTY VALUE PLATE, flat 3-slice (capF 0.18) + Cinzel label — Settings'
+  value chips (Camera view/Loot pos/Loot style/Cursor size/Corpse limit)
+  and the ABOUT row (Game creator + GAME_VERSION). (4) `UI.circleFrame(ctx,
+  cx,cy,r)` draws the round quatrefoil SKILL FRAME at 2.35r behind EVERY
+  skill/rune/passive circle: HUD `drawSkillButtons` (procedural stroke
+  kept only when art absent; status ring stays on top), skills() actives
+  slots, passives slots, skillChooser skills + rune stones (stones shrink
+  to 0.86r inside the frame); selection glow rings still draw over it.
+  The campfire "＋ New Nekromancer" ghost marker keeps its plain glyph.
 - **PAINTED PANELS for INVENTORY + SKILLS (v1.6.96, owner rule "see the UI
   in Character? Create similar… so everything matches")**: `invGrouped`
   wraps its whole list in `UI.panel` (title carries the bag count:
