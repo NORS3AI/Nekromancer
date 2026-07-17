@@ -3040,10 +3040,29 @@ const Screens = {
         ctx.fillStyle = selected ? 'rgba(46,42,58,0.95)' : isEq ? 'rgba(26,40,32,0.9)' : 'rgba(28,24,38,0.92)';
         rr(ctx, px, yy, pw, 30, 6); ctx.fill();
         if (selected) { ctx.strokeStyle = RARITIES[it.rarity].color; ctx.lineWidth = 1.5; rr(ctx, px, yy, pw, 30, 6); ctx.stroke(); }
+        // Empty-socket glow (owner rule v1.7.32 — see at a glance what needs a
+        // gem, matching the radial's socket hint).
+        const emptyN = !it.torch ? (it.sockets || 0) - ((it.gems && it.gems.length) || 0) : 0;
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
         ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
         const nm = it.name + (it.torch && (it.count || 1) > 1 ? '  ×' + it.count : '');
-        ctx.fillText(this.fitText(ctx, nm, pw - 96), px + 10, yy + 15);
+        ctx.fillText(this.fitText(ctx, nm, pw - (emptyN > 0 ? 116 : 96)), px + 10, yy + 15);
+        if (emptyN > 0) {
+          const dx = px + pw - 86, dy = yy + 15;
+          const pulse = 0.8 + 0.2 * Math.sin(Game.time * 4);
+          const sz = 6.5 * pulse;
+          ctx.save();
+          ctx.globalAlpha = 0.95;
+          ctx.shadowColor = '#7fd8ff'; ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.moveTo(dx, dy - sz); ctx.lineTo(dx + sz * 0.72, dy); ctx.lineTo(dx, dy + sz); ctx.lineTo(dx - sz * 0.72, dy); ctx.closePath();
+          ctx.fillStyle = '#bfeaff'; ctx.fill();
+          ctx.shadowBlur = 0; ctx.lineWidth = 1.4; ctx.strokeStyle = '#0b1a24'; ctx.stroke();
+          ctx.restore();
+          ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+          ctx.font = 'bold 9px Cinzel, Georgia'; ctx.fillStyle = '#7fd8ff';
+          ctx.fillText('×' + emptyN, dx + sz + 2, dy);
+        }
         ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
         if (isEq) {
           ctx.font = 'bold 9px Cinzel, Georgia'; ctx.fillStyle = '#4ade80';
@@ -4797,21 +4816,18 @@ const Screens = {
 
     // Reagents & holdings.
     ry = header(rx, ry, '— REAGENTS —', '#ffd76a');
-    ry = line(rx, ry, 'Gold', Hero.gold, '#ffd76a');
-    for (const [key, m] of Object.entries(MATERIALS)) {
-      if (key === 'parts' || key === 'dust' || key === 'crystal' || key === 'soul') {
-        // Painted icon WITH its name beside it (owner rule v1.7.16 — icons
-        // matter later; teach the player what each one is).
-        drawMatIcon(ctx, key, rx + 10 * k, ry - 4 * k, 18 * k);
-        ctx.textAlign = 'left'; ctx.font = (11 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
-        ctx.fillText(m.name, rx + 24 * k, ry);
-        ctx.textAlign = 'right'; ctx.font = '600 ' + (12 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = m.color;
-        ctx.fillText(String(Hero.mats[key] || 0), rx + colW, ry);
-        ry += 19 * k;
-      } else {
-        ry = line(rx, ry, m.name, Hero.mats[key], m.color);
-      }
-    }
+    // Painted icon + name for EVERY reagent, gold included (owner art v1.7.32 —
+    // gold, lumber, rivets, heartstring, wyrm scale, brain, soul of Bellmahath).
+    const matRow = (key, name, val, col) => {
+      drawMatIcon(ctx, key, rx + 10 * k, ry - 4 * k, 18 * k);
+      ctx.textAlign = 'left'; ctx.font = (11 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
+      ctx.fillText(name, rx + 24 * k, ry);
+      ctx.textAlign = 'right'; ctx.font = '600 ' + (12 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = col;
+      ctx.fillText(typeof val === 'number' ? val.toLocaleString() : String(val), rx + colW, ry);
+      ry += 19 * k;
+    };
+    matRow('gold', 'Gold', Hero.gold, '#ffd76a');
+    for (const [key, m] of Object.entries(MATERIALS)) matRow(key, m.name, Hero.mats[key] || 0, m.color);
     ry = line(rx, ry, 'Gems in pouch', Hero.gems.length, '#b06adf');
     ry = line(rx, ry, 'Bag', Hero.bagUsed() + ' / ' + Hero.BAG_SIZE);
     ry += 6 * k;
@@ -5293,16 +5309,73 @@ const Screens = {
     const cw = lw - 26;
     const vis = (top, hh) => (top - scrollY + hh > listTop) && (top - scrollY < viewBot);
 
+    // NEXT DEED on offer — at the TOP so accepting new quests never needs a
+    // scroll (owner rule v1.7.32: quests up top, the accepted list below).
+    if (offerIdx >= 0) {
+      const def = QUEST_LINE[offerIdx];
+      const milestone = def.tid === 'reach';
+      const gateOk = def.gate.kind === 'level' ? Hero.level >= def.gate.at : (Hero.paragon || 0) >= def.gate.at;
+      const full = journal.length >= QUEST_JOURNAL_MAX;   // HIS slots only — Addy's ride separately
+      const rwText = 'Reward:  ' + questRewardText(offerIdx, true);
+
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
+      ctx.fillText('NEXT DEED', lx, c - scrollY + 6); c += 14;
+      ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = milestone ? '#b06adf' : '#ffd76a';
+      ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name.toUpperCase(), cw), lx, c - scrollY + 10); c += 16;
+      ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
+      const dBot = wrapText(ctx, def.desc, lx, c - scrollY + 10, cw, 15, nr ? 3 : 2);
+      c += (dBot - (c - scrollY + 10)) + 4;
+      ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
+      // Wrapped (2 lines) so the offer's reward can never run off the column.
+      const rBot = wrapText(ctx, rwText, lx, c - scrollY + 8, cw, 12, 2);
+      c += (rBot - (c - scrollY + 8)) + 8;
+      if (vis(c, 44)) {
+        if (full) {
+          UI.btn(ctx, lx, c - scrollY, cw, 40, 'JOURNAL FULL — ' + QUEST_JOURNAL_MAX + ' / ' + QUEST_JOURNAL_MAX,
+            null, { size: 12, disabled: true, color: '#8a8070' });
+        } else if (gateOk) {
+          UI.btnPlate2(ctx, lx, c - scrollY, cw, 40, 'ACCEPT QUEST', () => {
+            const acc = Hero.acceptQuest();
+            if (acc) { UI.toast('Quest accepted: ' + acc.name, '#ffd76a'); AudioSys.sfx('gold'); }
+          }, { size: 13, color: '#ffd76a' });
+        } else {
+          // Gated quests share ONE plate with live text (owner rule — no
+          // thousand baked images, just "REQUIRES LEVEL X" on the plate).
+          UI.btnPlate(ctx, lx, c - scrollY, cw, 40,
+            'REQUIRES ' + (def.gate.kind === 'level' ? 'LEVEL ' : 'RENOWN ') + def.gate.at,
+            null, { size: 12, disabled: true });
+        }
+      }
+      c += 48;
+      if (!full && !gateOk) {
+        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        ctx.font = 'italic 10px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
+        ctx.fillText('"Grow a little stronger first — the Light can wait."', lx, c - scrollY + 4);
+        c += 16;
+      }
+    } else if (!journal.length) {
+      ctx.font = '12px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.fillText('There is nothing left in the ledger.', lx, c - scrollY + 8);
+      c += 20;
+    }
+
+    // Divider, then the accepted journal (newest first) BELOW the offer.
+    c += 4;
+    ctx.strokeStyle = 'rgba(216,180,74,0.25)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(lx, c - scrollY); ctx.lineTo(lx + cw, c - scrollY); ctx.stroke();
+    c += 16;
+
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
     ctx.fillText('JOURNAL — ' + journal.length + ' / ' + QUEST_JOURNAL_MAX + ' of mine', lx, c - scrollY + 8);
     c += 16;
     if (!journal.length) {
       ctx.font = 'italic 10px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
-      ctx.fillText(allDone ? 'Every deed is done. Walk in the Light.' : 'Empty — take up a deed below.', lx, c - scrollY + 9);
+      ctx.fillText(allDone ? 'Every deed is done. Walk in the Light.' : 'Empty — take up a deed above.', lx, c - scrollY + 9);
       c += 20;
     }
-    for (const entry of journal.slice()) {
+    for (const entry of journal.slice().reverse()) {   // newest first (owner rule v1.7.32)
       const qp = Hero.questProgress(entry);
       if (!qp.def) { Hero.abandonQuest(entry); continue; }   // stale save entry
       const def = qp.def, milestone = def.tid === 'reach';
@@ -5357,61 +5430,6 @@ const Screens = {
         }
         c += eh;
       }
-    }
-
-    // Divider, then the next deed on offer.
-    c += 4;
-    ctx.strokeStyle = 'rgba(216,180,74,0.25)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(lx, c - scrollY); ctx.lineTo(lx + cw, c - scrollY); ctx.stroke();
-    c += 16;
-
-    if (offerIdx >= 0) {
-      const def = QUEST_LINE[offerIdx];
-      const milestone = def.tid === 'reach';
-      const gateOk = def.gate.kind === 'level' ? Hero.level >= def.gate.at : (Hero.paragon || 0) >= def.gate.at;
-      const full = journal.length >= QUEST_JOURNAL_MAX;   // HIS slots only — Addy's ride separately
-      const rwText = 'Reward:  ' + questRewardText(offerIdx, true);
-
-      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
-      ctx.fillText('NEXT DEED', lx, c - scrollY + 6); c += 14;
-      ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = milestone ? '#b06adf' : '#ffd76a';
-      ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name.toUpperCase(), cw), lx, c - scrollY + 10); c += 16;
-      ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
-      const dBot = wrapText(ctx, def.desc, lx, c - scrollY + 10, cw, 15, nr ? 3 : 2);
-      c += (dBot - (c - scrollY + 10)) + 4;
-      ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-      // Wrapped (2 lines) so the offer's reward can never run off the column.
-      const rBot = wrapText(ctx, rwText, lx, c - scrollY + 8, cw, 12, 2);
-      c += (rBot - (c - scrollY + 8)) + 8;
-      if (vis(c, 44)) {
-        if (full) {
-          UI.btn(ctx, lx, c - scrollY, cw, 40, 'JOURNAL FULL — ' + QUEST_JOURNAL_MAX + ' / ' + QUEST_JOURNAL_MAX,
-            null, { size: 12, disabled: true, color: '#8a8070' });
-        } else if (gateOk) {
-          UI.btnPlate2(ctx, lx, c - scrollY, cw, 40, 'ACCEPT QUEST', () => {
-            const acc = Hero.acceptQuest();
-            if (acc) { UI.toast('Quest accepted: ' + acc.name, '#ffd76a'); AudioSys.sfx('gold'); }
-          }, { size: 13, color: '#ffd76a' });
-        } else {
-          // Gated quests share ONE plate with live text (owner rule — no
-          // thousand baked images, just "REQUIRES LEVEL X" on the plate).
-          UI.btnPlate(ctx, lx, c - scrollY, cw, 40,
-            'REQUIRES ' + (def.gate.kind === 'level' ? 'LEVEL ' : 'RENOWN ') + def.gate.at,
-            null, { size: 12, disabled: true });
-        }
-      }
-      c += 48;
-      if (!full && !gateOk) {
-        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        ctx.font = 'italic 10px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
-        ctx.fillText('"Grow a little stronger first — the Light can wait."', lx, c - scrollY + 4);
-        c += 16;
-      }
-    } else if (!journal.length) {
-      ctx.font = '12px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-      ctx.fillText('There is nothing left in the ledger.', lx, c - scrollY + 8);
-      c += 20;
     }
 
     ctx.restore();
@@ -5578,7 +5596,45 @@ const Screens = {
       }
       c += dh + 8;
 
-      // Her journal rows.
+      // NEXT QUEST on offer — at the TOP (below the daily) so accepting new
+      // quests never needs a scroll (owner rule v1.7.32).
+      if (offerIdx >= 0) {
+        const def = ADDY_QUEST_LINE[offerIdx];
+        const full = journal.length >= QUEST_JOURNAL_MAX;   // HER slots only — Lukus's ride separately
+        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
+        ctx.fillText('NEXT QUEST', lx, c - scrollY + 6); c += 14;
+        ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = '#c86adf';
+        ctx.fillText(this.fitText(ctx, def.name.toUpperCase(), cw), lx, c - scrollY + 10); c += 16;
+        ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
+        const dBot = wrapText(ctx, def.desc, lx, c - scrollY + 10, cw, 15, nr ? 3 : 2);
+        c += (dBot - (c - scrollY + 10)) + 4;
+        ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
+        const rBot = wrapText(ctx, 'Reward:  ' + questRewardTextSrc('A', offerIdx, true), lx, c - scrollY + 8, cw, 12, 2);
+        c += (rBot - (c - scrollY + 8)) + 8;
+        if (vis(c, 44)) {
+          if (full) {
+            UI.btn(ctx, lx, c - scrollY, cw, 40, 'JOURNAL FULL — ' + QUEST_JOURNAL_MAX + ' / ' + QUEST_JOURNAL_MAX,
+              null, { size: 12, disabled: true, color: '#8a8070' });
+          } else {
+            UI.btnPlate2(ctx, lx, c - scrollY, cw, 40, 'ACCEPT QUEST', () => {
+              const acc = Hero.acceptQuest('A');
+              if (acc) { UI.toast('Quest accepted: ' + acc.name, '#c86adf'); AudioSys.sfx('gold'); }
+            }, { size: 13, color: '#c86adf' });
+          }
+        }
+        c += 48;
+      } else if (!journal.length) {
+        ctx.font = '12px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
+        ctx.fillText('The Underworld ledger is closed. Impressive.', lx, c - scrollY + 8);
+        c += 20;
+      }
+
+      // Divider, then her journal (newest first) BELOW the offer.
+      c += 4;
+      ctx.strokeStyle = 'rgba(200,106,223,0.25)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(lx, c - scrollY); ctx.lineTo(lx + cw, c - scrollY); ctx.stroke();
+      c += 16;
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
       ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
       ctx.fillText('JOURNAL — ' + journal.length + ' / ' + QUEST_JOURNAL_MAX + ' of mine', lx, c - scrollY + 8);
@@ -5588,7 +5644,7 @@ const Screens = {
         ctx.fillText('No quests of mine in your book yet.', lx, c - scrollY + 9);
         c += 20;
       }
-      for (const entry of journal.slice()) {
+      for (const entry of journal.slice().reverse()) {   // newest first (owner rule v1.7.32)
         const qp = Hero.questProgress(entry);
         if (!qp.def) { Hero.abandonQuest(entry); continue; }
         const def = qp.def;
@@ -5636,43 +5692,6 @@ const Screens = {
           }
           c += eh;
         }
-      }
-
-      // Divider + the next job on offer.
-      c += 4;
-      ctx.strokeStyle = 'rgba(200,106,223,0.25)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(lx, c - scrollY); ctx.lineTo(lx + cw, c - scrollY); ctx.stroke();
-      c += 16;
-      if (offerIdx >= 0) {
-        const def = ADDY_QUEST_LINE[offerIdx];
-        const full = journal.length >= QUEST_JOURNAL_MAX;   // HER slots only — Lukus's ride separately
-        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
-        ctx.fillText('NEXT QUEST', lx, c - scrollY + 6); c += 14;
-        ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = '#c86adf';
-        ctx.fillText(this.fitText(ctx, def.name.toUpperCase(), cw), lx, c - scrollY + 10); c += 16;
-        ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
-        const dBot = wrapText(ctx, def.desc, lx, c - scrollY + 10, cw, 15, nr ? 3 : 2);
-        c += (dBot - (c - scrollY + 10)) + 4;
-        ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-        const rBot = wrapText(ctx, 'Reward:  ' + questRewardTextSrc('A', offerIdx, true), lx, c - scrollY + 8, cw, 12, 2);
-        c += (rBot - (c - scrollY + 8)) + 8;
-        if (vis(c, 44)) {
-          if (full) {
-            UI.btn(ctx, lx, c - scrollY, cw, 40, 'JOURNAL FULL — ' + QUEST_JOURNAL_MAX + ' / ' + QUEST_JOURNAL_MAX,
-              null, { size: 12, disabled: true, color: '#8a8070' });
-          } else {
-            UI.btnPlate2(ctx, lx, c - scrollY, cw, 40, 'ACCEPT QUEST', () => {
-              const acc = Hero.acceptQuest('A');
-              if (acc) { UI.toast('Quest accepted: ' + acc.name, '#c86adf'); AudioSys.sfx('gold'); }
-            }, { size: 13, color: '#c86adf' });
-          }
-        }
-        c += 48;
-      } else if (!journal.length) {
-        ctx.font = '12px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-        ctx.fillText('The Underworld ledger is closed. Impressive.', lx, c - scrollY + 8);
-        c += 20;
       }
     }
 
