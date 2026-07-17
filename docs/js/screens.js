@@ -2142,26 +2142,15 @@ const Screens = {
     }
     ctx.globalAlpha = 1;
 
-    ctx.font = '11px Cinzel, Georgia';
-    ctx.fillStyle = '#6f6552';
-    ctx.textAlign = 'center';
-    ctx.fillText('Left thumb: move · Right thumb: aim & cast · Tap portrait: gear', cx, H - 62);
-
-    // Developer credit — taps open the dev panel gate.
-    ctx.font = 'italic 11px Cinzel, Georgia';
-    ctx.fillStyle = '#8a8070';
-    const credit = 'Sterling Grant, 2026 | A fan-built game made with love for the Necromancer’s of Bellmahath';
-    ctx.fillText(this.fitText(ctx, credit, W - 90), cx, H - 36);
-    UI.register(cx - Math.min(W - 90, 420) / 2, H - 48, Math.min(W - 90, 420), 24, () => {
-      UI.open('devconfirm');
-    });
-
-    // Version — taps open the patch notes.
-    ctx.font = 'bold 11px Cinzel, Georgia';
-    ctx.fillStyle = '#57b894';
-    ctx.textAlign = 'right';
-    ctx.fillText(GAME_VERSION, W - 12, H - 14);
-    UI.register(W - 110, H - 28, 104, 24, () => UI.open('patchnotes'));
+    // (v1.7.23 owner rule: the control-hint line and the credit line are
+    // GONE — the splash speaks for itself.) The version rides a SIMPLE PLATE
+    // in Cinzel, bone white, and opens the patch notes.
+    const vpw = Math.min(180, W * 0.42), vpx = cx - vpw / 2, vpy = H - 44;
+    UI.btnPlate2(ctx, vpx, vpy, vpw, 30, GAME_VERSION, () => UI.open('patchnotes'),
+      { size: 12, color: '#e8e2d0' });
+    // Dev-panel access lives on quietly: a small unmarked tap in the very
+    // bottom-left corner (owner keeps it without any visible credit text).
+    UI.register(0, H - 30, 70, 30, () => UI.open('devconfirm'));
     ctx.textAlign = 'center';
   },
 
