@@ -672,13 +672,21 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.34-alpha';
+const GAME_VERSION = 'v1.7.35-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.35-alpha', date: '17 July 2026',
+    notes: [
+      'RICHER FORESTS (owner art) — dozens of new painted trees: two sets of tall pines, broad oaks, white-barked birches, and moss-draped swamp cypress',
+      'Forests are THICKER now — a dense grove at the core that thins toward the edges, with single lone trees scattered in a halo around it, so a woodland reads like a real forest instead of a clump',
+      'Birches are sprinkled through the green lands, and the marshes are filled with hanging-moss cypress trees'
+    ]
+  },
   {
     v: 'v1.7.34-alpha', date: '17 July 2026',
     notes: [
@@ -3838,11 +3846,11 @@ function makeAdventureZone() {
 // hard edge). Biomes are grouped by climate so a desert never borders snow.
 const BIOMES = {
   grass:    { name: 'Verdant Meadows',   ground: '#18240f', accent: '#3f6a2c', tree: 'oak',
-              props: ['oak', 'oak', 'rock', 'pillar', 'bush', 'bush'], deco: ['grass', 'grass', 'moss', 'rock'],
+              props: ['oak', 'oak', 'birch', 'rock', 'pillar', 'bush', 'bush'], deco: ['grass', 'grass', 'moss', 'rock'],
               border: 'forest', edge: 'forest', weather: null, forest: true, rivers: 1,
               monsters: ['zombie', 'skeleton', 'ghoul', 'hound', 'archer'] },
   forest:   { name: 'Whispering Woods',   ground: '#132012', accent: '#2f5226', tree: 'pine',
-              props: ['pine', 'pine', 'oak', 'rock', 'bush'], deco: ['grass', 'moss', 'moss', 'bones'],
+              props: ['pine', 'pine', 'oak', 'birch', 'rock', 'bush'], deco: ['grass', 'moss', 'moss', 'bones'],
               border: 'forest', edge: 'forest', weather: null, forest: true, rivers: 0,
               monsters: ['skeleton', 'archer', 'ghoul', 'hound', 'soldier'] },
   jungle:   { name: 'Tangled Jungle',     ground: '#0f2418', accent: '#2c6a3c', tree: 'palm',

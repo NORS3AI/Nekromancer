@@ -496,6 +496,19 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.35 — RICHER TREES + THICKER FORESTS (owner art)**: 5 tree sheets on
+  black → `docs/art/props/*.webp` via scratchpad `splice_trees.py` (tall
+  vertical structuring element for closing so tall/thin trees don't merge with
+  neighbours; per-blob mask alpha): `pine1-10` (sheet A, REPLACES the v1.7.34
+  small prop-sheet pines → **ART_V 11→12**), `pineb1-10` (sheet B), `oak1-9`
+  (proper broad oaks — supersedes the oak→pine fallback), `birch1-9`,
+  `swamp1-8` (moss-draped cypress). `PROP_SPRITE`: pine→pine*+pineb*, oak→oak*,
+  birch→birch* (new prop type, PROP_R 14), tree→swamp* (marsh cypress),
+  `PROP_SPRITE_H` pine/oak/birch/tree ~104-112. **makeForests rewrite**: dense
+  core (`n 30-52`, radial `R·rand^1.7` centre bias, gap 30) + a sparse halo of
+  SINGLE trees around it (`outN 7-14`, gap 76) so forests thin to lone trees;
+  green forests mix in birch ~22%. BIOMES grass/forest gained `birch` in props.
+  preloadArt warms all tree sets.
 - **v1.7.34 — PAINTED WORLD PROPS + MERCHANT WAGONS (owner art)**: the owner
   shipped a prop sheet + 4 vendor-wagon paintings on black. Sliced via
   scratchpad `splice_props.py` (connected-component label with `binary_closing`

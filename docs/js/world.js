@@ -225,23 +225,27 @@ const World = {
   // Collision radius per prop species.
   PROP_R: {
     tomb: 16, cross: 13, pillar: 19, tree: 15, obelisk: 17, rock: 20,
-    oak: 16, pine: 16, palm: 16, cactus: 14, bush: 12
+    oak: 16, pine: 16, palm: 16, cactus: 14, bush: 12, birch: 14
   },
 
-  // Painted-sprite variants per prop type (owner art v1.7.34). Biome-specific:
-  // pines/oaks in green lands, palms in the jungle, cacti in the desert, gnarled
-  // dead trees in the swamp, rocks & bushes everywhere they belong. A prop with
-  // no entry keeps its procedural draw.
+  // Painted-sprite variants per prop type (owner art v1.7.34/35). Biome-specific:
+  // tall pines & oaks in green lands, birches sprinkled in, palms in the jungle,
+  // cacti in the desert, moss-draped cypress in the swamp, rocks & bushes where
+  // they belong. A prop with no entry keeps its procedural draw.
   PROP_SPRITE: {
-    pine: ['pine1', 'pine2', 'pine3'], oak: ['pine1', 'pine2', 'pine3'],
+    pine: ['pine1', 'pine2', 'pine3', 'pine4', 'pine5', 'pine6', 'pine7', 'pine8', 'pine9', 'pine10',
+           'pineb1', 'pineb2', 'pineb3', 'pineb4', 'pineb5', 'pineb6', 'pineb7', 'pineb8', 'pineb9', 'pineb10'],
+    oak: ['oak1', 'oak2', 'oak3', 'oak4', 'oak5', 'oak6', 'oak7', 'oak8', 'oak9'],
+    birch: ['birch1', 'birch2', 'birch3', 'birch4', 'birch5', 'birch6', 'birch7', 'birch8', 'birch9'],
     palm: ['palm1', 'palm2'], cactus: ['cactus1', 'cactus2'],
-    tree: ['deadtree1', 'deadtree2', 'deadtree3'],
+    tree: ['swamp1', 'swamp2', 'swamp3', 'swamp4', 'swamp5', 'swamp6', 'swamp7', 'swamp8'],
     rock: ['rock1', 'rock2', 'rock3', 'rock4', 'rock5', 'rock6', 'rockbig1', 'rockbig2', 'rockbig3', 'rockbig4'],
     pillar: ['pillar'], obelisk: ['pillar'],
     bush: ['bush1', 'bush2', 'bush3', 'bush4']
   },
   // Sprite height (px) for TALL props (trees/pillar/bush); rocks scale by width.
-  PROP_SPRITE_H: { pine: 88, oak: 88, palm: 96, cactus: 66, tree: 82, deadtree: 82, pillar: 62, obelisk: 62, bush: 46 },
+  // The new painted trees are tall — give them real presence (owner rule v1.7.35).
+  PROP_SPRITE_H: { pine: 110, oak: 104, birch: 108, palm: 96, cactus: 66, tree: 112, deadtree: 82, pillar: 62, obelisk: 62, bush: 46 },
 
   // The five painted merchant wagons (owner art v1.7.34) — one per map at random.
   VENDOR_SPRITES: ['vendor_armor_m', 'vendor_armor_f', 'vendor_gem', 'vendor_weapon1', 'vendor_weapon2'],
@@ -280,25 +284,39 @@ const World = {
         found = true;
       }
       if (!found) continue;
-      const R = rand(150, 280);
-      const n = randInt(12, 24);
+      const treeType = zone.biome && BIOMES[zone.biome] ? BIOMES[zone.biome].tree : 'tree';
+      // Green forests mix in birches; others keep their one species (owner rule
+      // v1.7.35 — birches sprinkled in).
+      const canBirch = treeType === 'pine' || treeType === 'oak';
+      const pickTree = () => (canBirch && Math.random() < 0.22) ? 'birch' : treeType;
+      const addTree = (x, y, minGap) => {
+        if (x < 80 || y < 80 || x > this.W - 80 || y > this.H - 80) return false;
+        if (dist(x, y, this.spawn.x, this.spawn.y) < 300) return false;
+        if (dist(x, y, this.bossPos.x, this.bossPos.y) < 260) return false;
+        if (this.blockedTerrain(x, y)) return false;
+        for (const p of this.props) if (dist(x, y, p.x, p.y) < minGap) return false;
+        this.props.push({ x, y, r: 13, type: pickTree(), seed: Math.random(), forest: true });
+        return true;
+      };
+      // THICK CORE — a dense grove, trees biased toward the centre so it reads as
+      // a real forest, then thins toward the edges (owner rule v1.7.35).
+      const R = rand(160, 300);
+      const n = randInt(30, 52);
       let a2 = 0, placed = 0;
-      while (placed < n && a2++ < n * 6) {
-        const a = rand(TAU), d = rand(24, R);
-        const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
-        if (x < 80 || y < 80 || x > this.W - 80 || y > this.H - 80) continue;
-        if (dist(x, y, this.spawn.x, this.spawn.y) < 300) continue;
-        if (dist(x, y, this.bossPos.x, this.bossPos.y) < 260) continue;
-        if (this.blockedTerrain(x, y)) continue;
-        let ok = true;
-        for (const p of this.props) if (dist(x, y, p.x, p.y) < 50) { ok = false; break; }
-        if (!ok) continue;
-        const treeType = zone.biome && BIOMES[zone.biome] ? BIOMES[zone.biome].tree : 'tree';
-        this.props.push({ x, y, r: 13, type: treeType, seed: Math.random(), forest: true });
-        placed++;
+      while (placed < n && a2++ < n * 8) {
+        const a = rand(TAU), d = R * Math.pow(rand(0, 1), 1.7);   // dense middle
+        if (addTree(cx + Math.cos(a) * d, cy + Math.sin(a) * d, 30)) placed++;
+      }
+      // SINGLE TREES scattered in a sparse halo AROUND the grove, so the forest
+      // fades into lone trees instead of a hard edge (owner rule v1.7.35).
+      const outN = randInt(7, 14);
+      let a3 = 0, out = 0;
+      while (out < outN && a3++ < outN * 10) {
+        const a = rand(TAU), d = R + rand(40, 220);
+        if (addTree(cx + Math.cos(a) * d, cy + Math.sin(a) * d, 76)) out++;   // well spaced
       }
       // Underbrush (non-colliding) fills out the grove floor.
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 16; i++) {
         const a = rand(TAU), d = rand(0, R);
         const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
         if (x < 50 || y < 50 || x > this.W - 50 || y > this.H - 50 || this.inWater(x, y)) continue;
