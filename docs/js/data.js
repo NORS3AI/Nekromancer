@@ -672,13 +672,21 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.37-alpha';
+const GAME_VERSION = 'v1.7.38-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.38-alpha', date: '17 July 2026',
+    notes: [
+      'PAINTED TORCHES (owner art) — every torch tier now has its own painting on the Torch Bench: the wrapped Wood Torch, the caged Iron Torch, the crowned Master\'s Light, the purple-flamed Nekromancer\'s, the blue Wyrm Scale, and the red Ascendant\'s',
+      'Wild shrine timer now counts down in real time in the Character sheet — in town and with the menu open — exactly like the Fountain blessing, so you always know how much time is left',
+      'About 20% more litter scattered across each map'
+    ]
+  },
   {
     v: 'v1.7.37-alpha', date: '17 July 2026',
     notes: [
