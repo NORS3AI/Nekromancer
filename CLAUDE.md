@@ -496,6 +496,17 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.21 — CREATE SHOWS THE REAL MODEL + MOBILE FIXES (owner rule)**:
+  `Screens.create` draws `Game.heroImg(gd, 'front', Hero.hair)` (the actual
+  full-body walking art `m/f_front[_hN].webp`) as the showcase — NOT
+  `showcaseTinted` (the airbrushed head radial, now dead code; showcase_m/f
+  is only a fallback until hero art loads). Picking a hair colour swaps the
+  WHOLE figure. Mobile/tablet: `lpW`/`lpX` computed up front so on phones
+  the model centres in the space RIGHT of the gender/hair panel
+  (`cx = lpX+lpW+(W-lpX-lpW)/2`), and NAME/CREATE centre on SCREEN
+  (`ncx = W/2`, `nw = W*0.72`); wide screens keep the three-panel stage.
+  When the owner's new male sheets land they replace `m_front_hN.webp` and
+  this screen picks them up automatically.
 - **v1.7.20 — SCALABLE SELECT TITLE (owner art)**: `select_bg.webp` recut
   TITLE-FREE (the baked "CHOOSE YOUR HERO" plate painted out offline — box
   x 0.13–0.87 / y 0.01–0.30 filled with per-row median-sampled dark cloud +
