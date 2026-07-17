@@ -1273,12 +1273,13 @@ const Screens = {
     // First moment in the shop: the interior art + the artisan's welcome.
     if (!UI.sel.inside && this.ARTISAN_INTROS[artKey]) { this.artisanIntro(ctx, W, H, artKey); return; }
     this.shopBackdrop(ctx, W, H, artKey, 0.34);
-    const pw = Math.min(430, W - 24);
+    // Wider panel so the artisan's full name never clips (owner rule v1.7.27).
+    const pw = Math.min(520, W - 24);
     const px = W / 2 - pw / 2;
     const rowH = 58;
     // A maxed artisan shows NO level line at all (owner rule: no "10/10 (MAX)").
     const showTrain = trainKey && (Hero.artisans[trainKey.k] || 1) < 10;
-    const ph = 104 + (showTrain ? 34 : 0) + buttons.length * rowH + 14;
+    const ph = 104 + (showTrain ? 52 : 0) + buttons.length * rowH + 14;
     // Panel hugs the bottom; in town it stops above the round EXIT button's
     // corner zone so the last bench row is never covered (owner screenshots).
     const py = Math.max(10, H - ph - (Game.state === 'town' ? 150 : 24));
@@ -1289,19 +1290,21 @@ const Screens = {
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.fillText(this.fitText(ctx, title.toUpperCase(), pw - 90), px + pw / 2, py + 26.5);
     ctx.fillStyle = '#dcc9a2';
-    ctx.fillText(this.fitText(ctx, title.toUpperCase(), pw - 90), px + pw / 2, py + 25);
+    ctx.fillText(this.fitText(ctx, title.toUpperCase(), pw - 56), px + pw / 2, py + 25);
     ctx.strokeStyle = '#3a3448'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(px + 16, py + 44); ctx.lineTo(px + pw - 16, py + 44); ctx.stroke();
     ctx.font = 'italic 11px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
     ctx.fillText(this.fitText(ctx, npcLine, pw - 30), W / 2, py + 58);
     let y = py + 72;
-    if (showTrain) { this.artisanRow(ctx, px, pw, y + 8, trainKey.k, trainKey.label); y += 34; }
+    if (showTrain) { y = this.artisanRow(ctx, px, pw, y + 6, trainKey.k, trainKey.label); }
     // Bench rows wear the SIMPLE plate (v1.6.96 owner rule — the ornate
     // skull plate stays on the ☰ MENU and the town); the bench's one-line
-    // description sits beneath the plate in small italics.
+    // description sits beneath the plate in small italics. Plates are inset
+    // off the panel edges so they never span the full width (owner rule).
+    const bInset = Math.round(pw * 0.11), bx = px + bInset, bw = pw - bInset * 2;
     for (const [label, desc, target] of buttons) {
       const cb = typeof target === 'function' ? target : () => UI.open(target);
-      UI.btnPlate2(ctx, px + 14, y + 2, pw - 28, rowH - 24, String(label).replace(/^[^A-Za-z]*/, ''), cb, { size: 14, tip: desc });
+      UI.btnPlate2(ctx, bx, y + 2, bw, rowH - 24, String(label).replace(/^[^A-Za-z]*/, ''), cb, { size: 14, tip: desc });
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = 'italic 9px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
       ctx.fillText(this.fitText(ctx, desc, pw - 60), px + pw / 2, y + rowH - 11);
@@ -1370,7 +1373,7 @@ const Screens = {
     const px = W / 2 - pw / 2;
     const ph = Math.min(560, H - (Game.state === 'town' ? 170 : 24));
     const py = Math.max(10, Math.min(H / 2 - ph / 2, H - ph - (Game.state === 'town' ? 150 : 12)));
-    UI.panel(ctx, px, py, pw, ph, '📜 QUEST JOURNAL — ' + jr.length + ' / ' + QUEST_JOURNAL_MAX * 2);
+    UI.panel(ctx, px, py, pw, ph, '📜 JOURNAL');
 
     const givers = [
       { src: 'L', tag: '⚔  LUKUS, BRINGER OF LIGHT', color: '#ffd76a', nameCol: '#e8e0cc',
@@ -1384,9 +1387,10 @@ const Screens = {
         show: Hero.level >= 70 || jr.some(e => e.src === 'A') || (Hero.addyLine || 0) > 0 }
     ];
 
-    // Scrollable, sectioned list.
-    const lx = px + 16, lw = pw - 32;
-    const listTop = py + 52, viewBot = py + ph - 14, viewH = Math.max(50, viewBot - listTop);
+    // Scrollable, sectioned list — padded off the panel edges (owner rule),
+    // rows sit INSIDE the padding rather than spanning the full width.
+    const lx = px + 26, lw = pw - 52;
+    const listTop = py + 56, viewBot = py + ph - 18, viewH = Math.max(50, viewBot - listTop);
     const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
     UI.sel.scrollY = scrollY;
     UI.sel.scrollRegion = { x: lx - 4, y: listTop - 4, w: lw + 8, h: viewH + 8 };
@@ -1630,7 +1634,11 @@ const Screens = {
     const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
     UI.sel.scrollY = scrollY;
     UI.sel.scrollRegion = { x: lx - 4, y: rowsTop - 4, w: lw + 8, h: rowsH + 8 };
-    const res = lw < 250 ? 54 : 82, bw = lw < 250 ? 48 : 64;
+    // Row geometry scales with the global font size (owner rule — the setting
+    // must actually enlarge the achievement rows, not just clip the text).
+    const fm = Math.max(1, (((typeof Settings !== 'undefined' && Settings.g && Settings.g.fontSize) || 13) / 13));
+    const rowH = Math.round(40 * fm), rowStep = rowH + 6;
+    const res = Math.round((lw < 250 ? 54 : 82) * fm), bw = Math.round((lw < 250 ? 48 : 64) * fm);
     const gs = n => n >= 1e12 ? (Math.round(n / 1e11) / 10) + 't'
       : n >= 1e9 ? (Math.round(n / 1e8) / 10) + 'b'
       : n >= 1e6 ? (Math.round(n / 1e5) / 10) + 'm'
@@ -1654,31 +1662,31 @@ const Screens = {
     }
     for (const a of rows) {
       const yy = r - scrollY;
-      if (yy + 44 > rowsTop && yy < viewBot) {
+      if (yy + rowH + 4 > rowsTop && yy < viewBot) {
         const cur = a.cur();
         const done = cur >= a.need;
         ctx.fillStyle = done ? 'rgba(42,38,24,0.75)' : 'rgba(28,24,38,0.6)';
-        rr(ctx, lx - 4, yy, lw + 8, 40, 6); ctx.fill();
-        if (done) { ctx.strokeStyle = 'rgba(255,215,106,0.5)'; ctx.lineWidth = 1; rr(ctx, lx - 4, yy, lw + 8, 40, 6); ctx.stroke(); }
+        rr(ctx, lx - 4, yy, lw + 8, rowH, 6); ctx.fill();
+        if (done) { ctx.strokeStyle = 'rgba(255,215,106,0.5)'; ctx.lineWidth = 1; rr(ctx, lx - 4, yy, lw + 8, rowH, 6); ctx.stroke(); }
         ctx.textAlign = 'left';
-        ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = done ? '#ffd76a' : '#8a8070';
-        ctx.fillText(this.fitText(ctx, a.name, lw - res), lx + 4, yy + 15);
-        ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = done ? '#b5ab94' : '#6f6552';
-        ctx.fillText(this.fitText(ctx, a.desc, lw - res), lx + 4, yy + 30);
+        ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = done ? '#ffd76a' : '#8a8070';
+        ctx.fillText(this.fitText(ctx, a.name, lw - res), lx + 4, yy + rowH * 0.38);
+        ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = done ? '#b5ab94' : '#6f6552';
+        ctx.fillText(this.fitText(ctx, a.desc, lw - res), lx + 4, yy + rowH * 0.75);
         if (done) {
-          ctx.textAlign = 'right'; ctx.font = 'bold 14px Cinzel, Georgia'; ctx.fillStyle = '#4ade80';
-          ctx.fillText('✓', lx + lw - 4, yy + 16);
-          ctx.font = 'bold 9px Cinzel, Georgia'; ctx.fillStyle = '#ffd76a';
-          ctx.fillText('+' + (a.pts || 0) + ' pts', lx + lw - 4, yy + 31);
+          ctx.textAlign = 'right'; ctx.font = 'bold 15px Cinzel, Georgia'; ctx.fillStyle = '#4ade80';
+          ctx.fillText('✓', lx + lw - 4, yy + rowH * 0.42);
+          ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = '#ffd76a';
+          ctx.fillText('+' + (a.pts || 0) + ' pts', lx + lw - 4, yy + rowH * 0.78);
         } else {
-          UI.bar(ctx, lx + lw - bw - 4, yy + 8, bw, 7, Math.min(1, cur / a.need), '#221d2e', '#8a6f2a');
-          ctx.textAlign = 'right'; ctx.font = '8px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-          ctx.fillText(gs(cur) + ' / ' + gs(a.need), lx + lw - 4, yy + 24);
+          UI.bar(ctx, lx + lw - bw - 4, yy + rowH * 0.2, bw, 7, Math.min(1, cur / a.need), '#221d2e', '#8a6f2a');
+          ctx.textAlign = 'right'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
+          ctx.fillText(gs(cur) + ' / ' + gs(a.need), lx + lw - 4, yy + rowH * 0.6);
           ctx.fillStyle = '#8a7f5a';
-          ctx.fillText((a.pts || 0) + ' pts', lx + lw - 4, yy + 34);
+          ctx.fillText((a.pts || 0) + ' pts', lx + lw - 4, yy + rowH * 0.85);
         }
       }
-      r += 46;
+      r += rowStep;
     }
     if (!rows.length) {
       ctx.textAlign = 'center'; ctx.font = 'italic 11px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
@@ -2345,10 +2353,13 @@ const Screens = {
     }
 
     let y = py + 124 + cryptH;
+    // Mode plates are inset off the panel edges — they don't span the full
+    // width (owner rule v1.7.27).
+    const rInset = Math.round(pw * 0.12), rx = px + rInset, rw = pw - rInset * 2;
     for (const [label, desc, col, cb] of rows) {
       // SIMPLE plates for the mode rows (owner rule v1.7.2); the description
       // survives as the desktop hover tip.
-      UI.btnPlate2(ctx, px + 16, y + 2, pw - 32, rowH - 18, label, cb, { size: 14, disabled: !cb, tip: desc });
+      UI.btnPlate2(ctx, rx, y + 2, rw, rowH - 18, label, cb, { size: 14, disabled: !cb, tip: desc });
       y += rowH;
     }
     if (foot.length) {
@@ -2957,9 +2968,11 @@ const Screens = {
     const ppb = H - 10;
     UI.panel(ctx, ppx, ppy, ppw, ppb - ppy,
       'INVENTORY — ' + Hero.bagUsed() + ' / ' + Hero.BAG_SIZE);
-    const pw = ppw - 40;
+    // Content column padded well off the panel edges (owner rule — rows don't
+    // span the full width).
+    const pw = ppw - 64;
     const px = W / 2 - pw / 2;
-    let y = ppy + 48;
+    let y = ppy + 52;
 
     // Bag expansion (same as the wheel's).
     const up = Hero.nextBagUpgrade();
@@ -3331,14 +3344,17 @@ const Screens = {
     const pw = Math.min(UI.desktop ? 860 : 600, W - 16);
     const px = W / 2 - pw / 2;
     const ppy = Math.max(2, ((UI.safe && UI.safe.top) || 0) + 2);
-    UI.panel(ctx, Math.max(2, px - 12), ppy, Math.min(W - 4, pw + 24), H - 6 - ppy, 'SKILLS OF RATHMA');
-    UI.btnPlate(ctx, px, ppy + 44, pw / 2 - 8, 32, 'ACTIVES', () => { UI.sel.tab = 'actives'; UI.sel.info = null; },
+    UI.panel(ctx, Math.max(2, px - 12), ppy, Math.min(W - 4, pw + 24), H - 6 - ppy, 'SKILLS OF BELLMAHATH');
+    // Content is inset off the panel edges (owner rule — padding all sides, the
+    // tab plates + slot rows don't span the full width).
+    const ipx = px + 18, ipw = pw - 36;
+    UI.btnPlate(ctx, ipx, ppy + 46, ipw / 2 - 8, 32, 'ACTIVES', () => { UI.sel.tab = 'actives'; UI.sel.info = null; },
       { size: 13, color: UI.sel.tab === 'actives' ? '#f0dcae' : '#8a8070' });
-    UI.btnPlate(ctx, px + pw / 2 + 8, ppy + 44, pw / 2 - 8, 32, 'PASSIVES', () => { UI.sel.tab = 'passives'; UI.sel.info = null; },
+    UI.btnPlate(ctx, ipx + ipw / 2 + 8, ppy + 46, ipw / 2 - 8, 32, 'PASSIVES', () => { UI.sel.tab = 'passives'; UI.sel.info = null; },
       { size: 13, color: UI.sel.tab === 'passives' ? '#f0dcae' : '#8a8070' });
 
-    if (UI.sel.tab === 'actives') this.skillsActives(ctx, W, H, px, pw);
-    else this.skillsPassives(ctx, W, H, px, pw);
+    if (UI.sel.tab === 'actives') this.skillsActives(ctx, W, H, ipx, ipw);
+    else this.skillsPassives(ctx, W, H, ipx, ipw);
 
     // Info footer. (The ACTIVES slot footer + its RUNES button are DELETED,
     // owner rule — tapping a slot opens the chooser straight away.)
@@ -3348,16 +3364,16 @@ const Screens = {
       // Passives footer.
       const s = UI.sel.info;
       const fy = H - 84;
-      UI.panel(ctx, px, fy, pw, 76);
+      UI.panel(ctx, ipx, fy, ipw, 76);
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
       ctx.font = 'bold 13px Cinzel, Georgia';
       ctx.fillStyle = '#b06adf';
-      ctx.fillText(this.fitText(ctx, s.name + '  ·  Passive', pw - 24), px + 12, fy + 16);
+      ctx.fillText(this.fitText(ctx, s.name + '  ·  Passive', ipw - 24), ipx + 12, fy + 16);
       ctx.font = '12px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
-      wrapText(ctx, s.desc, px + 12, fy + 33, pw - 24, 14, 2);
+      wrapText(ctx, s.desc, ipx + 12, fy + 33, ipw - 24, 14, 2);
       if (s.lvl > Hero.level) {
         ctx.fillStyle = '#6f6552'; ctx.font = '11px Cinzel, Georgia';
-        ctx.fillText(this.fitText(ctx, 'unlocks at level ' + s.lvl, pw - 24), px + 12, fy + 65);
+        ctx.fillText(this.fitText(ctx, 'unlocks at level ' + s.lvl, ipw - 24), ipx + 12, fy + 65);
       }
     }
   },
@@ -3961,6 +3977,7 @@ const Screens = {
       () => { UI.sel.torchReag = !open; }, { size: 11 });
     ty += 36;
     if (open) {
+      ty += 10;   // top padding so the tokens clear the REAGENTS plate (owner fix)
       // Centered reagent tokens (owner rule v1.7.2).
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
       ctx.font = '600 11px Cinzel, Georgia';
@@ -4350,19 +4367,23 @@ const Screens = {
   },
 
   // Artisan level + train row shared by the three shops.
+  // The artisan's training line — CENTERED (owner rule v1.7.27), with the
+  // TRAIN plate centered beneath it. Returns the y below the block.
   artisanRow(ctx, px, pw, y, which, label) {
     const lvl = Hero.artisans[which];
-    ctx.textAlign = 'left';
-    ctx.font = 'bold 11px Cinzel, Georgia';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'bold 12px Cinzel, Georgia';
     ctx.fillStyle = '#ffd76a';
-    ctx.fillText(label + '  ·  LEVEL ' + lvl + ' / 10' + (lvl >= 10 ? '  (MAX)' : ''), px + 16, y + 8);
+    ctx.fillText(label + '  ·  LEVEL ' + lvl + ' / 10' + (lvl >= 10 ? '  (MAX)' : ''), px + pw / 2, y + 8);
     if (lvl < 10) {
       const cost = Items.trainCost(which);
-      UI.btnPlate(ctx, px + pw - 156, y - 6, 140, 26, `TRAIN  (${cost}g)`,
+      const bw = 168;
+      UI.btnPlate(ctx, px + pw / 2 - bw / 2, y + 16, bw, 26, `TRAIN  (${cost}g)`,
         Hero.gold >= cost ? () => Items.train(which) : null,
         { size: 10, disabled: Hero.gold < cost });
+      return y + 48;
     }
-    return y + 22;
+    return y + 20;
   },
 
   costLabel(cost) {
@@ -4943,8 +4964,19 @@ const Screens = {
     }
     if (openSockets) tips.push(openSockets + ' empty socket' + (openSockets > 1 ? 's' : '') + ' — visit the Inventory to add gems');
     if (worst) tips.push('Weakest piece: ' + worst.name + ' (' + ITEM_SLOTS[worst.slot].label + ') — enchant or replace it');
-    const freeSlots = Hero.loadout.filter(id => !id).length;
-    if (freeSlots) tips.push(freeSlots + ' empty skill slot' + (freeSlots > 1 ? 's' : '') + ' in your loadout');
+    // Only count an empty slot as "free" if its category actually has a skill
+    // unlocked at the hero's level — a level-1 can't fill 5 slots (owner fix).
+    let freeSlots = 0;
+    Hero.loadout.forEach((id, i) => {
+      if (id) return;
+      const cat = LOADOUT_CATS[i];
+      const hasUnlocked = (CAT_SKILLS[cat] || []).some(sid => {
+        const def = SKILL_DATA.find(s => s.id === sid);
+        return def && Hero.level >= (def.lvl || 1) && !Hero.loadout.includes(sid);
+      });
+      if (hasUnlocked) freeSlots++;
+    });
+    if (freeSlots) tips.push(freeSlots + ' empty skill slot' + (freeSlots > 1 ? 's' : '') + ' you can still fill');
     const pSlots = Hero.passiveSlots();
     const unset = Hero.passives.slice(0, pSlots).filter(p => !p).length;
     if (unset) tips.push(unset + ' passive slot' + (unset > 1 ? 's' : '') + ' unassigned');
@@ -6025,7 +6057,7 @@ const Screens = {
   settings(ctx, W, H) {
     this.dim(ctx, W, H);
     // (red ✕ drawn globally by UI.draw, above all content)
-    const pw = Math.min(560, W - 20);
+    const pw = Math.min(660, W - 20);
     const px = W / 2 - pw / 2;
     // ONE column, padded in from both edges (owner rule v1.7.5).
     const twoCol = false;
@@ -6322,21 +6354,22 @@ const Screens = {
       { size: 13, disabled: saves.length >= Saves.MAX, color: '#a8d9be' });
 
     // Portable export / import — move a hero between browsers or devices.
+    // Sits BELOW the Save Hero plate (which ends at py+118) so they never overlap.
     const halfW = (pw - 40) / 2;
-    UI.btnPlate2(ctx, px + 16, py + 114, halfW, 30, 'EXPORT CODE', () => this.exportSave(),
+    UI.btnPlate2(ctx, px + 16, py + 126, halfW, 30, 'EXPORT CODE', () => this.exportSave(),
       { size: 11 });
-    UI.btnPlate2(ctx, px + 24 + halfW, py + 114, halfW, 30, 'IMPORT CODE', () => this.importSave(),
+    UI.btnPlate2(ctx, px + 24 + halfW, py + 126, halfW, 30, 'IMPORT CODE', () => this.importSave(),
       { size: 11 });
 
     if (!saves.length) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = 'italic 12px Cinzel, Georgia';
       ctx.fillStyle = '#544d44';
-      ctx.fillText('No manual saves yet. The game still autosaves constantly.', W / 2, py + 174);
+      ctx.fillText('No manual saves yet. The game still autosaves constantly.', W / 2, py + 186);
       return;
     }
-    let y = py + 156;
-    const rowH = Math.min(30, (ph - 176) / Math.max(1, saves.length));
+    let y = py + 170;
+    const rowH = Math.min(30, (ph - 190) / Math.max(1, saves.length));
     saves.forEach((s, i) => {
       if (y > py + ph - 26) return;
       ctx.fillStyle = 'rgba(28,24,38,0.92)';
@@ -6365,16 +6398,19 @@ const Screens = {
 
   keysTab(ctx, W, H, px, py, pw, ph) {
     const narrow = pw < 480;
-    // Two centered lines — never clipped (owner rule v1.7.1).
-    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-    ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-    ctx.fillText('Keyboard controls (desktop)', px + pw / 2, py + 82);
-    ctx.fillText('Tap a key to remove it · ＋ to add one', px + pw / 2, py + 97);
-
-    const listTop = py + 110;
+    // The flavor lines sit LOW enough to clear the tab plates (owner fix)
+    // and ONLY show on desktop (they describe keyboard controls).
+    let listTop = py + 92;
+    if (UI.desktop) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
+      ctx.fillText('Keyboard controls (desktop)', px + pw / 2, py + 100);
+      ctx.fillText('Tap a key to remove it · ＋ to add one', px + pw / 2, py + 116);
+      listTop = py + 132;
+    }
     const listBot = py + ph - 44;
     const cols = narrow ? 1 : 2;
-    const gap = 12;
+    const gap = 16;
     const colW = (pw - 32 - (cols - 1) * gap) / cols;
     const rowsPerCol = Math.ceil(KEY_ACTIONS.length / cols);
     const rowH = Math.min(30, (listBot - listTop) / rowsPerCol);
