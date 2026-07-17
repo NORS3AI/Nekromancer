@@ -435,13 +435,18 @@ const Game = {
     this.hudImg('potion_health'); this.hudImg('potion_essence');
     // World props + vendor wagons (owner art v1.7.34/35) — warm so maps don't
     // pop in. Includes the painted tree sets (pine/oak/birch/swamp cypress).
-    const warm = ['chest', 'crate', 'cauldron', 'cart', 'bookshelf', 'chair', 'table', 'pillar',
-      'palm1', 'palm2', 'cactus1', 'cactus2', 'bush1', 'bush2', 'bush3', 'bush4',
+    const warm = ['chest_empty', 'chest_closed', 'chest_gold', 'crate', 'cauldron', 'cart', 'bookshelf', 'chair', 'table',
+      'pillar', 'obelisk1', 'palm1', 'palm2', 'bush1', 'bush2', 'bush3', 'bush4', 'mausoleum1', 'angel1', 'gargoyle1', 'gargoyle2',
       'rock1', 'rock2', 'rock3', 'rock4', 'rock5', 'rock6',
       'rockbig1', 'rockbig2', 'rockbig3', 'rockbig4', 'rocksm1', 'rocksm2', 'rocksm3', 'rocksm4', 'rocksm5', 'rocksm6'];
     for (let i = 1; i <= 10; i++) { warm.push('pine' + i); warm.push('pineb' + i); }
     for (let i = 1; i <= 9; i++) { warm.push('oak' + i); warm.push('birch' + i); }
-    for (let i = 1; i <= 8; i++) warm.push('swamp' + i);
+    for (let i = 1; i <= 16; i++) warm.push('swamp' + i);
+    for (let i = 1; i <= 15; i++) warm.push('cactus' + i);
+    for (let i = 1; i <= 20; i++) warm.push('deadtree' + i);
+    for (let i = 1; i <= 11; i++) { warm.push('tomb' + i); warm.push('cross' + i); }
+    for (let i = 1; i <= 4; i++) warm.push('sarcophagus' + i);
+    warm.push('crypt1', 'crypt2');
     for (const k of warm) this.propImg(k);
     for (const k of World.VENDOR_SPRITES || []) this.vendorImg(k);
   },
@@ -1896,17 +1901,18 @@ const Game = {
           count: 16, color: ['#ffd76a', '#ffb43a'], minSpeed: 40, maxSpeed: 180,
           minLife: 0.3, maxLife: 0.7, grav: 200, glow: true
         });
-        const g = new Pickup(o.x, o.y, 'gold');
-        g.amount = Math.round(rand(30, 80) * DIFFICULTIES[Hero.difficulty].reward * p.goldFind);
-        this.pickups.push(g);
-        if (Math.random() < 0.6) {
-          const pu = new Pickup(o.x, o.y, 'item');
-          pu.item = Items.wildDrop(this.monsterLevel(), 0.1);
-          this.pickups.push(pu);
-        }
-        if (Math.random() < 0.35) {
+        // Loot matches what the chest showed (owner rule v1.7.36): a CLOSED
+        // chest gave an item only; a GOLD chest gives gold + a gem.
+        if (o.loot === 'goldgem') {
+          const g = new Pickup(o.x, o.y, 'gold');
+          g.amount = Math.round(rand(60, 140) * DIFFICULTIES[Hero.difficulty].reward * p.goldFind);
+          this.pickups.push(g);
           const pu = new Pickup(o.x, o.y, 'gem');
           pu.gem = Items.dropGem();
+          this.pickups.push(pu);
+        } else {
+          const pu = new Pickup(o.x, o.y, 'item');
+          pu.item = Items.wildDrop(this.monsterLevel(), 0.1);
           this.pickups.push(pu);
         }
       } else if (o.type === 'shrine' && d < 42) {

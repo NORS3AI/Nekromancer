@@ -116,7 +116,8 @@ const World = {
     // Story-Mode biomes pick their own species (cacti in deserts, palms in the
     // jungle, …); other lands keep the classic graveyard scatter.
     const biome = zone.biome ? BIOMES[zone.biome] : null;
-    const propTypes = biome ? biome.props : ['pine', 'oak', 'rock', 'rock', 'bush', 'pillar', 'tomb', 'tree'];
+    const propTypes = biome ? biome.props
+      : ['pine', 'oak', 'deadtree', 'tomb', 'tomb', 'cross', 'cross', 'rock', 'rock', 'bush', 'pillar', 'obelisk', 'gargoyle', 'angel'];
     // Bigger maps carry proportionally more scenery.
     const propTarget = clamp(Math.round(this.W * this.H / 110000), 50, 130);
     let attempts = 0;
@@ -224,28 +225,34 @@ const World = {
 
   // Collision radius per prop species.
   PROP_R: {
-    tomb: 16, cross: 13, pillar: 19, tree: 15, obelisk: 17, rock: 20,
-    oak: 16, pine: 16, palm: 16, cactus: 14, bush: 12, birch: 14
+    tomb: 14, cross: 12, pillar: 19, tree: 15, obelisk: 17, rock: 20,
+    oak: 16, pine: 16, palm: 16, cactus: 14, bush: 12, birch: 14,
+    deadtree: 15, gargoyle: 16, angel: 18, mausoleum: 30
   },
 
-  // Painted-sprite variants per prop type (owner art v1.7.34/35). Biome-specific:
+  // Painted-sprite variants per prop type (owner art v1.7.34–36). Biome-specific:
   // tall pines & oaks in green lands, birches sprinkled in, palms in the jungle,
-  // cacti in the desert, moss-draped cypress in the swamp, rocks & bushes where
-  // they belong. A prop with no entry keeps its procedural draw.
+  // a big cactus family in the desert, moss-draped cypress in the swamp, bare
+  // dead trees and graveyard stonework (tombs, crosses, obelisks, statues) in
+  // the barrens. A prop with no entry keeps its procedural draw.
   PROP_SPRITE: {
-    pine: ['pine1', 'pine2', 'pine3', 'pine4', 'pine5', 'pine6', 'pine7', 'pine8', 'pine9', 'pine10',
-           'pineb1', 'pineb2', 'pineb3', 'pineb4', 'pineb5', 'pineb6', 'pineb7', 'pineb8', 'pineb9', 'pineb10'],
-    oak: ['oak1', 'oak2', 'oak3', 'oak4', 'oak5', 'oak6', 'oak7', 'oak8', 'oak9'],
-    birch: ['birch1', 'birch2', 'birch3', 'birch4', 'birch5', 'birch6', 'birch7', 'birch8', 'birch9'],
-    palm: ['palm1', 'palm2'], cactus: ['cactus1', 'cactus2'],
-    tree: ['swamp1', 'swamp2', 'swamp3', 'swamp4', 'swamp5', 'swamp6', 'swamp7', 'swamp8'],
+    pine: Array.from({ length: 10 }, (_, i) => 'pine' + (i + 1)).concat(Array.from({ length: 10 }, (_, i) => 'pineb' + (i + 1))),
+    oak: Array.from({ length: 9 }, (_, i) => 'oak' + (i + 1)),
+    birch: Array.from({ length: 9 }, (_, i) => 'birch' + (i + 1)),
+    palm: ['palm1', 'palm2'],
+    cactus: Array.from({ length: 15 }, (_, i) => 'cactus' + (i + 1)),
+    tree: Array.from({ length: 16 }, (_, i) => 'swamp' + (i + 1)),
+    deadtree: Array.from({ length: 20 }, (_, i) => 'deadtree' + (i + 1)),
     rock: ['rock1', 'rock2', 'rock3', 'rock4', 'rock5', 'rock6', 'rockbig1', 'rockbig2', 'rockbig3', 'rockbig4'],
-    pillar: ['pillar'], obelisk: ['pillar'],
-    bush: ['bush1', 'bush2', 'bush3', 'bush4']
+    pillar: ['pillar'], obelisk: ['obelisk1'],
+    bush: ['bush1', 'bush2', 'bush3', 'bush4'],
+    tomb: Array.from({ length: 11 }, (_, i) => 'tomb' + (i + 1)),
+    cross: Array.from({ length: 11 }, (_, i) => 'cross' + (i + 1)),
+    gargoyle: ['gargoyle1', 'gargoyle2'], angel: ['angel1'], mausoleum: ['mausoleum1']
   },
-  // Sprite height (px) for TALL props (trees/pillar/bush); rocks scale by width.
-  // The new painted trees are tall — give them real presence (owner rule v1.7.35).
-  PROP_SPRITE_H: { pine: 110, oak: 104, birch: 108, palm: 96, cactus: 66, tree: 112, deadtree: 82, pillar: 62, obelisk: 62, bush: 46 },
+  // Sprite height (px) for TALL props (trees/stone/bush); rocks scale by width.
+  PROP_SPRITE_H: { pine: 110, oak: 104, birch: 108, palm: 96, cactus: 70, tree: 112, deadtree: 100,
+    pillar: 62, obelisk: 84, bush: 46, tomb: 46, cross: 52, gargoyle: 60, angel: 72, mausoleum: 128 },
 
   // The five painted merchant wagons (owner art v1.7.34) — one per map at random.
   VENDOR_SPRITES: ['vendor_armor_m', 'vendor_armor_f', 'vendor_gem', 'vendor_weapon1', 'vendor_weapon2'],
@@ -470,12 +477,21 @@ const World = {
     crypt:       { r: 22, big: true,  mat: 'stone' }
   },
 
-  // Painted-sprite skins for breakables (owner art v1.7.34); scale = width ÷ r.
-  BREAKABLE_SPRITE: { chair: 'chair', table: 'table', bookcase: 'bookshelf', cart: 'cart', crate: 'crate', pot: 'cauldron', urnB: 'cauldron' },
-  BREAKABLE_SW: { chair: 2.8, table: 2.4, bookcase: 3.0, cart: 2.7, crate: 3.0, pot: 3.6, urnB: 3.4 },
+  // Painted-sprite skins for breakables (owner art v1.7.34/36); scale = width ÷ r.
+  // A value may be an array of variants picked by the breakable's seed.
+  BREAKABLE_SPRITE: {
+    chair: 'chair', table: 'table', bookcase: 'bookshelf', cart: 'cart', crate: 'crate',
+    pot: 'cauldron', urnB: 'cauldron',
+    sarcophagus: ['sarcophagus1', 'sarcophagus2', 'sarcophagus3', 'sarcophagus4'],
+    crypt: ['crypt1', 'crypt2'],
+    gravestone: ['tomb1', 'tomb2', 'tomb3', 'tomb13', 'tomb14']
+  },
+  BREAKABLE_SW: { chair: 2.8, table: 2.4, bookcase: 3.0, cart: 2.7, crate: 3.0, pot: 3.6, urnB: 3.4,
+    sarcophagus: 2.6, crypt: 2.8, gravestone: 3.0 },
   blitBreakableSprite(ctx, b) {
-    const key = this.BREAKABLE_SPRITE[b.type];
-    if (!key) return false;
+    const v = this.BREAKABLE_SPRITE[b.type];
+    if (!v) return false;
+    const key = Array.isArray(v) ? v[Math.floor(b.seed * 997) % v.length] : v;
     const img = Game.propImg && Game.propImg(key);
     if (!img) return false;
     const w = b.r * (this.BREAKABLE_SW[b.type] || 2.6), h = w * (img.height / img.width);
@@ -541,7 +557,10 @@ const World = {
     this.objects.push({ type: 'vendor', x: vp.x, y: vp.y, used: false, near: false, seed: Math.random(), stock: this.vendorStock() });
     for (let i = 0; i < chests; i++) {
       const pt = pointFn();
-      this.objects.push({ type: 'chest', x: pt.x, y: pt.y, used: false, seed: Math.random() });
+      // The chest's APPEARANCE telegraphs its loot (owner rule v1.7.36): a
+      // CLOSED chest holds an item only; an OPEN gold-laden chest holds gold +
+      // a gem. Looted → the empty chest.
+      this.objects.push({ type: 'chest', x: pt.x, y: pt.y, used: false, seed: Math.random(), loot: Math.random() < 0.5 ? 'item' : 'goldgem' });
     }
     for (let i = 0; i < shrines; i++) {
       const pt = pointFn();
@@ -1166,18 +1185,21 @@ const World = {
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.beginPath(); ctx.ellipse(0, 3, 16, 7, 0, 0, TAU); ctx.fill();
     if (o.type === 'chest') {
-      // Painted gold chest (owner art v1.7.34); a warm glow pulses while unlooted.
-      const cimg = Game.propImg && Game.propImg('chest');
+      // Three painted chests telegraph the loot (owner rule v1.7.36): looted =
+      // the empty open chest; a CLOSED chest holds an item; a GOLD-laden open
+      // chest holds gold + a gem. A warm glow pulses while unlooted.
+      const ckey = o.used ? 'chest_empty' : o.loot === 'goldgem' ? 'chest_gold' : 'chest_closed';
+      const cimg = Game.propImg && Game.propImg(ckey);
       if (!o.used) {
-        ctx.globalAlpha = 0.5 + 0.3 * Math.sin(Game.time * 3 + o.seed * 9);
-        ctx.strokeStyle = '#ffd76a';
-        ctx.beginPath(); ctx.ellipse(0, 0, 22, 11, 0, 0, TAU); ctx.stroke();
+        ctx.globalAlpha = 0.4 + 0.28 * Math.sin(Game.time * 3 + o.seed * 9);
+        ctx.strokeStyle = o.loot === 'goldgem' ? '#ffd76a' : '#8fd0ff';
+        ctx.beginPath(); ctx.ellipse(0, 0, 24, 12, 0, 0, TAU); ctx.stroke();
         ctx.globalAlpha = 1;
       }
       if (cimg) {
-        const w = 46, h = w * (cimg.height / cimg.width);
-        ctx.globalAlpha = o.used ? 0.5 : 1;
-        ctx.drawImage(cimg, -w / 2, -h + 8, w, h);
+        const w = 52, h = w * (cimg.height / cimg.width);
+        ctx.globalAlpha = o.used ? 0.7 : 1;
+        ctx.drawImage(cimg, -w / 2, -h + 10, w, h);
         ctx.globalAlpha = 1;
       } else {
         ctx.fillStyle = o.used ? '#3d3324' : '#5e4a2a';
