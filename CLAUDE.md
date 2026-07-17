@@ -496,6 +496,13 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.30 — SKILL-BUTTON FRAMES DON'T CLIP (owner)**: the touch action-bar
+  slots' ornate `UI.circleFrame` rings overlapped each other on tablets/phones
+  (frame drawn at `2.35·r`, wider than the ~0.565·R arc spacing). `circleFrame`
+  now takes an optional `fscale` (default 2.35 for menus); `drawSkillButtons`
+  passes `this.desktop ? 2.15 : 2.05` so the HUD frame just covers the button
+  bg without overlapping neighbours. The floating secondary slot's `sr` went
+  `R+58·scale → R+70·scale` so its frame clears the top arc slot. No art change.
 - **v1.7.29 — SCROLLBAR GUTTERS + TORCH RADII + TABLET DESKTOP-HUD (owner
   list)**: (1) **Inventory scrollbar clip**: `invGrouped` reserves a right
   gutter (`SB_GUT=30`) — `px=ppx+24`, `pw=ppw-48-SB_GUT`, and the scroll
@@ -1116,7 +1123,11 @@ Script lives in the session scratchpad (intentionally not committed).
   old name collision bricked buildTown; v1.6.58 owner rules: **"Jeweled
   Necessities"** replaced General Goods and sells ONLY ring1/ring2/amulet, and
   the **Apothecary is CLOSED** — `slots: null` → empty stock, "shelves are
-  bare" line in `Screens.vendor`, skipped by the restock loop). **STASH is a
+  bare" line in `Screens.vendor`, skipped by the restock loop). **⭐ OWNER
+  TODO: the Apothecary is where players will CRAFT NEW POTIONS eventually** —
+  the potion art is already prepared (v1.7.28: `docs/art/hud/potion_{health,
+  essence}0..7.webp`, 8 designs each) for a future potion-crafting bench there
+  (different potions with distinct effects, a recipe UI, drops/ingredients). **STASH is a
   GROUPED LIST (v1.6.58, owner rule "get rid of the stash wheel")**: one
   scrolling list grouped by gear type (rings folded into "Rings"), flow-wrap
   FILTER chips (ALL + per-group, empty groups hidden) + SORT picker

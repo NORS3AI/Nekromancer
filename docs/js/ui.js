@@ -366,8 +366,9 @@ const UI = {
     const py = H - 90 * scale - safe.bottom * 0.7;
     this.buttons.push({ x: px, y: py, r: 42 * scale, slot: 0 });
     const R = 106 * scale;
-    // Slot 1 (SECONDARY, right click on desktop) floats above the cluster.
-    const sa = Math.PI * 1.55, sr = R + 58 * scale;
+    // Slot 1 (SECONDARY, right click on desktop) floats above the cluster —
+    // pushed a little higher so its frame clears the top arc slot (v1.7.30).
+    const sa = Math.PI * 1.55, sr = R + 70 * scale;
     this.buttons.push({
       x: Math.min(px + Math.cos(sa) * sr, W - 32 * scale - safe.right),
       y: py + Math.sin(sa) * sr,
@@ -897,10 +898,14 @@ const UI = {
   // every skill / rune / passive icon circle. The frame's leather centre is
   // ~56% of the art, so 2.35× the icon radius leaves a visible ring of
   // chrome around the glyph. Returns false until the art loads.
-  circleFrame(ctx, cx, cy, r) {
+  // The painted quatrefoil frame behind a skill/rune/passive circle. `fscale`
+  // is the frame diameter relative to r (default 2.35 for menus); the HUD
+  // passes a tighter value so adjacent action-bar frames don't overlap
+  // (owner rule v1.7.30).
+  circleFrame(ctx, cx, cy, r, fscale = 2.35) {
     const img = (typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg('circle') : null;
     if (!img || !img.complete || !img.naturalWidth) return false;
-    const d = r * 2.35;
+    const d = r * fscale;
     ctx.drawImage(img, cx - d / 2, cy - d / 2, d, d);
     return true;
   },
@@ -1552,8 +1557,11 @@ const UI = {
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
       // The painted round frame wraps every skill slot (v1.6.97 owner rule).
+      // The HUD uses a tighter frame than menus so the action-bar slots sit
+      // NEXT to each other without the ornate rings overlapping (owner rule
+      // v1.7.30 — was clipping on tablets).
       ctx.globalAlpha = 1;
-      const framed = this.circleFrame(ctx, b.x, b.y, b.r);
+      const framed = this.circleFrame(ctx, b.x, b.y, b.r, this.desktop ? 2.15 : 2.05);
 
       // Desktop action bar: the bound key under each slot (LMB · 1-4 · RMB).
       if (this.desktop) {

@@ -672,13 +672,19 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.29-alpha';
+const GAME_VERSION = 'v1.7.30-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.30-alpha', date: '17 July 2026',
+    notes: [
+      'SKILL BUTTONS NO LONGER CLIP — on tablets and phones the action-bar slots wear a tighter frame so the ornate rings sit next to each other with a clean gap instead of overlapping; the floating secondary slot is nudged up to clear the arc'
+    ]
+  },
   {
     v: 'v1.7.29-alpha', date: '17 July 2026',
     notes: [
