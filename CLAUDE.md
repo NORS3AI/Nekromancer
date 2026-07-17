@@ -496,6 +496,27 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.36 — LOOT-TELEGRAPH CHESTS + GRAVEYARD STONEWORK + DEAD TREES (owner
+  art)**: three owner sheets (dead trees, graveyard objects, 3-state chest
+  icons) + a tree-variety sheet, spliced to `docs/art/props/*.webp` (163 prop
+  webp total). **CHESTS TELEGRAPH LOOT (owner rule)**: `placeObjects` rolls
+  `loot: rand<0.5 ? 'item' : 'goldgem'` per chest; `drawObject` picks the
+  sprite by state — `chest_empty` (looted `o.used`), `chest_closed` (holds an
+  ITEM only, no gold/gem), `chest_gold` (gold spilling → GOLD + A GEM); glow
+  ellipse gold for goldgem else blue. `Game` chest-open (game.js ~1906)
+  branches on `o.loot`: goldgem → gold(60-140) + a gem; item → one item drop.
+  The old single `chest.webp` is orphaned. **ART_V 12→13** (the dead-tree
+  sheet replaced the v1.7.34 `deadtree1-3` content). **NEW PROP TYPES**:
+  `deadtree1-20` (bare gnarled trees), `tomb1-11` (tombstones), `cross1-11`
+  (leaning crosses), `obelisk1`, `gargoyle1-2`, `angel1`, `mausoleum1`
+  (spliced+wired but no biome spawns it yet — reserved), plus more
+  `cactus3-15` and `swamp9-16` variety. `PROP_SPRITE`/`PROP_SPRITE_H`/`PROP_R`
+  carry them; `BREAKABLE_SPRITE` gained `sarcophagus1-4`/`crypt1-2`/gravestone
+  arrays (handled via `Array.isArray` variant pick). BIOMES: badlands props
+  now include deadtree/obelisk/cross, non-story default pool gained
+  graveyard stonework. preloadArt warms all new sets. `treevar1-8` spliced
+  but currently unused (stored). NEW files (except deadtree overwrite) → the
+  ART_V bump is only for the dead-tree content change.
 - **v1.7.35 — RICHER TREES + THICKER FORESTS (owner art)**: 5 tree sheets on
   black → `docs/art/props/*.webp` via scratchpad `splice_trees.py` (tall
   vertical structuring element for closing so tall/thin trees don't merge with

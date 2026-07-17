@@ -672,13 +672,22 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.35-alpha';
+const GAME_VERSION = 'v1.7.36-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.36-alpha', date: '17 July 2026',
+    notes: [
+      'CHESTS TELEGRAPH THEIR LOOT (owner art) — three painted chest states: a closed chest holds an ITEM (no gold, no gem), a chest with gold spilling out holds GOLD + A GEM, and once you\'ve looted it the empty chest stays behind',
+      'GRAVEYARD STONEWORK (owner art) — tombstones, leaning crosses, weathered obelisks, and stone gargoyles & angels now haunt the badlands and crypt approaches',
+      'DEAD TREES (owner art) — bare, gnarled dead trees scatter through the badlands and dark lands',
+      'MORE VARIETY EVERYWHERE — many more cactus shapes in the dunes and extra swamp-cypress and tree variants sprinkled across the maps'
+    ]
+  },
   {
     v: 'v1.7.35-alpha', date: '17 July 2026',
     notes: [
@@ -3866,7 +3875,7 @@ const BIOMES = {
               border: 'mountain', edge: 'mountain', weather: 'wind', forest: false, rivers: 0,
               monsters: ['imp', 'imp', 'archer', 'cultist', 'soldier'] },
   badlands: { name: 'Broken Barrens',     ground: '#20180d', accent: '#4e3c22', tree: 'cactus',
-              props: ['rock', 'rock', 'cactus', 'obelisk'],   deco: ['crack', 'rubble', 'rock'],
+              props: ['rock', 'rock', 'cactus', 'deadtree', 'deadtree', 'obelisk', 'cross'], deco: ['crack', 'rubble', 'rock'],
               border: 'cliff', edge: 'mountain', weather: 'wind', forest: false, rivers: 0,
               monsters: ['skeleton', 'archer', 'soldier', 'knight', 'catapult'] }
 };
