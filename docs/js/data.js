@@ -672,13 +672,20 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.30-alpha';
+const GAME_VERSION = 'v1.7.31-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.31-alpha', date: '17 July 2026',
+    notes: [
+      'ENCHANTRESS: the reroll odds no longer read "UNDEFINED" — every property now shows its real name (Intelligence, Attack speed, Crit damage, Cooldown reduction, Elemental damage, Life per hit, Resource cost reduction, Vitality)',
+      'LUKUS & ADDY: the DROP / TURN IN / ACCEPT plates on each quest row no longer sit under the scrollbar — the whole quest column is indented to leave the skull rail its own space'
+    ]
+  },
   {
     v: 'v1.7.30-alpha', date: '17 July 2026',
     notes: [
