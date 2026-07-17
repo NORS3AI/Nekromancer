@@ -672,13 +672,22 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.36-alpha';
+const GAME_VERSION = 'v1.7.37-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.37-alpha', date: '17 July 2026',
+    notes: [
+      'SOLID PROPS — the trees, rocks, gravestones and every other placeable object were rendering faintly see-through; they are now fully opaque paintings as intended',
+      'LITTER (owner art) — a sparse scattering of ground clutter makes each land feel lived-in without crowding it: bleached skeletons and bone piles, barrels, crates, sacks, wood piles, tents, lanterns, candles, broken pots, spilled coins, torn banners, wagon wheels, and fallen branches, logs and stumps',
+      'Litter is biome-aware — dead branches and logs in the green lands and marshes, bones and camp wreckage in the barrens — and you walk right over it',
+      'Fixed gravestone rubble that pointed at missing art'
+    ]
+  },
   {
     v: 'v1.7.36-alpha', date: '17 July 2026',
     notes: [

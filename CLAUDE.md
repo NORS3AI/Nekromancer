@@ -496,6 +496,34 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.37 — SOLID PROPS + SPARSE LITTER (owner art + rule)**: (1) **OPACITY
+  FIX (owner "check that")**: every prop was spliced with a LUMINANCE-driven
+  alpha (`a = clip((lum-14)/50) * mask`), so dark object pixels got low alpha
+  and the whole thing rendered see-through/ethereal (measured 68–92% of body
+  translucent, mean body alpha 0.42–0.66). Scratchpad `reopaque.py` re-derives
+  a **mask-based SOLID alpha** from each existing webp: silhouette `= a>0.10`,
+  drop speckles, `na = max(mask, clip((gaussian(mask,0.7)-0.30)/0.45))` →
+  opaque interior, feathered edge only (RGB untouched). Re-ran on ALL 163
+  props → mean body alpha ~0.99. The NEW splice recipe (opaque, not luminance)
+  is the standard going forward; vendor wagons were already mask-alpha.
+  **ART_V 13→14** (existing prop files changed). (2) **LITTER (owner art —
+  two clutter sheets, scratchpad `splice_litter.py`, same opaque recipe)**: 44
+  curated pieces to `docs/art/props/*.webp` (rocks/skeleton-rocks from the
+  sheets SKIPPED — we have plenty). `World.LITTER` = three themed pools of
+  `[spriteKey, drawH]`: **bones** (skeleton1-8, bones1-8), **wood** (branch1-6,
+  log1-6, stump1), **camp** (barrel1-2, crate2, sack1, woodpile1, tent1, books1,
+  lantern1, candles1, brokenpot1, coins1, rag1, banner1, wheel1, debris1).
+  `World.LITTER_BIOME` maps each biome to weighted pools (green/marsh → wood,
+  barrens → bones+camp). `World.placeLitter(zone)` (called after makeForests)
+  scatters a SPARSE budget (`clamp(W·H/300000, 4, 11)` — owner rule "lively,
+  not crowded"), min-dist 190 from other litter / 84 from props, clear of
+  spawn/boss. Litter props carry `{flat:true, r:0, sprite, sh}` — `blitPropSprite`
+  draws `p.sprite` at `p.sh` when present; `collide`/`projBlocked` SKIP
+  `p.flat` (walk-over, no collision, doesn't stop projectiles); `drawProp`
+  gives flat litter a wider soft ground shadow (`sh*0.34`). `preloadArt` warms
+  every LITTER key. NEW litter files → no extra ART_V beyond the re-opaque
+  bump. (3) **Fixed gravestone breakable** array pointing at non-existent
+  `tomb13/tomb14` → `tomb9/tomb10` (the splice only made tomb1-11).
 - **v1.7.36 — LOOT-TELEGRAPH CHESTS + GRAVEYARD STONEWORK + DEAD TREES (owner
   art)**: three owner sheets (dead trees, graveyard objects, 3-state chest
   icons) + a tree-variety sheet, spliced to `docs/art/props/*.webp` (163 prop

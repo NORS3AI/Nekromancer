@@ -136,6 +136,8 @@ const World = {
 
     // Forests: dense groves of trees you weave through for cover.
     this.makeForests(zone);
+    // A sparse scattering of painted litter (bones, wood, camp debris).
+    this.placeLitter(zone);
     // The map's edges dissolve into fog with distant forest / mountains / ocean
     // beyond — never a solid wall — so the land feels far bigger than it is.
     this.edgeTheme = zone.edge
@@ -257,9 +259,45 @@ const World = {
   // The five painted merchant wagons (owner art v1.7.34) — one per map at random.
   VENDOR_SPRITES: ['vendor_armor_m', 'vendor_armor_f', 'vendor_gem', 'vendor_weapon1', 'vendor_weapon2'],
 
+  // LITTER (owner art v1.7.37) — small painted ground clutter scattered SPARSELY
+  // to make a land feel lived-in, never crowded. Each entry is [spriteKey, drawH].
+  // Placed flat (walk-over, no collision) via placeLitter. Three themed pools:
+  //   bones  — skeletons & bone piles (graves, barrens, crypt approaches)
+  //   wood   — dead branches, logs, stumps (forests, marshes, green lands)
+  //   camp   — barrels, crates, sacks, wood, tents, lanterns, pots, coins, rags
+  LITTER: {
+    bones: [['skeleton1', 44], ['skeleton2', 42], ['skeleton3', 40], ['skeleton4', 42],
+      ['skeleton5', 40], ['skeleton6', 44], ['skeleton7', 44], ['skeleton8', 42],
+      ['bones1', 34], ['bones2', 30], ['bones3', 26], ['bones4', 26], ['bones5', 30],
+      ['bones6', 30], ['bones7', 28], ['bones8', 30]],
+    wood: [['branch1', 24], ['branch2', 22], ['branch3', 24], ['branch4', 22], ['branch5', 24],
+      ['branch6', 30], ['log1', 28], ['log2', 34], ['log3', 26], ['log4', 26], ['log5', 30],
+      ['log6', 26], ['stump1', 44]],
+    camp: [['barrel1', 58], ['barrel2', 50], ['crate2', 52], ['sack1', 42], ['woodpile1', 40],
+      ['tent1', 60], ['books1', 30], ['lantern1', 48], ['candles1', 44], ['brokenpot1', 34],
+      ['coins1', 28], ['rag1', 42], ['banner1', 44], ['wheel1', 60], ['debris1', 36]]
+  },
+  // Which litter pools each biome draws from (weighted by repetition).
+  LITTER_BIOME: {
+    grass: ['wood', 'wood', 'camp'], forest: ['wood', 'wood', 'wood', 'camp'],
+    jungle: ['wood', 'camp'], swamp: ['wood', 'wood', 'bones'],
+    desert: ['bones', 'camp', 'wood'], badlands: ['bones', 'bones', 'camp', 'wood'],
+    crypt: ['bones', 'bones', 'wood'], arid: ['bones', 'camp']
+  },
+
   // Draw the painted sprite for a prop (called from drawProp, already translated
   // to the prop's position). Returns false → the procedural draw runs instead.
   blitPropSprite(ctx, p) {
+    // Litter carries an explicit sprite key + draw height.
+    if (p.sprite) {
+      const img = Game.propImg && Game.propImg(p.sprite);
+      if (!img) return false;
+      const ar = img.width / img.height;
+      const h = (p.sh || 40) * (0.9 + (p.seed * 7 % 1) * 0.24);
+      const w = h * ar;
+      ctx.drawImage(img, -w / 2, -h + 6, w, h);
+      return true;
+    }
     const list = this.PROP_SPRITE[p.type];
     if (!list) return false;
     const key = list[Math.floor(p.seed * 997) % list.length];
@@ -271,6 +309,28 @@ const World = {
     else { h = (this.PROP_SPRITE_H[p.type] || 60) * (0.86 + (p.seed * 7 % 1) * 0.3); w = h * ar; }
     ctx.drawImage(img, -w / 2, -h + 6, w, h);
     return true;
+  },
+
+  // Scatter a SPARSE handful of litter across an open map (owner rule v1.7.37:
+  // "lively, not crowded"). Flat, walk-over, biome-appropriate.
+  placeLitter(zone) {
+    const biome = zone.biome || (zone.generator === 'open' ? 'default' : null);
+    const pools = (biome && this.LITTER_BIOME[biome]) || ['bones', 'camp', 'wood'];
+    const budget = clamp(Math.round(this.W * this.H / 300000), 4, 11);
+    let placed = 0, attempts = 0;
+    while (placed < budget && attempts++ < budget * 20) {
+      const x = rand(110, this.W - 110), y = rand(110, this.H - 110);
+      if (dist(x, y, this.spawn.x, this.spawn.y) < 240) continue;
+      if (dist(x, y, this.bossPos.x, this.bossPos.y) < 240) continue;
+      if (this.blockedTerrain(x, y)) continue;
+      let ok = true;
+      for (const p of this.props) if (dist(x, y, p.x, p.y) < (p.sprite ? 190 : 84)) { ok = false; break; }
+      if (!ok) continue;
+      const pool = this.LITTER[pick(pools)];
+      const [sprite, sh] = pool[Math.floor(rand(0, pool.length))];
+      this.props.push({ x, y, r: 0, flat: true, type: 'litter', sprite, sh, seed: Math.random() });
+      placed++;
+    }
   },
 
   makeForests(zone) {
@@ -484,7 +544,7 @@ const World = {
     pot: 'cauldron', urnB: 'cauldron',
     sarcophagus: ['sarcophagus1', 'sarcophagus2', 'sarcophagus3', 'sarcophagus4'],
     crypt: ['crypt1', 'crypt2'],
-    gravestone: ['tomb1', 'tomb2', 'tomb3', 'tomb13', 'tomb14']
+    gravestone: ['tomb1', 'tomb2', 'tomb3', 'tomb9', 'tomb10']
   },
   BREAKABLE_SW: { chair: 2.8, table: 2.4, bookcase: 3.0, cart: 2.7, crate: 3.0, pot: 3.6, urnB: 3.4,
     sarcophagus: 2.6, crypt: 2.8, gravestone: 3.0 },
@@ -746,6 +806,7 @@ const World = {
       }
     }
     for (const p of this.props) {
+      if (p.flat) continue;            // litter is walk-over ground clutter
       const dx = e.x - p.x, dy = e.y - p.y;
       const min = p.r + e.r;
       const d2 = dx * dx + dy * dy;
@@ -772,6 +833,7 @@ const World = {
   projBlocked(x, y, r) {
     if (this.walls && !this.isFloorAt(x, y)) return true;
     for (const p of this.props) {
+      if (p.flat) continue;            // litter doesn't stop projectiles
       if (dist(x, y, p.x, p.y) < p.r + r - 4) return true;
     }
     return false;
@@ -1469,8 +1531,9 @@ const World = {
   drawProp(ctx, p) {
     ctx.save();
     ctx.translate(p.x, p.y);
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.beginPath(); ctx.ellipse(0, 3, p.r + 4, (p.r + 4) * 0.4, 0, 0, TAU); ctx.fill();
+    const shR = p.flat ? (p.sh || 40) * 0.34 : p.r + 4;
+    ctx.fillStyle = p.flat ? 'rgba(0,0,0,0.28)' : 'rgba(0,0,0,0.4)';
+    ctx.beginPath(); ctx.ellipse(0, 3, shR, shR * 0.4, 0, 0, TAU); ctx.fill();
     // Painted sprite (owner art v1.7.34) — falls through to procedural if absent.
     if (this.blitPropSprite(ctx, p)) { ctx.restore(); return; }
     const s = p.seed;
