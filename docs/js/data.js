@@ -672,11 +672,18 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.23-alpha';
+const GAME_VERSION = 'v1.7.24-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.24-alpha', date: 'July 2026',
+    notes: [
+      'NEW MALE HERO ART — nine full painted models, one per hair colour (Black, Ember, Blood, Violet, White, Silver, Gold, Green, Blue). Choosing a hair-colour bust on the creation screen now swaps the whole model to that painting, and it carries into the walking hero and the roster. The busts are cut from the new fronts too',
+      'Title screen: the version tag moved to a small plate in the lower-right — quiet, out of the way'
+    ]
+  },
   {
     v: 'v1.7.23-alpha', date: 'July 2026',
     notes: [

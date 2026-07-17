@@ -2143,11 +2143,12 @@ const Screens = {
     ctx.globalAlpha = 1;
 
     // (v1.7.23 owner rule: the control-hint line and the credit line are
-    // GONE — the splash speaks for itself.) The version rides a SIMPLE PLATE
-    // in Cinzel, bone white, and opens the patch notes.
-    const vpw = Math.min(180, W * 0.42), vpx = cx - vpw / 2, vpy = H - 44;
-    UI.btnPlate2(ctx, vpx, vpy, vpw, 30, GAME_VERSION, () => UI.open('patchnotes'),
-      { size: 12, color: '#e8e2d0' });
+    // GONE — the splash speaks for itself.) The version rides a SMALL SIMPLE
+    // PLATE in the LOWER-RIGHT (v1.7.24 owner rule — quiet, for the dev),
+    // Cinzel bone white, opening the patch notes.
+    const vpw = Math.min(118, W * 0.3), vpx = W - vpw - 10, vpy = H - 32;
+    UI.btnPlate2(ctx, vpx, vpy, vpw, 22, GAME_VERSION, () => UI.open('patchnotes'),
+      { size: 9, color: '#cfc8b8' });
     // Dev-panel access lives on quietly: a small unmarked tap in the very
     // bottom-left corner (owner keeps it without any visible credit text).
     UI.register(0, H - 30, 70, 30, () => UI.open('devconfirm'));

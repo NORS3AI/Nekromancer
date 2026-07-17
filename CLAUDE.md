@@ -496,6 +496,18 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.24 — NEW MALE HERO MODELS (owner art)**: nine full painted male
+  models spliced from two owner sheets (scratchpad splice: connected-
+  component flat-black cutout so the black costume survives, front+back
+  auto-split where they touch on sheet 1, side1 kept) → replace
+  `m_front[_hN].webp` / `m_back[_hN].webp` / `m_side[_hN].webp` and
+  `bust_m0..8.webp` (head crops of the new fronts). Mapping matches
+  HAIR_COLORS: 0 Black · 1 Ember(orange) · 2 Blood(red) · 3 Violet(purple)
+  · 4 White · 5 Silver · 6 Gold(blonde) · 7 Green · 8 Blue. Sheet1 = Ember/
+  Blood/Silver/Gold/Black, Sheet2 = Violet/White/Green/Blue. The v1.7.21
+  creation showcase (`heroImg(gd,'front',hair)`) + walking hero + roster
+  all pick these up. ART_V 10→11 (existing files replaced). Title version
+  tag moved to a small lower-right plate.
 - **v1.7.22 — TITLE INTRO SEQUENCE (owner art + spec)**: `Screens.title`
   rebuilt as a timed fade. NEW art (both new files, no ART_V bump):
   `title_splash.webp` (the eldritch cover, cover-fit + radial vignette,
