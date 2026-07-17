@@ -1299,6 +1299,42 @@ const UI = {
     this.dragScroll = null;
     if (!d.moved) this.click(d.sx, d.sy);   // it was a tap, not a scroll
   },
+  // THE ART SCROLLBAR (v1.7.25, owner art): a skull thumb on a dark rail with
+  // up/down caps, drawn on the right edge of a scroll region `r`. It's fully
+  // DRAGGABLE (grab the thumb and fling to the bottom — no wheel needed on
+  // touch), and the caps page the view. Sets `sel.scrollBar` for the drag.
+  drawScrollbar(ctx, r, scrollY, scrollMax) {
+    if (!r || scrollMax <= 0) { this.sel.scrollBar = null; return; }
+    const w = 22;
+    const x = r.x + r.w - w - 1;
+    const g = (typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg.bind(Game) : () => null;
+    const up = g('scroll_up'), dn = g('scroll_down'), sk = g('scroll_skull');
+    const capH = up && up.naturalWidth ? Math.round(w * up.height / up.width) : 18;
+    const capHd = dn && dn.naturalWidth ? Math.round(w * dn.height / dn.width) : 18;
+    const trackTop = r.y + capH + 1, trackBot = r.y + r.h - capHd - 1;
+    const trackH = Math.max(12, trackBot - trackTop);
+    // dark grooved rail
+    ctx.fillStyle = 'rgba(6,4,10,0.78)';
+    rr(ctx, x + w / 2 - 4, trackTop, 8, trackH, 4); ctx.fill();
+    ctx.strokeStyle = 'rgba(94,78,52,0.45)'; ctx.lineWidth = 1;
+    rr(ctx, x + w / 2 - 4, trackTop, 8, trackH, 4); ctx.stroke();
+    // the skull thumb, positioned by scroll fraction
+    const thumbH = sk && sk.naturalWidth ? Math.round(w * sk.height / sk.width) : 42;
+    const th = Math.min(thumbH, trackH);
+    const ty = trackTop + (trackH - th) * (scrollMax > 0 ? clamp(scrollY / scrollMax, 0, 1) : 0);
+    if (sk && sk.complete && sk.naturalWidth) ctx.drawImage(sk, x, ty, w, th);
+    else { ctx.fillStyle = '#6e5a3a'; rr(ctx, x + 3, ty, w - 6, th, 4); ctx.fill(); }
+    // up / down caps
+    if (up && up.complete && up.naturalWidth) ctx.drawImage(up, x, r.y, w, capH);
+    if (dn && dn.complete && dn.naturalWidth) ctx.drawImage(dn, x, r.y + r.h - capHd, w, capHd);
+    // draggable thumb/track (grab anywhere on the rail) + arrow paging.
+    this.sel.scrollBar = { x: x - 4, y: trackTop, w: w + 8, h: trackH,
+      ratio: scrollMax / Math.max(1, trackH - th) };
+    const page = Math.max(48, r.h * 0.8);
+    this.register(x - 2, r.y, w + 4, capH, () => { this.sel.scrollY = clamp((this.sel.scrollY || 0) - page, 0, scrollMax); });
+    this.register(x - 2, r.y + r.h - capHd, w + 4, capHd, () => { this.sel.scrollY = clamp((this.sel.scrollY || 0) + page, 0, scrollMax); });
+  },
+
   // Desktop mouse-wheel over a scrollable overlay. The second pane wins when
   // the cursor hovers it.
   wheelScroll(dy) {

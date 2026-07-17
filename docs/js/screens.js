@@ -89,6 +89,13 @@ const Screens = {
       case 'create': this.create(ctx, W, H); break;
       case 'select': this.select(ctx, W, H); break;
     }
+    // Universal ART SCROLLBAR (v1.7.25): every screen that set a scroll
+    // region gets the owner's draggable skull-thumb rail on its right edge.
+    if (UI.sel.scrollRegion && (UI.sel.scrollMax || 0) > 0) {
+      UI.drawScrollbar(ctx, UI.sel.scrollRegion, UI.sel.scrollY || 0, UI.sel.scrollMax);
+    } else if (!UI.sel.gemPick) {
+      UI.sel.scrollBar = null;
+    }
   },
 
   // The campfire roster: up to three Nekromancers stand around a fire, drawn
@@ -1682,20 +1689,8 @@ const Screens = {
     ctx.restore();
     const contentH = r - rowsTop;
     UI.sel.scrollMax = Math.max(0, contentH - rowsH + 6);
-
-    // ---- the draggable scrollbar (owner rule v1.7.16) ----
-    const sbX = px + pw - 20, sbW = 8;
-    if (UI.sel.scrollMax > 0) {
-      const trackH = rowsH;
-      const thumbH = Math.max(28, trackH * rowsH / contentH);
-      const thumbY = rowsTop + (trackH - thumbH) * (scrollY / UI.sel.scrollMax);
-      ctx.fillStyle = 'rgba(34,27,22,0.9)';
-      rr(ctx, sbX, rowsTop, sbW, trackH, 4); ctx.fill();
-      ctx.fillStyle = '#6e5a3a';
-      rr(ctx, sbX + 1, thumbY, sbW - 2, thumbH, 4); ctx.fill();
-      UI.sel.scrollBar = { x: sbX - 8, y: rowsTop, w: sbW + 16, h: trackH,
-        ratio: UI.sel.scrollMax / Math.max(1, trackH - thumbH) };
-    } else UI.sel.scrollBar = null;
+    // (The draggable scrollbar is drawn universally now — see UI.drawScrollbar
+    // called at the end of Screens.draw, v1.7.25.)
   },
 
   // The one true way to dismiss a menu: the red ✕ (Escape works too).
@@ -2126,7 +2121,6 @@ const Screens = {
     // ---- the PLAY plate, slow fade at 5s ----
     const bw = Math.min(300, W * 0.78);
     const by = H * 0.72;
-    const has = Profiles.count() > 0;
     if (plateA > 0) {
       ctx.save();
       ctx.globalAlpha = plateA;
@@ -2134,10 +2128,6 @@ const Screens = {
       // hitbox. PLAY → Choose Your Hero (owner spec).
       UI.btnPlate(ctx, cx - bw / 2, by, bw, 46, 'PLAY',
         plateA > 0.9 ? () => UI.open('select') : null, { size: 18 });
-      if (has) {
-        ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#8a8070'; ctx.textAlign = 'center';
-        ctx.fillText(Profiles.count() + ' / ' + Profiles.MAX + ' Nekromancers by the fire', cx, by + 62);
-      }
       ctx.restore();
     }
     ctx.globalAlpha = 1;
@@ -6701,38 +6691,36 @@ const Screens = {
     const py = Math.max(8, H / 2 - ph / 2);
     UI.panel(ctx, px, py, pw, ph, 'PATCH NOTES');
 
-    // v1.7.1 (owner rules): entries are COLLAPSED by default (newest open),
-    // grouped by date — and off-screen rows are never measured or drawn,
-    // which is what killed the old screen's framerate.
+    // Entries are COLLAPSED by default (newest open); each row is TITLED BY
+    // ITS DATE (day month year), NEWEST DAY FIRST (owner rule v1.7.25) — the
+    // version rides along as a small muted tag. Off-screen rows are never
+    // measured or drawn (keeps the framerate up).
     if (!UI.sel.pnOpen) { UI.sel.pnOpen = {}; if (PATCH_NOTES[0]) UI.sel.pnOpen[PATCH_NOTES[0].v] = true; }
     if (UI.sel.scrollY === undefined) UI.sel.scrollY = 0;
-    const top = py + 48;
-    const viewH = ph - 60;
+    // Subtitle — "say as much" that they're ordered by day.
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'italic 10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
+    ctx.fillText('Ordered by day — newest first', px + pw / 2, py + 52);
+    const top = py + 62;
+    const viewH = ph - 74;
     UI.sel.scrollRegion = { x: px + 4, y: top, w: pw - 8, h: viewH };
     ctx.save();
     ctx.beginPath(); ctx.rect(px + 4, top, pw - 8, viewH); ctx.clip();
 
     const vis = (yy, hh) => yy + hh > top && yy < top + viewH;
     let y = top + 8 - UI.sel.scrollY;
-    let lastDate = null;
     for (const patch of PATCH_NOTES) {
-      // Date group header whenever the month changes.
-      if (patch.date !== lastDate) {
-        lastDate = patch.date;
-        if (vis(y, 20)) {
-          ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-          ctx.font = '600 12px Cinzel, Georgia'; ctx.fillStyle = '#d8c5a0';
-          ctx.fillText('— ' + patch.date.toUpperCase() + ' —', px + 16, y + 8);
-        }
-        y += 24;
-      }
       const open = !!UI.sel.pnOpen[patch.v];
       if (vis(y, 24)) {
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        // Title = the DATE (day month year); version is a small muted tag.
         ctx.font = 'bold 13px Cinzel, Georgia';
-        ctx.fillStyle = open ? '#57b894' : '#8a8070';
-        ctx.fillText((open ? '▾  ' : '▸  ') + patch.v + '   (' + patch.notes.length + ')', px + 22, y + 9);
-        UI.register(px + 8, y - 2, pw - 16, 22, ((v) => () => {
+        ctx.fillStyle = open ? '#e8e2d0' : '#a89c86';
+        ctx.fillText((open ? '▾  ' : '▸  ') + patch.date, px + 22, y + 9);
+        const tw = ctx.measureText((open ? '▾  ' : '▸  ') + patch.date).width;
+        ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
+        ctx.fillText(patch.v + '  ·  ' + patch.notes.length, px + 30 + tw, y + 10);
+        UI.register(px + 8, y - 2, pw - 34, 22, ((v) => () => {
           UI.sel.pnOpen[v] = !UI.sel.pnOpen[v];
         })(patch.v));
       }
@@ -6759,14 +6747,7 @@ const Screens = {
     const maxScroll = Math.max(0, contentH - viewH + 16);
     UI.sel.scrollMax = maxScroll;
     UI.sel.scrollY = clamp(UI.sel.scrollY, 0, maxScroll);
-    if (maxScroll > 0) {
-      ctx.fillStyle = '#3a3448';
-      ctx.fillRect(px + pw - 18, top + 6, 4, viewH - 12);
-      ctx.fillStyle = '#57b894';
-      const trackH = viewH - 12;
-      const kH = Math.max(20, (viewH / (contentH || 1)) * trackH);
-      ctx.fillRect(px + pw - 18, top + 6 + (UI.sel.scrollY / maxScroll) * (trackH - kH), 4, kH);
-    }
+    // (The draggable art scrollbar is drawn universally — UI.drawScrollbar.)
   },
 
   // ------------------------------------------------------------- season

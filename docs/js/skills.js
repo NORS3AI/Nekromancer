@@ -1442,7 +1442,7 @@ const GEM_IMAGES = {};   // GEM_IMAGES[type][tier] = Image
     GEM_IMAGES[type] = [];
     for (let t = 0; t < GEM_TIERS.length; t++) {
       const img = new Image();
-      img.src = 'art/gems/' + type + t + '.png';
+      img.src = 'art/gems/' + type + t + '.webp';
       GEM_IMAGES[type][t] = img;
     }
   }

@@ -496,6 +496,22 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.25 — DRAGGABLE SKULL SCROLLBAR + PATCH-NOTES-BY-DATE (owner
+  art/rule)**: `UI.drawScrollbar(ctx, region, scrollY, scrollMax)` draws the
+  owner's rail (`scroll_up`/`scroll_skull`/`scroll_down` .webp, sliced from
+  the deconstructed column of the sheet) at the right edge of any scroll
+  region — skull thumb positioned by scroll fraction, up/down caps that page
+  `r.h*0.8`. Called UNIVERSALLY at the end of `Screens.draw` for any screen
+  with `scrollRegion` + `scrollMax>0`, so it replaced every per-screen
+  scrollbar (achievements' + patch-notes' custom bars deleted). Fully
+  DRAGGABLE via the existing `sel.scrollBar` {x,y,w,h,ratio} path
+  (startDragScroll/moveDragScroll) — grab the thumb, fling to the bottom (no
+  wheel needed on touch). **PATCH NOTES**: each row TITLED BY ITS DATE (day
+  month year — `patch.date` now reads "17 July 2026"), newest day first, the
+  version a small muted tag; "Ordered by day — newest first" subtitle; the
+  month-header grouping is gone. Title screen: "N / 9 Nekromancers by the
+  fire" line removed. **NO PNGs**: 0 png files in docs (all WebP); the
+  guarded gem loader's `.png` → `.webp`.
 - **v1.7.24 — NEW MALE HERO MODELS (owner art)**: nine full painted male
   models spliced from two owner sheets (scratchpad splice: connected-
   component flat-black cutout so the black costume survives, front+back
