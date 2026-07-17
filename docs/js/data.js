@@ -672,13 +672,23 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.28-alpha';
+const GAME_VERSION = 'v1.7.29-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.29-alpha', date: '17 July 2026',
+    notes: [
+      'PADDING EVERYWHERE — the Inventory list now reserves a proper gutter for the scrollbar, so item rows and their upgrade arrows never clip under the skull rail again; everything is indented off all four edges',
+      'Achievements: the category list on the left is indented off the wall, and the points on the right are pulled in so they clear the scrollbar',
+      'TORCH LIGHT is far brighter — no torch lights 80, the Wood Torch 130, and every torch up the ladder adds another 100 (Iron 230, Wyrm-bound 330, Ascendant 430, Master 530, Nekromancer 630)',
+      'DEV PANEL: a "Desktop HUD on tablet" toggle lets you preview the desktop globe HUD on a tablet — it automatically shrinks to fit the screen with no clipping',
+      'Tapping your portrait to open the inventory mid-fight, then closing it, now returns to the ☰ menu (not straight back to combat)'
+    ]
+  },
   {
     v: 'v1.7.28-alpha', date: '17 July 2026',
     notes: [
@@ -2879,18 +2889,18 @@ const MATERIALS = {
 // Uncommon, Magic, Rare, Epic, Legendary — is finer than the gear rarity list.
 // `rarity` is the numeric order (sorting); `tier`/`tierColor` drive the label.
 const TORCH_TYPES = {
-  // Radii rebuilt v1.7.15 (owner spec): no-torch doubled to 40, Wood 20%
-  // over that, then every torch 20% over the one before — a ×1.2 ladder.
-  wood:        { name: 'Wood Torch',           minutes: 12,  radius: 48,  color: '#ffb24a', rarity: 0, tier: 'Common',    tierColor: '#f4f4f4', recipe: { lumber: 10 } },
-  iron:        { name: 'Iron Torch',           minutes: 37,  radius: 58,  color: '#ffcf6a', rarity: 1, tier: 'Uncommon',  tierColor: '#4ade80', recipe: { lumber: 10, rivets: 15 } },
-  wyrmbound:   { name: 'Wyrm-bound Torch',     minutes: 55,  radius: 69,  color: '#7fe0ff', rarity: 2, tier: 'Magic',     tierColor: '#6a9aff', recipe: { lumber: 5, rivets: 10, wyrmscale: 5 } },
-  nephalem:    { name: "Ascendant's Torch",       minutes: 75,  radius: 83,  color: '#d8b4f0', rarity: 3, tier: 'Rare',      tierColor: '#ffd76a', recipe: { lumber: 15, rivets: 30, heartstring: 3 } },
-  masterlight: { name: "Master's Light Torch", minutes: 110, radius: 100, color: '#ffe6a0', rarity: 4, tier: 'Epic',      tierColor: '#b06adf', recipe: { rivets: 50, heartstring: 5, brain: 1 } },
-  nekromancer: { name: "Nekromancer's Torch",  minutes: 180, radius: 120, color: '#c58bff', rarity: 5, tier: 'Legendary', tierColor: '#ff8c2a', recipe: { rathmasoul: 3 } }
+  // Radii rebuilt v1.7.29 (owner spec): no-torch 80, Wood 130, then +100 px
+  // per torch up the ladder.
+  wood:        { name: 'Wood Torch',           minutes: 12,  radius: 130, color: '#ffb24a', rarity: 0, tier: 'Common',    tierColor: '#f4f4f4', recipe: { lumber: 10 } },
+  iron:        { name: 'Iron Torch',           minutes: 37,  radius: 230, color: '#ffcf6a', rarity: 1, tier: 'Uncommon',  tierColor: '#4ade80', recipe: { lumber: 10, rivets: 15 } },
+  wyrmbound:   { name: 'Wyrm-bound Torch',     minutes: 55,  radius: 330, color: '#7fe0ff', rarity: 2, tier: 'Magic',     tierColor: '#6a9aff', recipe: { lumber: 5, rivets: 10, wyrmscale: 5 } },
+  nephalem:    { name: "Ascendant's Torch",       minutes: 75,  radius: 430, color: '#d8b4f0', rarity: 3, tier: 'Rare',      tierColor: '#ffd76a', recipe: { lumber: 15, rivets: 30, heartstring: 3 } },
+  masterlight: { name: "Master's Light Torch", minutes: 110, radius: 530, color: '#ffe6a0', rarity: 4, tier: 'Epic',      tierColor: '#b06adf', recipe: { rivets: 50, heartstring: 5, brain: 1 } },
+  nekromancer: { name: "Nekromancer's Torch",  minutes: 180, radius: 630, color: '#c58bff', rarity: 5, tier: 'Legendary', tierColor: '#ff8c2a', recipe: { rathmasoul: 3 } }
 };
 // The lit/reveal radius (px) with no torch at all — deliberately tiny so the
 // dark presses right in until you craft one. Torches widen it (see TORCH_TYPES).
-const NO_TORCH_RADIUS = 40;   // doubled v1.7.15 (owner rule: +100%)
+const NO_TORCH_RADIUS = 80;   // owner spec v1.7.29
 
 // The Wishing Fountain's blessings, in PLAIN WORDS (owner rule — "I have no
 // idea what Essence Surges means"). Shared by the fountain screen and the

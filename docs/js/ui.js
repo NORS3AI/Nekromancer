@@ -312,18 +312,33 @@ const UI = {
     const safe = this.safe = Game.safe || { top: 0, right: 0, bottom: 0, left: 0 };
     // Desktop (mouse) gets the Diablo bottom bar + globes; touch keeps the
     // twin-stick radial cluster.
-    this.desktop = !Input.touchMode && W >= 760;
+    // Desktop globe HUD when on a mouse device, OR when a tablet user forces it
+    // on via the dev panel (v1.7.29 — it auto-shrinks to fit below).
+    const forceHud = typeof Settings !== 'undefined' && Settings.g && Settings.g.forceDesktopHud;
+    this.desktop = (forceHud || !Input.touchMode) && W >= 760;
     this.menuBtn = { x: W - 30 - safe.right, y: 26 + safe.top, r: 18 };
 
     if (this.desktop) {
       // NEW HUD (v1.7.26 owner art), bottom-centered. The essence potion
       // MIRRORS the health potion (v1.7.28 owner rule):
       //   [health globe] [health potion] [ skill bar + XP ] [essence potion] [essence globe]
-      const gr = this.globeR = Math.min(56, H * 0.12);
-      const s = 26, gap = 12, potR = 24;
+      let gr = this.globeR = Math.min(56, H * 0.12);
+      let s = 26, gap = 12, potR = 24;
       const order = [0, 2, 3, 4, 5, 1]; // LMB · 1 · 2 · 3 · 4 · RMB
+      const measure = () => 2 * gr + gap + 2 * potR + gap +
+        (order.length * s * 2 + (order.length - 1) * gap) + gap + 2 * potR + gap + 2 * gr;
+      // Fit-to-width: if the cluster is wider than the screen (a narrow tablet
+      // forcing the desktop HUD), scale every element down until it fits — no
+      // clipping (owner rule v1.7.29).
+      const avail = W - 16 - safe.left - safe.right;
+      let groupW = measure();
+      if (groupW > avail) {
+        const k = avail / groupW;
+        gr = this.globeR = Math.max(28, gr * k);
+        s = Math.max(15, s * k); potR = Math.max(14, potR * k); gap = Math.max(6, gap * k);
+        groupW = measure();
+      }
       const barW = order.length * s * 2 + (order.length - 1) * gap;
-      const groupW = 2 * gr + gap + 2 * potR + gap + barW + gap + 2 * potR + gap + 2 * gr;
       // The ring art overhangs the globe circle (skull spikes ~1.4×R below),
       // so seat the cluster high enough that the bottom spikes stay on-screen.
       const cy = H - safe.bottom - Math.ceil(1.42 * gr) - 8;
@@ -995,7 +1010,10 @@ const UI = {
     ctx.font = 'bold 11px Georgia';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(Hero.level, x0 + 45, y0 + 45);
-    this.register(x0, y0, 62, 62, () => { if (!UI.screen) UI.open('radial'); else UI.close(); });
+    // Tap the portrait to open the inventory; if a screen is already up, close
+    // it the SAME way the red ✕ does (→ the ☰ menu for menu children, owner
+    // rule v1.7.29) rather than dropping straight back to combat.
+    this.register(x0, y0, 62, 62, () => { if (!UI.screen) UI.open('radial'); else UI.closeAction()(); });
 
     // Stacked bars: red health (full height), then a half-height blue mana
     // bar, then a half-height yellow experience bar (matches the D3 layout).

@@ -496,6 +496,25 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.29 — SCROLLBAR GUTTERS + TORCH RADII + TABLET DESKTOP-HUD (owner
+  list)**: (1) **Inventory scrollbar clip**: `invGrouped` reserves a right
+  gutter (`SB_GUT=30`) — `px=ppx+24`, `pw=ppw-48-SB_GUT`, and the scroll
+  region/clip extend `pw+4+SB_GUT` so `UI.drawScrollbar` (draws at region
+  right −22) lands in the gutter, clear of the rows (which end at px+pw).
+  (2) **Achievements**: sidebar `sx=px+24` (indented off the wall); right pane
+  `lx=dx+12`, `lw=(px+pw-14)-lx-ACH_GUT` (`ACH_GUT=32`) with the region
+  extended into the gutter — the pts no longer clip the scrollbar.
+  (3) **TORCH RADII** (owner spec): `NO_TORCH_RADIUS=80`, Wood 130, then +100
+  per torch (Iron 230 · Wyrm 330 · Ascendant 430 · Master 530 · Nekromancer
+  630) — `radius` is screen-px in `Game.lightRadius()`. (4) **TABLET DESKTOP
+  HUD**: `Settings.g.forceDesktopHud` (dev-panel "Display" checkbox) OR-s into
+  `UI.desktop = (forceDesktopHud || !touchMode) && W>=760`; the desktop cluster
+  auto-shrinks — `measure()` the group width, and if `> W-16-safeL-safeR` scale
+  gr/s/potR/gap by `avail/groupW` (floors: gr 28, s 15, potR 14, gap 6) so it
+  never clips. (5) **Inventory-X in combat** already routed radial→sysmenu
+  (v1.6.84, verified by real-tap test); the portrait re-tap toggle now also
+  goes through `UI.closeAction()()` for consistency (was straight-to-combat).
+  No art change → no ART_V bump.
 - **v1.7.28 — PAINTED POTIONS + ESSENCE POTION + WINGS/SKILLS/JOURNAL FIXES
   (owner list)**: (1) **POTION ART**: two owner sheets (8 red health + 8 blue
   essence flasks on flat black, 1536×1024) → `docs/art/hud/potion_{health,
