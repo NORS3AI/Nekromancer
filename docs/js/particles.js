@@ -251,3 +251,12 @@ function fxHeal(x, y) {
     grav: -120, glow: true
   });
 }
+
+// Essence-potion sparkle (v1.7.28) — blue twin of fxHeal.
+function fxEssence(x, y) {
+  Particles.spawn(x, y, {
+    count: 12, color: ['#2a6ad0', '#6fd0ff', '#eaf6ff'],
+    minSpeed: 15, maxSpeed: 70, minLife: 0.4, maxLife: 0.8,
+    grav: -120, glow: true
+  });
+}

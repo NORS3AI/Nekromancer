@@ -1401,16 +1401,17 @@ const Screens = {
 
     for (const g of givers) {
       if (!g.show) continue;
-      // Section header: the giver, their slots, and their ledger progress.
+      // Section header: the giver + how many quests they're carrying. The total
+      // ledger count ("n / 500 done") is HIDDEN — the player shouldn't know how
+      // many quests exist (owner rule).
       if (vis(c, 24)) {
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
         ctx.font = '600 10px Cinzel, Georgia'; ctx.fillStyle = '#d8c5a0';
-        ctx.fillText(this.fitText(ctx, g.tag, lw - 96), lx, c - scrollY + 10);
+        ctx.fillText(this.fitText(ctx, g.tag, lw - 60), lx, c - scrollY + 10);
         ctx.textAlign = 'right'; ctx.font = '9px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-        ctx.fillText(g.list.length + '/' + QUEST_JOURNAL_MAX + ' · ' + g.done + '/' + g.total + ' done', lx + lw, c - scrollY + 10);
-        UI.bar(ctx, lx, c - scrollY + 16, lw, 3, g.done / g.total, '#221d2e', g.barCol);
+        ctx.fillText(g.list.length + ' / ' + QUEST_JOURNAL_MAX, lx + lw, c - scrollY + 10);
       }
-      c += 28;
+      c += 22;
       if (!g.list.length) {
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
         ctx.font = 'italic 10px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
@@ -3382,12 +3383,8 @@ const Screens = {
   slotCatLabels: ['PRIMARY', 'SECONDARY', 'CORPSES', 'REANIM', 'CURSES', 'BLOOD'],
 
   skillsActives(ctx, W, H, px, pw) {
-    const sy = 112;
-    ctx.textAlign = 'left';
-    ctx.font = 'bold 12px Cinzel, Georgia';
-    ctx.fillStyle = '#9a9080';
-    ctx.fillText('ACTION BAR — one skill per category', px, sy - 14);
-
+    // (The "ACTION BAR — one skill per category" header was removed, owner rule.)
+    const sy = 118;
     const nSlots = 6;
     const sw = pw / nSlots;
     const cr = Math.min(UI.desktop ? 42 : 26, sw / 2 - 4);
@@ -3433,8 +3430,7 @@ const Screens = {
     UI.btnPlate(ctx, px + pw * 0.12, by, pw * 0.76, 44, 'CHOOSE SKILLS',
       () => Screens.openChooser(slot, Hero.loadout[slot], null),
       { size: 15, color: '#6ff7c3', border: '#3a7a6a' });
-    ctx.textAlign = 'center'; ctx.font = 'italic 11px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
-    ctx.fillText('Browse every skill & rune by category — they unlock as you level.', W / 2, by + 62);
+    // (The "Browse every skill & rune…" caption was removed, owner rule.)
   },
 
   // Open the category skill+rune chooser, seeded to an action-bar slot and its
@@ -3499,7 +3495,7 @@ const Screens = {
     // ---- section 1: skills of this category ----
     let y = selY + 46;
     this.chooserLabel(ctx, px, pw, y, catDef.name.toUpperCase());
-    y += 22;
+    y += 34;   // extra padding so the red level badges clear the label (owner rule)
     const nS = catSkills.length;
     const sCell = pw / Math.max(4, nS);
     const sR = Math.min(30, sCell / 2 - 8);
@@ -3543,7 +3539,7 @@ const Screens = {
 
     // ---- section 2: runes for the selected skill ----
     this.chooserLabel(ctx, px, pw, y, 'SKILL RUNES');
-    y += 22;
+    y += 30;   // padding so the rune level badges clear the label (owner rule)
     const runes = (typeof SKILL_RUNES !== 'undefined' && SKILL_RUNES[UI.sel.chSkill]) || [];
     let runeBase = 0;
     for (let k = 0; k < UI.sel.chSkill.length; k++) runeBase += UI.sel.chSkill.charCodeAt(k) * (k + 1);
@@ -3660,12 +3656,14 @@ const Screens = {
   },
 
   skillsPassives(ctx, W, H, px, pw) {
-    const sy = 112;
+    // Extra top padding so the header clears the tab plates above (owner rule),
+    // and the header is CENTERED.
+    const sy = 132;
     const nSlots = Hero.passiveSlots();
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
     ctx.font = 'bold 12px Cinzel, Georgia';
     ctx.fillStyle = '#9a9080';
-    ctx.fillText(`PASSIVE SLOTS (${nSlots} unlocked)`, px, sy - 14);
+    ctx.fillText(`PASSIVE SLOTS (${nSlots} unlocked)`, px + pw / 2, sy - 16);
     const nPassiveSlots = PASSIVE_SLOT_LEVELS.length;
     const sw = pw / nPassiveSlots;
     for (let i = 0; i < nPassiveSlots; i++) {

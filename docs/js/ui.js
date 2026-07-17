@@ -316,13 +316,14 @@ const UI = {
     this.menuBtn = { x: W - 30 - safe.right, y: 26 + safe.top, r: 18 };
 
     if (this.desktop) {
-      // NEW HUD (v1.7.26 owner art), bottom-centered:
-      //   [health globe] [potion] [ skill bar + XP bar on top ] [essence globe]
+      // NEW HUD (v1.7.26 owner art), bottom-centered. The essence potion
+      // MIRRORS the health potion (v1.7.28 owner rule):
+      //   [health globe] [health potion] [ skill bar + XP ] [essence potion] [essence globe]
       const gr = this.globeR = Math.min(56, H * 0.12);
       const s = 26, gap = 12, potR = 24;
       const order = [0, 2, 3, 4, 5, 1]; // LMB · 1 · 2 · 3 · 4 · RMB
       const barW = order.length * s * 2 + (order.length - 1) * gap;
-      const groupW = 2 * gr + gap + 2 * potR + gap + barW + gap + 2 * gr;
+      const groupW = 2 * gr + gap + 2 * potR + gap + barW + gap + 2 * potR + gap + 2 * gr;
       // The ring art overhangs the globe circle (skull spikes ~1.4×R below),
       // so seat the cluster high enough that the bottom spikes stay on-screen.
       const cy = H - safe.bottom - Math.ceil(1.42 * gr) - 8;
@@ -334,13 +335,16 @@ const UI = {
         this.buttons.push({ x: x + s + i * (s * 2 + gap), y: cy, r: s, slot });
       });
       x += barW + gap;
+      // Essence potion — mirror position, right of the skill bar.
+      this.essPotionBtn = { x: x + potR, y: cy, r: potR }; x += 2 * potR + gap;
       this.essGlobe = { x: x + gr, y: cy, r: gr };
-      // Town-portal button stacks above the potion.
+      // Town-portal button stacks above the health potion.
       this.portalHudBtn = { x: this.potionBtn.x, y: cy - 2 * potR - 22, r: potR };
       // XP bar rides ON TOP of the skill bar, spanning its width.
       this.xpBar = { x: barX - s, w: barW + 2 * s, y: cy - s - 16 };
       return;
     }
+    this.essPotionBtn = null;   // touch HUD keeps just the health potion
 
     const scale = clamp(Math.min(W, H) / 420, 0.85, 1.35);
     const px = W - 84 * scale - safe.right;
@@ -1607,34 +1611,63 @@ const UI = {
   },
 
   drawPotion(ctx, p) {
-    const b = this.potionBtn;
-    ctx.globalAlpha = 0.85;
-    ctx.fillStyle = '#1a1016';
-    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
-    // Flask.
-    ctx.fillStyle = p.potionCd > 0 ? '#5e2a33' : '#c22843';
-    ctx.beginPath(); ctx.arc(b.x, b.y + 3, b.r * 0.45, 0, TAU); ctx.fill();
-    ctx.fillRect(b.x - 3, b.y - b.r * 0.6, 6, b.r * 0.5);
-    ctx.fillStyle = '#8a6f4a';
-    ctx.fillRect(b.x - 4, b.y - b.r * 0.68, 8, 4);
-    if (p.potionCd > 0) {
-      ctx.globalAlpha = 0.62;
+    // Health potion (left of the skill bar).
+    this.drawPotionButton(ctx, this.potionBtn, 'potion_health', 'red',
+      p.potionCd, 25, () => p.drinkPotion());
+    // Essence potion — mirror slot on the right (desktop HUD only, v1.7.28).
+    if (this.essPotionBtn) {
+      this.drawPotionButton(ctx, this.essPotionBtn, 'potion_essence', 'blue',
+        p.essPotionCd, 25, () => p.drinkEssencePotion());
+    }
+  },
+
+  // One painted potion button (owner art, advanced-cropped WebP): the flask
+  // fills the round hit-area, dimmed with a radial cooldown sweep + seconds
+  // while on cooldown. Falls back to a procedural flask until the art loads.
+  drawPotionButton(ctx, b, artKey, kind, cd, cdMax, cb) {
+    if (!b) return;
+    const onCd = cd > 0;
+    const img = (typeof Game !== 'undefined' && Game.hudImg) ? Game.hudImg(artKey) : null;
+    if (img) {
+      // Contain-fit the tall flask into a box a bit larger than the circle.
+      const boxH = b.r * 2.5, boxW = boxH * (img.width / img.height);
+      ctx.save();
+      ctx.globalAlpha = onCd ? 0.5 : 1;
+      ctx.drawImage(img, b.x - boxW / 2, b.y - boxH / 2, boxW, boxH);
+      ctx.restore();
+    } else {
+      // Procedural flask fallback.
+      const dim = kind === 'red' ? '#5e2a33' : '#22506e';
+      const lit = kind === 'red' ? '#c22843' : '#2a86c0';
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = '#1a1016';
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
+      ctx.fillStyle = onCd ? dim : lit;
+      ctx.beginPath(); ctx.arc(b.x, b.y + 3, b.r * 0.45, 0, TAU); ctx.fill();
+      ctx.fillRect(b.x - 3, b.y - b.r * 0.6, 6, b.r * 0.5);
+      ctx.fillStyle = '#8a6f4a';
+      ctx.fillRect(b.x - 4, b.y - b.r * 0.68, 8, 4);
+      ctx.globalAlpha = 1;
+    }
+    if (onCd) {
+      // Radial darkening sweep + seconds remaining.
+      ctx.save();
+      ctx.globalAlpha = 0.6;
       ctx.fillStyle = '#05030a';
       ctx.beginPath();
       ctx.moveTo(b.x, b.y);
-      ctx.arc(b.x, b.y, b.r, -Math.PI / 2, -Math.PI / 2 + TAU * (p.potionCd / 25));
+      ctx.arc(b.x, b.y, b.r + 3, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(cd / cdMax, 0, 1));
       ctx.closePath(); ctx.fill();
-      ctx.globalAlpha = 0.95;
+      ctx.restore();
       ctx.fillStyle = '#e8e0cc';
-      ctx.font = `bold ${Math.round(b.r * 0.55)}px Georgia`;
+      ctx.font = `bold ${Math.round(b.r * 0.6)}px Georgia`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(Math.ceil(p.potionCd), b.x, b.y);
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+      ctx.strokeText(Math.ceil(cd), b.x, b.y);
+      ctx.fillText(Math.ceil(cd), b.x, b.y);
     }
     ctx.globalAlpha = 1;
-    ctx.strokeStyle = p.potionCd > 0 ? '#3a3448' : '#8a4550';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.stroke();
-    this.register(b.x - b.r, b.y - b.r, b.r * 2, b.r * 2, () => p.drinkPotion());
+    this.register(b.x - b.r, b.y - b.r, b.r * 2, b.r * 2, cb);
   },
 
   // The town-portal button, stacked above the potion. Tap to channel a blue
