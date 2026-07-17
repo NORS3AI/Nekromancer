@@ -672,13 +672,22 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.38-alpha';
+const GAME_VERSION = 'v1.7.39-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.39-alpha', date: '17 July 2026',
+    notes: [
+      'WANDERING MERCHANT no longer looks squished — the painted wagon now stands at its true proportions (the top-down ground tilt was flattening it), drawn larger with a soft ground shadow beneath',
+      'You can now open the merchant by standing anywhere over the whole wagon, not just dead-centre on it',
+      'The merchant\'s wares now match YOUR level — a level-40 hero sees level-40 gear worth buying, not trivial low-level scraps',
+      'Merchant prices scale with item level too — a level-40 rare now runs around 13,000 gold instead of a couple hundred, so a good buy actually feels like one'
+    ]
+  },
   {
     v: 'v1.7.38-alpha', date: '17 July 2026',
     notes: [
