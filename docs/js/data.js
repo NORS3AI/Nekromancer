@@ -672,11 +672,18 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.20-alpha';
+const GAME_VERSION = 'v1.7.21-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.21-alpha', date: 'July 2026',
+    notes: [
+      'CREATE A HERO shows the REAL MODEL now — choosing a hair colour swaps the whole full-body Nekromancer (the same figure you walk around as), not an airbrushed tint painted over one head. Pick a colour and the entire model changes',
+      'Create & Choose Your Hero fixed for phones and tablets: on phones the model steps clear of the gender/hair panel (no more hiding behind it) and the NAME / CREATE row centres on screen; tablets keep the full three-panel stage'
+    ]
+  },
   {
     v: 'v1.7.20-alpha', date: 'July 2026',
     notes: [

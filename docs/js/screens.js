@@ -952,19 +952,28 @@ const Screens = {
     if (UI.sel._cinit === undefined) { UI.sel._cinit = 1; Hero.gender = 'f'; }
     const gd = Hero.gender || 'f';
     const wide = W >= 760;
-    const cx = wide ? W * 0.5 : W / 2;
+    // Left-panel geometry up front so the model can sit CLEAR of it on
+    // phones (owner fix v1.7.21 — the model used to hide behind the panel).
+    const lpW = wide ? Math.min(210, W * 0.24) : Math.min(178, W * 0.42);
+    const lpX = wide ? Math.max(10, W * 0.03) : 8;
+    // Wide screens keep the model centre-stage; phones nudge it into the
+    // space to the RIGHT of the panel so nothing overlaps.
+    const cx = wide ? W * 0.5 : (lpX + lpW + (W - lpX - lpW) / 2);
 
-    // ---- rolling ground fog + the showcase model, centre-stage ----
-    const show = Game.uiImg(gd === 'f' ? 'showcase_f' : 'showcase_m');
+    // ---- the FULL per-hair-colour MODEL, centre-stage ----
+    // Owner rule v1.7.21: show the ACTUAL model that changes with the chosen
+    // hair colour — NOT an airbrushed head over one showcase render. This is
+    // the same front art the walking hero uses (m_front[_hN].webp), so a new
+    // hair choice swaps the whole figure. Falls back to the showcase render
+    // only until the hero art loads.
+    const model = (Game.heroImg && Game.heroImg(gd, 'front', Hero.hair || 0)) ||
+                  Game.uiImg(gd === 'f' ? 'showcase_f' : 'showcase_m');
     const feet = H * (wide ? 0.74 : 0.58);
     const mh = H * (wide ? 0.56 : 0.40);
-    if (show && show.complete && show.naturalWidth) {
-      const mw = mh * (show.width / show.height);
+    if (model && model.complete && model.naturalWidth) {
+      const mw = mh * (model.width / model.height);
       const breath = Math.sin(t * 1.5) * 1.4;
-      // LIVE HAIR COLOR (owner rule): the showcase is tinted at the head so
-      // the chosen hair color reads in real time (cached per gender+hair).
-      const tinted = this.showcaseTinted(gd, Hero.hair || 0);
-      ctx.drawImage(tinted || show, cx - mw / 2, feet - mh - breath, mw, mh + breath);
+      ctx.drawImage(model, cx - mw / 2, feet - mh - breath, mw, mh + breath);
     } else {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = 'italic 11px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
@@ -972,9 +981,8 @@ const Screens = {
     }
 
     // ---- LEFT MENU: gender medallions + hair-colour busts ----
-    const lpW = wide ? Math.min(210, W * 0.24) : Math.min(190, W * 0.44);
+    // (lpW / lpX computed above so the model clears the panel on phones.)
     const lpH = wide ? 388 : 300;
-    const lpX = wide ? Math.max(10, W * 0.03) : 8;
     const lpY = wide ? H / 2 - lpH / 2 : Math.max(50, H * 0.10);
     UI.panel(ctx, lpX, lpY, lpW, lpH);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1085,19 +1093,22 @@ const Screens = {
     }
 
     // ---- NAME YOUR NEKROMANCER + CREATE, beneath the model ----
+    // On phones these sit below the panel where the whole width is free, so
+    // they centre on the SCREEN (owner fix v1.7.21); wide screens keep cx.
+    const ncx = wide ? cx : W / 2;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = '600 13px Cinzel, Georgia'; ctx.fillStyle = '#d8c5a0';
     const ny = wide ? H * 0.79 : H * 0.64;
-    ctx.fillText('NAME YOUR NEKROMANCER', cx, ny);
-    const nw = Math.min(320, W * 0.5);
-    UI.btn(ctx, cx - nw / 2, ny + 10, nw, 34, this.fitText(ctx, Hero.name || 'Nekromancer', nw - 30), () => {
+    ctx.fillText('NAME YOUR NEKROMANCER', ncx, ny);
+    const nw = Math.min(320, W * (wide ? 0.5 : 0.72));
+    UI.btn(ctx, ncx - nw / 2, ny + 10, nw, 34, this.fitText(ctx, Hero.name || 'Nekromancer', nw - 30), () => {
       let q = null;
       try { q = window.prompt('Name your Nekromancer (letters only, max 12):', Hero.name || ''); } catch (e) { /* blocked */ }
       // Letters only, no spaces/numbers/specials, max 12 (owner rules).
       if (q !== null) { const t2 = q.replace(/[^A-Za-z]/g, '').slice(0, 12); Hero.name = t2 || 'Nekromancer'; }
     }, { size: 14, border: '#6b5f80', color: '#e8e0cc' });
     // CREATE on the ADVANCED plate — straight to New Haven (owner rule).
-    UI.btnPlate3(ctx, cx - nw / 2, ny + 54, nw, 40, 'CREATE', () => {
+    UI.btnPlate3(ctx, ncx - nw / 2, ny + 54, nw, 40, 'CREATE', () => {
       if (!Hero.name) Hero.name = 'Nekromancer';
       if (!Hero.eyeColor) Hero.eyeColor = '#6ff7c3';
       Hero.save();
