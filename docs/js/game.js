@@ -433,6 +433,14 @@ const Game = {
     }
     // Painted potions (health + essence flasks) — both HUD layouts use them.
     this.hudImg('potion_health'); this.hudImg('potion_essence');
+    // World props + vendor wagons (owner art v1.7.34) — warm so maps don't pop in.
+    for (const k of ['chest', 'crate', 'cauldron', 'cart', 'bookshelf', 'chair', 'table', 'pillar',
+      'pine1', 'pine2', 'pine3', 'palm1', 'palm2', 'cactus1', 'cactus2',
+      'deadtree1', 'deadtree2', 'deadtree3', 'bush1', 'bush2', 'bush3', 'bush4',
+      'rock1', 'rock2', 'rock3', 'rock4', 'rock5', 'rock6',
+      'rockbig1', 'rockbig2', 'rockbig3', 'rockbig4', 'rocksm1', 'rocksm2', 'rocksm3', 'rocksm4', 'rocksm5', 'rocksm6'])
+      this.propImg(k);
+    for (const k of World.VENDOR_SPRITES || []) this.vendorImg(k);
   },
 
   buildTown() {
@@ -859,6 +867,32 @@ const Game = {
       this.matArt[key] = img;
     }
     return img;
+  },
+
+  // Painted WORLD PROPS (owner art v1.7.34 — docs/art/props/<key>.webp): trees,
+  // rocks, bushes, chest, crate, cauldron, cart, bookshelf, pillar. Lazy; the
+  // procedural prop stands in until the sprite arrives. Returns null until ready.
+  propArt: {},
+  propImg(key) {
+    let img = this.propArt[key];
+    if (!img) {
+      img = new Image();
+      img.src = 'art/props/' + key + '.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
+      this.propArt[key] = img;
+    }
+    return (img.complete && img.naturalWidth) ? img : null;
+  },
+
+  // Painted VENDOR WAGONS (owner art v1.7.34 — docs/art/vendors/<key>.webp).
+  vendorArt: {},
+  vendorImg(key) {
+    let img = this.vendorArt[key];
+    if (!img) {
+      img = new Image();
+      img.src = 'art/vendors/' + key + '.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
+      this.vendorArt[key] = img;
+    }
+    return (img.complete && img.naturalWidth) ? img : null;
   },
 
   // ---- UI-kit art (owner sheet, sliced offline): painted panel frame,

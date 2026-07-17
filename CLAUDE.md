@@ -496,6 +496,30 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.34 — PAINTED WORLD PROPS + MERCHANT WAGONS (owner art)**: the owner
+  shipped a prop sheet + 4 vendor-wagon paintings on black. Sliced via
+  scratchpad `splice_props.py` (connected-component label with `binary_closing`
+  to merge trunk+foliage/rock clusters, per-blob MASK-restricted alpha so
+  neighbours don't bleed) → `docs/art/props/*.webp` (38: chest, crate,
+  cauldron, cart, bookshelf, chair, table, pillar, pine1-3, palm1-2, cactus1-2,
+  deadtree1-3, bush1-4, rock1-6, rockbig1-4, rocksm1-6 — scroll-map & hedge
+  skipped per owner). Vendors via `splice_vendors.py` (feathered-MASK alpha so
+  dark wood stays OPAQUE; armor sheet is a 2×2 → cut top-left/bottom-left)
+  → `docs/art/vendors/{vendor_armor_m,vendor_armor_f,vendor_gem,vendor_weapon1,
+  vendor_weapon2}.webp`. ALL NEW files → no ART_V bump. **Wiring**:
+  `Game.propImg`/`Game.vendorImg` lazy loaders (+ preloadArt warms all).
+  `World.PROP_SPRITE` maps prop `type`→sprite variants (oak/pine→pine*,
+  palm→palm*, cactus→cactus*, tree→deadtree*, rock→rock*, pillar/obelisk→
+  pillar, bush→bush*); `blitPropSprite` (rocks scale by width·r, tall props by
+  `PROP_SPRITE_H`) runs at the TOP of `drawProp` (procedural fallback if the
+  sprite's unloaded). `drawObject` chest→`chest` sprite (warm glow kept),
+  vendor→random `VENDOR_SPRITES` wagon at 150px + floating TRADE label.
+  `drawBreakable` → `BREAKABLE_SPRITE` skins (chair/table/bookcase/cart/crate/
+  pot+urnB→cauldron); new **`crate`** breakable (wood/lumber) added to both
+  spawn pools. BIOMES gained `bush` in grass/forest/jungle/swamp props (not
+  arid); non-story default prop list livened to pine/oak/rock/bush/pillar/tomb/
+  tree. Biome-specific by construction (desert = cactus/rock, swamp = deadtree,
+  etc.).
 - **v1.7.33 — SHRINES STACK WITH THE FOUNTAIN + CHARACTER ACTIVE-SHRINES
   (owner)**: the WILD shrine (`Player.shrine`, now always **60s**) and the
   FOUNTAIN blessing (`Game.fountainBuff`, **600s**) are separate and STACK.
