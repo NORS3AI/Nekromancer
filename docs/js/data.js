@@ -672,13 +672,21 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.32-alpha';
+const GAME_VERSION = 'v1.7.33-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.33-alpha', date: '17 July 2026',
+    notes: [
+      'ACTIVE SHRINES — the Character sheet now lists your active shrine blessings (above Active Powers), including the Fountain, each with a live countdown',
+      'Shrines STACK — a shrine you find in the wild now stacks with the Fountain\'s blessing instead of overwriting it, so you can run both at once',
+      'Wild shrines last 60 seconds; the Fountain\'s blessing lasts 10 minutes'
+    ]
+  },
   {
     v: 'v1.7.32-alpha', date: '17 July 2026',
     notes: [

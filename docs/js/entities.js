@@ -78,10 +78,19 @@ class Player {
     this.baseMaxHp = 0;      // pre-buff max life, captured by Items.apply()
   }
 
+  // Is a given shrine buff active? A WILD shrine (Player.shrine, 60s) and the
+  // FOUNTAIN blessing (Game.fountainBuff, 10 min) STACK — either source counts
+  // (owner rule v1.7.33).
+  hasShrine(buff) {
+    if (this.shrine && this.shrine.buff === buff && this.shrine.t > 0) return true;
+    const fb = (typeof Game !== 'undefined') ? Game.fountainBuff : null;
+    return !!(fb && fb.buff === buff && fb.t > 0);
+  }
+
   // Effective damage multiplier including auras and shrines.
   power() {
     let m = this.dmgMult;
-    if (this.shrine && this.shrine.buff === 'frenzied') m *= 1.25;
+    if (this.hasShrine('frenzied')) m *= 1.25;
     if (Hero.hasPassive('spreadingMal')) {
       let cursed = 0;
       for (const e of Game.enemies) {
@@ -151,7 +160,7 @@ class Player {
       let moveMul = (this.speedBuffT > 0 ? 1.2 : 1);
       // FLEETFOOT (owner rule v1.7.1): the only thing allowed past the 25%
       // move cap — +100% speed while the blessing lasts.
-      if (this.shrine && this.shrine.buff === 'fleetfoot') moveMul *= (2 * 180) / this.speed;
+      if (this.hasShrine('fleetfoot')) moveMul *= (2 * 180) / this.speed;
       if (this.harvestT > 0) moveMul += 0.01 * this.harvestStacks;   // Bone Armor · Harvest
       if (Hero.rune('decrepify') === 'opportunist') {                 // +3% move per cursed foe
         let cursed = 0; for (const e of Game.enemies) if (!e.dead && e.curse) cursed++;
@@ -187,7 +196,7 @@ class Player {
       this.hp = Math.max(1, this.hp - this.maxHp * 0.05 * dt);
     }
     // The fountain's Empowered blessing doubles essence regeneration.
-    const eRegen = this.essenceRegen * (this.shrine && this.shrine.buff === 'empowered' ? 2 : 1);
+    const eRegen = this.essenceRegen * (this.hasShrine('empowered') ? 2 : 1);
     this.essence = clamp(this.essence + eRegen * dt, 0, this.maxEssence);
     if (Hero.cheats.essence) this.essence = this.maxEssence;
     this.shield = Math.max(0, this.shield - dt * 1.2);
@@ -306,7 +315,7 @@ class Player {
       return;
     }
     if (Hero.hasPassive('standAlone') && Game.minions.length === 0) dmg *= 0.75;
-    if (this.shrine && this.shrine.buff === 'blessed') dmg *= 0.75;
+    if (this.hasShrine('blessed')) dmg *= 0.75;
     if (this.boneArmorT > 0 && this.boneArmorDR > 0) dmg *= 1 - this.boneArmorDR;
     if (this.witherT > 0) dmg *= 0.60;    // Decrepify · Wither: +40% damage reduction
     if (this.potencyT > 0) dmg *= 0.75;   // Blood Rush · Potency: hardened armor after a teleport
@@ -498,10 +507,17 @@ class Player {
       ctx.lineWidth = 2.5;
       ctx.beginPath(); ctx.arc(this.x, this.y - 2, 38 + 4 * Math.sin(t), 0, TAU); ctx.stroke();
     }
-    if (this.shrine) {
+    // Shrine aura pip — a wild shrine and/or the fountain blessing (they stack).
+    {
       const cols = { empowered: '#4ecbe0', frenzied: '#ff8c5a', blessed: '#ffd76a', fortune: '#4ade80', fleetfoot: '#8fd0ff' };
-      ctx.fillStyle = cols[this.shrine.buff];
-      ctx.beginPath(); ctx.arc(this.x, this.y - 34, 3, 0, TAU); ctx.fill();
+      const active = [];
+      if (this.shrine && this.shrine.t > 0) active.push(this.shrine.buff);
+      const fb = (typeof Game !== 'undefined') ? Game.fountainBuff : null;
+      if (fb && fb.t > 0 && !active.includes(fb.buff)) active.push(fb.buff);
+      active.forEach((b, i) => {
+        ctx.fillStyle = cols[b] || '#8fd0ff';
+        ctx.beginPath(); ctx.arc(this.x + (i - (active.length - 1) / 2) * 8, this.y - 34, 3, 0, TAU); ctx.fill();
+      });
     }
   }
 

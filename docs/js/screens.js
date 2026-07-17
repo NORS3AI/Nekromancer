@@ -1898,11 +1898,11 @@ const Screens = {
         Hero.gold -= this.FOUNTAIN_COST;
         Hero.fountainTosses = (Hero.fountainTosses || 0) + 1;
         const buff = pick(['empowered', 'frenzied', 'blessed', 'fortune', 'fleetfoot']);
+        // The fountain blessing lives ONLY on Game.fountainBuff now — it applies
+        // via Player.hasShrine and STACKS with any wild shrine (owner rule
+        // v1.7.33), so it must NOT overwrite Player.shrine.
         Game.fountainBuff = { buff, t: 600 };
-        if (Game.player) {
-          Game.player.shrine = { buff, t: 600 };
-          if (buff === 'empowered') Game.player.essence = Game.player.maxEssence;
-        }
+        if (Game.player && buff === 'empowered') Game.player.essence = Game.player.maxEssence;
         Hero.save();
         AudioSys.sfx('shrine');
         UI.toast('The water stirs… ' + names[buff] + ' (10 min)', '#cfc8b8');
@@ -4804,14 +4804,6 @@ const Screens = {
     ly = line(lx, ly, 'Achievement points', achPoints().toLocaleString(), '#ffd76a');
     ly = line(lx, ly, 'Difficulty', DIFFICULTIES[Hero.difficulty].name);
     ly = line(lx, ly, 'Monsters slain', Hero.totalKills);
-    // The fountain's blessing, in plain words (owner rule — bone white).
-    if (Game.fountainBuff && Game.fountainBuff.t > 0) {
-      const fb = Game.fountainBuff;
-      ly = line(lx, ly, 'Fountain blessing',
-        Math.floor(fb.t / 60) + ':' + String(Math.floor(fb.t % 60)).padStart(2, '0') + ' left', '#cfc8b8');
-      ctx.textAlign = 'left'; ctx.font = 'italic ' + (10 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#cfc8b8';
-      ly = wrapText(ctx, FOUNTAIN_BUFFS[fb.buff], lx, ly, colW, 13 * k, 2) + 4 * k;
-    }
     if (!twoCol) ry = ly + 6; // stack columns on narrow screens
 
     // Reagents & holdings.
@@ -4830,6 +4822,32 @@ const Screens = {
     for (const [key, m] of Object.entries(MATERIALS)) matRow(key, m.name, Hero.mats[key] || 0, m.color);
     ry = line(rx, ry, 'Gems in pouch', Hero.gems.length, '#b06adf');
     ry = line(rx, ry, 'Bag', Hero.bagUsed() + ' / ' + Hero.BAG_SIZE);
+    ry += 6 * k;
+
+    // Active SHRINES — a WILD shrine (60s) and the FOUNTAIN blessing (10 min)
+    // both show here and STACK (owner rule v1.7.33). Above Active Powers.
+    ry = header(rx, ry, '— ACTIVE SHRINES —', '#6ff7c3');
+    {
+      const shrineNames = { fleetfoot: 'Fleetfoot', empowered: 'Empowered', frenzied: 'Frenzied', blessed: 'Blessed', fortune: 'Fortune' };
+      const fmtT = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+      const shrineRow = (glyph, buff, t, col) => {
+        ctx.textAlign = 'left'; ctx.font = '600 ' + (11 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = col;
+        ctx.fillText(this.fitText(ctx, glyph + ' ' + (shrineNames[buff] || buff), colW - 60 * k), rx, ry);
+        ctx.textAlign = 'right'; ctx.font = (10 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
+        ctx.fillText(fmtT(t) + ' left', rx + colW, ry);
+        ry += 15 * k;
+        ctx.textAlign = 'left'; ctx.font = 'italic ' + (10 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#cfc8b8';
+        ry = wrapText(ctx, FOUNTAIN_BUFFS[buff] || '', rx, ry, colW, 13 * k, 2) + 4 * k;
+      };
+      const pl = Game.player;
+      let anyShrine = false;
+      if (pl && pl.shrine && pl.shrine.t > 0) { shrineRow('◈ Shrine:', pl.shrine.buff, pl.shrine.t, '#6ff7c3'); anyShrine = true; }
+      if (Game.fountainBuff && Game.fountainBuff.t > 0) { shrineRow('⛲ Fountain:', Game.fountainBuff.buff, Game.fountainBuff.t, '#7fd8ff'); anyShrine = true; }
+      if (!anyShrine) {
+        ctx.textAlign = 'left'; ctx.font = (11 * k) + 'px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
+        ry = wrapText(ctx, 'None active — pray at a wild shrine (60s) or the New Haven fountain (10 min).', rx, ry, colW, 14 * k, 2) + 3 * k;
+      }
+    }
     ry += 6 * k;
 
     // Active POWERS — equipped legendary powers, Cube-extracted powers and live
