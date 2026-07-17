@@ -720,8 +720,10 @@ class Player {
     // driven by Game.time so they ALWAYS beat (owner rule), even standing.
     if (def.art && typeof Game !== 'undefined' && Game.wingImg) {
       const seq = def.seq, n = seq.length;
-      const f = (Game.time * 10) % n;           // 10 fade-steps a second
-      const i0 = Math.floor(f), k = f - i0;
+      const f = (Game.time * 3.2) % n;          // slow, flowy flap (owner rule)
+      const i0 = Math.floor(f), t = f - i0;
+      // smoothstep the blend so each frame eases in/out — no choppy linear pops
+      const k = t * t * (3 - 2 * t);
       const a = Game.wingImg(def.art, seq[i0]);
       const b = Game.wingImg(def.art, seq[(i0 + 1) % n]);
       if (a && b) {

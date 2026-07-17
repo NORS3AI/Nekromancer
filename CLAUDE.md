@@ -496,6 +496,34 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.27 — MENU-POLISH SWEEP (owner list, no art)**: (1) **Journal**:
+  `Screens.journal` panel title is just `📜 JOURNAL` (the "n / 14" counter
+  dropped); list inset `lx=px+26 lw=pw-52`, padded off the panel edges.
+  (2) **Skills**: title `SKILLS OF BELLMAHATH` (last stray "Rathma");
+  content inset `ipx=px+18 ipw=pw-36` — tabs, slots, CHOOSE SKILLS and the
+  passives footer all use ipx/ipw so nothing spans full width.
+  (3) **Inventory** (`invGrouped`): content column `pw=ppw-64` (was −40) for
+  real padding; rows don't reach the panel edge. (4) **Character ▸ Analysis**
+  (`analyze`): empty-skill-slot tip only counts slots whose `LOADOUT_CATS[i]`
+  category has a skill unlocked at `Hero.level` (via `SKILL_DATA.find(id)` —
+  it's an ARRAY, not id-keyed) and not already slotted — a level-1 no longer
+  reads "5 empty slots"; copy is "N empty skill slots you can still fill".
+  (5) **artisanHub** widened `pw 430→520` (artisan names never clip);
+  `fitText` room pw−90→−56; bench plates inset `pw*0.11` each side;
+  `artisanRow` CENTERED — the "FORGE/GEMCRAFT/ENCHANTING · LEVEL n/10" line
+  and a centered TRAIN plate beneath (returns y, reserve 52). (6) **Torches**:
+  reagents drawer gets `ty += 10` top padding so tokens clear the REAGENTS
+  plate. (7) **Wilds** (Waygate/Shroud): mode plates inset `pw*0.12` each
+  side. (8) **Settings**: panel `pw 560→660`; `keysTab` flavor is DESKTOP-ONLY
+  and dropped below the tab plates (`listTop py+132`), 2-col gap 16 so long
+  labels (TOWN PORTAL/ACHIEVEMENTS/MENU-BACK) don't clip; `savesTab`
+  Export/Import moved to `py+126` (below Save Hero's py+118) — no overlap,
+  rows start py+170. (9) **Achievements**: ladder row geometry scales with
+  `Settings.g.fontSize` (`fm`, rowH=40·fm, res/bw·fm), base fonts bumped
+  (name 12/desc 10/pts 10) so the setting enlarges rows instead of clipping.
+  (10) **Imp wings** (`entities.drawWings`): flap rate `Game.time*10 → *3.2`
+  with a smoothstep-eased cross-fade (`k=t·t·(3−2t)`) — slow and flowy.
+  BUILD 1.7.27, no ART_V bump.
 - **v1.7.26 — NEW DESKTOP HUD WITH SWIRLING GLOBES (owner art)**: desktop
   bottom-centered cluster rebuilt (`UI.layout` desktop branch):
   `[health globe] [potion] [skill bar] [essence globe]`, XP bar ON TOP of

@@ -672,13 +672,25 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.26-alpha';
+const GAME_VERSION = 'v1.7.27-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.27-alpha', date: '17 July 2026',
+    notes: [
+      'A SWEEP OF MENU FIXES (owner list) — the Journal is now just "Journal" (the "0 / 14" counter is gone), the Skills menu is "Skills of Bellmahath" (the last stray "Rathma"), and both — plus the Inventory — are padded off the panel edges so rows no longer span the full width',
+      'The Smithy, Jeweler and Enchantress menus are WIDER so the artisan\'s full name never clips; their bench plates (Salvage→Repair, Socket→Craft, Enchant→Themes) are inset off the edges, and the "Forge / Gemcraft / Enchanting Level" training line is centered',
+      'The Waygate and The Shroud mode plates (Campaign, The Ossuary and the rest) are inset too — no more full-width rows',
+      'Character ▸ Analysis no longer claims a low-level hero has "5 empty skill slots" — it only counts slots whose category actually has a skill unlocked at your level',
+      'Settings ▸ Keys reads cleanly again: the keyboard-controls note dropped below the tabs (desktop only) and the panel is wider so nothing clips; Settings ▸ Saves no longer overlaps Save Hero with the Export / Import buttons',
+      'Achievements text is larger and its rows grow with the font-size setting instead of clipping',
+      'The Imp Wings flap slowly and smoothly now — an eased cross-fade between frames instead of a choppy flicker'
+    ]
+  },
   {
     v: 'v1.7.26-alpha', date: '17 July 2026',
     notes: [
