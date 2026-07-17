@@ -496,6 +496,24 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.26 — NEW DESKTOP HUD WITH SWIRLING GLOBES (owner art)**: desktop
+  bottom-centered cluster rebuilt (`UI.layout` desktop branch):
+  `[health globe] [potion] [skill bar] [essence globe]`, XP bar ON TOP of
+  the skill bar (`xpBar.y = cy - s - 16`); cluster seated at
+  `cy = H - safe.bottom - 1.42·gr - 8` so the ring's skull spikes clear the
+  screen edge. Art in `docs/art/hud/` (loaded via `Game.hudImg`, warmed in
+  preloadArt on desktop only): `hud_ring_{red,blue}.webp` (ornate skull
+  ring, centre punched TRANSPARENT so the swirl shows — hole at frac x0.5
+  y0.44, r0.385·dw), `hud_bar.webp` (action-bar frame, sliced but not
+  drawn), `hud_xp_frame.webp` + `hud_xp_fill.webp` (purple texture),
+  `swirl_{red,blue}0..19.webp` (20-frame liquid vortices). `UI.drawGlobe`
+  → dark empty glass + `drawSwirl` (cross-fade consecutive frames at 10fps
+  over a `t·0.18` continuous rotation, clipped to the circle AND the
+  bottom-up fill rect) + ring on top + numeric label. `UI.drawXpBar` =
+  frame 3-slice + purple fill clipped to fraction; fraction = `Hero.xp/
+  XP_CURVE(level)` under 70, else `paragonXp/PARAGON_XP(paragon)` (full at
+  MAX_PARAGON). Health globe badge shows `R<paragon>` past 70. All new
+  files → no ART_V bump.
 - **v1.7.25 — DRAGGABLE SKULL SCROLLBAR + PATCH-NOTES-BY-DATE (owner
   art/rule)**: `UI.drawScrollbar(ctx, region, scrollY, scrollMax)` draws the
   owner's rail (`scroll_up`/`scroll_skull`/`scroll_down` .webp, sliced from

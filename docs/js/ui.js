@@ -316,23 +316,29 @@ const UI = {
     this.menuBtn = { x: W - 30 - safe.right, y: 26 + safe.top, r: 18 };
 
     if (this.desktop) {
-      // One centered cluster: [health globe] [1 2 3 4 + LMB/RMB] [essence globe] [potion].
-      const gr = this.globeR = Math.min(52, H * 0.11);
+      // NEW HUD (v1.7.26 owner art), bottom-centered:
+      //   [health globe] [potion] [ skill bar + XP bar on top ] [essence globe]
+      const gr = this.globeR = Math.min(56, H * 0.12);
       const s = 26, gap = 12, potR = 24;
       const order = [0, 2, 3, 4, 5, 1]; // LMB · 1 · 2 · 3 · 4 · RMB
       const barW = order.length * s * 2 + (order.length - 1) * gap;
-      const groupW = 2 * gr + gap + barW + gap + 2 * gr + gap + 2 * potR;
-      const cy = H - 20 - gr - safe.bottom;
+      const groupW = 2 * gr + gap + 2 * potR + gap + barW + gap + 2 * gr;
+      // The ring art overhangs the globe circle (skull spikes ~1.4×R below),
+      // so seat the cluster high enough that the bottom spikes stay on-screen.
+      const cy = H - safe.bottom - Math.ceil(1.42 * gr) - 8;
       let x = W / 2 - groupW / 2;
       this.hpGlobe = { x: x + gr, y: cy, r: gr }; x += 2 * gr + gap;
+      this.potionBtn = { x: x + potR, y: cy, r: potR }; x += 2 * potR + gap;
+      const barX = x;
       order.forEach((slot, i) => {
         this.buttons.push({ x: x + s + i * (s * 2 + gap), y: cy, r: s, slot });
       });
       x += barW + gap;
-      this.essGlobe = { x: x + gr, y: cy, r: gr }; x += 2 * gr + gap;
-      this.potionBtn = { x: x + potR, y: cy, r: potR };
+      this.essGlobe = { x: x + gr, y: cy, r: gr };
+      // Town-portal button stacks above the potion.
       this.portalHudBtn = { x: this.potionBtn.x, y: cy - 2 * potR - 22, r: potR };
-      this.xpBar = { x: this.hpGlobe.x - gr, w: (this.potionBtn.x + potR) - (this.hpGlobe.x - gr), y: H - 8 - safe.bottom };
+      // XP bar rides ON TOP of the skill bar, spanning its width.
+      this.xpBar = { x: barX - s, w: barW + 2 * s, y: cy - s - 16 };
       return;
     }
 
@@ -580,8 +586,23 @@ const UI = {
     const hg = this.hpGlobe, eg = this.essGlobe;
     const hpF = clamp((p.hpDisplay === undefined ? p.hp : p.hpDisplay) / p.maxHp, 0, 1);
     const esF = clamp((p.essDisplay === undefined ? p.essence : p.essDisplay) / p.maxEssence, 0, 1);
-    this.drawGlobe(ctx, hg, hpF, '#4a0c14', '#e0402f', Math.ceil(Math.max(0, p.hp)), 'globe_red');
-    this.drawGlobe(ctx, eg, esF, '#0d2e38', '#4ecbe0', Math.floor(p.essence), 'globe_blue');
+
+    // The experience / renown bar rides ON TOP of the skill bar (owner art).
+    const xb = this.xpBar;
+    if (xb && xb.w > 40) {
+      let xf;
+      if (Hero.level < (typeof MAX_LEVEL !== 'undefined' ? MAX_LEVEL : 70)) {
+        xf = clamp(Hero.xp / XP_CURVE(Hero.level), 0, 1);
+      } else if ((Hero.paragon || 0) >= (typeof MAX_PARAGON !== 'undefined' ? MAX_PARAGON : 3500)) {
+        xf = 1;   // max Renown — the bar stays full
+      } else {
+        xf = clamp((Hero.paragonXp || 0) / PARAGON_XP(Hero.paragon || 0), 0, 1);
+      }
+      this.drawXpBar(ctx, xb, xf);
+    }
+
+    this.drawGlobe(ctx, hg, hpF, 'red', Math.ceil(Math.max(0, p.hp)));
+    this.drawGlobe(ctx, eg, esF, 'blue', Math.floor(p.essence));
 
     // Shield ripple over the health globe.
     if (p.shield > 0) {
@@ -593,27 +614,53 @@ const UI = {
       ctx.stroke();
     }
 
-    // Level badge on the health globe.
+    // Level (or Renown) badge on the health globe.
+    const badge = Hero.level >= (typeof MAX_LEVEL !== 'undefined' ? MAX_LEVEL : 70) && Hero.paragon
+      ? 'R' + Hero.paragon : String(Hero.level);
     ctx.fillStyle = '#ffd76a';
-    ctx.font = 'bold 15px Georgia';
+    ctx.font = 'bold 14px Georgia';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-    ctx.strokeText(Hero.level, hg.x, hg.y - hg.r * 0.42);
-    ctx.fillText(Hero.level, hg.x, hg.y - hg.r * 0.42);
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+    ctx.strokeText(badge, hg.x, hg.y - hg.r * 0.46);
+    ctx.fillText(badge, hg.x, hg.y - hg.r * 0.46);
 
     // Gold above the essence globe.
     ctx.fillStyle = '#ffd76a';
     ctx.font = 'bold 12px Georgia';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(Hero.gold + ' g', eg.x, eg.y - eg.r - 10);
+    ctx.fillText(Hero.gold + ' g', eg.x, eg.y - eg.r - 8);
+  },
 
-    // Experience bar under the whole cluster.
-    const xb = this.xpBar;
-    if (xb && xb.w > 40) {
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      rr(ctx, xb.x, xb.y - 6, xb.w, 6, 3); ctx.fill();
-      ctx.fillStyle = '#ffd76a';
-      rr(ctx, xb.x, xb.y - 6, xb.w * clamp(Hero.xp / XP_CURVE(Hero.level), 0, 1), 6, 3); ctx.fill();
+  // The XP / Renown bar: the owner's dark frame (3-slice) with the purple
+  // fill on top, clipped to the fraction (v1.7.26).
+  drawXpBar(ctx, xb, frac) {
+    const g = (typeof Game !== 'undefined' && Game.hudImg) ? Game.hudImg.bind(Game) : () => null;
+    const frame = g('hud_xp_frame'), fill = g('hud_xp_fill');
+    const h = 16, x = xb.x, y = xb.y - h / 2, w = xb.w;
+    // 1) the frame / track (3-slice: 1:1 ornate ends, stretched middle).
+    if (frame && frame.complete && frame.naturalWidth) {
+      const sc = frame.width, sch = frame.height, cap = Math.min(w * 0.1, h * (110 / sch));
+      ctx.drawImage(frame, 0, 0, 110, sch, x, y, cap, h);
+      ctx.drawImage(frame, 110, 0, sc - 220, sch, x + cap, y, w - 2 * cap, h);
+      ctx.drawImage(frame, sc - 110, 0, 110, sch, x + w - cap, y, cap, h);
+    } else {
+      ctx.fillStyle = 'rgba(4,3,7,0.88)'; rr(ctx, x, y, w, h, 4); ctx.fill();
+      ctx.strokeStyle = 'rgba(94,78,52,0.6)'; ctx.lineWidth = 1; rr(ctx, x, y, w, h, 4); ctx.stroke();
+    }
+    // 2) the purple fill on top, inside the frame's groove.
+    const inset = 4;
+    const fw = (w - 2 * inset) * clamp(frac, 0, 1);
+    if (fw > 1) {
+      ctx.save();
+      ctx.beginPath(); rr(ctx, x + inset, y + inset, fw, h - 2 * inset, 2); ctx.clip();
+      if (fill && fill.complete && fill.naturalWidth) {
+        for (let tx = 0; tx < w; tx += fill.width) ctx.drawImage(fill, x + inset + tx, y, fill.width, h);
+      } else {
+        ctx.fillStyle = '#7a2ad0'; ctx.fillRect(x + inset, y + inset, fw, h - 2 * inset);
+      }
+      ctx.restore();
+      ctx.fillStyle = 'rgba(222,160,255,0.75)';
+      ctx.fillRect(x + inset + fw - 2, y + inset, 2, h - 2 * inset);
     }
   },
 
@@ -859,57 +906,65 @@ const UI = {
     ctx.drawImage(img, sw - cs, sh - cs, cs, cs, x + w - c, y + h - c, c, c);
   },
 
-  drawGlobe(ctx, g, frac, dark, bright, label, artKey) {
-    const img = (artKey && typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg(artKey) : null;
-    if (img) {
-      // The painted spiked globe: dim pass = empty glass, then the liquid
-      // revealed from the bottom by clipping the bright pass to the fill.
-      const s = (g.r * 2.35) / Math.max(img.width, img.height);
-      const dw = img.width * s, dh = img.height * s;
-      ctx.save();
-      ctx.globalAlpha = 0.32;
-      ctx.drawImage(img, g.x - dw / 2, g.y - dh / 2, dw, dh);
-      ctx.globalAlpha = 1;
-      const top = g.y + g.r - 2 * g.r * frac;
-      ctx.beginPath();
-      ctx.rect(g.x - dw / 2, top, dw, g.y + dh / 2 + 2 - top);
-      ctx.clip();
-      ctx.drawImage(img, g.x - dw / 2, g.y - dh / 2, dw, dh);
-      ctx.restore();
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 14px Georgia';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-      ctx.strokeText(label, g.x, g.y + g.r * 0.4);
-      ctx.fillText(label, g.x, g.y + g.r * 0.4);
-      return;
+  // A globe (v1.7.26 owner art): SWIRLING liquid (animated frames, filled to
+  // the fraction from the bottom) inside the ornate skull ring frame.
+  drawGlobe(ctx, g, frac, kind, label) {
+    const R = g.r, gx = g.x, gy = g.y;
+    const g2 = (typeof Game !== 'undefined' && Game.hudImg) ? Game.hudImg.bind(Game) : () => null;
+    const ring = g2('hud_ring_' + kind);
+    // 1) empty dark glass in the hole, then the swirling liquid to the fill.
+    ctx.save();
+    ctx.beginPath(); ctx.arc(gx, gy, R, 0, TAU); ctx.clip();
+    ctx.fillStyle = kind === 'red' ? '#0b0304' : '#030b12';
+    ctx.fillRect(gx - R, gy - R, 2 * R, 2 * R);
+    const top = gy + R - 2 * R * clamp(frac, 0, 1);
+    ctx.beginPath(); ctx.rect(gx - R, top, 2 * R, gy + R - top); ctx.clip();
+    this.drawSwirl(ctx, kind, gx, gy, R);
+    // a bright meniscus line at the liquid surface
+    if (frac > 0.02 && frac < 0.99) {
+      ctx.fillStyle = kind === 'red' ? 'rgba(255,120,110,0.5)' : 'rgba(150,210,255,0.5)';
+      ctx.fillRect(gx - R, top, 2 * R, 2);
     }
-    ctx.save();
-    ctx.beginPath(); ctx.arc(g.x, g.y, g.r, 0, TAU);
-    ctx.fillStyle = '#0a070c'; ctx.fill();
-    // Liquid fills from the bottom.
-    ctx.save();
-    ctx.beginPath(); ctx.arc(g.x, g.y, g.r - 3, 0, TAU); ctx.clip();
-    const top = g.y + g.r - 2 * g.r * frac;
-    const grad = ctx.createLinearGradient(0, g.y - g.r, 0, g.y + g.r);
-    grad.addColorStop(0, bright); grad.addColorStop(1, dark);
-    ctx.fillStyle = grad;
-    ctx.fillRect(g.x - g.r, top, g.r * 2, g.r * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.18)';
-    ctx.fillRect(g.x - g.r, top, g.r * 2, 3);
     ctx.restore();
-    // Rim + glass highlight.
-    ctx.strokeStyle = '#5c5569'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(g.x, g.y, g.r, 0, TAU); ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(g.x, g.y, g.r * 0.62, Math.PI * 1.05, Math.PI * 1.55); ctx.stroke();
-    ctx.restore();
+    // 2) the ornate ring on top (its centre is transparent).
+    if (ring && ring.complete && ring.naturalWidth) {
+      const holeRf = 0.385, cxf = 0.5, cyf = 0.44;
+      const dw = R / holeRf, dh = dw * (ring.height / ring.width);
+      ctx.drawImage(ring, gx - cxf * dw, gy - cyf * dh, dw, dh);
+    } else {
+      ctx.strokeStyle = '#5c5569'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(gx, gy, R, 0, TAU); ctx.stroke();
+    }
+    // 3) the numeric label low in the globe.
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 14px Georgia';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-    ctx.strokeText(label, g.x, g.y + g.r * 0.4);
-    ctx.fillText(label, g.x, g.y + g.r * 0.4);
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+    ctx.strokeText(label, gx, gy + R * 0.4);
+    ctx.fillText(label, gx, gy + R * 0.4);
+  },
+
+  // The swirling liquid: 20 painted frames cross-faded, over a slow continuous
+  // rotation — flows and loops (owner rule: "epic to watch"). Clip to the
+  // globe circle before calling.
+  drawSwirl(ctx, kind, gx, gy, R) {
+    const N = 20, t = (typeof Game !== 'undefined' ? Game.time : 0);
+    const f = (t * 10) % N;              // ~10 frames a second
+    const i0 = Math.floor(f), k = f - i0;
+    const g2 = (typeof Game !== 'undefined' && Game.hudImg) ? Game.hudImg.bind(Game) : () => null;
+    const a = g2('swirl_' + kind + i0), b = g2('swirl_' + kind + ((i0 + 1) % N));
+    if (!a && !b) {   // art not loaded — a plain tinted fill stands in
+      ctx.fillStyle = kind === 'red' ? '#c0202a' : '#2a6ad0';
+      ctx.fillRect(gx - R, gy - R, 2 * R, 2 * R);
+      return;
+    }
+    const d = 2 * R * 1.04;
+    ctx.save();
+    ctx.translate(gx, gy); ctx.rotate(t * 0.18);   // slow, continuous swirl
+    if (a && a.complete && a.naturalWidth) { ctx.globalAlpha = 1 - k; ctx.drawImage(a, -d / 2, -d / 2, d, d); }
+    if (b && b.complete && b.naturalWidth) { ctx.globalAlpha = k; ctx.drawImage(b, -d / 2, -d / 2, d, d); }
+    ctx.restore();
+    ctx.globalAlpha = 1;
   },
 
   drawTopBar(ctx, W, H, p) {
