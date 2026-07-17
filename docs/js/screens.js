@@ -1549,7 +1549,8 @@ const Screens = {
     // ---- LEFT: the category sidebar (accordion; slimmer on phones) ----
     const sw = Math.max(W < 480 ? 112 : 136, Math.min(210, Math.round(pw * 0.31)));
     const showCnt = sw >= 130;   // per-sub earned counts need the room
-    const sx = px + 12;
+    // Indented off the panel's left edge (owner rule — it clung to the wall).
+    const sx = px + 24;
     const sScroll = clamp(UI.sel.scrollY2 || 0, 0, UI.sel.scrollMax2 || 0);
     UI.sel.scrollY2 = sScroll;
     UI.sel.scrollRegion2 = { x: sx - 6, y: listTop - 4, w: sw + 10, h: viewH + 8 };
@@ -1617,8 +1618,10 @@ const Screens = {
     let sel = null;
     for (const cat of idx) for (const s2 of cat.subs) if (s2.key === UI.sel.achSub) sel = s2;
     if (!sel) sel = idx[0].subs[0];
-    // Room for the scrollbar on the right (owner rule v1.7.16).
-    const lx = dx + 12, lw = px + pw - 26 - lx;
+    // A reserved right-hand gutter for the skull scrollbar so the rows and the
+    // points text never clip under it (owner rule v1.7.29).
+    const ACH_GUT = 32;
+    const lx = dx + 12, lw = (px + pw - 14) - lx - ACH_GUT;
     // Three-way filter chip: show all · hide earned · hide unearned.
     const FILTERS = [['all', 'SHOW ALL'], ['unearned', 'HIDE EARNED'], ['earned', 'HIDE UNEARNED']];
     const fi = Math.max(0, FILTERS.findIndex(f => f[0] === (UI.sel.achFilter || 'all')));
@@ -1634,7 +1637,8 @@ const Screens = {
 
     const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
     UI.sel.scrollY = scrollY;
-    UI.sel.scrollRegion = { x: lx - 4, y: rowsTop - 4, w: lw + 8, h: rowsH + 8 };
+    // Region extends into the reserved gutter so the scrollbar sits clear of the rows.
+    UI.sel.scrollRegion = { x: lx - 4, y: rowsTop - 4, w: lw + 4 + ACH_GUT, h: rowsH + 8 };
     // Row geometry scales with the global font size (owner rule — the setting
     // must actually enlarge the achievement rows, not just clip the text).
     const fm = Math.max(1, (((typeof Settings !== 'undefined' && Settings.g && Settings.g.fontSize) || 13) / 13));
@@ -2969,10 +2973,12 @@ const Screens = {
     const ppb = H - 10;
     UI.panel(ctx, ppx, ppy, ppw, ppb - ppy,
       'INVENTORY — ' + Hero.bagUsed() + ' / ' + Hero.BAG_SIZE);
-    // Content column padded well off the panel edges (owner rule — rows don't
-    // span the full width).
-    const pw = ppw - 64;
-    const px = W / 2 - pw / 2;
+    // Content column padded well off the panel edges AND a right-hand gutter
+    // reserved for the skull scrollbar so rows never clip under it (owner rule
+    // v1.7.29 — nothing spans the full width).
+    const SB_GUT = 30;
+    const px = ppx + 24;
+    const pw = ppw - 48 - SB_GUT;
     let y = ppy + 52;
 
     // Bag expansion (same as the wheel's).
@@ -3019,9 +3025,11 @@ const Screens = {
     const listTop = y, viewBot = ppb - 14, viewH = Math.max(60, viewBot - listTop);
     const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
     UI.sel.scrollY = scrollY;
-    UI.sel.scrollRegion = { x: px - 4, y: listTop - 4, w: pw + 8, h: viewH + 8 };
+    // The scroll region extends into the reserved right gutter so the skull
+    // scrollbar draws THERE, clear of the rows (which end at px+pw).
+    UI.sel.scrollRegion = { x: px - 4, y: listTop - 4, w: pw + 4 + SB_GUT, h: viewH + 8 };
     ctx.save();
-    ctx.beginPath(); ctx.rect(px - 4, listTop - 4, pw + 8, viewH + 8); ctx.clip();
+    ctx.beginPath(); ctx.rect(px - 4, listTop - 4, pw + 4 + SB_GUT, viewH + 8); ctx.clip();
     let c = listTop;
     const vis = (top, h) => (top - scrollY + h > listTop) && (top - scrollY < viewBot);
 
@@ -6598,6 +6606,15 @@ const Screens = {
       });
     }
     y += 34;
+
+    // ---- DISPLAY ----
+    section('Display');
+    check('Desktop HUD on tablet (auto-shrinks to fit)', !!(Settings.g && Settings.g.forceDesktopHud), () => {
+      Settings.g.forceDesktopHud = !Settings.g.forceDesktopHud;
+      Settings.save();
+      UI.layout(Game.W, Game.H);   // re-fit the HUD immediately
+      UI.toast(Settings.g.forceDesktopHud ? 'Desktop HUD ON (tablet)' : 'Desktop HUD OFF', '#8fd0ff');
+    });
 
     // ---- CHARACTER ----
     const paraOpt = { color: '#ffb86a', border: '#8a6f2a' };
