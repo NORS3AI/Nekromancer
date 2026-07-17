@@ -672,13 +672,21 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.25-alpha';
+const GAME_VERSION = 'v1.7.26-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.26-alpha', date: '17 July 2026',
+    notes: [
+      'A NEW DESKTOP HUD (owner art) — the health globe sits bottom-left, the essence globe bottom-right, the skill bar centered with the experience bar riding on top of it, and the potion between the health globe and the skill bar',
+      'THE GLOBES SWIRL — the red life and blue essence are living vortices now: twenty painted frames cross-fade over a slow rotation, so the liquid flows and churns endlessly inside the ornate skull rings, rising and falling with your health and essence',
+      'The experience bar fills with the owner\'s purple as you earn XP, empties on level-up, and does the same for RENOWN past 70 — staying full once you reach max Renown'
+    ]
+  },
   {
     v: 'v1.7.25-alpha', date: '17 July 2026',
     notes: [

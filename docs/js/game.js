@@ -424,6 +424,11 @@ const Game = {
     }
     if (typeof Screens !== 'undefined' && Screens.preloadShops) Screens.preloadShops();
     if (typeof World !== 'undefined' && World.loadTiles) World.loadTiles();
+    // Desktop HUD art (globe rings, bars, and the swirling liquid frames).
+    if (!Input.touchMode) {
+      for (const k of ['hud_ring_red', 'hud_ring_blue', 'hud_bar', 'hud_xp_frame', 'hud_xp_fill']) this.hudImg(k);
+      for (let i = 0; i < 20; i++) { this.hudImg('swirl_red' + i); this.hudImg('swirl_blue' + i); }
+    }
   },
 
   buildTown() {
@@ -853,6 +858,19 @@ const Game = {
       img = new Image();
       img.src = 'art/ui/' + key + '.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
       this.uiArt[key] = img;
+    }
+    return (img.complete && img.naturalWidth) ? img : null;
+  },
+
+  // Desktop HUD art (v1.7.26 owner art — docs/art/hud/): globe rings, the
+  // action-bar frame, the XP frame/fill and the swirling liquid frames.
+  hudArt: {},
+  hudImg(key) {
+    let img = this.hudArt[key];
+    if (!img) {
+      img = new Image();
+      img.src = 'art/hud/' + key + '.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
+      this.hudArt[key] = img;
     }
     return (img.complete && img.naturalWidth) ? img : null;
   },
