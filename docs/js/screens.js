@@ -4537,7 +4537,16 @@ const Screens = {
     ctx.fillStyle = '#9a9080';
     ctx.fillText((it.enchants || 0) + ' enchant' + (it.enchants === 1 ? '' : 's') + ' so far', px + pw - 16, 102);
 
-    const shortAffix = { dmg: 'Damage', hp: 'Life', crit: 'Crit', ess: 'Essence', reg: 'Life regen', gold: 'Gold find', armor: 'Armor', move: 'Move speed' };
+    // Display names for every rerollable affix (owner fix v1.7.31 — the group
+    // pools carry more keys than this map used to, so several showed "undefined").
+    const shortAffix = {
+      dmg: 'Damage', hp: 'Life', crit: 'Crit', ess: 'Essence', reg: 'Life regen',
+      gold: 'Gold find', armor: 'Armor', move: 'Move speed',
+      int: 'Intelligence', vit: 'Vitality', atkSpeed: 'Attack speed',
+      critDmg: 'Crit damage', cdr: 'Cooldown reduction', elem: 'Elemental damage',
+      lph: 'Life per hit', rcr: 'Resource cost reduction'
+    };
+    const affixName = k => shortAffix[k] || (AFFIX_ROLLS[k] && AFFIX_ROLLS[k].name) || k;
     if (UI.sel.affix && !affixGroup(UI.sel.affix)) UI.sel.affix = null;   // signatures unselectable
     const cost = Items.enchantCost(it);
     const afford = Items.canAfford(cost);
@@ -4610,7 +4619,7 @@ const Screens = {
           ctx.textAlign = 'left';
           ctx.font = '11px Cinzel, Georgia';
           ctx.fillStyle = o.current ? '#d8b4f0' : '#b5ab94';
-          ctx.fillText('•  ' + shortAffix[o.key] + (o.current ? '  (new value)' : ''), px + 24, yy + 4);
+          ctx.fillText('•  ' + affixName(o.key) + (o.current ? '  (new value)' : ''), px + 24, yy + 4);
           ctx.textAlign = 'right';
           ctx.fillStyle = '#6a8a5a';
           ctx.fillText(Math.round(o.chance * 100) + '%', px + pw - 24, yy + 4);
@@ -5279,6 +5288,9 @@ const Screens = {
     ctx.save();
     ctx.beginPath(); ctx.rect(lx - 6, listTop - 4, lw + 12, viewH + 8); ctx.clip();
     let c = listTop;
+    // Reserve a right gutter for the skull scrollbar so the row plates (DROP /
+    // TURN IN / ACCEPT) never sit under it (owner fix v1.7.31).
+    const cw = lw - 26;
     const vis = (top, hh) => (top - scrollY + hh > listTop) && (top - scrollY < viewBot);
 
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
@@ -5299,18 +5311,18 @@ const Screens = {
       // Roomier rows (v1.6.98 owner rule — "so it doesn't look so squished").
       if (vis(c, 54)) {
         ctx.fillStyle = expanded ? 'rgba(46,42,58,0.8)' : 'rgba(28,24,38,0.6)';
-        rr(ctx, lx - 4, yy, lw + 8, 50, 6); ctx.fill();
+        rr(ctx, lx - 4, yy, cw + 8, 50, 6); ctx.fill();
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
         ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = milestone ? '#b06adf' : '#e8e0cc';
-        ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name, lw - 108), lx + 4, yy + 16);
-        UI.bar(ctx, lx + 4, yy + 25, lw - 112, 9, qp.prog / def.need, '#221d2e', qp.done ? '#4ade80' : '#8a6f2a');
+        ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name, cw - 108), lx + 4, yy + 16);
+        UI.bar(ctx, lx + 4, yy + 25, cw - 112, 9, qp.prog / def.need, '#221d2e', qp.done ? '#4ade80' : '#8a6f2a');
         ctx.font = '8px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
         ctx.fillText(qp.prog + ' / ' + def.need + '  ·  tap for details', lx + 4, yy + 45);
         // Tap the row body (left of the buttons) for full details + reward.
-        UI.register(lx - 4, yy, lw - 102, 50, () => { UI.sel.qInfo = expanded ? null : entry.idx; });
+        UI.register(lx - 4, yy, cw - 102, 50, () => { UI.sel.qInfo = expanded ? null : entry.idx; });
         if (qp.done) {
           // Turn in right from the journal row.
-          UI.btn(ctx, lx + lw - 94, yy + 8, 90, 34, '✔ TURN IN', () => {
+          UI.btn(ctx, lx + cw - 94, yy + 8, 90, 34, '✔ TURN IN', () => {
             const rw = Hero.completeQuest(entry);
             if (!rw) return;
             if (rw.gemGot) UI.toast('Lukus presses a gem into your hand: ' + gemName(rw.gemGot), GEM_TYPES[rw.gemGot.type].color);
@@ -5320,7 +5332,7 @@ const Screens = {
         } else if (!def.abs) {
           // Dropping returns the quest to Lukus's queue — nothing is lost.
           // The little empty plate carries DROP (v1.6.98 owner rule).
-          UI.chip(ctx, lx + lw - 56, yy + 13, 52, 24, 'DROP', () => {
+          UI.chip(ctx, lx + cw - 56, yy + 13, 52, 24, 'DROP', () => {
             Hero.abandonQuest(entry);
             UI.toast('Returned to Lukus: ' + def.name, '#9a9080');
           }, { size: 9, color: '#c98a8a' });
@@ -5334,12 +5346,12 @@ const Screens = {
         const ey = c - scrollY;
         if (vis(c, eh)) {
           ctx.fillStyle = 'rgba(18,14,26,0.85)';
-          rr(ctx, lx - 4, ey - 4, lw + 8, eh - 4, 6); ctx.fill();
+          rr(ctx, lx - 4, ey - 4, cw + 8, eh - 4, 6); ctx.fill();
           ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
           ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
-          wrapText(ctx, def.desc, lx + 4, ey + 10, lw - 8, 13, 2);
+          wrapText(ctx, def.desc, lx + 4, ey + 10, cw - 8, 13, 2);
           ctx.font = 'bold 9px Cinzel, Georgia'; ctx.fillStyle = '#ffd76a';
-          wrapText(ctx, 'REWARD:  ' + questRewardTextFor(entry, true), lx + 4, ey + 42, lw - 8, 11, 3);
+          wrapText(ctx, 'REWARD:  ' + questRewardTextFor(entry, true), lx + 4, ey + 42, cw - 8, 11, 3);
           ctx.font = 'italic 8px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
           ctx.fillText('Quest ' + (entry.idx + 1) + ' of ' + QUEST_COUNT + (milestone ? '  ·  ★ milestone' : ''), lx + 4, ey + 84);
         }
@@ -5350,7 +5362,7 @@ const Screens = {
     // Divider, then the next deed on offer.
     c += 4;
     ctx.strokeStyle = 'rgba(216,180,74,0.25)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(lx, c - scrollY); ctx.lineTo(lx + lw, c - scrollY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(lx, c - scrollY); ctx.lineTo(lx + cw, c - scrollY); ctx.stroke();
     c += 16;
 
     if (offerIdx >= 0) {
@@ -5364,27 +5376,27 @@ const Screens = {
       ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
       ctx.fillText('NEXT DEED', lx, c - scrollY + 6); c += 14;
       ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = milestone ? '#b06adf' : '#ffd76a';
-      ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name.toUpperCase(), lw), lx, c - scrollY + 10); c += 16;
+      ctx.fillText(this.fitText(ctx, (milestone ? '★ ' : '') + def.name.toUpperCase(), cw), lx, c - scrollY + 10); c += 16;
       ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
-      const dBot = wrapText(ctx, def.desc, lx, c - scrollY + 10, lw, 15, nr ? 3 : 2);
+      const dBot = wrapText(ctx, def.desc, lx, c - scrollY + 10, cw, 15, nr ? 3 : 2);
       c += (dBot - (c - scrollY + 10)) + 4;
       ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
       // Wrapped (2 lines) so the offer's reward can never run off the column.
-      const rBot = wrapText(ctx, rwText, lx, c - scrollY + 8, lw, 12, 2);
+      const rBot = wrapText(ctx, rwText, lx, c - scrollY + 8, cw, 12, 2);
       c += (rBot - (c - scrollY + 8)) + 8;
       if (vis(c, 44)) {
         if (full) {
-          UI.btn(ctx, lx, c - scrollY, lw, 40, 'JOURNAL FULL — ' + QUEST_JOURNAL_MAX + ' / ' + QUEST_JOURNAL_MAX,
+          UI.btn(ctx, lx, c - scrollY, cw, 40, 'JOURNAL FULL — ' + QUEST_JOURNAL_MAX + ' / ' + QUEST_JOURNAL_MAX,
             null, { size: 12, disabled: true, color: '#8a8070' });
         } else if (gateOk) {
-          UI.btnPlate2(ctx, lx, c - scrollY, lw, 40, 'ACCEPT QUEST', () => {
+          UI.btnPlate2(ctx, lx, c - scrollY, cw, 40, 'ACCEPT QUEST', () => {
             const acc = Hero.acceptQuest();
             if (acc) { UI.toast('Quest accepted: ' + acc.name, '#ffd76a'); AudioSys.sfx('gold'); }
           }, { size: 13, color: '#ffd76a' });
         } else {
           // Gated quests share ONE plate with live text (owner rule — no
           // thousand baked images, just "REQUIRES LEVEL X" on the plate).
-          UI.btnPlate(ctx, lx, c - scrollY, lw, 40,
+          UI.btnPlate(ctx, lx, c - scrollY, cw, 40,
             'REQUIRES ' + (def.gate.kind === 'level' ? 'LEVEL ' : 'RENOWN ') + def.gate.at,
             null, { size: 12, disabled: true });
         }
@@ -5506,6 +5518,9 @@ const Screens = {
     ctx.save();
     ctx.beginPath(); ctx.rect(lx - 6, listTop - 4, lw + 12, viewH + 8); ctx.clip();
     let c = listTop;
+    // Reserve a right gutter for the skull scrollbar so the row plates never
+    // sit under it (owner fix v1.7.31).
+    const cw = lw - 26;
     const vis = (top, hh) => (top - scrollY + hh > listTop) && (top - scrollY < viewBot);
 
     if (!lvl70) {
@@ -5519,15 +5534,15 @@ const Screens = {
       const dd = dailyDeed(st.date);
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
       ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
-      ctx.fillText(this.fitText(ctx, 'DAILY QUEST — "THE QUEEN\'S ERRAND"', lw), lx, c - scrollY + 8);
+      ctx.fillText(this.fitText(ctx, 'DAILY QUEST — "THE QUEEN\'S ERRAND"', cw), lx, c - scrollY + 8);
       c += 14;
       const dh = st.done ? 34 : st.base !== null ? 74 : 92;
       const dy2 = c - scrollY;
       if (vis(c, dh)) {
         ctx.fillStyle = 'rgba(46,30,54,0.75)';
-        rr(ctx, lx - 4, dy2, lw + 8, dh - 4, 6); ctx.fill();
+        rr(ctx, lx - 4, dy2, cw + 8, dh - 4, 6); ctx.fill();
         ctx.strokeStyle = 'rgba(200,106,223,0.45)'; ctx.lineWidth = 1;
-        rr(ctx, lx - 4, dy2, lw + 8, dh - 4, 6); ctx.stroke();
+        rr(ctx, lx - 4, dy2, cw + 8, dh - 4, 6); ctx.stroke();
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
         if (st.done) {
           ctx.font = 'italic 11px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
@@ -5536,14 +5551,14 @@ const Screens = {
           const prog = clamp(dd.counter() - st.base, 0, dd.need);
           const done = prog >= dd.need;
           ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = '#e8b3f2';
-          ctx.fillText(this.fitText(ctx, dd.desc, lw - 100), lx + 4, dy2 + 15);
-          UI.bar(ctx, lx + 4, dy2 + 22, lw - 106, 9, prog / dd.need, '#221d2e', done ? '#4ade80' : '#7a4a8f');
+          ctx.fillText(this.fitText(ctx, dd.desc, cw - 100), lx + 4, dy2 + 15);
+          UI.bar(ctx, lx + 4, dy2 + 22, cw - 106, 9, prog / dd.need, '#221d2e', done ? '#4ade80' : '#7a4a8f');
           ctx.font = '8px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
           ctx.fillText(prog + ' / ' + dd.need, lx + 4, dy2 + 41);
           ctx.font = 'italic 8px Cinzel, Georgia'; ctx.fillStyle = '#b08ab8';
-          ctx.fillText(this.fitText(ctx, 'Pays: a Marquise gem + a legendary (or better)', lw - 100), lx + 4, dy2 + 56);
+          ctx.fillText(this.fitText(ctx, 'Pays: a Marquise gem + a legendary (or better)', cw - 100), lx + 4, dy2 + 56);
           if (done) {
-            UI.btn(ctx, lx + lw - 94, dy2 + 6, 90, 34, '✔ COLLECT', () => {
+            UI.btn(ctx, lx + cw - 94, dy2 + 6, 90, 34, '✔ COLLECT', () => {
               const prize = Hero.completeDaily();
               if (!prize) return;
               UI.toast('The Queen pays: ' + gemName(prize.gem) + ' + ' + prize.item.name, RARITIES[prize.item.rarity].color);
@@ -5552,10 +5567,10 @@ const Screens = {
           }
         } else {
           ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = '#e8b3f2';
-          ctx.fillText(this.fitText(ctx, dd.desc, lw - 8), lx + 4, dy2 + 15);
+          ctx.fillText(this.fitText(ctx, dd.desc, cw - 8), lx + 4, dy2 + 15);
           ctx.font = 'italic 9px Cinzel, Georgia'; ctx.fillStyle = '#b08ab8';
-          wrapText(ctx, 'Pays: one random MARQUISE gem, plus a legendary — 90% plain, 6% 1–3★, 3% 4–5★, 1% ARTIFACT.', lx + 4, dy2 + 30, lw - 8, 12, 3);
-          UI.btnPlate3(ctx, lx, dy2 + 62, lw, 24, 'DAILY QUEST', () => {
+          wrapText(ctx, 'Pays: one random MARQUISE gem, plus a legendary — 90% plain, 6% 1–3★, 3% 4–5★, 1% ARTIFACT.', lx + 4, dy2 + 30, cw - 8, 12, 3);
+          UI.btnPlate3(ctx, lx, dy2 + 62, cw, 24, 'DAILY QUEST', () => {
             const acc = Hero.acceptDaily();
             if (acc) { UI.toast("The Queen's Errand: " + acc.desc, '#c86adf'); AudioSys.sfx('gold'); }
           }, { size: 11, color: '#c86adf' });
@@ -5581,16 +5596,16 @@ const Screens = {
         const yy = c - scrollY;
         if (vis(c, 54)) {
           ctx.fillStyle = expanded ? 'rgba(46,42,58,0.8)' : 'rgba(28,24,38,0.6)';
-          rr(ctx, lx - 4, yy, lw + 8, 50, 6); ctx.fill();
+          rr(ctx, lx - 4, yy, cw + 8, 50, 6); ctx.fill();
           ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
           ctx.font = 'bold 11px Cinzel, Georgia'; ctx.fillStyle = '#e8e0cc';
-          ctx.fillText(this.fitText(ctx, def.name, lw - 108), lx + 4, yy + 16);
-          UI.bar(ctx, lx + 4, yy + 25, lw - 112, 9, qp.prog / def.need, '#221d2e', qp.done ? '#4ade80' : '#7a4a8f');
+          ctx.fillText(this.fitText(ctx, def.name, cw - 108), lx + 4, yy + 16);
+          UI.bar(ctx, lx + 4, yy + 25, cw - 112, 9, qp.prog / def.need, '#221d2e', qp.done ? '#4ade80' : '#7a4a8f');
           ctx.font = '8px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
           ctx.fillText(qp.prog + ' / ' + def.need + '  ·  tap for details', lx + 4, yy + 45);
-          UI.register(lx - 4, yy, lw - 102, 50, () => { UI.sel.qInfo = expanded ? null : 'A' + entry.idx; });
+          UI.register(lx - 4, yy, cw - 102, 50, () => { UI.sel.qInfo = expanded ? null : 'A' + entry.idx; });
           if (qp.done) {
-            UI.btn(ctx, lx + lw - 94, yy + 8, 90, 34, '✔ TURN IN', () => {
+            UI.btn(ctx, lx + cw - 94, yy + 8, 90, 34, '✔ TURN IN', () => {
               const rw = Hero.completeQuest(entry);
               if (!rw) return;
               if (rw.gemGot) UI.toast('She flips you a gem: ' + gemName(rw.gemGot), GEM_TYPES[rw.gemGot.type].color);
@@ -5598,7 +5613,7 @@ const Screens = {
               AudioSys.sfx('level');
             }, { size: 10, border: '#3a7a4a', color: '#4ade80' });
           } else {
-            UI.chip(ctx, lx + lw - 56, yy + 13, 52, 24, 'DROP', () => {
+            UI.chip(ctx, lx + cw - 56, yy + 13, 52, 24, 'DROP', () => {
               Hero.abandonQuest(entry);
               UI.toast('Returned to Addy: ' + def.name, '#9a9080');
             }, { size: 9, color: '#c98a8a' });
@@ -5610,12 +5625,12 @@ const Screens = {
           const ey = c - scrollY;
           if (vis(c, eh)) {
             ctx.fillStyle = 'rgba(18,14,26,0.85)';
-            rr(ctx, lx - 4, ey - 4, lw + 8, eh - 4, 6); ctx.fill();
+            rr(ctx, lx - 4, ey - 4, cw + 8, eh - 4, 6); ctx.fill();
             ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
             ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
-            wrapText(ctx, def.desc, lx + 4, ey + 10, lw - 8, 13, 2);
+            wrapText(ctx, def.desc, lx + 4, ey + 10, cw - 8, 13, 2);
             ctx.font = 'bold 9px Cinzel, Georgia'; ctx.fillStyle = '#c86adf';
-            wrapText(ctx, 'REWARD:  ' + questRewardTextFor(entry, true), lx + 4, ey + 42, lw - 8, 11, 3);
+            wrapText(ctx, 'REWARD:  ' + questRewardTextFor(entry, true), lx + 4, ey + 42, cw - 8, 11, 3);
             ctx.font = 'italic 8px Cinzel, Georgia'; ctx.fillStyle = '#6f6552';
             ctx.fillText('Quest ' + (entry.idx + 1) + ' of ' + ADDY_QUEST_COUNT, lx + 4, ey + 84);
           }
@@ -5626,7 +5641,7 @@ const Screens = {
       // Divider + the next job on offer.
       c += 4;
       ctx.strokeStyle = 'rgba(200,106,223,0.25)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(lx, c - scrollY); ctx.lineTo(lx + lw, c - scrollY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(lx, c - scrollY); ctx.lineTo(lx + cw, c - scrollY); ctx.stroke();
       c += 16;
       if (offerIdx >= 0) {
         const def = ADDY_QUEST_LINE[offerIdx];
@@ -5635,19 +5650,19 @@ const Screens = {
         ctx.font = 'bold 10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
         ctx.fillText('NEXT QUEST', lx, c - scrollY + 6); c += 14;
         ctx.font = 'bold 13px Cinzel, Georgia'; ctx.fillStyle = '#c86adf';
-        ctx.fillText(this.fitText(ctx, def.name.toUpperCase(), lw), lx, c - scrollY + 10); c += 16;
+        ctx.fillText(this.fitText(ctx, def.name.toUpperCase(), cw), lx, c - scrollY + 10); c += 16;
         ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#b5ab94';
-        const dBot = wrapText(ctx, def.desc, lx, c - scrollY + 10, lw, 15, nr ? 3 : 2);
+        const dBot = wrapText(ctx, def.desc, lx, c - scrollY + 10, cw, 15, nr ? 3 : 2);
         c += (dBot - (c - scrollY + 10)) + 4;
         ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#9a9080';
-        const rBot = wrapText(ctx, 'Reward:  ' + questRewardTextSrc('A', offerIdx, true), lx, c - scrollY + 8, lw, 12, 2);
+        const rBot = wrapText(ctx, 'Reward:  ' + questRewardTextSrc('A', offerIdx, true), lx, c - scrollY + 8, cw, 12, 2);
         c += (rBot - (c - scrollY + 8)) + 8;
         if (vis(c, 44)) {
           if (full) {
-            UI.btn(ctx, lx, c - scrollY, lw, 40, 'JOURNAL FULL — ' + QUEST_JOURNAL_MAX + ' / ' + QUEST_JOURNAL_MAX,
+            UI.btn(ctx, lx, c - scrollY, cw, 40, 'JOURNAL FULL — ' + QUEST_JOURNAL_MAX + ' / ' + QUEST_JOURNAL_MAX,
               null, { size: 12, disabled: true, color: '#8a8070' });
           } else {
-            UI.btnPlate2(ctx, lx, c - scrollY, lw, 40, 'ACCEPT QUEST', () => {
+            UI.btnPlate2(ctx, lx, c - scrollY, cw, 40, 'ACCEPT QUEST', () => {
               const acc = Hero.acceptQuest('A');
               if (acc) { UI.toast('Quest accepted: ' + acc.name, '#c86adf'); AudioSys.sfx('gold'); }
             }, { size: 13, color: '#c86adf' });

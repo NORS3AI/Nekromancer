@@ -496,6 +496,17 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.31 — ENCHANT "UNDEFINED" + LUKUS/ADDY SCROLLBAR OVERLAP (owner)**:
+  (1) `mysEnchant` reroll-odds rows drew `shortAffix[key]` which only mapped
+  8 keys — the group pools carry int/vit/atkSpeed/critDmg/cdr/elem/lph/rcr, so
+  those showed "undefined". `shortAffix` now names all of them and a new
+  `affixName(k)` helper falls back to `AFFIX_ROLLS[k].name || k` (never
+  "undefined"). (2) Lukus & Addy dialogs: the scrolled quest column used the
+  full `lw`, so DROP/TURN IN/ACCEPT/COLLECT/DAILY plates sat under the skull
+  scrollbar (region right `lx+lw+6`, bar at `lx+lw-17`). Both now compute
+  `cw = lw - 26` inside the scroll and route every row rect, bar, button,
+  divider and next-deed plate through `cw`, reserving the gutter (header/
+  greeting/ledger above the scroll keep `lw`). No art change.
 - **v1.7.30 — SKILL-BUTTON FRAMES DON'T CLIP (owner)**: the touch action-bar
   slots' ornate `UI.circleFrame` rings overlapped each other on tablets/phones
   (frame drawn at `2.35·r`, wider than the ~0.565·R arc spacing). `circleFrame`
