@@ -496,6 +496,19 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.33 — SHRINES STACK WITH THE FOUNTAIN + CHARACTER ACTIVE-SHRINES
+  (owner)**: the WILD shrine (`Player.shrine`, now always **60s**) and the
+  FOUNTAIN blessing (`Game.fountainBuff`, **600s**) are separate and STACK.
+  New `Player.hasShrine(buff)` checks BOTH sources; every effect switched to
+  it (`power` frenzied, `Player.update` fleetfoot move, essence-regen
+  empowered, `hurt` blessed, `Game.update` fortune goldFind), and the aura pip
+  draws one dot per active source. `startLand` no longer copies the fountain
+  onto `Player.shrine` (it applies via hasShrine), and the fountain toss sets
+  ONLY `Game.fountainBuff` (was overwriting `Player.shrine`). Character sheet:
+  a new **— ACTIVE SHRINES —** section ABOVE Active Powers lists the wild
+  shrine (◈) and the fountain (⛲) with `m:ss` countdowns and plain-words
+  descriptions (`FOUNTAIN_BUFFS`); the old JOURNEY "Fountain blessing" line is
+  gone. No art change.
 - **v1.7.32 — REAGENT ICONS + QUEST REORDER + PORTAL GATING + SOCKET GLOW
   (owner)**: (1) **REAGENT ICONS**: owner sheet (7 icons on black) spliced via
   scratchpad `reagents.py` (connected-component label, luminance-feather alpha,

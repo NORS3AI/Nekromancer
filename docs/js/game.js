@@ -1265,9 +1265,9 @@ const Game = {
     this.player = new Player(World.spawn.x, World.spawn.y);
     Items.apply();
     this.player.hp = this.player.maxHp;
-    // The fountain's blessing follows the hero into the wilds.
-    if (this.fountainBuff && this.fountainBuff.t > 0)
-      this.player.shrine = { buff: this.fountainBuff.buff, t: this.fountainBuff.t };
+    // The fountain's blessing follows the hero into the wilds automatically now
+    // (it lives on Game.fountainBuff and applies via Player.hasShrine, so it
+    // STACKS with any wild shrine instead of overwriting it — owner rule v1.7.33).
     this.camera.x = this.player.x - this.W / 2;
     this.camera.y = this.player.y - this.H / 2;
 
@@ -1877,8 +1877,9 @@ const Game = {
         Hero.shrinesTouched = (Hero.shrinesTouched || 0) + 1;
         AudioSys.sfx('shrine');
         const names = { empowered: 'Empowered: essence surges', frenzied: 'Frenzied: +25% damage', blessed: 'Blessed: -25% damage taken', fortune: 'Fortune: +100% gold find', fleetfoot: 'Fleetfoot: +100% move speed' };
-        // Fleetfoot burns bright and brief on a map (owner rule: 30s).
-        p.shrine = { buff: o.buff, t: o.buff === 'fleetfoot' ? 30 : 60 };
+        // Wild shrines last 60s and STACK with the fountain blessing (owner
+        // rule v1.7.33 — the fountain lives on Game.fountainBuff, not here).
+        p.shrine = { buff: o.buff, t: 60 };
         if (o.buff === 'empowered') p.essence = p.maxEssence;
         UI.toast(names[o.buff], '#6ff7c3');
         Particles.ring(o.x, o.y, 90, '#6ff7c3', 5, 0.6);
@@ -2227,7 +2228,7 @@ const Game = {
     const p = this.player;
     // Fortune shrine: temporary gold find boost.
     const baseGoldFind = p.goldFind;
-    if (p.shrine && p.shrine.buff === 'fortune') p.goldFind = baseGoldFind * 2;
+    if (p.hasShrine('fortune')) p.goldFind = baseGoldFind * 2;
 
     p.update(dt);
     this.updatePet(dt);
