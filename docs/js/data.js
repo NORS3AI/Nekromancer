@@ -672,13 +672,23 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.24-alpha';
+const GAME_VERSION = 'v1.7.25-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
-// GAME_VERSION) with EVERY addition and bug fix.
+// GAME_VERSION) with EVERY addition and bug fix. `date` reads as
+// "day month year" (e.g. 17 July 2026) — the patch screen titles each
+// entry by its date, newest day first.
 const PATCH_NOTES = [
   {
-    v: 'v1.7.24-alpha', date: 'July 2026',
+    v: 'v1.7.25-alpha', date: '17 July 2026',
+    notes: [
+      'A DRAGGABLE SKULL SCROLLBAR — every scrolling menu now carries the owner\'s painted rail: a skull thumb you can grab and fling to the bottom (no mouse wheel needed on a phone), with up and down caps that page the view. It replaces every old scrollbar in the game',
+      'Patch notes are titled by their DATE (day month year), newest day first, with the version as a small tag — and the scrollbar on the right is now fully grabbable',
+      'The title screen is cleaner — the "Nekromancers by the fire" line is gone'
+    ]
+  },
+  {
+    v: 'v1.7.24-alpha', date: '17 July 2026',
     notes: [
       'NEW MALE HERO ART — nine full painted models, one per hair colour (Black, Ember, Blood, Violet, White, Silver, Gold, Green, Blue). Choosing a hair-colour bust on the creation screen now swaps the whole model to that painting, and it carries into the walking hero and the roster. The busts are cut from the new fronts too',
       'Title screen: the version tag moved to a small plate in the lower-right — quiet, out of the way'
