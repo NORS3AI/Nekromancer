@@ -496,6 +496,17 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.22 — TITLE INTRO SEQUENCE (owner art + spec)**: `Screens.title`
+  rebuilt as a timed fade. NEW art (both new files, no ART_V bump):
+  `title_splash.webp` (the eldritch cover, cover-fit + radial vignette,
+  shown immediately) and `title_logo.webp` (the NEKROMANCER wordmark,
+  luminance-alpha-cut off pure black so it composites onto the splash).
+  Timing off `Screens._titleStart = Game.time` (captured on first title
+  draw): logo fades in over 1.6s starting at **3s**, the PLAY plate over
+  1.6s starting at **5s** (`fade(start,dur)` helper). The plate's tap only
+  registers once `plateA > 0.9` (no invisible hitbox); PLAY → `UI.open
+  ('select')`. Old `LOGO_IMAGE`/`drawGameLogo` + purple halo + tagline are
+  gone from the title. preloadArt warms both.
 - **v1.7.21 — CREATE SHOWS THE REAL MODEL + MOBILE FIXES (owner rule)**:
   `Screens.create` draws `Game.heroImg(gd, 'front', Hero.hair)` (the actual
   full-body walking art `m/f_front[_hN].webp`) as the showcase — NOT

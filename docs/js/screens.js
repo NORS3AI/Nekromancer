@@ -2081,43 +2081,67 @@ const Screens = {
   // -------------------------------------------------------------- title
 
   title(ctx, W, H) {
-    const cx = W / 2, cy = H * 0.34;
-    const t = Game.time;
+    const cx = W / 2;
+    // TITLE INTRO SEQUENCE (owner spec v1.7.22): the splash art shows at once,
+    // the logo slow-fades in at 3s, and the PLAY plate slow-fades in at 5s.
+    // The clock starts the first time the title is shown this session.
+    if (this._titleStart === undefined) this._titleStart = Game.time;
+    const el = Game.time - this._titleStart;
+    const fade = (start, dur) => Math.max(0, Math.min(1, (el - start) / dur));
+    const logoA = fade(3, 1.6);   // logo fades in over 1.6s starting at 3s
+    const plateA = fade(5, 1.6);  // PLAY plate fades in over 1.6s starting at 5s
 
-    // Key-art logo (owner art) as the title banner — a steady purple glow, no
-    // hover. The title is baked into the art, so no separate wordmark.
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const ar = (LOGO_IMAGE && LOGO_IMAGE.naturalWidth) ? LOGO_IMAGE.naturalWidth / LOGO_IMAGE.naturalHeight : 1.777;
-    const lw = Math.min(W * 0.9, H * 0.42 * ar);
-    const lhpx = lw / ar;
-    const lyC = H * 0.05 + lhpx / 2;
-    // Purple aura behind the logo.
-    const halo = ctx.createRadialGradient(cx, lyC, 10, cx, lyC, lw * 0.62);
-    halo.addColorStop(0, 'rgba(150,70,225,0.45)');
-    halo.addColorStop(0.6, 'rgba(110,40,185,0.16)');
-    halo.addColorStop(1, 'rgba(40,10,70,0)');
-    ctx.fillStyle = halo;
-    ctx.fillRect(cx - lw * 0.75, lyC - lhpx * 0.9, lw * 1.5, lhpx * 1.8);
-    // Logo with a purple drop-glow (no hover — fixed y).
-    ctx.save();
-    ctx.shadowColor = 'rgba(165,85,240,0.85)'; ctx.shadowBlur = Math.min(42, W * 0.055);
-    drawGameLogo(ctx, cx, lyC, lw, 0);
-    ctx.restore();
-    // Tagline below the art.
-    ctx.font = 'italic 15px Cinzel, Georgia';
-    ctx.fillStyle = '#a06adf';
-    ctx.fillText('~ A Sanctuary of the Dead ~', cx, lyC + lhpx / 2 + 22);
-
-    const bw = Math.min(300, W * 0.78);
-    const by = H * 0.56;
-    const has = Profiles.count() > 0;
-    // The owner's painted plate carries the title-screen call to action.
-    UI.btnPlate(ctx, cx - bw / 2, by, bw, 46, has ? 'CHOOSE YOUR HERO' : 'BEGIN',
-      () => UI.open('select'), { size: 16 });
-    if (has) {
-      ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#6f6552'; ctx.textAlign = 'center';
-      ctx.fillText(Profiles.count() + ' / ' + Profiles.MAX + ' Nekromancers by the fire', cx, by + 62);
+    // ---- the splash art, cover-fit, immediately ----
+    const splash = Game.uiImg('title_splash');
+    ctx.fillStyle = '#050307'; ctx.fillRect(0, 0, W, H);
+    if (splash && splash.complete && splash.naturalWidth) {
+      const cf = Math.max(W / splash.width, H / splash.height);
+      ctx.drawImage(splash, (W - splash.width * cf) / 2, (H - splash.height * cf) / 2, splash.width * cf, splash.height * cf);
+      // a soft vignette so the logo + plate read over the busy art
+      const vg = ctx.createRadialGradient(cx, H * 0.42, H * 0.2, cx, H * 0.5, H * 0.85);
+      vg.addColorStop(0, 'rgba(5,3,7,0)'); vg.addColorStop(1, 'rgba(5,3,7,0.55)');
+      ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
     }
+
+    // ---- the NEKROMANCER logo, slow fade at 3s ----
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const logo = Game.uiImg('title_logo');
+    const lar = (logo && logo.naturalWidth) ? logo.width / logo.height : 1.0;
+    const lh = Math.min(H * 0.46, W * 0.62 / lar);
+    const lw = lh * lar;
+    const lyC = H * 0.05 + lh / 2;
+    if (logoA > 0) {
+      ctx.save();
+      ctx.globalAlpha = logoA;
+      if (logo && logo.complete && logo.naturalWidth) {
+        ctx.shadowColor = 'rgba(120,220,215,0.5)'; ctx.shadowBlur = Math.min(38, W * 0.05);
+        ctx.drawImage(logo, cx - lw / 2, lyC - lh / 2, lw, lh);
+      } else {
+        ctx.font = '600 ' + Math.round(W < 640 ? 34 : 52) + 'px Cinzel, Georgia'; ctx.fillStyle = '#cfc8b8';
+        ctx.fillText('NEKROMANCER', cx, lyC);
+      }
+      ctx.restore();
+    }
+
+    // ---- the PLAY plate, slow fade at 5s ----
+    const bw = Math.min(300, W * 0.78);
+    const by = H * 0.72;
+    const has = Profiles.count() > 0;
+    if (plateA > 0) {
+      ctx.save();
+      ctx.globalAlpha = plateA;
+      // Only register the tap once the plate is essentially in — no invisible
+      // hitbox. PLAY → Choose Your Hero (owner spec).
+      UI.btnPlate(ctx, cx - bw / 2, by, bw, 46, 'PLAY',
+        plateA > 0.9 ? () => UI.open('select') : null, { size: 18 });
+      if (has) {
+        ctx.font = '11px Cinzel, Georgia'; ctx.fillStyle = '#8a8070'; ctx.textAlign = 'center';
+        ctx.fillText(Profiles.count() + ' / ' + Profiles.MAX + ' Nekromancers by the fire', cx, by + 62);
+      }
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+
     ctx.font = '11px Cinzel, Georgia';
     ctx.fillStyle = '#6f6552';
     ctx.textAlign = 'center';

@@ -672,11 +672,17 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.21-alpha';
+const GAME_VERSION = 'v1.7.22-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.22-alpha', date: 'July 2026',
+    notes: [
+      'A NEW TITLE SCREEN — the game opens on a full splash: the Nekromancer raising the dead beneath a vast eldritch horror. After three seconds the NEKROMANCER emblem slow-fades in above; two seconds later the PLAY plate rises from the dark. PLAY leads to Choose Your Hero'
+    ]
+  },
   {
     v: 'v1.7.21-alpha', date: 'July 2026',
     notes: [
