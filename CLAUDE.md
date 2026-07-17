@@ -496,6 +496,14 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.40 — TITLE SPLASH SCALES TO THE MONITOR (owner rule)**: `Screens.title`
+  drew `title_splash.webp` (1536×1024, 3:2) COVER-fit (`Math.max`), so on wide/
+  ultrawide desktops it zoomed up huge and cropped — "too big". Now CONTAIN-fit
+  (`Math.min` → whole image scaled to the screen, never oversized) over a cached
+  BLURRED cover backdrop (`_titleBg` offscreen canvas, `filter blur(26px)
+  brightness(0.5)`, rebuilt only on W/H/src change) so the letterbox fills
+  seamlessly instead of hard black bars. Logo/PLAY/vignette unchanged. No art
+  change → no ART_V bump.
 - **v1.7.39 — WANDERING MERCHANT FIXES (owner list)**: (1) **UN-SQUISH**: the
   top-down world is drawn with a `TOPDOWN_TILT=0.66` vertical foreshorten
   (`applyWorldTransform`), and the vendor wagon is a phase-1 prop so it got
