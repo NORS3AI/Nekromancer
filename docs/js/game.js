@@ -433,13 +433,16 @@ const Game = {
     }
     // Painted potions (health + essence flasks) — both HUD layouts use them.
     this.hudImg('potion_health'); this.hudImg('potion_essence');
-    // World props + vendor wagons (owner art v1.7.34) — warm so maps don't pop in.
-    for (const k of ['chest', 'crate', 'cauldron', 'cart', 'bookshelf', 'chair', 'table', 'pillar',
-      'pine1', 'pine2', 'pine3', 'palm1', 'palm2', 'cactus1', 'cactus2',
-      'deadtree1', 'deadtree2', 'deadtree3', 'bush1', 'bush2', 'bush3', 'bush4',
+    // World props + vendor wagons (owner art v1.7.34/35) — warm so maps don't
+    // pop in. Includes the painted tree sets (pine/oak/birch/swamp cypress).
+    const warm = ['chest', 'crate', 'cauldron', 'cart', 'bookshelf', 'chair', 'table', 'pillar',
+      'palm1', 'palm2', 'cactus1', 'cactus2', 'bush1', 'bush2', 'bush3', 'bush4',
       'rock1', 'rock2', 'rock3', 'rock4', 'rock5', 'rock6',
-      'rockbig1', 'rockbig2', 'rockbig3', 'rockbig4', 'rocksm1', 'rocksm2', 'rocksm3', 'rocksm4', 'rocksm5', 'rocksm6'])
-      this.propImg(k);
+      'rockbig1', 'rockbig2', 'rockbig3', 'rockbig4', 'rocksm1', 'rocksm2', 'rocksm3', 'rocksm4', 'rocksm5', 'rocksm6'];
+    for (let i = 1; i <= 10; i++) { warm.push('pine' + i); warm.push('pineb' + i); }
+    for (let i = 1; i <= 9; i++) { warm.push('oak' + i); warm.push('birch' + i); }
+    for (let i = 1; i <= 8; i++) warm.push('swamp' + i);
+    for (const k of warm) this.propImg(k);
     for (const k of World.VENDOR_SPRITES || []) this.vendorImg(k);
   },
 
