@@ -2099,12 +2099,33 @@ const Screens = {
     const logoA = fade(3, 1.6);   // logo fades in over 1.6s starting at 3s
     const plateA = fade(5, 1.6);  // PLAY plate fades in over 1.6s starting at 5s
 
-    // ---- the splash art, cover-fit, immediately ----
+    // ---- the splash art ----
+    // The WHOLE splash scales to fit the monitor (contain-fit), never zoomed/
+    // cropped oversized on wide desktops (owner rule v1.7.40). A blurred cover
+    // copy fills the letterbox so there are no hard black bars — cached so it's
+    // only blurred on a resize, not every frame.
     const splash = Game.uiImg('title_splash');
     ctx.fillStyle = '#050307'; ctx.fillRect(0, 0, W, H);
     if (splash && splash.complete && splash.naturalWidth) {
-      const cf = Math.max(W / splash.width, H / splash.height);
-      ctx.drawImage(splash, (W - splash.width * cf) / 2, (H - splash.height * cf) / 2, splash.width * cf, splash.height * cf);
+      const iw = splash.width, ih = splash.height;
+      if (!this._titleBg || this._titleBgW !== W || this._titleBgH !== H || this._titleBgSrc !== splash) {
+        const oc = (typeof document !== 'undefined') ? document.createElement('canvas') : null;
+        if (oc) {
+          oc.width = Math.max(1, Math.round(W)); oc.height = Math.max(1, Math.round(H));
+          const o = oc.getContext('2d');
+          o.fillStyle = '#050307'; o.fillRect(0, 0, oc.width, oc.height);
+          const cf = Math.max(oc.width / iw, oc.height / ih);
+          try { o.filter = 'blur(26px) brightness(0.5)'; } catch (e) {}
+          o.drawImage(splash, (oc.width - iw * cf) / 2, (oc.height - ih * cf) / 2, iw * cf, ih * cf);
+          this._titleBg = oc;
+        }
+        this._titleBgW = W; this._titleBgH = H; this._titleBgSrc = splash;
+      }
+      if (this._titleBg) ctx.drawImage(this._titleBg, 0, 0, W, H);
+      // the sharp splash, contain-fit (whole image, scaled to the screen)
+      const ct = Math.min(W / iw, H / ih);
+      const dw = iw * ct, dh = ih * ct;
+      ctx.drawImage(splash, (W - dw) / 2, (H - dh) / 2, dw, dh);
       // a soft vignette so the logo + plate read over the busy art
       const vg = ctx.createRadialGradient(cx, H * 0.42, H * 0.2, cx, H * 0.5, H * 0.85);
       vg.addColorStop(0, 'rgba(5,3,7,0)'); vg.addColorStop(1, 'rgba(5,3,7,0.55)');
