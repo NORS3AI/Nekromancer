@@ -316,7 +316,7 @@ const World = {
   placeLitter(zone) {
     const biome = zone.biome || (zone.generator === 'open' ? 'default' : null);
     const pools = (biome && this.LITTER_BIOME[biome]) || ['bones', 'camp', 'wood'];
-    const budget = clamp(Math.round(this.W * this.H / 300000), 4, 11);
+    const budget = clamp(Math.round(this.W * this.H / 250000), 5, 13);   // +20% (owner rule v1.7.38)
     let placed = 0, attempts = 0;
     while (placed < budget && attempts++ < budget * 20) {
       const x = rand(110, this.W - 110), y = rand(110, this.H - 110);

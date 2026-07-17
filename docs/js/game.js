@@ -452,6 +452,8 @@ const Game = {
       for (const [k] of pool) warm.push(k);
     for (const k of warm) this.propImg(k);
     for (const k of World.VENDOR_SPRITES || []) this.vendorImg(k);
+    // Painted torches (owner art v1.7.38) — one per torch tier.
+    if (typeof TORCH_TYPES !== 'undefined') for (const k of Object.keys(TORCH_TYPES)) this.torchImg(k);
   },
 
   buildTown() {
@@ -902,6 +904,19 @@ const Game = {
       img = new Image();
       img.src = 'art/vendors/' + key + '.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
       this.vendorArt[key] = img;
+    }
+    return (img.complete && img.naturalWidth) ? img : null;
+  },
+
+  // Painted TORCHES (owner art v1.7.38 — docs/art/torches/<torchId>.webp).
+  // Keyed by TORCH_TYPES id (wood/iron/masterlight/nekromancer/wyrmbound/nephalem).
+  torchArt: {},
+  torchImg(key) {
+    let img = this.torchArt[key];
+    if (!img) {
+      img = new Image();
+      img.src = 'art/torches/' + key + '.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1');
+      this.torchArt[key] = img;
     }
     return (img.complete && img.naturalWidth) ? img : null;
   },
@@ -2259,6 +2274,13 @@ const Game = {
     if (this.fountainBuff) {
       this.fountainBuff.t -= dt;
       if (this.fountainBuff.t <= 0) { this.fountainBuff = null; UI.toast('The fountain\'s blessing fades.', '#9a9080'); }
+    }
+    // Wild shrine buff (60s) burns in real time too — so its Character-sheet
+    // countdown stays live in town and with the menu open, just like the
+    // fountain (owner rule v1.7.38). Ticked HERE, not in Player.update.
+    if (this.player && this.player.shrine) {
+      this.player.shrine.t -= dt;
+      if (this.player.shrine.t <= 0) this.player.shrine = null;
     }
 
     if (this.state === 'town') { this.updateTown(dt); return; }

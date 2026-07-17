@@ -135,10 +135,8 @@ class Player {
       const want = Math.round(this.baseMaxHp * (1 + 0.02 * this.satiatedStacks));
       if (want !== this.maxHp) { this.maxHp = want; if (this.hp > this.maxHp) this.hp = this.maxHp; }
     }
-    if (this.shrine) {
-      this.shrine.t -= dt;
-      if (this.shrine.t <= 0) this.shrine = null;
-    }
+    // NOTE: the wild-shrine timer is ticked in Game.update (real time, all
+    // states) so its Character-sheet countdown stays live like the fountain.
 
     if (this.dash) {
       const d = this.dash;

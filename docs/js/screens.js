@@ -4073,19 +4073,25 @@ const Screens = {
         ctx.fillStyle = 'rgba(28,24,38,0.92)';
         rr(ctx, px + 20, y, pw - 40, rowH - 14, 8); ctx.fill();
       }
+      // Painted torch (owner art v1.7.38) in the left gutter of the plate.
+      const timg = Game.torchImg && Game.torchImg(type);
+      if (timg) {
+        const th = rowH - 22, tw = th * (timg.width / timg.height);
+        ctx.drawImage(timg, px + 44 - tw / 2, y + 4, tw, th);
+      }
       // Name (no rarity tag — owner rule), spaced in from the finial cap.
       // Bone-white names, brighter burn line, no radius text (owner rules).
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
       ctx.font = '600 13px Cinzel, Georgia';
       ctx.fillStyle = '#e8e2d0';
-      ctx.fillText(T.name, px + 52, y + 22);
+      ctx.fillText(T.name, px + 72, y + 22);
       ctx.font = '10px Cinzel, Georgia';
       ctx.fillStyle = '#c9bfa8';
-      ctx.fillText('Burns ' + T.minutes + ' min', px + 52, y + 39);
+      ctx.fillText('Burns ' + T.minutes + ' min', px + 72, y + 39);
       // Recipe (owned / needed per component).
       const shortMat = { lumber: 'Lumber', rivets: 'Rivets', heartstring: 'Heart', wyrmscale: 'Wyrm', brain: 'Brain', rathmasoul: 'Bellmahath' };
       ctx.font = (pw < 480 ? 10 : 11) + 'px Cinzel, Georgia';
-      let rx = px + 52;
+      let rx = px + 72;
       const recipeRight = px + pw - 160;
       for (const [k2, n] of Object.entries(T.recipe)) {
         const have = Hero.mats[k2] || 0;

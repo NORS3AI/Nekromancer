@@ -496,6 +496,24 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.38 — PAINTED TORCHES + LIVE SHRINE TIMER + MORE LITTER (owner art +
+  list)**: (1) **PAINTED TORCHES (owner art, scratchpad `splice_torches.py` —
+  6-column flat-black sheet, mask-opaque handle + soft luminance-glow flame)**:
+  `docs/art/torches/<torchId>.webp`. Owner name-mapping (left→right, NOT ladder
+  order): `wood`→wrapped stick · `iron`→caged brazier · `masterlight`→bronze
+  crown · `nekromancer`→purple crystal · `wyrmbound`→blue/steel · `nephalem`
+  (Ascendant's)→red. `Game.torchImg(id)` lazy loader (warmed in preloadArt for
+  every TORCH_TYPES key). `Screens.torches` draws the painting in each bench
+  row's left gutter (`th=rowH-22`, centred at `px+44`); name/burn/recipe text
+  shifted to `px+72`. NEW files → no ART_V bump. (2) **LIVE WILD-SHRINE TIMER
+  (owner "countdown like the Fountain")**: the wild shrine (`Player.shrine`,
+  60s) was ticked in `Player.update` (gameplay only), so its Character-sheet
+  countdown froze in town / with a menu open; moved the tick to `Game.update`
+  right beside the fountain (`this.player.shrine.t -= dt`, runs before the
+  `UI.screen`/town returns) so it burns in real time in ALL states, matching
+  `Game.fountainBuff`. The `— ACTIVE SHRINES —` section (v1.7.33) already
+  renders both with `m:ss left`. (3) **+20% LITTER**: `placeLitter` budget
+  `clamp(W·H/300000,4,11)` → `clamp(W·H/250000,5,13)`.
 - **v1.7.37 — SOLID PROPS + SPARSE LITTER (owner art + rule)**: (1) **OPACITY
   FIX (owner "check that")**: every prop was spliced with a LUMINANCE-driven
   alpha (`a = clip((lum-14)/50) * mask`), so dark object pixels got low alpha
