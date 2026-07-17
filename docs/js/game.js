@@ -447,6 +447,9 @@ const Game = {
     for (let i = 1; i <= 11; i++) { warm.push('tomb' + i); warm.push('cross' + i); }
     for (let i = 1; i <= 4; i++) warm.push('sarcophagus' + i);
     warm.push('crypt1', 'crypt2');
+    // Litter (owner art v1.7.37) — sparse painted ground clutter.
+    for (const pool of Object.values(World.LITTER || {}))
+      for (const [k] of pool) warm.push(k);
     for (const k of warm) this.propImg(k);
     for (const k of World.VENDOR_SPRITES || []) this.vendorImg(k);
   },
