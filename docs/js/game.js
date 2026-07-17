@@ -398,7 +398,9 @@ const Game = {
     this.addyImg(); this.lyssaImg();
     for (const gd of ['m', 'f']) { this.heroImg(gd, 'front'); this.heroImg(gd, 'back'); this.heroImg(gd, 'side'); }
     for (const k of ['panel', 'close2', 'globe_red', 'globe_blue', 'button', 'plate2', 'enter', 'exit', 'talk', 'arrow_left', 'arrow_right', 'plus', 'minus', 'chip', 'circle', 'plate3', 'fountain', 'select_bg', 'select_title', 'title_splash', 'title_logo', 'scroll_up', 'scroll_down', 'scroll_skull', 'create_bg', 'harvests_bg', 'slot_frame', 'ghost', 'gender_m', 'gender_f', 'gear', 'showcase_m', 'showcase_f']) this.uiImg(k);
-    for (const k of ['parts', 'dust', 'crystal', 'soul']) this.matImg(k);
+    for (const k of ['parts', 'dust', 'crystal', 'soul',
+      'gold', 'lumber', 'rivets', 'heartstring', 'wyrmscale', 'brain', 'rathmasoul'])
+      this.matImg(k);
     // Warm the active theme's plate (the rest load lazily in the theme picker).
     if (typeof THEMES !== 'undefined' && typeof Settings !== 'undefined' && Settings.g) {
       const th = THEMES[Settings.g.theme] || THEMES.void;
@@ -457,8 +459,17 @@ const Game = {
       const [px, py, pr, bx, by, bw, bh, label, icon, color, kind, slots, boost] = s;
       let open, cond;
       if (kind === 'vendor') open = mkVendor(label, FLAVOR[label] || '', slots, boost);
-      else if (kind === 'waypoint-blue') open = () => { UI.open('wilds'); UI.sel.wpFilter = 'blue'; };
-      else if (kind === 'waypoint-purple') open = () => { UI.open('wilds'); UI.sel.wpFilter = 'purple'; };
+      // Town-portalling from a run leaves the hero mid-crawl (townPortalReturn
+      // set). The Waygate/Shroud would START A NEW run and abandon it, so they're
+      // BLOCKED until you take "Return to the Wilds" back (owner rule v1.7.32).
+      else if (kind === 'waypoint-blue') open = () => {
+        if (this.townPortalReturn) { UI.toast('You\'re still out in the wilds — take Return to the Wilds first', '#9a9080'); AudioSys.sfx('denied'); return; }
+        UI.open('wilds'); UI.sel.wpFilter = 'blue';
+      };
+      else if (kind === 'waypoint-purple') open = () => {
+        if (this.townPortalReturn) { UI.toast('You\'re still out in the wilds — take Return to the Wilds first', '#9a9080'); AudioSys.sfx('denied'); return; }
+        UI.open('wilds'); UI.sel.wpFilter = 'purple';
+      };
       else if (kind === 'gate') { open = () => this.returnToWilds(); cond = () => !!this.townPortalReturn; }
       else if (kind === 'cube') { open = () => UI.open('cube'); cond = () => Hero.hasCube; }
       else if (kind === 'addy') open = () => UI.open('addy');

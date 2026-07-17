@@ -672,13 +672,22 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.31-alpha';
+const GAME_VERSION = 'v1.7.32-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.32-alpha', date: '17 July 2026',
+    notes: [
+      'NEW REAGENT ICONS (owner art) — Gold, Lumber, Iron Rivets, Heartstring, Wyrm Scale, Gluttonous Brain and Soul of Bellmahath now have painted icons, shown in the Character sheet\'s REAGENTS list and everywhere reagents appear for crafting',
+      'LUKUS & ADDY: the quest to ACCEPT now sits at the TOP, with your accepted quests listed below it (newest first) — no more scrolling every time to take on a new deed',
+      'Town portal: while you\'re still out in the wilds (a portal open), the Waygate and The Shroud are blocked so you can\'t start a new run by accident — take "Return to the Wilds" to go back where you were',
+      'The grouped inventory now shows a glowing blue socket marker on any item with an empty gem slot, so you can see what needs socketing at a glance'
+    ]
+  },
   {
     v: 'v1.7.31-alpha', date: '17 July 2026',
     notes: [

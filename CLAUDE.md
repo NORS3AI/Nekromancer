@@ -496,6 +496,23 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.32 — REAGENT ICONS + QUEST REORDER + PORTAL GATING + SOCKET GLOW
+  (owner)**: (1) **REAGENT ICONS**: owner sheet (7 icons on black) spliced via
+  scratchpad `reagents.py` (connected-component label, luminance-feather alpha,
+  square-pad, ≤256px) → `docs/art/mats/{gold,rivets,lumber,heartstring,
+  wyrmscale,brain,rathmasoul}.webp` (x-order → key). `drawMatIcon` already
+  draws by key, so torch-bench/blacksmith/etc. pick them up automatically; the
+  Character `— REAGENTS —` list now icon+names EVERY reagent incl. a new `gold`
+  icon (matRow helper). `preloadArt` warms all. NEW files → no ART_V bump.
+  (2) **LUKUS/ADDY REORDER**: the NEXT DEED/QUEST offer moved ABOVE the journal
+  list (owner: accept without scrolling); the journal iterates
+  `.slice().reverse()` (newest first), empty-hint copy "…below" → "…above".
+  (3) **PORTAL GATING**: `buildTown` waypoint-blue/purple `open` callbacks bail
+  with a toast when `Game.townPortalReturn` is set (still mid-crawl) — the
+  Waygate/Shroud can't start a NEW run; use the gate's Return to the Wilds.
+  (4) **SOCKET GLOW**: `invGrouped` drawRow draws a pulsing blue diamond +
+  `×N` for `(sockets - gems.length) > 0` (name width shrinks to `pw-116`),
+  matching the radial's socket hint.
 - **v1.7.31 — ENCHANT "UNDEFINED" + LUKUS/ADDY SCROLLBAR OVERLAP (owner)**:
   (1) `mysEnchant` reroll-odds rows drew `shortAffix[key]` which only mapped
   8 keys — the group pools carry int/vit/atkSpeed/critDmg/cdr/elem/lph/rcr, so
