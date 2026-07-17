@@ -116,7 +116,7 @@ const World = {
     // Story-Mode biomes pick their own species (cacti in deserts, palms in the
     // jungle, …); other lands keep the classic graveyard scatter.
     const biome = zone.biome ? BIOMES[zone.biome] : null;
-    const propTypes = biome ? biome.props : ['tomb', 'tomb', 'cross', 'pillar', 'tree', 'obelisk', 'rock'];
+    const propTypes = biome ? biome.props : ['pine', 'oak', 'rock', 'rock', 'bush', 'pillar', 'tomb', 'tree'];
     // Bigger maps carry proportionally more scenery.
     const propTarget = clamp(Math.round(this.W * this.H / 110000), 50, 130);
     let attempts = 0;
@@ -157,7 +157,7 @@ const World = {
     this.placeObjects(6, 2, 0, () => this.openPoint(200));
     // Graveyard clutter: smash it for gold.
     this.placeBreakables(
-      ['gravestone', 'gravestone', 'crypt', 'pot', 'pot', 'urnB', 'bonepile', 'cart'],
+      ['gravestone', 'gravestone', 'crypt', 'pot', 'urnB', 'urnB', 'bonepile', 'cart', 'crate', 'crate'],
       34, () => this.openPoint(120));
   },
 
@@ -225,7 +225,41 @@ const World = {
   // Collision radius per prop species.
   PROP_R: {
     tomb: 16, cross: 13, pillar: 19, tree: 15, obelisk: 17, rock: 20,
-    oak: 16, pine: 16, palm: 16, cactus: 14
+    oak: 16, pine: 16, palm: 16, cactus: 14, bush: 12
+  },
+
+  // Painted-sprite variants per prop type (owner art v1.7.34). Biome-specific:
+  // pines/oaks in green lands, palms in the jungle, cacti in the desert, gnarled
+  // dead trees in the swamp, rocks & bushes everywhere they belong. A prop with
+  // no entry keeps its procedural draw.
+  PROP_SPRITE: {
+    pine: ['pine1', 'pine2', 'pine3'], oak: ['pine1', 'pine2', 'pine3'],
+    palm: ['palm1', 'palm2'], cactus: ['cactus1', 'cactus2'],
+    tree: ['deadtree1', 'deadtree2', 'deadtree3'],
+    rock: ['rock1', 'rock2', 'rock3', 'rock4', 'rock5', 'rock6', 'rockbig1', 'rockbig2', 'rockbig3', 'rockbig4'],
+    pillar: ['pillar'], obelisk: ['pillar'],
+    bush: ['bush1', 'bush2', 'bush3', 'bush4']
+  },
+  // Sprite height (px) for TALL props (trees/pillar/bush); rocks scale by width.
+  PROP_SPRITE_H: { pine: 88, oak: 88, palm: 96, cactus: 66, tree: 82, deadtree: 82, pillar: 62, obelisk: 62, bush: 46 },
+
+  // The five painted merchant wagons (owner art v1.7.34) — one per map at random.
+  VENDOR_SPRITES: ['vendor_armor_m', 'vendor_armor_f', 'vendor_gem', 'vendor_weapon1', 'vendor_weapon2'],
+
+  // Draw the painted sprite for a prop (called from drawProp, already translated
+  // to the prop's position). Returns false → the procedural draw runs instead.
+  blitPropSprite(ctx, p) {
+    const list = this.PROP_SPRITE[p.type];
+    if (!list) return false;
+    const key = list[Math.floor(p.seed * 997) % list.length];
+    const img = Game.propImg && Game.propImg(key);
+    if (!img) return false;
+    const ar = img.width / img.height;
+    let w, h;
+    if (p.type === 'rock') { w = p.r * 2.9 * (0.82 + p.seed * 0.4); h = w / ar; }
+    else { h = (this.PROP_SPRITE_H[p.type] || 60) * (0.86 + (p.seed * 7 % 1) * 0.3); w = h * ar; }
+    ctx.drawImage(img, -w / 2, -h + 6, w, h);
+    return true;
   },
 
   makeForests(zone) {
@@ -372,7 +406,7 @@ const World = {
     this.placeObjects(3, 2, 0, roomPoint);
     // Crypt furniture: pots, chairs, tables, bookcases, sarcophagi.
     this.placeBreakables(
-      ['pot', 'pot', 'urnB', 'chair', 'chair', 'table', 'bookcase', 'bookcase', 'sarcophagus', 'bonepile'],
+      ['pot', 'urnB', 'urnB', 'chair', 'chair', 'table', 'bookcase', 'bookcase', 'sarcophagus', 'bonepile', 'crate', 'crate'],
       38, roomPoint);
 
     // Bone piles as decor inside floor cells.
@@ -412,9 +446,23 @@ const World = {
     table:       { r: 18, big: true,  mat: 'wood' },
     bookcase:    { r: 16, big: true,  mat: 'wood' },
     cart:        { r: 17, big: true,  mat: 'wood' },
+    crate:       { r: 12, big: false, mat: 'wood' },   // "the box for lumber" (owner art v1.7.34)
     gravestone:  { r: 13, big: true,  mat: 'stone' },
     sarcophagus: { r: 20, big: true,  mat: 'stone' },
     crypt:       { r: 22, big: true,  mat: 'stone' }
+  },
+
+  // Painted-sprite skins for breakables (owner art v1.7.34); scale = width ÷ r.
+  BREAKABLE_SPRITE: { chair: 'chair', table: 'table', bookcase: 'bookshelf', cart: 'cart', crate: 'crate', pot: 'cauldron', urnB: 'cauldron' },
+  BREAKABLE_SW: { chair: 2.8, table: 2.4, bookcase: 3.0, cart: 2.7, crate: 3.0, pot: 3.6, urnB: 3.4 },
+  blitBreakableSprite(ctx, b) {
+    const key = this.BREAKABLE_SPRITE[b.type];
+    if (!key) return false;
+    const img = Game.propImg && Game.propImg(key);
+    if (!img) return false;
+    const w = b.r * (this.BREAKABLE_SW[b.type] || 2.6), h = w * (img.height / img.width);
+    ctx.drawImage(img, -w / 2, -h + 6, w, h);
+    return true;
   },
 
   placeBreakables(kinds, count, pointFn) {
@@ -1100,17 +1148,27 @@ const World = {
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.beginPath(); ctx.ellipse(0, 3, 16, 7, 0, 0, TAU); ctx.fill();
     if (o.type === 'chest') {
-      ctx.fillStyle = o.used ? '#3d3324' : '#5e4a2a';
-      rr(ctx, -14, -16, 28, 18, 3); ctx.fill();
-      ctx.fillStyle = o.used ? '#2c2519' : '#4a3a20';
-      rr(ctx, -14, -16, 28, 8, 3); ctx.fill();
-      ctx.strokeStyle = o.used ? '#6b5a36' : '#ffd76a';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(-2.5, -12, 5, 6);
+      // Painted gold chest (owner art v1.7.34); a warm glow pulses while unlooted.
+      const cimg = Game.propImg && Game.propImg('chest');
       if (!o.used) {
         ctx.globalAlpha = 0.5 + 0.3 * Math.sin(Game.time * 3 + o.seed * 9);
         ctx.strokeStyle = '#ffd76a';
-        ctx.beginPath(); ctx.ellipse(0, 0, 20, 10, 0, 0, TAU); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(0, 0, 22, 11, 0, 0, TAU); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      if (cimg) {
+        const w = 46, h = w * (cimg.height / cimg.width);
+        ctx.globalAlpha = o.used ? 0.5 : 1;
+        ctx.drawImage(cimg, -w / 2, -h + 8, w, h);
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.fillStyle = o.used ? '#3d3324' : '#5e4a2a';
+        rr(ctx, -14, -16, 28, 18, 3); ctx.fill();
+        ctx.fillStyle = o.used ? '#2c2519' : '#4a3a20';
+        rr(ctx, -14, -16, 28, 8, 3); ctx.fill();
+        ctx.strokeStyle = o.used ? '#6b5a36' : '#ffd76a';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-2.5, -12, 5, 6);
       }
     } else if (o.type === 'shrine') {
       const col = o.used ? '#544d5e' : '#6ff7c3';
@@ -1123,46 +1181,27 @@ const World = {
       ctx.beginPath(); ctx.arc(0, -40, 6 + (o.used ? 0 : Math.sin(Game.time * 4) * 1.5), 0, TAU); ctx.fill();
       ctx.shadowBlur = 0;
     } else if (o.type === 'vendor') {
-      // Cart.
-      ctx.fillStyle = '#4a3a24';
-      rr(ctx, 8, -20, 26, 20, 3); ctx.fill();
-      ctx.fillStyle = '#5e4a2a';
-      rr(ctx, 8, -24, 26, 7, 3); ctx.fill();
-      ctx.strokeStyle = '#2e2416';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath(); ctx.arc(15, 2, 6, 0, TAU); ctx.stroke();
-      ctx.beginPath(); ctx.arc(28, 2, 6, 0, TAU); ctx.stroke();
-      // Wares on top.
+      // Painted merchant WAGON (owner art v1.7.34) — one of five at random per
+      // map. Falls back to the little procedural cart until the sprite loads.
+      const vimg = Game.vendorImg && Game.vendorImg(this.VENDOR_SPRITES[Math.floor(o.seed * 997) % this.VENDOR_SPRITES.length]);
+      if (vimg) {
+        const w = 150, h = w * (vimg.height / vimg.width);
+        ctx.drawImage(vimg, -w / 2, -h + 8, w, h);
+      } else {
+        ctx.fillStyle = '#4a3a24'; rr(ctx, 8, -20, 26, 20, 3); ctx.fill();
+        ctx.fillStyle = '#5e4a2a'; rr(ctx, 8, -24, 26, 7, 3); ctx.fill();
+        ctx.strokeStyle = '#2e2416'; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(15, 2, 6, 0, TAU); ctx.stroke();
+        ctx.beginPath(); ctx.arc(28, 2, 6, 0, TAU); ctx.stroke();
+      }
+      // Trade hint floats above the wagon.
+      ctx.globalAlpha = 0.9;
       ctx.fillStyle = '#ffd76a';
-      ctx.beginPath(); ctx.arc(15, -27, 2.5, 0, TAU); ctx.fill();
-      ctx.fillStyle = '#b06adf';
-      ctx.beginPath(); ctx.arc(22, -28, 2.5, 0, TAU); ctx.fill();
-      ctx.fillStyle = '#e04a5a';
-      ctx.beginPath(); ctx.arc(28, -27, 2.5, 0, TAU); ctx.fill();
-      // The merchant.
-      ctx.fillStyle = '#4a3c50';
-      ctx.beginPath();
-      ctx.moveTo(-8, 2);
-      ctx.quadraticCurveTo(-16, -14, -8, -26);
-      ctx.lineTo(0, -26);
-      ctx.quadraticCurveTo(4, -12, 0, 2);
-      ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#c9a06a';
-      ctx.beginPath(); ctx.arc(-4, -28, 5.5, 0, TAU); ctx.fill();
-      ctx.fillStyle = '#4a3c50';
-      ctx.beginPath(); ctx.arc(-4, -30, 5.5, Math.PI, 0); ctx.fill();
-      // Lantern glow + trade hint.
-      const gl = 0.55 + 0.25 * Math.sin(Game.time * 3 + o.seed * 7);
-      ctx.fillStyle = `rgba(255,215,106,${gl})`;
-      ctx.shadowColor = '#ffd76a';
-      ctx.shadowBlur = 10;
-      ctx.beginPath(); ctx.arc(4, -34, 3, 0, TAU); ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.globalAlpha = 0.85;
-      ctx.fillStyle = '#ffd76a';
-      ctx.font = 'bold 10px Georgia';
+      ctx.font = 'bold 11px Georgia';
       ctx.textAlign = 'center';
-      ctx.fillText('TRADE', 6, -46 + Math.sin(Game.time * 2.5) * 2);
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+      const ty = -92 + Math.sin(Game.time * 2.5) * 2;
+      ctx.strokeText('TRADE', 0, ty); ctx.fillText('TRADE', 0, ty);
       ctx.globalAlpha = 1;
     } else if (o.type === 'urn' && !o.used) {
       ctx.fillStyle = '#4a4356';
@@ -1239,6 +1278,9 @@ const World = {
     ctx.translate(b.x, b.y);
     ctx.fillStyle = 'rgba(0,0,0,0.38)';
     ctx.beginPath(); ctx.ellipse(0, 3, b.r + 3, (b.r + 3) * 0.4, 0, 0, TAU); ctx.fill();
+    // Painted sprite (owner art v1.7.34): the lumber crate, the iron cauldron,
+    // the cart, bookcase, chair, table. Falls through to procedural otherwise.
+    if (this.blitBreakableSprite(ctx, b)) { ctx.restore(); return; }
     switch (b.type) {
       case 'pot': {
         ctx.rotate((s - 0.5) * 0.2);
@@ -1389,6 +1431,8 @@ const World = {
     ctx.translate(p.x, p.y);
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.beginPath(); ctx.ellipse(0, 3, p.r + 4, (p.r + 4) * 0.4, 0, 0, TAU); ctx.fill();
+    // Painted sprite (owner art v1.7.34) — falls through to procedural if absent.
+    if (this.blitPropSprite(ctx, p)) { ctx.restore(); return; }
     const s = p.seed;
     switch (p.type) {
       case 'tomb': {

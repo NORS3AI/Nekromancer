@@ -672,13 +672,22 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.33-alpha';
+const GAME_VERSION = 'v1.7.34-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.34-alpha', date: '17 July 2026',
+    notes: [
+      'PAINTED WORLD PROPS (owner art) — the maps are alive: hand-painted pine and palm trees, cacti, gnarled swamp trees, boulders and rocks of every size, and leafy bushes now scatter across the lands, each biome with its own flora (no cactus in a swamp, no palm in the dunes)',
+      'The treasure chests are the owner\'s painted gold chests now, littered across every map',
+      'Smashable clutter is repainted too — the wooden lumber crate, the iron cauldron, the cart, bookcase, chair and table',
+      'THE MERCHANT WAGON — the wandering vendor is now one of five painted wagons at random (armor, gems, or weapons), one per map, with a real merchant standing beside it'
+    ]
+  },
   {
     v: 'v1.7.33-alpha', date: '17 July 2026',
     notes: [
@@ -3829,19 +3838,19 @@ function makeAdventureZone() {
 // hard edge). Biomes are grouped by climate so a desert never borders snow.
 const BIOMES = {
   grass:    { name: 'Verdant Meadows',   ground: '#18240f', accent: '#3f6a2c', tree: 'oak',
-              props: ['oak', 'oak', 'rock', 'pillar'],       deco: ['grass', 'grass', 'moss', 'rock'],
+              props: ['oak', 'oak', 'rock', 'pillar', 'bush', 'bush'], deco: ['grass', 'grass', 'moss', 'rock'],
               border: 'forest', edge: 'forest', weather: null, forest: true, rivers: 1,
               monsters: ['zombie', 'skeleton', 'ghoul', 'hound', 'archer'] },
   forest:   { name: 'Whispering Woods',   ground: '#132012', accent: '#2f5226', tree: 'pine',
-              props: ['pine', 'pine', 'oak', 'rock'],         deco: ['grass', 'moss', 'moss', 'bones'],
+              props: ['pine', 'pine', 'oak', 'rock', 'bush'], deco: ['grass', 'moss', 'moss', 'bones'],
               border: 'forest', edge: 'forest', weather: null, forest: true, rivers: 0,
               monsters: ['skeleton', 'archer', 'ghoul', 'hound', 'soldier'] },
   jungle:   { name: 'Tangled Jungle',     ground: '#0f2418', accent: '#2c6a3c', tree: 'palm',
-              props: ['palm', 'palm', 'oak', 'rock'],         deco: ['grass', 'grass', 'moss'],
+              props: ['palm', 'palm', 'oak', 'rock', 'bush'], deco: ['grass', 'grass', 'moss'],
               border: 'jungle', edge: 'forest', weather: 'rain', forest: true, rivers: 1,
               monsters: ['ghoul', 'imp', 'cultist', 'hound', 'bloat'] },
   swamp:    { name: 'Sunken Mire',        ground: '#131a15', accent: '#2c3a2a', tree: 'tree',
-              props: ['tree', 'tree', 'rock', 'tomb'],        deco: ['moss', 'grass', 'bones', 'blood'],
+              props: ['tree', 'tree', 'rock', 'tomb', 'bush'], deco: ['moss', 'grass', 'bones', 'blood'],
               border: 'forest', edge: 'ocean', weather: 'rain', forest: true, rivers: 2,
               monsters: ['zombie', 'ghoul', 'ghoul', 'cultist', 'bloat'] },
   desert:   { name: 'Scorched Dunes',     ground: '#241d10', accent: '#6a5326', tree: 'cactus',
