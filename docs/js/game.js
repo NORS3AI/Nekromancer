@@ -429,6 +429,8 @@ const Game = {
       for (const k of ['hud_ring_red', 'hud_ring_blue', 'hud_bar', 'hud_xp_frame', 'hud_xp_fill']) this.hudImg(k);
       for (let i = 0; i < 20; i++) { this.hudImg('swirl_red' + i); this.hudImg('swirl_blue' + i); }
     }
+    // Painted potions (health + essence flasks) — both HUD layouts use them.
+    this.hudImg('potion_health'); this.hudImg('potion_essence');
   },
 
   buildTown() {

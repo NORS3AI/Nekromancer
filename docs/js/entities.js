@@ -29,6 +29,7 @@ class Player {
     this.speedBuffT = 0;      // Fueled by Death
     this.shrine = null;       // {buff, t}
     this.potionCd = 0;
+    this.essPotionCd = 0;     // essence potion (mirrors the health potion, v1.7.28)
     this.cheatUsed = false;   // Final Service, once per zone
     this.dead = false;
     // Sane defaults; Items.apply() (called once Game.player is assigned)
@@ -104,6 +105,7 @@ class Player {
     this.flash = Math.max(0, this.flash - dt * 5);
     this.invuln = Math.max(0, this.invuln - dt);
     this.potionCd = Math.max(0, this.potionCd - dt);
+    this.essPotionCd = Math.max(0, this.essPotionCd - dt);
     this.stun = Math.max(0, (this.stun || 0) - dt);
     this.speedBuffT = Math.max(0, this.speedBuffT - dt);
     this.funeraryT = Math.max(0, this.funeraryT - dt);
@@ -280,6 +282,17 @@ class Player {
     this.potionCd = 25;
     this.heal(Math.round(this.maxHp * 0.55));
     fxHeal(this.x, this.y);
+    AudioSys.sfx('potion');
+  }
+
+  // ESSENCE POTION (v1.7.28, owner rule): mirrors the health potion — its own
+  // 25s cooldown, restores 55% of max essence.
+  drinkEssencePotion() {
+    if (this.essPotionCd > 0 || this.dead || this.essence >= this.maxEssence) return;
+    this.essPotionCd = 25;
+    this.essence = Math.min(this.maxEssence, this.essence + Math.round(this.maxEssence * 0.55));
+    Particles.text(this.x, this.y - 44, '+ESSENCE', { color: '#4ecbe0', size: 12, life: 0.8 });
+    fxEssence(this.x, this.y);
     AudioSys.sfx('potion');
   }
 
@@ -715,27 +728,38 @@ class Player {
   drawWings(ctx, upright) {
     const def = (typeof WINGS !== 'undefined' && Hero.wings) ? WINGS[Hero.wings] : null;
     if (!def) return;
-    // PAINTED SPRITE WINGS (v1.7.11, owner art — Imp Wings): the frames in
-    // def.seq CROSS-FADE one into the next in a slow open↔closed flap,
-    // driven by Game.time so they ALWAYS beat (owner rule), even standing.
+    // PAINTED SPRITE WINGS (v1.7.11, owner art — Imp Wings): a SLOW, flowy
+    // flap. The current frame is a SOLID base and the NEXT frame EASES in on
+    // top (owner rule v1.7.28 "ease into each image, slowed down a lot") —
+    // drawing the next over a solid current avoids the double-faint-wing
+    // ghosting a symmetric cross-fade produced. Driven by Game.time so the
+    // wings always beat, even standing.
     if (def.art && typeof Game !== 'undefined' && Game.wingImg) {
       const seq = def.seq, n = seq.length;
-      const f = (Game.time * 3.2) % n;          // slow, flowy flap (owner rule)
+      const f = (Game.time * 1.4) % n;          // ~0.7s per frame — very slow, flowy
       const i0 = Math.floor(f), t = f - i0;
-      // smoothstep the blend so each frame eases in/out — no choppy linear pops
-      const k = t * t * (3 - 2 * t);
+      // Ease each transition in and out (smootherstep) so there are no pops;
+      // the next frame only starts appearing partway through the hold.
+      const ts = t * t * t * (t * (t * 6 - 15) + 10);
       const a = Game.wingImg(def.art, seq[i0]);
       const b = Game.wingImg(def.art, seq[(i0 + 1) % n]);
-      if (a && b) {
+      if (a || b) {
+        const ref = a || b;
         const scale = upright ? 1 : 0.8;
-        const dw = 116 * scale, dh = dw * (a.height / a.width);
+        const dw = 116 * scale, dh = dw * (ref.height / ref.width);
         const oy = upright ? -34 : -4;          // shoulder anchor
         ctx.save();
         ctx.translate(0, oy);
-        ctx.globalAlpha = 1 - k;
-        ctx.drawImage(a, -dw / 2, -dh * 0.54, dw, dh);
-        ctx.globalAlpha = k;
-        ctx.drawImage(b, -dw / 2, -dh * 0.54, dw, dh);
+        // solid current pose…
+        if (a && a.complete && a.naturalWidth) {
+          ctx.globalAlpha = 1;
+          ctx.drawImage(a, -dw / 2, -dh * 0.54, dw, dh);
+        }
+        // …the next pose eases in on top
+        if (b && b.complete && b.naturalWidth) {
+          ctx.globalAlpha = a ? ts : 1;
+          ctx.drawImage(b, -dw / 2, -dh * 0.54, dw, dh);
+        }
         ctx.globalAlpha = 1;
         ctx.restore();
         return;

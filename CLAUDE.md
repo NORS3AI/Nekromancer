@@ -496,6 +496,34 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.28 — PAINTED POTIONS + ESSENCE POTION + WINGS/SKILLS/JOURNAL FIXES
+  (owner list)**: (1) **POTION ART**: two owner sheets (8 red health + 8 blue
+  essence flasks on flat black, 1536×1024) → `docs/art/hud/potion_{health,
+  essence}{0..7}.webp` + a chosen default `potion_{health,essence}.webp`
+  (index 4 = the round skull flask) via scratchpad `potions.py` (connected-
+  component flat-black cutout: `maximum_filter(maxchannel,7)<10`, border-label
+  = bg, fill-holes, dilate 1, 1.1px feather — preserves the dark glass). All
+  NEW files → no ART_V bump. (2) **ESSENCE POTION** (mirrors the health
+  potion): `Player.essPotionCd`, `Player.drinkEssencePotion()` (25s cd,
+  restores 55% max essence, `fxEssence` blue sparkle in particles.js);
+  desktop `UI.layout` inserts `UI.essPotionBtn` between the skill bar and the
+  essence globe (groupW grows one potion+gap), null on touch. (3) `UI.drawPotion`
+  now delegates to `UI.drawPotionButton(b, artKey, kind, cd, cdMax, cb)` —
+  contain-fits the painted flask (boxH `2.5·r`), radial cooldown darken +
+  seconds, procedural flask fallback; called for BOTH potions. `preloadArt`
+  warms `potion_health`/`potion_essence`. Globes already fill to hp%/essence%
+  (`drawGlobe` clips the swirl from the bottom) — 0 hp = death (unchanged).
+  (4) **IMP WINGS** (`entities.drawWings`): rate `Game.time*1.4` (~0.7s/frame,
+  half the old speed), SMOOTHERSTEP ease, and the next frame eases in OVER a
+  SOLID current frame (`a` at α1, `b` at α`ts`) — kills the double-faint-wing
+  ghosting a symmetric cross-fade produced. (5) **SKILLS**: `skillsActives`
+  drops the "ACTION BAR — one skill per category" header + the "Browse every
+  skill…" caption; the chooser's section→circle gaps grew (`y+=34` skills,
+  `y+=30` runes) so the red level badges clear the labels; `skillsPassives`
+  header CENTERED with more top padding (`sy 112→132`). (6) **JOURNAL**:
+  section header shows only `n / 7` slots — the `· done/total done` count AND
+  the ledger bar are gone (owner rule: don't reveal how many quests exist);
+  header height 28→22.
 - **v1.7.27 — MENU-POLISH SWEEP (owner list, no art)**: (1) **Journal**:
   `Screens.journal` panel title is just `📜 JOURNAL` (the "n / 14" counter
   dropped); list inset `lx=px+26 lw=pw-52`, padded off the panel edges.

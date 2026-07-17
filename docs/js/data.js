@@ -672,13 +672,24 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.27-alpha';
+const GAME_VERSION = 'v1.7.28-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.28-alpha', date: '17 July 2026',
+    notes: [
+      'PAINTED POTIONS (owner art) — the health and essence flasks on the HUD are now the owner\'s hand-painted bottles, cut out cleanly (glass and all). Sixteen bottle designs were prepared from the two sheets',
+      'AN ESSENCE POTION SLOT — a blue essence flask now sits between the skill bar and the essence globe, mirroring the health potion on the other side. Drink it to restore 55% of your essence (25s cooldown), just like the health potion restores life',
+      'The health and essence GLOBES already empty to match your remaining life and essence — the liquid falls as you take damage or spend essence, and at zero life you die',
+      'IMP WINGS, MUCH SLOWER + SMOOTHER — the flap now eases the next pose in over a solid current one (no more double-image flicker) and beats about twice as slowly, for a calm, flowing motion',
+      'Skills & Passives: the "Action Bar — one skill per category" and "Browse every skill…" lines were removed; when choosing skills the level-requirement badges no longer clip the section labels (more padding), and "Passive Slots" is centered with room above it',
+      'Journal: the "n / 500 done" ledger count is hidden — the total number of quests is no longer shown (Lukus and Addy alike)'
+    ]
+  },
   {
     v: 'v1.7.27-alpha', date: '17 July 2026',
     notes: [
