@@ -1945,12 +1945,14 @@ const Game = {
         UI.toast(names[o.buff], '#6ff7c3');
         Particles.ring(o.x, o.y, 90, '#6ff7c3', 5, 0.6);
       } else if (o.type === 'vendor') {
-        if (d < 50 && !o.near) {
+        // Trigger anywhere over the whole wagon image, not just its centre point
+        // (owner rule v1.7.39). Hysteresis so it doesn't reopen while you browse.
+        if (d < 120 && !o.near) {
           o.near = true;
           UI.open('vendor');       // pauses the crawl while trading
           UI.sel.vendor = o;
           AudioSys.sfx('gold');
-        } else if (d > 95) {
+        } else if (d > 190) {
           o.near = false;
         }
       } else if (o.type === 'urn' && d < 30) {

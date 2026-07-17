@@ -504,19 +504,30 @@ const World = {
 
   // A wandering merchant with a small, luck-of-the-draw stock.
   vendorStock() {
-    const mLvl = (this.zone ? this.zone.mLvl : 1) + (Hero.difficulty || 0) * 6;
+    // Wares scale to the HERO's level (owner rule v1.7.39) so a level-40 hero
+    // sees level-40 gear worth buying — never trivial low-level scraps just
+    // because the land is early. Endgame difficulty still pushes it higher.
+    const mLvl = Math.max(Hero.level || 1, (this.zone ? this.zone.mLvl : 1) + (Hero.difficulty || 0) * 6);
     const stock = [];
     for (let i = 0; i < 5; i++) {
       // First slot leans good, the tail leans junk — caveat emptor.
       const boost = i === 0 ? 0.3 : (i >= 3 ? -0.25 : 0);
       const item = Items.generate(mLvl + (i === 0 ? 2 : 0), boost);
-      stock.push({
-        item,
-        price: Math.round((40 + Items.score(item) * 1.4) * (1 + item.rarity * 0.9)),
-        sold: false
-      });
+      stock.push({ item, price: this.vendorPrice(item), sold: false });
     }
     return stock;
+  },
+
+  // Vendor asking price — driven by item LEVEL and rarity, not the raw score, so
+  // it tracks the hero's level (owner rule v1.7.39: "match the price to the level
+  // of the character — 199g for a level 40 is way too low, more like 13,000").
+  // A level-40 Rare lands around 13k; commons stay cheap, legendaries dear.
+  vendorPrice(item) {
+    const lvl = item.mLvl || 1;
+    const rarityMult = 0.55 + (item.rarity || 0) * 0.62;   // Rare(2) ≈ 1.79
+    const starMult = 1 + (item.stars || 0) * 0.5;
+    const base = Math.pow(lvl, 1.5) * 29;                  // 40^1.5·29 ≈ 7340
+    return Math.max(20, Math.round(base * rarityMult * starMult));
   },
 
   // ------------------------------------------------------------ breakables
@@ -1286,23 +1297,36 @@ const World = {
       // Painted merchant WAGON (owner art v1.7.34) — one of five at random per
       // map. Falls back to the little procedural cart until the sprite loads.
       const vimg = Game.vendorImg && Game.vendorImg(this.VENDOR_SPRITES[Math.floor(o.seed * 997) % this.VENDOR_SPRITES.length]);
+      // The top-down ground is foreshortened (TOPDOWN_TILT); undo it just for
+      // the wagon so the merchant stands at TRUE proportions instead of looking
+      // squished (owner rule v1.7.39). Standing sprites do the same in phase 2.
+      const TY = (Game.viewTilt && Game.viewTilt()) || 1;
+      // Soft ground shadow, drawn FLAT on the foreshortened ground (tilted space).
+      ctx.fillStyle = 'rgba(0,0,0,0.36)';
+      ctx.beginPath(); ctx.ellipse(0, 3, 104, 24, 0, 0, TAU); ctx.fill();
+      let topY = -150;
+      ctx.save();
+      ctx.scale(1, 1 / TY);            // stand the wagon upright
       if (vimg) {
-        const w = 150, h = w * (vimg.height / vimg.width);
-        ctx.drawImage(vimg, -w / 2, -h + 8, w, h);
+        const w = 190, h = w * (vimg.height / vimg.width);
+        ctx.drawImage(vimg, -w / 2, -h + 6, w, h);
+        topY = (-h + 6) / TY;
       } else {
         ctx.fillStyle = '#4a3a24'; rr(ctx, 8, -20, 26, 20, 3); ctx.fill();
         ctx.fillStyle = '#5e4a2a'; rr(ctx, 8, -24, 26, 7, 3); ctx.fill();
         ctx.strokeStyle = '#2e2416'; ctx.lineWidth = 2.5;
         ctx.beginPath(); ctx.arc(15, 2, 6, 0, TAU); ctx.stroke();
         ctx.beginPath(); ctx.arc(28, 2, 6, 0, TAU); ctx.stroke();
+        topY = -30 / TY;
       }
-      // Trade hint floats above the wagon.
+      ctx.restore();
+      // Trade hint floats above the (upright) wagon.
       ctx.globalAlpha = 0.9;
       ctx.fillStyle = '#ffd76a';
       ctx.font = 'bold 11px Georgia';
       ctx.textAlign = 'center';
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-      const ty = -92 + Math.sin(Game.time * 2.5) * 2;
+      const ty = topY - 12 + Math.sin(Game.time * 2.5) * 2;
       ctx.strokeText('TRADE', 0, ty); ctx.fillText('TRADE', 0, ty);
       ctx.globalAlpha = 1;
     } else if (o.type === 'urn' && !o.used) {

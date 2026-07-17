@@ -496,6 +496,23 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.39 — WANDERING MERCHANT FIXES (owner list)**: (1) **UN-SQUISH**: the
+  top-down world is drawn with a `TOPDOWN_TILT=0.66` vertical foreshorten
+  (`applyWorldTransform`), and the vendor wagon is a phase-1 prop so it got
+  squished (standing sprites billboard upright in phase 2). `drawObject`'s
+  vendor branch now wraps the wagon in `ctx.scale(1, 1/Game.viewTilt())` so it
+  stands at TRUE proportions; drawn bigger (`w=190`) with a flat
+  `rgba(0,0,0,0.36)` ground-shadow ellipse (drawn in tilted space so it lies on
+  the ground); the TRADE label floats at `topY-12` above the taller wagon
+  (`topY` derived from the un-squished image height). (2) **RADIUS**: the touch
+  trigger (`game.js` touchObjects) opens at `d<120` (was 50) / resets at
+  `d>190` (was 95) so you can open it standing anywhere over the wagon image.
+  (3) **STOCK MATCHES HERO LEVEL**: `World.vendorStock` mLvl is now
+  `Math.max(Hero.level, zone.mLvl + difficulty*6)` — a level-40 hero sees
+  level-40 gear. (4) **PRICE BY LEVEL**: new `World.vendorPrice(item)` =
+  `max(20, round(lvl^1.5 * 29 * (0.55 + rarity*0.62) * (1 + stars*0.5)))` —
+  a level-40 Rare ≈ 13,000g (owner target), commons cheap, legendaries dear;
+  replaced the old score-based `40 + score*1.4` that gave ~199g. No art change.
 - **v1.7.38 — PAINTED TORCHES + LIVE SHRINE TIMER + MORE LITTER (owner art +
   list)**: (1) **PAINTED TORCHES (owner art, scratchpad `splice_torches.py` —
   6-column flat-black sheet, mask-opaque handle + soft luminance-glow flame)**:
