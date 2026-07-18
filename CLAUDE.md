@@ -496,6 +496,21 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.43 — BLENDED DUNGEON FLOOR (owner art)**: the owner shipped two
+  seamless stone ground textures + a stone-wall autotile sheet for interiors.
+  FLOOR (done): scratchpad `dungeon_floor.py` blends cobblestone (base) with
+  dark cracked-rock PATCHES via a tileable blurred-noise mask (scipy
+  `gaussian_filter mode='wrap'`), then a `seamless()` cross-fade (roll-by-half,
+  smoothstep distance-to-edge weight) → `docs/art/tiles/Dungeon.webp` (1024²).
+  Loaded automatically by the existing tile system (`tileKeyFor` →
+  `zone.kind==='dungeon'` → 'dungeon' tile; caves keep `Cave.webp`, `zone.cave`
+  routes first — so only true dungeons/labyrinths get the blend, per owner
+  "not caves"). **ART_V 15→16**. WALLS (deferred): the wall sheet (`dun0`) is a
+  DISCRETE-SEGMENT autotile set (horizontal/vertical runs, corners, T/U,
+  diagonals) drawn in 2.5D — it does NOT yield a tileable texture (cropping it
+  gives striped bands), so skinning cells looks wrong. Proper use needs an
+  autotiler that places the right segment per wall-neighbour config — a focused
+  follow-up; `drawWalls` stays procedural for now.
 - **v1.7.42 — SELECT-TITLE INTERIOR RESTORED (owner rule)**: the v1.7.20
   `select_title.webp` was alpha-cut with its INTERIOR hollowed out (center
   alpha 0) — but the dark backing inside the ornate frame was part of the art.
