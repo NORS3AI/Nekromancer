@@ -672,13 +672,19 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.41-alpha';
+const GAME_VERSION = 'v1.7.42-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.42-alpha', date: '17 July 2026',
+    notes: [
+      'The "Choose Your Hero" title plate on the character-select screen was accidentally cut hollow inside its frame — the dark backing was part of the art. Restored the plate with its interior intact'
+    ]
+  },
   {
     v: 'v1.7.41-alpha', date: '17 July 2026',
     notes: [
