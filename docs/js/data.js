@@ -672,13 +672,21 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.44-alpha';
+const GAME_VERSION = 'v1.7.45-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.45-alpha', date: '17 July 2026',
+    notes: [
+      'Settings Keys and Saves tabs tightened up — everything is padded in from the panel edges now, nothing stretches the full width',
+      'Removed the redundant instruction line at the bottom of the Saves tab',
+      'On desktop, pressing Escape in town now opens the menu (it did nothing before)'
+    ]
+  },
   {
     v: 'v1.7.44-alpha', date: '17 July 2026',
     notes: [

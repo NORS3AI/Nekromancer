@@ -6161,10 +6161,12 @@ const Screens = {
     // Tabs: options · keybindings · manual save slots.
     if (!UI.sel.stab) UI.sel.stab = 'options';
     const tabs = [['options', 'OPTIONS'], ['keys', 'KEYS'], ['saves', 'SAVES']];
-    const tw = (pw - 48) / 3;
+    // Padded in from both edges (owner rule v1.7.45 — nothing spans menu-width).
+    const tabPad = 30, tabGap = 10;
+    const tw = (pw - 2 * tabPad - 2 * tabGap) / 3;
     tabs.forEach((t, i) => {
       // Simple-plate tabs (v1.6.96): the selected tab reads bright, the rest dim.
-      UI.btnPlate2(ctx, px + 16 + i * (tw + 8), py + 46, tw, 30, t[1], () => { UI.sel.stab = t[0]; UI.sel.rebindAction = null; },
+      UI.btnPlate2(ctx, px + tabPad + i * (tw + tabGap), py + 46, tw, 30, t[1], () => { UI.sel.stab = t[0]; UI.sel.rebindAction = null; },
         { size: 12, color: UI.sel.stab === t[0] ? '#f0dcae' : '#8a8070' });
     });
     UI.sel.scrollRegion = null;   // (options tab sets its own below; others don't scroll)
@@ -6436,8 +6438,10 @@ const Screens = {
 
   savesTab(ctx, W, H, px, py, pw, ph) {
     const saves = Saves.list();
+    const PAD = 30;                     // padding on all sides (owner rule v1.7.45)
+    const cx = px + PAD, cw = pw - 2 * PAD, R = px + pw - PAD;
     // "Save Hero" — narrower than the panel, centered (owner rule v1.7.1).
-    const shw = Math.min(300, pw * 0.62);
+    const shw = Math.min(300, pw * 0.58);
     UI.btnPlate2(ctx, px + pw / 2 - shw / 2, py + 84, shw, 34,
       saves.length >= Saves.MAX ? 'ALL 20 SLOTS FULL' : 'SAVE HERO  (' + saves.length + ' / ' + Saves.MAX + ')',
       saves.length >= Saves.MAX ? null : () => Saves.add(),
@@ -6445,10 +6449,10 @@ const Screens = {
 
     // Portable export / import — move a hero between browsers or devices.
     // Sits BELOW the Save Hero plate (which ends at py+118) so they never overlap.
-    const halfW = (pw - 40) / 2;
-    UI.btnPlate2(ctx, px + 16, py + 126, halfW, 30, 'EXPORT CODE', () => this.exportSave(),
+    const halfW = (cw - 12) / 2;
+    UI.btnPlate2(ctx, cx, py + 126, halfW, 30, 'EXPORT CODE', () => this.exportSave(),
       { size: 11 });
-    UI.btnPlate2(ctx, px + 24 + halfW, py + 126, halfW, 30, 'IMPORT CODE', () => this.importSave(),
+    UI.btnPlate2(ctx, cx + halfW + 12, py + 126, halfW, 30, 'IMPORT CODE', () => this.importSave(),
       { size: 11 });
 
     if (!saves.length) {
@@ -6463,25 +6467,23 @@ const Screens = {
     saves.forEach((s, i) => {
       if (y > py + ph - 26) return;
       ctx.fillStyle = 'rgba(28,24,38,0.92)';
-      rr(ctx, px + 16, y, pw - 32, rowH - 4, 5); ctx.fill();
+      rr(ctx, cx, y, cw, rowH - 4, 5); ctx.fill();
+      const xBtn = R - 42, loadX = xBtn - 8 - 74;
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 11px Cinzel, Georgia';
       ctx.fillStyle = '#e8e0cc';
-      ctx.fillText(this.fitText(ctx, s.name, pw - 240), px + 26, y + rowH / 2 - 2);
+      ctx.fillText(this.fitText(ctx, s.name, loadX - (cx + 10) - 70), cx + 12, y + rowH / 2 - 2);
       ctx.font = '10px Cinzel, Georgia';
       ctx.fillStyle = '#8a8070';
       ctx.textAlign = 'right';
-      ctx.fillText(s.date || '', px + pw - 148, y + rowH / 2 - 2);
-      UI.btn(ctx, px + pw - 138, y + 1, 74, rowH - 6, 'LOAD', () => Saves.load(i),
+      ctx.fillText(s.date || '', loadX - 10, y + rowH / 2 - 2);
+      UI.btn(ctx, loadX, y + 1, 74, rowH - 6, 'LOAD', () => Saves.load(i),
         { size: 10, border: '#57b894', color: '#6ff7c3' });
-      UI.btn(ctx, px + pw - 58, y + 1, 42, rowH - 6, '✕', () => Saves.remove(i),
+      UI.btn(ctx, xBtn, y + 1, 42, rowH - 6, '✕', () => Saves.remove(i),
         { size: 10, border: '#8a4550', color: '#e04a5a' });
       y += rowH;
     });
-    ctx.textAlign = 'center';
-    ctx.font = '10px Cinzel, Georgia';
-    ctx.fillStyle = '#6f6552';
-    ctx.fillText('Saves live in this browser (localStorage). Loading replaces your current hero.', W / 2, py + ph - 14);
+    // (owner rule v1.7.45: the localStorage flavor line is gone — no instructions)
   },
 
   // ------------------------------------------------- keybindings (desktop)
@@ -6500,15 +6502,16 @@ const Screens = {
     }
     const listBot = py + ph - 44;
     const cols = narrow ? 1 : 2;
-    const gap = 16;
-    const colW = (pw - 32 - (cols - 1) * gap) / cols;
+    const gap = 20;
+    const PAD = 30;                     // padding on all sides (owner rule v1.7.45)
+    const colW = (pw - 2 * PAD - (cols - 1) * gap) / cols;
     const rowsPerCol = Math.ceil(KEY_ACTIONS.length / cols);
     const rowH = Math.min(30, (listBot - listTop) / rowsPerCol);
 
     KEY_ACTIONS.forEach(([id, label], i) => {
       const col = Math.floor(i / rowsPerCol);
       const row = i % rowsPerCol;
-      const x = px + 16 + col * (colW + gap);
+      const x = px + PAD + col * (colW + gap);
       const y = listTop + row * rowH;
       const labelW = colW * 0.40;
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
@@ -6557,7 +6560,9 @@ const Screens = {
       ctx.textAlign = 'left';
     });
 
-    UI.btnPlate2(ctx, px + 16, py + ph - 38, pw - 32, 28, 'RESET TO DEFAULTS', () => {
+    // Narrower + centered — never menu-width (owner rule v1.7.45).
+    const rw = Math.min(300, pw * 0.5);
+    UI.btnPlate2(ctx, px + pw / 2 - rw / 2, py + ph - 38, rw, 28, 'RESET TO DEFAULTS', () => {
       Settings.resetKeys();
       UI.sel.rebindAction = null;
     }, { size: 11, color: '#e08a96' });
