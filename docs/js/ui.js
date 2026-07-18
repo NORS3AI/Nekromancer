@@ -270,12 +270,14 @@ const UI = {
       // The owner's painted frame, 9-sliced: ornamental corners stay 1:1,
       // edge strips stretch, the middle is a flat dark fill (never stretch
       // the painted interior — it carries baked-in content).
-      // TOTAL BLACK interior (owner rule v1.7.17 — no purple rectangle).
-      ctx.fillStyle = 'rgba(2,1,4,0.96)';
-      rr(ctx, x + 6, y + 6, w - 12, h - 12, 10); ctx.fill();
+      // FULLY OPAQUE black interior (owner rule v1.7.48 — the old 0.96 let the
+      // lit town/world bleed through 4%, so the panel read part-black,
+      // part-menu-texture over bright spots; solid black is uniform everywhere).
+      ctx.fillStyle = '#050308';
+      rr(ctx, x + 5, y + 5, w - 10, h - 10, 11); ctx.fill();
       this.drawNine(ctx, art, x, y, w, h, 46);
     } else {
-      ctx.fillStyle = 'rgba(2,1,4,0.96)';
+      ctx.fillStyle = '#050308';
       rr(ctx, x, y, w, h, 12); ctx.fill();
       ctx.strokeStyle = th.panel;
       ctx.lineWidth = 2;
