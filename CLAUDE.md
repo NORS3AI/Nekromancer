@@ -496,6 +496,15 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.45 — SETTINGS PADDING + TOWN-ESCAPE (owner list)**: (1) Settings Keys
+  & Saves tabs padded in from both edges — shared tab row `tabPad 30/gap 10`,
+  keysTab columns `PAD 30`, RESET TO DEFAULTS narrowed to `min(300, pw*0.5)`
+  centered, savesTab EXPORT/IMPORT + save rows inset `PAD 30` (row LOAD/✕ hang
+  off `R = px+pw-PAD`); nothing spans menu-width. (2) The Saves-tab bottom
+  "Saves live in this browser…" flavor line DELETED (owner: no instructions).
+  (3) **Escape in TOWN** now opens `sysmenu` — `input.js` pause branch only
+  handled 'map'→enterTown, so Escape in town did nothing; added
+  `Game.state==='town' → UI.open('sysmenu')`. No art change.
 - **v1.7.44 — NEW MALE HERO MODELS + HAIR REORDER (owner art)**: the owner
   shipped the FINISHED male set — a 3×3 sheet, each cell = [side, side,
   front+back-merged], reading row-major in the new colour order. Scratchpad
