@@ -672,13 +672,20 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.48-alpha';
+const GAME_VERSION = 'v1.7.49-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.49-alpha', date: '17 July 2026',
+    notes: [
+      'The title screen now shows a real loading bar (0–100%) in a panel while every painting and hero model streams in — the PLAY button only appears once everything is loaded',
+      'Because of that, Choose Your Hero always shows the finished painted models now, never a rough procedural stand-in while art was still downloading'
+    ]
+  },
   {
     v: 'v1.7.48-alpha', date: '17 July 2026',
     notes: [
