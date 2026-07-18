@@ -672,13 +672,21 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.43-alpha';
+const GAME_VERSION = 'v1.7.44-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.44-alpha', date: '17 July 2026',
+    notes: [
+      'NEW MALE NEKROMANCER MODELS (owner art) — all nine male heroes have been repainted with the finished full-body models and matching head busts',
+      'Male hair colours are now Orange · Red · Purple · White · Silver · Blonde · Green · Black · Straw',
+      'Existing heroes keep their chosen hair colour (the roster is migrated to the new order automatically)'
+    ]
+  },
   {
     v: 'v1.7.43-alpha', date: '17 July 2026',
     notes: [
@@ -3698,16 +3706,20 @@ const EYE_COLORS = [
 // Hair colors (owner art sheets): index = Hero.hair. `art` is the filename
 // suffix for docs/art/hero/{m,f}_{front,back}<art>.webp — '' (index 0, Black)
 // is the original full-res painting; _h1.._h8 are the sheet variants.
+// v1.7.44 — reordered to the owner's finished male set (art indices match the
+// new 3×3 sheet, read row-major). HAIR_COLORS is shared by both genders, so the
+// female files were remapped to this same colour order (straw has no female art
+// yet → falls back to the old blue slot).
 const HAIR_COLORS = [
-  { name: 'Black',  hex: '#23202a', art: '' },
-  { name: 'Ember',  hex: '#d96a1c', art: '_h1' },
-  { name: 'Blood',  hex: '#9c1f1f', art: '_h2' },
-  { name: 'Violet', hex: '#5f2a8f', art: '_h3' },
-  { name: 'White',  hex: '#e4e0d4', art: '_h4' },
-  { name: 'Silver', hex: '#a9adb5', art: '_h5' },
-  { name: 'Gold',   hex: '#c9990f', art: '_h6' },
-  { name: 'Green',  hex: '#2c7a2a', art: '_h7' },
-  { name: 'Blue',   hex: '#2c3f7d', art: '_h8' }
+  { name: 'Orange', hex: '#d96a1c', art: '' },
+  { name: 'Red',    hex: '#9c1f1f', art: '_h1' },
+  { name: 'Purple', hex: '#5f2a8f', art: '_h2' },
+  { name: 'White',  hex: '#e4e0d4', art: '_h3' },
+  { name: 'Silver', hex: '#a9adb5', art: '_h4' },
+  { name: 'Blonde', hex: '#c9990f', art: '_h5' },
+  { name: 'Green',  hex: '#2c7a2a', art: '_h6' },
+  { name: 'Black',  hex: '#23202a', art: '_h7' },
+  { name: 'Straw',  hex: '#d8c98a', art: '_h8' }
 ];
 
 const ELITE_PREFIX = ['Blood', 'Grave', 'Doom', 'Plague', 'Dread', 'Bone'];

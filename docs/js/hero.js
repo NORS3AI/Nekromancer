@@ -218,7 +218,7 @@ const Hero = {
   bagBonus: 0,              // dev-granted extra slots (added on top of the tier)
   BAG_SIZE: 24,             // derived from bagTier via applyBagSize()
   STASH_SIZE: 100,
-  SAVE_VERSION: 4,   // v2: Epic rarity @ index 3 · v3: item.gem → item.gems[] · v4: 13-tier gems
+  SAVE_VERSION: 5,   // v2: Epic rarity @ index 3 · v3: item.gem → item.gems[] · v4: 13-tier gems · v5: hair reorder
 
   fresh() {
     // name/eyeColor/gender/hair are chosen at character creation; keep any already set.
@@ -372,7 +372,15 @@ const Hero = {
       (d.gems || []).forEach(fixGem);
       each(it => { if (it && it.gems) it.gems.forEach(fixGem); });
     }
-    d.v = 4;
+    if (v < 5) {
+      // v1.7.44: HAIR_COLORS reordered to the owner's finished male set. Remap
+      // the saved index old→new so existing heroes keep their hair colour.
+      // old: 0 black 1 orange 2 red 3 purple 4 white 5 silver 6 gold 7 green 8 blue
+      // new: 0 orange 1 red 2 purple 3 white 4 silver 5 blonde 6 green 7 black 8 straw
+      const HR = [7, 0, 1, 2, 3, 4, 5, 6, 8];
+      if (typeof d.hair === 'number' && HR[d.hair] != null) d.hair = HR[d.hair];
+    }
+    d.v = 5;
     return d;
   },
 
@@ -966,6 +974,9 @@ const Profiles = {
         const d = JSON.parse(raw);
         this.slots = (d.slots || []).slice(0, this.MAX);
         while (this.slots.length < this.MAX) this.slots.push(null);
+        // Migrate each roster snapshot (e.g. v1.7.44 hair reorder) so the
+        // campfire previews show the right colour before a hero is even loaded.
+        this.slots = this.slots.map(s => s ? Hero.migrate(s) : null);
         this.active = clamp(d.active || 0, 0, this.MAX - 1);
       }
     } catch (e) { /* ignore */ }
