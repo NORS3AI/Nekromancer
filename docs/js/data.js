@@ -672,13 +672,19 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.42-alpha';
+const GAME_VERSION = 'v1.7.43-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.43-alpha', date: '17 July 2026',
+    notes: [
+      'New dungeon/labyrinth floor — the owner\'s two stone textures (cracked rock + cobblestone) are blended together with soft masked patches so interior floors read as rich, varied stonework (caves keep their own look)'
+    ]
+  },
   {
     v: 'v1.7.42-alpha', date: '17 July 2026',
     notes: [
