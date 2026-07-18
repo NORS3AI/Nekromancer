@@ -672,13 +672,22 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.45-alpha';
+const GAME_VERSION = 'v1.7.46-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.46-alpha', date: '17 July 2026',
+    notes: [
+      'The Stash panel now sizes to its contents instead of stretching down the whole screen — an empty vault is only a couple of rows tall',
+      'Stash is narrower and padded on all sides; nothing spans the full menu width anymore',
+      'Item names in the stash now read in the game\'s bone-white lettering — legendaries keep just a faint orange tint so you can still spot them at a glance',
+      'The stash header is just "STASH" now — the stored-count clutter is gone'
+    ]
+  },
   {
     v: 'v1.7.45-alpha', date: '17 July 2026',
     notes: [

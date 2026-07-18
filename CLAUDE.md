@@ -496,6 +496,17 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.46 — STASH FITS ITS CONTENTS (owner list)**: `Screens.stash` rebuilt
+  to size the panel to its content. `shown` (groups/items) is computed UP FRONT;
+  the filter+sort chip rows are MEASURED (`measureRows`) to know their wrapped
+  height; list height = Σ(24 header + 42/item + expanded card); panel height =
+  `min(maxH, topBlock + max(2·42+8, listH) + 14)` — so an empty vault is ~two
+  item-rows tall, never full-screen. Narrower + padded: `ppw min(500,W-24)`,
+  `PAD 22` each side (`pw = ppw-2·PAD`, `px = ppx+PAD`). **Names read in
+  bone-white Cinzel, not full rarity colour** (owner rule) — new
+  `Screens.blendHex(a,b,t)` tints legendary+ (rarity≥4) names only 50% toward
+  their rarity colour (a faint orange for legendaries) so rarity still reads
+  without shouting. No art change.
 - **v1.7.45 — SETTINGS PADDING + TOWN-ESCAPE (owner list)**: (1) Settings Keys
   & Saves tabs padded in from both edges — shared tab row `tabPad 30/gap 10`,
   keysTab columns `PAD 30`, RESET TO DEFAULTS narrowed to `min(300, pw*0.5)`

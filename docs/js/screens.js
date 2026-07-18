@@ -16,6 +16,14 @@ const Screens = {
     return t + '…';
   },
 
+  // Blend two #rrggbb colours (t=0 → a, t=1 → b). Used to TINT bone-white text
+  // toward a rarity colour without going full-saturation (owner rule v1.7.46).
+  blendHex(a, b, t) {
+    const p = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+    const ca = p(a), cb = p(b);
+    return 'rgb(' + ca.map((v, i) => Math.round(v + (cb[i] - v) * t)).join(',') + ')';
+  },
+
   // Draw a short label at (x, baseY), wrapping onto up to maxLines lines when it's
   // too wide — NEVER truncated with "…" (owner rule: names read as 2–3 lines). The
   // block is centred vertically on baseY so it barely disturbs the layout around
@@ -5108,18 +5116,66 @@ const Screens = {
     };
 
     const sfa = UI.safe || { top: 0 };
-    // The painted panel wraps the whole vault (v1.7.0 owner rule — the
-    // Stash gets a menu of its own, like Inventory).
     const total = Hero.stash.filter(it => it && !it.torch).length;
-    const ppw = Math.min(600, W - 16);
+
+    // The visible groups/items — computed UP FRONT so the panel can be sized to
+    // its contents (owner rule v1.7.46 — "only as long as the items inside").
+    const shown = groupsDef
+      .filter(([label]) => filter === 'all' || filter === label)
+      .map(([label, gSlots]) => {
+        const items = gSlots.reduce((arr, sl) => arr.concat(Hero.stashSlotItems(sl)), []);
+        items.sort(sorters[sortKey] || sorters.up);
+        return { label, items };
+      })
+      .filter(g => g.items.length);
+
+    // Panel geometry — narrower + padded on all sides (owner rule v1.7.46).
+    const PAD = 22;
+    const ppw = Math.min(500, W - 24);
     const ppx = W / 2 - ppw / 2;
+    const pw = ppw - 2 * PAD;
+    const px = ppx + PAD;
     const ppy = Math.max(8, (sfa.top || 0) + 8);
-    const ppb = H - 10;
-    UI.panel(ctx, ppx, ppy, ppw, ppb - ppy,
-      'STASH — ' + total + ' stored · ' + Hero.stashPerSlot().toLocaleString() + '/type');
-    const pw = ppw - 40;
-    const px = W / 2 - pw / 2;
-    let y = ppy + 48;
+
+    // Measure how many rows the filter + sort chips wrap into (for the height).
+    ctx.font = 'bold 9px Cinzel, Georgia';
+    const chipW = label => ctx.measureText(label).width + 26;
+    const measureRows = (labels, startX) => {
+      let cx = startX, rows = 1;
+      for (const lab of labels) {
+        const cw = chipW(lab);
+        if (cx + cw > px + pw + 1) { cx = px; rows++; }
+        cx += cw + 6;
+      }
+      return rows;
+    };
+    const filterLabels = ['ALL (' + total + ')'];
+    for (const [label, gSlots] of groupsDef) {
+      const n = gSlots.reduce((s2, sl) => s2 + Hero.stashSlotCount(sl), 0);
+      if (!n && filter !== label) continue;
+      filterLabels.push(label + (n ? ' ' + n : ''));
+    }
+    const filterH = measureRows(filterLabels, px) * 24;
+    const sortH = measureRows(this.STASH_SORTS.map(s => s[1]), px + 34) * 28;
+
+    // List content height (group headers + item rows + any expanded card).
+    let listH = shown.length ? 0 : 24;
+    for (const g of shown) {
+      listH += 24;
+      for (const it of g.items) {
+        listH += 42;
+        if (UI.sel.stashItem === it) listH += 30 + Items.statLines(it).length * 15 + 8;
+      }
+      listH += 8;
+    }
+    const headerH = 48, depositH = 34;
+    const topBlock = headerH + depositH + filterH + 6 + sortH + 6;
+    const minList = 2 * 42 + 8;                       // ≥ two item rows even when empty
+    const maxH = H - ppy - 10;
+    const ph = Math.min(maxH, topBlock + Math.max(minList, listH) + 14);
+    const ppb = ppy + ph;
+    UI.panel(ctx, ppx, ppy, ppw, ph, 'STASH');
+    let y = ppy + headerH;
 
     // Deposit + upgrade.
     const gs = n => n >= 1e6 ? (n / 1e6) + 'm' : n >= 1000 ? (n / 1000) + 'k' : '' + n;
@@ -5165,16 +5221,7 @@ const Screens = {
     }
     y = chY + 28;
 
-    // The grouped, scrollable list.
-    const shown = groupsDef
-      .filter(([label]) => filter === 'all' || filter === label)
-      .map(([label, gSlots]) => {
-        const items = gSlots.reduce((arr, sl) => arr.concat(Hero.stashSlotItems(sl)), []);
-        items.sort(sorters[sortKey] || sorters.up);
-        return { label, items };
-      })
-      .filter(g => g.items.length);
-
+    // The grouped, scrollable list (`shown` computed above for sizing).
     const listTop = y, viewBot = ppb - 14, viewH = Math.max(60, viewBot - listTop);
     const scrollY = clamp(UI.sel.scrollY || 0, 0, UI.sel.scrollMax || 0);
     UI.sel.scrollY = scrollY;
@@ -5210,7 +5257,11 @@ const Screens = {
           rr(ctx, px, yy, pw, 38, 6); ctx.fill();
           if (expanded) { ctx.strokeStyle = RARITIES[it.rarity].color; ctx.lineWidth = 1.5; rr(ctx, px, yy, pw, 38, 6); ctx.stroke(); }
           ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-          ctx.font = 'bold 12px Cinzel, Georgia'; ctx.fillStyle = RARITIES[it.rarity].color;
+          // Names read in the theme's bone-white Cinzel, NOT full rarity colour
+          // (owner rule v1.7.46) — legendary+ gets only a faint tint of its
+          // colour so it still signals rarity without shouting.
+          ctx.font = 'bold 12px Cinzel, Georgia';
+          ctx.fillStyle = it.rarity >= 4 ? this.blendHex('#cfc8b8', RARITIES[it.rarity].color, 0.5) : '#cfc8b8';
           const bw = 76;   // wide enough for WITHDRAW at 9px — never ellipsized
           ctx.fillText(this.fitText(ctx, it.name, pw - bw * 2 - 26), px + 10, yy + 15);
           ctx.font = '10px Cinzel, Georgia'; ctx.fillStyle = '#8a8070';
