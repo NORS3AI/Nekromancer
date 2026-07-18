@@ -393,6 +393,11 @@ const Game = {
   // connection they stream in during the title/roster screens instead of
   // popping in late on first use (owner report).
   preloadArt() {
+    // Splash + logo + the panel/bar art FIRST so the title screen has its
+    // backdrop up before the loading bar appears (owner rule v1.7.50 — never a
+    // bar over a black void; the player sees the art, then it fills).
+    for (const k of ['title_splash', 'title_logo', 'panel', 'plate2', 'plate3', 'button', 'close2']) this.uiImg(k);
+    this.hudImg('hud_xp_frame'); this.hudImg('hud_xp_fill');
     this.townImg = this.townImg || (() => { const i = new Image(); i.src = 'art/town/newhaven.webp?v=' + (typeof ART_V !== 'undefined' ? ART_V : '1'); return i; })();
     this.lukusImg('helmed'); this.lukusImg('idle');
     this.addyImg(); this.lyssaImg();

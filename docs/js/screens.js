@@ -2101,10 +2101,7 @@ const Screens = {
     // TITLE INTRO SEQUENCE (owner spec v1.7.22): the splash art shows at once,
     // the logo slow-fades in at 3s, and the PLAY plate slow-fades in at 5s.
     // The clock starts the first time the title is shown this session.
-    if (this._titleStart === undefined) this._titleStart = Game.time;
-    const el = Game.time - this._titleStart;
-    const fade = (start, dur) => Math.max(0, Math.min(1, (el - start) / dur));
-    const logoA = fade(1.2, 1.4);   // logo fades in early; the bar is the wait
+    // (Fades are now tied to when each asset actually LOADS — see below.)
 
     // ---- the splash art ----
     // The WHOLE splash scales to fit the monitor (contain-fit), never zoomed/
@@ -2113,8 +2110,9 @@ const Screens = {
     // a wide monitor it reads as a framed painting fading into shadow — owner
     // rule v1.7.41 ("the blurred didn't have a good look").
     const splash = Game.uiImg('title_splash');
+    const splashReady = !!(splash && splash.complete && splash.naturalWidth);
     ctx.fillStyle = '#050307'; ctx.fillRect(0, 0, W, H);
-    if (splash && splash.complete && splash.naturalWidth) {
+    if (splashReady) {
       const iw = splash.width, ih = splash.height;
       const ct = Math.min(W / iw, H / ih);
       const dw = iw * ct, dh = ih * ct;
@@ -2144,25 +2142,27 @@ const Screens = {
       ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
     }
 
-    // ---- the NEKROMANCER logo, slow fade at 3s ----
+    // ---- the NEKROMANCER logo — fades in the MOMENT it loads (owner rule
+    // v1.7.50); a text wordmark stands in immediately so the screen is never a
+    // blank void while the painted logo streams in.
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const logo = Game.uiImg('title_logo');
-    const lar = (logo && logo.naturalWidth) ? logo.width / logo.height : 1.0;
+    const logoReady = !!(logo && logo.complete && logo.naturalWidth);
+    const lar = logoReady ? logo.width / logo.height : 1.0;
     const lh = Math.min(H * 0.46, W * 0.62 / lar);
     const lw = lh * lar;
     const lyC = H * 0.05 + lh / 2;
-    if (logoA > 0) {
-      ctx.save();
-      ctx.globalAlpha = logoA;
-      if (logo && logo.complete && logo.naturalWidth) {
-        ctx.shadowColor = 'rgba(120,220,215,0.5)'; ctx.shadowBlur = Math.min(38, W * 0.05);
-        ctx.drawImage(logo, cx - lw / 2, lyC - lh / 2, lw, lh);
-      } else {
-        ctx.font = '600 ' + Math.round(W < 640 ? 34 : 52) + 'px Cinzel, Georgia'; ctx.fillStyle = '#cfc8b8';
-        ctx.fillText('NEKROMANCER', cx, lyC);
-      }
-      ctx.restore();
+    if (logoReady && this._logoAt === undefined) this._logoAt = Game.time;
+    ctx.save();
+    if (logoReady) {
+      ctx.globalAlpha = Math.min(1, (Game.time - this._logoAt) / 0.7);
+      ctx.shadowColor = 'rgba(120,220,215,0.5)'; ctx.shadowBlur = Math.min(38, W * 0.05);
+      ctx.drawImage(logo, cx - lw / 2, lyC - lh / 2, lw, lh);
+    } else {
+      ctx.font = '600 ' + Math.round(W < 640 ? 34 : 52) + 'px Cinzel, Georgia'; ctx.fillStyle = '#cfc8b8';
+      ctx.fillText('NEKROMANCER', cx, lyC);
     }
+    ctx.restore();
 
     // ---- ASSET LOADING (owner rule v1.7.49) — a real progress bar fills as
     // every painting/model streams in; PLAY only appears once it hits 100%, so
@@ -2173,13 +2173,18 @@ const Screens = {
     const ready = frac >= 0.999;
     if (!ready) {
       this._loadDoneAt = undefined;
-      const lpW = Math.min(360, W * 0.84), lpH = 100;
-      const lpx = cx - lpW / 2, lpy = by - 14;
-      UI.panel(ctx, lpx, lpy, lpW, lpH, 'SUMMONING THE DEAD');
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = '600 22px Cinzel, Georgia'; ctx.fillStyle = '#dcc9a2';
-      ctx.fillText(Math.round(frac * 100) + '%', cx, lpy + 60);
-      UI.drawXpBar(ctx, { x: lpx + 26, y: lpy + lpH - 22, w: lpW - 52 }, frac);
+      // Only show the loading bar once the SPLASH backdrop is up (owner rule
+      // v1.7.50 — the player sees the art first, THEN the bar; never a bar over
+      // a black void). The splash + logo are preloaded first so this is brief.
+      if (splashReady) {
+        const lpW = Math.min(360, W * 0.84), lpH = 100;
+        const lpx = cx - lpW / 2, lpy = by - 14;
+        UI.panel(ctx, lpx, lpy, lpW, lpH, 'SUMMONING THE DEAD');
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = '600 22px Cinzel, Georgia'; ctx.fillStyle = '#dcc9a2';
+        ctx.fillText(Math.round(frac * 100) + '%', cx, lpy + 60);
+        UI.drawXpBar(ctx, { x: lpx + 26, y: lpy + lpH - 22, w: lpW - 52 }, frac);
+      }
     } else {
       // PLAY fades in once everything is loaded. PLAY → Choose Your Hero.
       if (this._loadDoneAt === undefined) this._loadDoneAt = Game.time;

@@ -496,6 +496,15 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.50 — SPLASH/LOGO FIRST, THEN THE BAR (owner rule)**: the v1.7.49 bar
+  could show over a black void before the splash streamed in. Fix: `preloadArt`
+  now requests `title_splash`/`title_logo` + panel/plate/xp-bar art FIRST (before
+  the 380-asset warm), and `Screens.title` GATES the loading panel on
+  `splashReady` (only draws the bar once the splash backdrop is up). The logo
+  fades in the moment IT loads (`_logoAt`, 0.7s) with a text 'NEKROMANCER'
+  wordmark standing in until then — so the screen is never a blank black void.
+  Sequence: splash+logo → bar (SUMMONING THE DEAD, %) → PLAY at 100%. No art
+  change.
 - **v1.7.49 — TITLE LOADING BAR + FULL HERO PRELOAD (owner rule)**: PLAY no
   longer fades in on a 5s timer — it's GATED on real asset load. `preloadArt`
   now also warms the FULL hero wardrobe (every gender × all 9 hairs ×
