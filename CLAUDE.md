@@ -496,6 +496,23 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.44 — NEW MALE HERO MODELS + HAIR REORDER (owner art)**: the owner
+  shipped the FINISHED male set — a 3×3 sheet, each cell = [side, side,
+  front+back-merged], reading row-major in the new colour order. Scratchpad
+  `splice_males.py`: flat-black connected-component cutout (border-connected
+  black = bg, KEEP the black costume via `binary_fill_holes`, 1.1px feather),
+  keep side #1, split the merged front+back at the min-content column →
+  `m_{front,back,side}[_hN].webp` + head-crop `bust_m0..8.webp`. **HAIR_COLORS
+  reordered** (data.js): 0 Orange · 1 Red · 2 Purple · 3 White · 4 Silver ·
+  5 Blonde · 6 Green · 7 Black · 8 Straw (index 0 = base no-suffix files).
+  Since HAIR_COLORS is SHARED by both genders (`game.js` builds the `_hN`
+  suffix from it), the FEMALE files were permutation-remapped to the same order
+  (new0←old_h1 … new6←old_h7, new7←old base(black), new8←old_h8(blue stands in
+  for straw until female straw art ships); busts likewise). **Save migration
+  v4→5** (`Hero.migrate` + `SAVE_VERSION` 5): remaps the saved `hair` index
+  old→new (`[7,0,1,2,3,4,5,6,8]`) so existing heroes keep their colour;
+  `Profiles.load` migrates every roster snapshot too so campfire previews are
+  right. **ART_V 16→17**.
 - **v1.7.43 — BLENDED DUNGEON FLOOR (owner art)**: the owner shipped two
   seamless stone ground textures + a stone-wall autotile sheet for interiors.
   FLOOR (done): scratchpad `dungeon_floor.py` blends cobblestone (base) with

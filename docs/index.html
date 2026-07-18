@@ -13,7 +13,7 @@
   // served stale (GitHub Pages caches assets ~10 min). Bump BUILD on every
   // js/css change — kept in step with GAME_VERSION in data.js. The stylesheet
   // is written from here too so its version can never lag the scripts again.
-  var BUILD = '1.7.43';
+  var BUILD = '1.7.44';
   // Art version — bump ONLY when a file in art/ actually changes. Heavy
   // paintings stay cached across game releases (BUILD busts only js/css).
   // 11→12: the new painted tree sheets replaced the v1.7.34 pine1-3 content.
@@ -23,7 +23,9 @@
   // 14→15: select_title.webp re-cut KEEPING its interior black (the old cut
   //        hollowed out the frame's interior; owner rule).
   // 15→16: Dungeon.webp floor rebuilt = blend of the two owner stone textures.
-  var ART_V = '16';
+  // 16→17: all MALE hero models + busts replaced (finished art); female files
+  //        remapped to the new hair-colour order.
+  var ART_V = '17';
   document.write('<link rel="stylesheet" href="css/style.css?v=' + BUILD + '">');
 </script>
 </head>
