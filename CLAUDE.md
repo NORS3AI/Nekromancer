@@ -496,6 +496,14 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.48 — UI.panel INTERIOR FULLY OPAQUE (owner rule "all black, not part
+  black part menu-bg")**: `UI.panel`'s interior fill was `rgba(2,1,4,0.96)` —
+  4% of the DIMMED world bled through, so over bright spots (town fountain) the
+  panel centre tinted warm while the edges stayed black = two-toned. Changed to
+  solid `#050308` (both the art-frame branch and the procedural fallback), so
+  every menu reads as uniform black inside its frame regardless of what's behind
+  it. Verified over the lit town: interior samples 2–5/255 everywhere. No art
+  change.
 - **v1.7.47 — NO STRETCHED BUTTON PLATES (owner rule "nothing menu-width")**:
   global fix in `ui.js` — new `UI.capPlate(x,w,label,o)` caps a LABELED button
   plate to `CAP 340` centered when `w > CAP+40` (380); `btnPlate`/`btnPlate2`/

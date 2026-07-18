@@ -672,13 +672,19 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.47-alpha';
+const GAME_VERSION = 'v1.7.48-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.48-alpha', date: '17 July 2026',
+    notes: [
+      'Menu interiors are now solid black across the board — the panel used to be slightly see-through, so bright spots behind it (like the town fountain) bled through and made the background look two-toned. Every menu now reads as clean black inside its frame'
+    ]
+  },
   {
     v: 'v1.7.47-alpha', date: '17 July 2026',
     notes: [
