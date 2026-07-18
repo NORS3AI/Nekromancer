@@ -496,6 +496,14 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.41 — TITLE EDGE-FADE INSTEAD OF BLUR (owner rule)**: the v1.7.40 blurred
+  cover backdrop looked muddy ("didn't have a good look"). Dropped the blur/
+  `_titleBg` cache entirely; `Screens.title` still draws the splash CONTAIN-fit
+  (whole image, never oversized) but now the outer art DISSOLVES into the black
+  frame via linear gradients on each margin (`edge()` helper: opaque `#050307`
+  at the screen edge → transparent ~`margin*1.4 + 150px` into the art), so on a
+  wide monitor it reads as a framed painting fading into shadow — no bars, no
+  blur. Vignette/logo/PLAY unchanged. No art change.
 - **v1.7.40 — TITLE SPLASH SCALES TO THE MONITOR (owner rule)**: `Screens.title`
   drew `title_splash.webp` (1536×1024, 3:2) COVER-fit (`Math.max`), so on wide/
   ultrawide desktops it zoomed up huge and cropped — "too big". Now CONTAIN-fit
