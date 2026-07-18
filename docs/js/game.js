@@ -454,6 +454,51 @@ const Game = {
     for (const k of World.VENDOR_SPRITES || []) this.vendorImg(k);
     // Painted torches (owner art v1.7.38) — one per torch tier.
     if (typeof TORCH_TYPES !== 'undefined') for (const k of Object.keys(TORCH_TYPES)) this.torchImg(k);
+    // FULL hero wardrobe (every gender × hair × view + busts) so Choose Your
+    // Hero / creation NEVER falls back to a procedural figure (owner rule
+    // v1.7.49 — wait for the real models via the title loading bar instead).
+    if (typeof HAIR_COLORS !== 'undefined') {
+      for (const gd of ['m', 'f']) for (let h = 0; h < HAIR_COLORS.length; h++) {
+        this.heroImg(gd, 'front', h); this.heroImg(gd, 'back', h); this.heroImg(gd, 'side', h);
+        this.heroBust(gd, h);
+      }
+    }
+    // Snapshot everything just requested as the boot manifest — the title
+    // loading bar fills as these complete, and PLAY unlocks at 100%.
+    this.buildBootManifest();
+  },
+
+  // The images the title loading bar tracks — gathered from every art cache
+  // after preloadArt kicks them all off.
+  bootAssets: [],
+  bootManifestReady: false,
+  buildBootManifest() {
+    const arr = [];
+    const addObj = obj => {
+      if (!obj) return;
+      for (const k in obj) {
+        const v = obj[k];
+        if (v && v.tagName === 'IMG') arr.push(v);
+        else if (v && v.img && v.img.tagName === 'IMG') arr.push(v.img);   // World.tileImages {img,ready}
+      }
+    };
+    addObj(this.uiArt); addObj(this.matArt); addObj(this.propArt); addObj(this.vendorArt);
+    addObj(this.torchArt); addObj(this.hudArt); addObj(this.wingArt); addObj(this.heroArt);
+    addObj(this.lukusArt);
+    if (typeof World !== 'undefined') addObj(World.tileImages);
+    if (typeof Screens !== 'undefined') addObj(Screens.shopImg);
+    for (const im of [this.townImg, this.addyArt, this.lyssaArt]) if (im && im.tagName === 'IMG') arr.push(im);
+    this.bootAssets = arr;
+    this.bootManifestReady = true;
+  },
+  // Fraction of the boot manifest that has finished loading (success OR error —
+  // `complete` flips true either way, so a missing file never stalls the bar).
+  bootFrac() {
+    const a = this.bootAssets;
+    if (!this.bootManifestReady || !a.length) return 0;
+    let done = 0;
+    for (const im of a) if (im.complete) done++;
+    return done / a.length;
   },
 
   buildTown() {

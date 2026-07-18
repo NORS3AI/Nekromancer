@@ -496,6 +496,19 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.49 — TITLE LOADING BAR + FULL HERO PRELOAD (owner rule)**: PLAY no
+  longer fades in on a 5s timer — it's GATED on real asset load. `preloadArt`
+  now also warms the FULL hero wardrobe (every gender × all 9 hairs ×
+  front/back/side + busts) so Choose Your Hero never falls back to a procedural
+  figure, then calls `Game.buildBootManifest()` — snapshots every Image from
+  every art cache (uiArt/matArt/propArt/vendorArt/torchArt/hudArt/wingArt/
+  heroArt/lukusArt + World.tileImages{img}/Screens.shopImg + town/addy/lyssa) into
+  `Game.bootAssets` (386 imgs). `Game.bootFrac()` = fraction with `img.complete`
+  true (flips on load OR error, so a 404 never stalls). `Screens.title`: while
+  `frac < 0.999` draw a `UI.panel` ('SUMMONING THE DEAD') with the % + the XP
+  bar (`UI.drawXpBar`); at 100% the panel is replaced by the PLAY plate (0.6s
+  fade via `_loadDoneAt`). Logo fade pulled earlier (1.2s). Verified: real load
+  hits 1.0 with 0 incomplete. No art change.
 - **v1.7.48 — UI.panel INTERIOR FULLY OPAQUE (owner rule "all black, not part
   black part menu-bg")**: `UI.panel`'s interior fill was `rgba(2,1,4,0.96)` —
   4% of the DIMMED world bled through, so over bright spots (town fountain) the

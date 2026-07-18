@@ -2104,8 +2104,7 @@ const Screens = {
     if (this._titleStart === undefined) this._titleStart = Game.time;
     const el = Game.time - this._titleStart;
     const fade = (start, dur) => Math.max(0, Math.min(1, (el - start) / dur));
-    const logoA = fade(3, 1.6);   // logo fades in over 1.6s starting at 3s
-    const plateA = fade(5, 1.6);  // PLAY plate fades in over 1.6s starting at 5s
+    const logoA = fade(1.2, 1.4);   // logo fades in early; the bar is the wait
 
     // ---- the splash art ----
     // The WHOLE splash scales to fit the monitor (contain-fit), never zoomed/
@@ -2165,14 +2164,28 @@ const Screens = {
       ctx.restore();
     }
 
-    // ---- the PLAY plate, slow fade at 5s ----
+    // ---- ASSET LOADING (owner rule v1.7.49) — a real progress bar fills as
+    // every painting/model streams in; PLAY only appears once it hits 100%, so
+    // Choose Your Hero always shows the finished art, never a procedural stand-in.
     const bw = Math.min(300, W * 0.78);
     const by = H * 0.72;
-    if (plateA > 0) {
+    const frac = (typeof Game !== 'undefined' && Game.bootFrac) ? Game.bootFrac() : 1;
+    const ready = frac >= 0.999;
+    if (!ready) {
+      this._loadDoneAt = undefined;
+      const lpW = Math.min(360, W * 0.84), lpH = 100;
+      const lpx = cx - lpW / 2, lpy = by - 14;
+      UI.panel(ctx, lpx, lpy, lpW, lpH, 'SUMMONING THE DEAD');
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '600 22px Cinzel, Georgia'; ctx.fillStyle = '#dcc9a2';
+      ctx.fillText(Math.round(frac * 100) + '%', cx, lpy + 60);
+      UI.drawXpBar(ctx, { x: lpx + 26, y: lpy + lpH - 22, w: lpW - 52 }, frac);
+    } else {
+      // PLAY fades in once everything is loaded. PLAY → Choose Your Hero.
+      if (this._loadDoneAt === undefined) this._loadDoneAt = Game.time;
+      const plateA = Math.min(1, (Game.time - this._loadDoneAt) / 0.6);
       ctx.save();
       ctx.globalAlpha = plateA;
-      // Only register the tap once the plate is essentially in — no invisible
-      // hitbox. PLAY → Choose Your Hero (owner spec).
       UI.btnPlate(ctx, cx - bw / 2, by, bw, 46, 'PLAY',
         plateA > 0.9 ? () => UI.open('select') : null, { size: 18 });
       ctx.restore();
