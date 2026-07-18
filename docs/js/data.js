@@ -672,13 +672,19 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.49-alpha';
+const GAME_VERSION = 'v1.7.50-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.50-alpha', date: '17 July 2026',
+    notes: [
+      'Title loading now shows the splash art and logo FIRST, then the loading bar fills over that artwork — no more staring at a black screen while it loads'
+    ]
+  },
   {
     v: 'v1.7.49-alpha', date: '17 July 2026',
     notes: [
