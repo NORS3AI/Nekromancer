@@ -2101,31 +2101,36 @@ const Screens = {
 
     // ---- the splash art ----
     // The WHOLE splash scales to fit the monitor (contain-fit), never zoomed/
-    // cropped oversized on wide desktops (owner rule v1.7.40). A blurred cover
-    // copy fills the letterbox so there are no hard black bars — cached so it's
-    // only blurred on a resize, not every frame.
+    // cropped oversized on wide desktops. Rather than blurred bars (muddy) the
+    // painting's edges DISSOLVE into the black frame with a soft gradient, so on
+    // a wide monitor it reads as a framed painting fading into shadow — owner
+    // rule v1.7.41 ("the blurred didn't have a good look").
     const splash = Game.uiImg('title_splash');
     ctx.fillStyle = '#050307'; ctx.fillRect(0, 0, W, H);
     if (splash && splash.complete && splash.naturalWidth) {
       const iw = splash.width, ih = splash.height;
-      if (!this._titleBg || this._titleBgW !== W || this._titleBgH !== H || this._titleBgSrc !== splash) {
-        const oc = (typeof document !== 'undefined') ? document.createElement('canvas') : null;
-        if (oc) {
-          oc.width = Math.max(1, Math.round(W)); oc.height = Math.max(1, Math.round(H));
-          const o = oc.getContext('2d');
-          o.fillStyle = '#050307'; o.fillRect(0, 0, oc.width, oc.height);
-          const cf = Math.max(oc.width / iw, oc.height / ih);
-          try { o.filter = 'blur(26px) brightness(0.5)'; } catch (e) {}
-          o.drawImage(splash, (oc.width - iw * cf) / 2, (oc.height - ih * cf) / 2, iw * cf, ih * cf);
-          this._titleBg = oc;
-        }
-        this._titleBgW = W; this._titleBgH = H; this._titleBgSrc = splash;
-      }
-      if (this._titleBg) ctx.drawImage(this._titleBg, 0, 0, W, H);
-      // the sharp splash, contain-fit (whole image, scaled to the screen)
       const ct = Math.min(W / iw, H / ih);
       const dw = iw * ct, dh = ih * ct;
-      ctx.drawImage(splash, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      const x0 = (W - dw) / 2, y0 = (H - dh) / 2;
+      ctx.drawImage(splash, x0, y0, dw, dh);
+      // Melt the art edges into the black frame (no hard bars, no blur). The
+      // side/top margin plus a generous feather fades the outer art to black.
+      const K = '#050307';
+      const edge = (x1, y1, x2, y2, wRect, hRect, rx, ry) => {
+        const g = ctx.createLinearGradient(x1, y1, x2, y2);
+        g.addColorStop(0, K); g.addColorStop(0.55, 'rgba(5,3,7,0.55)'); g.addColorStop(1, 'rgba(5,3,7,0)');
+        ctx.fillStyle = g; ctx.fillRect(rx, ry, wRect, hRect);
+      };
+      if (x0 > 1) {
+        const f = Math.max(150, x0 * 1.4);       // margin + feather into the art
+        edge(0, 0, x0 + f, 0, x0 + f, H, 0, 0);                    // left
+        edge(W, 0, W - x0 - f, 0, x0 + f, H, W - x0 - f, 0);        // right
+      }
+      if (y0 > 1) {
+        const f = Math.max(150, y0 * 1.4);
+        edge(0, 0, 0, y0 + f, W, y0 + f, 0, 0);                    // top
+        edge(0, H, 0, H - y0 - f, W, y0 + f, 0, H - y0 - f);        // bottom
+      }
       // a soft vignette so the logo + plate read over the busy art
       const vg = ctx.createRadialGradient(cx, H * 0.42, H * 0.2, cx, H * 0.5, H * 0.85);
       vg.addColorStop(0, 'rgba(5,3,7,0)'); vg.addColorStop(1, 'rgba(5,3,7,0.55)');
