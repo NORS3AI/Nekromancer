@@ -496,6 +496,15 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.42 — SELECT-TITLE INTERIOR RESTORED (owner rule)**: the v1.7.20
+  `select_title.webp` was alpha-cut with its INTERIOR hollowed out (center
+  alpha 0) — but the dark backing inside the ornate frame was part of the art.
+  Owner shipped the correct cut (frame + interior black kept, only the OUTSIDE
+  transparent); recovered from the transcript attachment (uploads dir doesn't
+  materialize every paste), cropped to the alpha bbox (595×174, aspect 3.42),
+  saved over `select_title.webp`. **ART_V 14→15**. NOTE: owner is moving to a
+  BLANK plate + code-drawn "CHOOSE YOUR HERO / THE BATTLE FOR GHALLIA BEGINS"
+  text next — this baked version is the interim fix.
 - **v1.7.41 — TITLE EDGE-FADE INSTEAD OF BLUR (owner rule)**: the v1.7.40 blurred
   cover backdrop looked muddy ("didn't have a good look"). Dropped the blur/
   `_titleBg` cache entirely; `Screens.title` still draws the splash CONTAIN-fit
