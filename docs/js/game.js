@@ -625,7 +625,9 @@ const Game = {
     this.updatePet(dt);
     if (UI.screen) return;            // a shop/menu is open — walking is paused
     const t = this.town, p = this.player;
-    const spd = 210;
+    // Town walk speed matches the hero's actual move speed (owner rule v1.7.51 —
+    // the old fixed 210 felt too fast for a 0%-move-speed hero; base is 180).
+    const spd = (p && p.speed) || 180;
     const mx = Input.move.x, my = Input.move.y;
     p.moving = (mx !== 0 || my !== 0);
     if (p.moving) {
@@ -782,29 +784,14 @@ const Game = {
     }
     return img;
   },
-  // The paintings sit on solid black — key it out once into a cached canvas so
-  // the knight stands cleanly on the cobbles. If pixel readback is unavailable
-  // (file:// testing taints the canvas), fall back to 'screen' blending.
-  lukusCut: {},
+  // The paintings now carry a BAKED ALPHA CHANNEL (cut OFFLINE from the black
+  // background — owner rule v1.7.51; the figures are too dark for a runtime
+  // luminance key, which either left a faint box or hollowed the dark armor).
+  // So just hand back the loaded image — its transparent background matches any
+  // black perfectly, on the cobbles or on the dialog's black stage.
   lukusSprite(mood) {
-    if (this.lukusCut[mood]) return this.lukusCut[mood];
     const img = this.lukusImg(mood);
-    if (!img.complete || !img.naturalWidth) return null;
-    const c = document.createElement('canvas');
-    c.width = img.naturalWidth; c.height = img.naturalHeight;
-    const g = c.getContext('2d');
-    g.drawImage(img, 0, 0);
-    try {
-      const d = g.getImageData(0, 0, c.width, c.height);
-      const px = d.data;
-      for (let i = 0; i < px.length; i += 4) {
-        const l = Math.max(px[i], px[i + 1], px[i + 2]);
-        if (l < 26) px[i + 3] = Math.max(0, (l - 10) * 16);   // near-black → transparent
-      }
-      g.putImageData(d, 0, 0);
-    } catch (e) { c.screenBlend = true; }
-    this.lukusCut[mood] = c;
-    return c;
+    return (img.complete && img.naturalWidth) ? img : null;
   },
 
   drawLukus(ctx, x, y) {
@@ -855,26 +842,9 @@ const Game = {
     }
     return this.addyArt;
   },
-  addyCut: null,
   addySprite() {
-    if (this.addyCut) return this.addyCut;
     const img = this.addyImg();
-    if (!img.complete || !img.naturalWidth) return null;
-    const c = document.createElement('canvas');
-    c.width = img.naturalWidth; c.height = img.naturalHeight;
-    const g = c.getContext('2d');
-    g.drawImage(img, 0, 0);
-    try {
-      const d = g.getImageData(0, 0, c.width, c.height);
-      const px = d.data;
-      for (let i = 0; i < px.length; i += 4) {
-        const l = Math.max(px[i], px[i + 1], px[i + 2]);
-        if (l < 26) px[i + 3] = Math.max(0, (l - 10) * 16);   // near-black → transparent
-      }
-      g.putImageData(d, 0, 0);
-    } catch (e) { c.screenBlend = true; }
-    this.addyCut = c;
-    return c;
+    return (img.complete && img.naturalWidth) ? img : null;
   },
 
   drawAddy(ctx, x, y) {
@@ -1058,26 +1028,9 @@ const Game = {
     }
     return this.lyssaArt;
   },
-  lyssaCut: null,
   lyssaSprite() {
-    if (this.lyssaCut) return this.lyssaCut;
     const img = this.lyssaImg();
-    if (!img.complete || !img.naturalWidth) return null;
-    const c = document.createElement('canvas');
-    c.width = img.naturalWidth; c.height = img.naturalHeight;
-    const g = c.getContext('2d');
-    g.drawImage(img, 0, 0);
-    try {
-      const d = g.getImageData(0, 0, c.width, c.height);
-      const px = d.data;
-      for (let i = 0; i < px.length; i += 4) {
-        const l = Math.max(px[i], px[i + 1], px[i + 2]);
-        if (l < 26) px[i + 3] = Math.max(0, (l - 10) * 16);   // near-black → transparent
-      }
-      g.putImageData(d, 0, 0);
-    } catch (e) { c.screenBlend = true; }
-    this.lyssaCut = c;
-    return c;
+    return (img.complete && img.naturalWidth) ? img : null;
   },
 
   drawLyssa(ctx, x, y) {

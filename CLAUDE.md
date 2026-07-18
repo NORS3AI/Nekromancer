@@ -496,6 +496,18 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.51 — NPC PORTRAITS ALPHA-CUT + SLOWER TOWN WALK (owner list)**: (1)
+  Lukus/Addy/Lyssa paintings sit on solid black but the figures are too DARK
+  (median luma 9–16) for a runtime luminance key — it left a faint box or
+  hollowed the dark armor. Recut OFFLINE (scratchpad `cut_npc_final.py`): build
+  the figure SILHOUETTE from its highlights (`lum>38` → vertical-biased
+  `binary_closing` → `fill_holes` → largest components → 2.2px feather) so the
+  whole dark figure is kept and the background is truly transparent. All 7 npc
+  webps now carry a baked alpha; `lukusSprite/addySprite/lyssaSprite` just
+  return the loaded image (chroma-key + `screenBlend` fallback deleted).
+  **ART_V 17→18**. (2) `updateTown` walk speed was a fixed `210`; now
+  `(p.speed) || 180` so a 0%-move hero walks at the true base 180 (and
+  move-speed gear still scales it).
 - **v1.7.50 — SPLASH/LOGO FIRST, THEN THE BAR (owner rule)**: the v1.7.49 bar
   could show over a black void before the splash streamed in. Fix: `preloadArt`
   now requests `title_splash`/`title_logo` + panel/plate/xp-bar art FIRST (before

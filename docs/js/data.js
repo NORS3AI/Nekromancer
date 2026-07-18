@@ -672,13 +672,20 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.50-alpha';
+const GAME_VERSION = 'v1.7.51-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.51-alpha', date: '17 July 2026',
+    notes: [
+      'Lukus, Addy and Lyssa are now cleanly cut out — the black around their portraits blends perfectly into the menu black, no more faint box behind them',
+      'Walking around town is a touch slower now, matching your actual move speed instead of a fixed fast pace'
+    ]
+  },
   {
     v: 'v1.7.50-alpha', date: '17 July 2026',
     notes: [
