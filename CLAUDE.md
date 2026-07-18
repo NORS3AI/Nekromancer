@@ -496,6 +496,16 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.47 — NO STRETCHED BUTTON PLATES (owner rule "nothing menu-width")**:
+  global fix in `ui.js` — new `UI.capPlate(x,w,label,o)` caps a LABELED button
+  plate to `CAP 340` centered when `w > CAP+40` (380); `btnPlate`/`btnPlate2`/
+  `btnPlate3` all call it first (`({x,w}=this.capPlate(...))`). Empty-label
+  plates (list-row BACKGROUNDS — torch rows, enchant rows, theme rows, gem-craft
+  rows) and callers passing `{stretch:true}` keep full width; plates ≤380 (tabs,
+  half-width buttons, chips) are untouched. Net: standalone buttons (CAMPFIRE,
+  RESET, BACK TO FORGE, wilds modes, INSTRUCTION LEAFLET, STEP UP TO THE ANVIL,
+  REAGENTS toggle, …) now sit at a natural centered width with padding across
+  ALL menus, while list rows still fill their lists. No art change.
 - **v1.7.46 — STASH FITS ITS CONTENTS (owner list)**: `Screens.stash` rebuilt
   to size the panel to its content. `shown` (groups/items) is computed UP FRONT;
   the filter+sort chip rows are MEASURED (`measureRows`) to know their wrapped

@@ -672,13 +672,19 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.46-alpha';
+const GAME_VERSION = 'v1.7.47-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.47-alpha', date: '17 July 2026',
+    notes: [
+      'Menu polish sweep — button plates no longer stretch across the whole menu; they cap at a natural width and sit centered with padding, so every menu reads cleaner (list rows still fill their lists)'
+    ]
+  },
   {
     v: 'v1.7.46-alpha', date: '17 July 2026',
     notes: [

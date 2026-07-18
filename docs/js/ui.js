@@ -689,7 +689,18 @@ const UI = {
   // works (caps and crest stay 1:1, the bar runs stretch). Labels render in
   // Cinzel (Trajan-style, self-hosted). Falls back to UI.btn until the art
   // loads. Source fractions measured off the sliced sheet.
+  // Cap a LABELED button plate to a natural max width, centered — buttons never
+  // stretch menu-wide (owner rule v1.7.47). Empty-label plates (row backgrounds)
+  // and callers passing {stretch:true} keep their full width.
+  capPlate(x, w, label, o) {
+    if (!label || (o && o.stretch)) return { x, w };
+    const CAP = 340;
+    if (w <= CAP + 40) return { x, w };
+    return { x: x + (w - CAP) / 2, w: CAP };
+  },
+
   btnPlate(ctx, x, y, w, h, label, cb, o = {}) {
+    ({ x, w } = this.capPlate(x, w, label, o));
     // Hover (mouse only) lights the plate with the theme's glow.
     const mp = (typeof Input !== 'undefined' && !Input.touchMode) ? Input.mousePos : null;
     const hover = !!(mp && cb && !o.disabled &&
@@ -741,6 +752,7 @@ const UI = {
   // Themed glow variants (plate2_<key>.webp) are sliced and STORED but not
   // wired — the owner will point at the specific places later.
   btnPlate2(ctx, x, y, w, h, label, cb, o = {}) {
+    ({ x, w } = this.capPlate(x, w, label, o));
     const img = (typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg('plate2') : null;
     if (!img) return this.btn(ctx, x, y, w, h, label, cb, o);
     const mp = (typeof Input !== 'undefined' && !Input.touchMode) ? Input.mousePos : null;
@@ -798,6 +810,7 @@ const UI = {
   // the two clean bar runs stretch; the crests overhang ~1.48× the button
   // rect. Carries the ☰ MENU rows, artisan bench interiors, Apply/Cancel.
   btnPlate3(ctx, x, y, w, h, label, cb, o = {}) {
+    ({ x, w } = this.capPlate(x, w, label, o));
     const img = (typeof Game !== 'undefined' && Game.uiImg) ? Game.uiImg('plate3') : null;
     if (!img || !img.complete || !img.naturalWidth) return this.btn(ctx, x, y, w, h, label, cb, o);
     const mp = (typeof Input !== 'undefined' && !Input.touchMode) ? Input.mousePos : null;
