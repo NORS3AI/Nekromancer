@@ -3087,7 +3087,10 @@ const Screens = {
 
     const drawRow = (slotKey, it, isEq, arrows) => {
       const yy = c - scrollY;
-      const selected = UI.sel.invItem === it;
+      // A ring is listed under BOTH ring groups (one family pool), so key the
+      // expansion by GROUP + item — tapping a ring opens only the row you
+      // tapped, never its twin under the other finger (owner bug fix v1.7.52).
+      const selected = UI.sel.invItem === it && UI.sel.invSlot === slotKey;
       if (vis(c, 34)) {
         ctx.fillStyle = selected ? 'rgba(46,42,58,0.95)' : isEq ? 'rgba(26,40,32,0.9)' : 'rgba(28,24,38,0.92)';
         rr(ctx, px, yy, pw, 30, 6); ctx.fill();
@@ -3124,7 +3127,7 @@ const Screens = {
           ctx.fillStyle = arrows > 0 ? '#4ade80' : arrows < 0 ? '#e04a5a' : '#9a9080';
           ctx.fillText(arrows > 0 ? '▲'.repeat(Math.min(3, arrows)) : arrows < 0 ? '▼'.repeat(Math.min(3, -arrows)) : '—', px + pw - 10, yy + 15);
         }
-        UI.register(px, yy, pw, 30, () => { UI.sel.invItem = selected ? null : it; UI.sel.gemPick = false; });
+        UI.register(px, yy, pw, 30, () => { UI.sel.invItem = selected ? null : it; UI.sel.invSlot = selected ? null : slotKey; UI.sel.gemPick = false; });
       }
       c += 34;
       if (selected) {
@@ -5141,7 +5144,11 @@ const Screens = {
     const shown = groupsDef
       .filter(([label]) => filter === 'all' || filter === label)
       .map(([label, gSlots]) => {
-        const items = gSlots.reduce((arr, sl) => arr.concat(Hero.stashSlotItems(sl)), []);
+        // Rings share ONE family bin, so stashSlotItems('ring1') and ('ring2')
+        // BOTH return every ring — dedupe by identity so a ring is listed (and
+        // inspected) exactly once (owner bug fix v1.7.52 — no double rings).
+        const seen = new Set(), items = [];
+        for (const sl of gSlots) for (const it of Hero.stashSlotItems(sl)) if (!seen.has(it)) { seen.add(it); items.push(it); }
         items.sort(sorters[sortKey] || sorters.up);
         return { label, items };
       })
@@ -5169,7 +5176,7 @@ const Screens = {
     };
     const filterLabels = ['ALL (' + total + ')'];
     for (const [label, gSlots] of groupsDef) {
-      const n = gSlots.reduce((s2, sl) => s2 + Hero.stashSlotCount(sl), 0);
+      const n = Hero.stashSlotCount(gSlots[0]);   // family count (rings share a bin) — no double
       if (!n && filter !== label) continue;
       filterLabels.push(label + (n ? ' ' + n : ''));
     }
@@ -5223,7 +5230,7 @@ const Screens = {
     const setFilter = f => { UI.sel.stashFilter = f; UI.sel.scrollY = 0; UI.sel.stashItem = null; };
     chip('ALL (' + total + ')', filter === 'all', () => setFilter('all'));
     for (const [label, gSlots] of groupsDef) {
-      const n = gSlots.reduce((s2, sl) => s2 + Hero.stashSlotCount(sl), 0);
+      const n = Hero.stashSlotCount(gSlots[0]);   // family count (rings share a bin) — no double
       if (!n && filter !== label) continue;   // hide empty groups' chips
       chip(label + (n ? ' ' + n : ''), filter === label, () => setFilter(label));
     }

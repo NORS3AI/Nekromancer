@@ -496,6 +496,21 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.52 — DOUBLE-RING FIX + NPC PORTRAITS RESTORED (owner bugs)**: (1)
+  **Rings listed/opened twice**: `Items.slotFamily('ring1')`==['ring1','ring2'],
+  so `stashSlotItems('ring1')` and `('ring2')` BOTH return every ring. Stash
+  folded them by concat → each ring twice, and expansion keyed by object
+  identity opened both. Fix: stash `shown` dedupes items by identity (Set);
+  the group/chip count uses `stashSlotCount(gSlots[0])` (family count, once).
+  Inventory `invGrouped` lists the ring family under BOTH ring groups by design,
+  so its row `selected` is now keyed by GROUP+item (`UI.sel.invItem===it &&
+  UI.sel.invSlot===slotKey`; the tap sets both) — tapping a ring opens only the
+  row you tapped, not its twin under the other finger. (2) **NPC portraits**:
+  the v1.7.51 offline silhouette crop chopped the very-dark figures (Addy gone,
+  Lyssa's leg cut). Restored the original webps and reverted
+  `lukus/addy/lyssaSprite` to the runtime near-black chroma-key (whole figures,
+  a faint box is acceptable per "bring back the images until I say otherwise").
+  **ART_V 18→19**.
 - **v1.7.51 — NPC PORTRAITS ALPHA-CUT + SLOWER TOWN WALK (owner list)**: (1)
   Lukus/Addy/Lyssa paintings sit on solid black but the figures are too DARK
   (median luma 9–16) for a runtime luminance key — it left a faint box or
