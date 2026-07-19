@@ -784,14 +784,32 @@ const Game = {
     }
     return img;
   },
-  // The paintings now carry a BAKED ALPHA CHANNEL (cut OFFLINE from the black
-  // background — owner rule v1.7.51; the figures are too dark for a runtime
-  // luminance key, which either left a faint box or hollowed the dark armor).
-  // So just hand back the loaded image — its transparent background matches any
-  // black perfectly, on the cobbles or on the dialog's black stage.
+  // The paintings sit on solid black — key it out once into a cached canvas so
+  // the knight stands cleanly on the cobbles. (These figures are very dark, so
+  // an offline silhouette crop chopped them up — the runtime near-black key is
+  // the safe choice; owner rule v1.7.52 "bring back the whole images".) If pixel
+  // readback is unavailable (file:// tests taint the canvas), fall back to
+  // 'screen' blending.
+  lukusCut: {},
   lukusSprite(mood) {
+    if (this.lukusCut[mood]) return this.lukusCut[mood];
     const img = this.lukusImg(mood);
-    return (img.complete && img.naturalWidth) ? img : null;
+    if (!img.complete || !img.naturalWidth) return null;
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    try {
+      const d = g.getImageData(0, 0, c.width, c.height);
+      const px = d.data;
+      for (let i = 0; i < px.length; i += 4) {
+        const l = Math.max(px[i], px[i + 1], px[i + 2]);
+        if (l < 26) px[i + 3] = Math.max(0, (l - 10) * 16);   // near-black → transparent
+      }
+      g.putImageData(d, 0, 0);
+    } catch (e) { c.screenBlend = true; }
+    this.lukusCut[mood] = c;
+    return c;
   },
 
   drawLukus(ctx, x, y) {
@@ -842,9 +860,26 @@ const Game = {
     }
     return this.addyArt;
   },
+  addyCut: null,
   addySprite() {
+    if (this.addyCut) return this.addyCut;
     const img = this.addyImg();
-    return (img.complete && img.naturalWidth) ? img : null;
+    if (!img.complete || !img.naturalWidth) return null;
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    try {
+      const d = g.getImageData(0, 0, c.width, c.height);
+      const px = d.data;
+      for (let i = 0; i < px.length; i += 4) {
+        const l = Math.max(px[i], px[i + 1], px[i + 2]);
+        if (l < 26) px[i + 3] = Math.max(0, (l - 10) * 16);   // near-black → transparent
+      }
+      g.putImageData(d, 0, 0);
+    } catch (e) { c.screenBlend = true; }
+    this.addyCut = c;
+    return c;
   },
 
   drawAddy(ctx, x, y) {
@@ -1028,9 +1063,26 @@ const Game = {
     }
     return this.lyssaArt;
   },
+  lyssaCut: null,
   lyssaSprite() {
+    if (this.lyssaCut) return this.lyssaCut;
     const img = this.lyssaImg();
-    return (img.complete && img.naturalWidth) ? img : null;
+    if (!img.complete || !img.naturalWidth) return null;
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    try {
+      const d = g.getImageData(0, 0, c.width, c.height);
+      const px = d.data;
+      for (let i = 0; i < px.length; i += 4) {
+        const l = Math.max(px[i], px[i + 1], px[i + 2]);
+        if (l < 26) px[i + 3] = Math.max(0, (l - 10) * 16);   // near-black → transparent
+      }
+      g.putImageData(d, 0, 0);
+    } catch (e) { c.screenBlend = true; }
+    this.lyssaCut = c;
+    return c;
   },
 
   drawLyssa(ctx, x, y) {

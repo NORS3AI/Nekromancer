@@ -672,13 +672,20 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.51-alpha';
+const GAME_VERSION = 'v1.7.52-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.52-alpha', date: '17 July 2026',
+    notes: [
+      'Fixed rings showing up twice in the stash and inventory — a ring is now listed once, and tapping one only opens that ring, never a phantom twin',
+      'Restored Lukus, Addy and Lyssa to their full portraits (the previous cut-out accidentally chopped off parts of them)'
+    ]
+  },
   {
     v: 'v1.7.51-alpha', date: '17 July 2026',
     notes: [
