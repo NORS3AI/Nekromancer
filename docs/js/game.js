@@ -625,9 +625,9 @@ const Game = {
     this.updatePet(dt);
     if (UI.screen) return;            // a shop/menu is open — walking is paused
     const t = this.town, p = this.player;
-    // Town walk speed matches the hero's actual move speed (owner rule v1.7.51 —
-    // the old fixed 210 felt too fast for a 0%-move-speed hero; base is 180).
-    const spd = (p && p.speed) || 180;
+    // Town is a WALK, not a sprint (owner rule v1.7.53 "runs too fast") — 60% of
+    // the hero's real move speed; move-speed gear still nudges it.
+    const spd = (((p && p.speed) || 180)) * 0.6;
     const mx = Input.move.x, my = Input.move.y;
     p.moving = (mx !== 0 || my !== 0);
     if (p.moving) {
@@ -637,7 +637,7 @@ const Game = {
       p.x = clamp(p.x, 55, t.W - 55);
       p.y = clamp(p.y, 125, t.H - 95);
       p.facing = lerpAngle(p.facing, Math.atan2(my, mx), Math.min(1, 14 * dt));
-      p.anim += dt * 7;
+      p.anim += dt * spd * 0.05;   // leg cycle tied to speed → no foot skating
     }
     this.townCamClamp();
 

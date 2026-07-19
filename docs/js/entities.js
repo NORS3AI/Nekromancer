@@ -541,7 +541,9 @@ class Player {
     const w = HT * (img.width / img.height);
     const moving = this.moving;
     const ph = this.anim * 1.9;
-    const bobY = moving ? Math.abs(Math.sin(ph)) * 1.5 : Math.sin((Game.time || 0) * 1.8) * 0.6;
+    // Idle = a clear, slow breathing rise/fall (owner rule v1.7.53 "more
+    // noticeable breathing"); walking = a springy step bob.
+    const bobY = moving ? Math.abs(Math.sin(ph)) * 2.0 : Math.sin((Game.time || 0) * 1.5) * 1.4;
 
     ctx.save();
     ctx.translate(0, -bobY);
@@ -570,33 +572,47 @@ class Player {
       ctx.restore();
     }
     if (moving) {
-      // REAL WALK CYCLE (owner rule "splice the legs and make them move"):
-      // the painting is split at the hip line into two leg halves, each
-      // swinging smoothly about its own hip — an actual stride in profile, a
-      // soft scissor-step facing the camera — with the torso riding on top
-      // covering the seam. Angles stay small (subtle, never dancing).
+      // REAL WALK CYCLE with a BENT KNEE (owner rule v1.7.53 "bend at the knee,
+      // move more"): each leg is split at the hip AND the knee — the thigh
+      // swings about the hip, the shin flexes about the knee (bends on the
+      // back-swing, straightens reaching forward) — a proper stride, with the
+      // torso riding on top covering the hip seam.
       const swing = Math.sin(ph);
-      const legY = 0.52;                             // hip line (fraction of figure)
-      const hipYpx = feet - HT + HT * legY;          // hip line in local coords
+      const legY = 0.50;                             // hip line (fraction of figure)
+      const kneeY = 0.75;                            // knee line
+      const hipYpx = feet - HT + HT * legY;
       const profile = sideways && side;
-      const amp = profile ? 0.15 : 0.06;             // stride angle (radians)
-      const lift = profile ? 0 : 1.1;                // front/back: stepping-foot lift
+      const thighAmp = profile ? 0.34 : 0.16;        // stride angle (bigger now)
+      const kneeAmp = profile ? 0.58 : 0.34;         // knee flex
+      const lift = profile ? 0.6 : 1.6;              // stepping-foot lift
       for (const [half, dir] of [[0, 1], [1, -1]]) {
-        const hipX = -w / 2 + (half + 0.5) * (w / 2);   // centre of this half
+        const hipX = -w / 2 + (half + 0.5) * (w / 2);
         ctx.save();
         ctx.translate(hipX, hipYpx);
-        ctx.rotate(swing * amp * dir);
+        ctx.rotate(swing * thighAmp * dir);          // thigh swings about the hip
         if (lift) ctx.translate(0, -Math.max(0, swing * dir) * lift);
-        ctx.drawImage(img, half * sw / 2, sh * legY, sw / 2, sh * (1 - legY),
-          -w / 4, 0, w / 2, HT * (1 - legY));
+        // thigh (hip → knee)
+        ctx.drawImage(img, half * sw / 2, sh * legY, sw / 2, sh * (kneeY - legY),
+          -w / 4, 0, w / 2, HT * (kneeY - legY));
+        // knee bends as the foot swings back / lifts, then straightens forward
+        ctx.translate(0, HT * (kneeY - legY));
+        ctx.rotate(Math.max(0, -swing * dir) * kneeAmp);
+        // shin (knee → foot)
+        ctx.drawImage(img, half * sw / 2, sh * kneeY, sw / 2, sh * (1 - kneeY),
+          -w / 4, 0, w / 2, HT * (1 - kneeY));
         ctx.restore();
       }
       // Torso + head as one piece, overlapping the hip seam, gentle counter-sway.
       ctx.drawImage(img, 0, 0, sw, sh * (legY + 0.05),
-        -w / 2 - swing * 0.45, feet - HT, w, HT * (legY + 0.05));
+        -w / 2 - swing * 0.6, feet - HT, w, HT * (legY + 0.05));
     } else {
-      // Standing: the whole painting in one piece (breathing bob only).
+      // Standing: the whole painting, with a gentle BREATHING scale (the chest
+      // rises and falls) on top of the idle bob — owner rule v1.7.53.
+      const breath = 1 + Math.sin((Game.time || 0) * 1.5) * 0.02;
+      ctx.save();
+      ctx.translate(0, feet); ctx.scale(1, breath); ctx.translate(0, -feet);
       ctx.drawImage(img, -w / 2, feet - HT, w, HT);
+      ctx.restore();
     }
     ctx.restore();
     ctx.globalAlpha = 1;

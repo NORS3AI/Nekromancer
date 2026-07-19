@@ -496,6 +496,16 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.53 — KNEE-BEND WALK CYCLE + BREATHING IDLE + SLOWER TOWN (owner list)**:
+  `Player.drawAvatarModel` walk cycle rebuilt — each leg is now split at the hip
+  AND the knee (legY 0.50, kneeY 0.75): the thigh swings about the hip
+  (`thighAmp` 0.34 profile / 0.16 front, up from 0.15/0.06), the shin FLEXES
+  about the knee (`kneeAmp` 0.58/0.34, `Math.max(0,-swing*dir)` so it bends on
+  the back-swing and straightens reaching forward), with a stepping-foot lift.
+  Idle: bob up to 1.4 + a `1±0.02` breathing scale about the feet (chest rises).
+  Town walk speed `p.speed → p.speed*0.6` (owner "runs too fast"); `p.anim`
+  now `+= dt*spd*0.05` so the leg cadence tracks the (slower) speed and the
+  feet don't skate. No art change.
 - **v1.7.52 — DOUBLE-RING FIX + NPC PORTRAITS RESTORED (owner bugs)**: (1)
   **Rings listed/opened twice**: `Items.slotFamily('ring1')`==['ring1','ring2'],
   so `stashSlotItems('ring1')` and `('ring2')` BOTH return every ring. Stash
