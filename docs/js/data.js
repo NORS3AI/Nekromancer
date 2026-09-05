@@ -672,13 +672,21 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.53-alpha';
+const GAME_VERSION = 'v1.7.54-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.54-alpha', date: '17 July 2026',
+    notes: [
+      'Walking around town is faster again — the last update slowed it down way too much',
+      'Imp Wings are now a static image (the flapping animation is gone, by request)',
+      'On phones and tablets, Lukus & Addy quest text hugs the far left so the buttons no longer cover it (left-hand mode keeps its old layout)'
+    ]
+  },
   {
     v: 'v1.7.53-alpha', date: '17 July 2026',
     notes: [

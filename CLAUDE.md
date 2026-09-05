@@ -496,6 +496,17 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.54 — TOWN SPEED, STATIC IMP WINGS, JOURNAL-LEFT ON MOBILE (owner list)**:
+  (1) **Town speed**: v1.7.53's `p.speed*0.6` was "way too slow" — bumped to
+  `p.speed*0.9` in `updateTown` (a walk, just under the wilds sprint). (2) **IMP
+  WINGS STATIC**: `Player.drawWings` sprite branch now draws ONE fixed open pose
+  (`seq[floor((n-1)/2)]` — the widest spread) with no flap/cross-fade (owner
+  "remove the animation, just a static image"); procedural fallback unchanged.
+  (3) **JOURNAL TEXT HUGS FAR LEFT ON MOBILE/TABLET**: `Screens.lukus`/`Screens.addy`
+  set `lx` to a tiny left margin (`max(6, safe.left+6)`) when `!UI.desktop &&
+  !lefty` so the quest text/rows clear the right-side action buttons; left-hand
+  mode (`Settings.g.leftHanded`) keeps the old indent (its buttons ride the left
+  edge), and desktop still re-centers into its left half. No art change.
 - **v1.7.53 — KNEE-BEND WALK CYCLE + BREATHING IDLE + SLOWER TOWN (owner list)**:
   `Player.drawAvatarModel` walk cycle rebuilt — each leg is now split at the hip
   AND the knee (legY 0.50, kneeY 0.75): the thigh swings about the hip
