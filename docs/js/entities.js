@@ -758,39 +758,22 @@ class Player {
   drawWings(ctx, upright) {
     const def = (typeof WINGS !== 'undefined' && Hero.wings) ? WINGS[Hero.wings] : null;
     if (!def) return;
-    // PAINTED SPRITE WINGS (v1.7.11, owner art — Imp Wings): a SLOW, flowy
-    // flap. The current frame is a SOLID base and the NEXT frame EASES in on
-    // top (owner rule v1.7.28 "ease into each image, slowed down a lot") —
-    // drawing the next over a solid current avoids the double-faint-wing
-    // ghosting a symmetric cross-fade produced. Driven by Game.time so the
-    // wings always beat, even standing.
+    // PAINTED SPRITE WINGS (v1.7.11, owner art — Imp Wings): STATIC now
+    // (owner rule "remove the animation, just a static image") — one fixed
+    // open pose, no flap, no cross-fade. `seq` is sorted by wingspan then
+    // ping-ponged, so its midpoint is the widest, most flattering spread.
     if (def.art && typeof Game !== 'undefined' && Game.wingImg) {
       const seq = def.seq, n = seq.length;
-      const f = (Game.time * 1.4) % n;          // ~0.7s per frame — very slow, flowy
-      const i0 = Math.floor(f), t = f - i0;
-      // Ease each transition in and out (smootherstep) so there are no pops;
-      // the next frame only starts appearing partway through the hold.
-      const ts = t * t * t * (t * (t * 6 - 15) + 10);
-      const a = Game.wingImg(def.art, seq[i0]);
-      const b = Game.wingImg(def.art, seq[(i0 + 1) % n]);
-      if (a || b) {
-        const ref = a || b;
+      const still = Game.wingImg(def.art, seq[Math.floor((n - 1) / 2)]);
+      if (still) {
         const scale = upright ? 1 : 0.8;
-        const dw = 116 * scale, dh = dw * (ref.height / ref.width);
+        const dw = 116 * scale, dh = dw * (still.height / still.width);
         const oy = upright ? -34 : -4;          // shoulder anchor
         ctx.save();
         ctx.translate(0, oy);
-        // solid current pose…
-        if (a && a.complete && a.naturalWidth) {
-          ctx.globalAlpha = 1;
-          ctx.drawImage(a, -dw / 2, -dh * 0.54, dw, dh);
+        if (still.complete && still.naturalWidth) {
+          ctx.drawImage(still, -dw / 2, -dh * 0.54, dw, dh);
         }
-        // …the next pose eases in on top
-        if (b && b.complete && b.naturalWidth) {
-          ctx.globalAlpha = a ? ts : 1;
-          ctx.drawImage(b, -dw / 2, -dh * 0.54, dw, dh);
-        }
-        ctx.globalAlpha = 1;
         ctx.restore();
         return;
       }

@@ -5341,7 +5341,13 @@ const Screens = {
     const img = Game.lukusImg('idle');
     const ready = img.complete && img.naturalWidth;
     const aspect = ready ? img.naturalWidth / img.naturalHeight : 0.62;
-    let lx = Math.max(30, W * 0.055);   // indented from the edge (owner rule)
+    // Mobile/tablet in right-hand mode: HUG THE FAR LEFT so the quest text
+    // clears the action buttons on the right (owner rule). In left-hand mode
+    // the buttons ride the left edge, so keep the indent there. Desktop is
+    // re-centered into its own left half below.
+    let lx = (!UI.desktop && !lefty)
+      ? Math.max(6, ((UI.safe && UI.safe.left) || 0) + 6)
+      : Math.max(30, W * 0.055);   // indented from the edge (owner rule)
 
     // Try the wide layout first: knight bottom-anchored left of the button.
     let h = Math.min(H * 0.92, 640), w = h * aspect;
@@ -5580,7 +5586,12 @@ const Screens = {
     const img = Game.addyImg();
     const ready = img.complete && img.naturalWidth;
     const aspect = ready ? img.naturalWidth / img.naturalHeight : 0.8;
-    let lx = Math.max(14, W * 0.04);
+    // Mobile/tablet in right-hand mode: hug the far left so quest text clears
+    // the right-side action buttons (owner rule); left-hand mode keeps the
+    // indent (buttons live on the left there).
+    let lx = (!UI.desktop && !lefty)
+      ? Math.max(6, ((UI.safe && UI.safe.left) || 0) + 6)
+      : Math.max(14, W * 0.04);
 
     let h = Math.min(H * 0.92, 640), w = h * aspect;
     const maxW = Math.max(120, (W - btnZone) * 0.5);

@@ -625,9 +625,9 @@ const Game = {
     this.updatePet(dt);
     if (UI.screen) return;            // a shop/menu is open — walking is paused
     const t = this.town, p = this.player;
-    // Town is a WALK, not a sprint (owner rule v1.7.53 "runs too fast") — 60% of
-    // the hero's real move speed; move-speed gear still nudges it.
-    const spd = (((p && p.speed) || 180)) * 0.6;
+    // Town is a WALK, not a sprint — a touch below the hero's real move speed
+    // (v1.7.53's 0.6 was "way too slow"); move-speed gear still nudges it.
+    const spd = (((p && p.speed) || 180)) * 0.9;
     const mx = Input.move.x, my = Input.move.y;
     p.moving = (mx !== 0 || my !== 0);
     if (p.moving) {
