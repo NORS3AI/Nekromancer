@@ -6271,11 +6271,12 @@ const Screens = {
 
     // ---- audio: slider + mute per channel (Weather FX removed v1.7.15,
     // owner rule — weather loops now ride the Ambience channel) ----
+    // Ambience FX row removed (owner rule v1.7.55) — ambience beds still play
+    // under the Master channel, they just have no separate slider anymore.
     const chans = [
       ['master', 'Master volume'],
       ['sfx', 'Sound FX'],
-      ['music', 'Music'],
-      ['ambience', 'Ambience FX']
+      ['music', 'Music']
     ];
     const colW = pw - 96;   // padded 48px each side (owner rule)
     let ay = py + 98 - sc;
@@ -6296,10 +6297,12 @@ const Screens = {
       UI.slider(ctx, px + 48, ay + 12, colW - 76, a.v, v => {
         a.v = v;
         Settings.save();
+        AudioSys.setVolumes();   // push the new level to the live gain nodes (owner fix v1.7.55)
       });
       UI.check(ctx, px + 48 + colW - 56, ay + 2, a.mute, () => {
         a.mute = !a.mute;
         Settings.save();
+        AudioSys.setVolumes();
       }, 'mute');
       ay += audioStep;
     }
