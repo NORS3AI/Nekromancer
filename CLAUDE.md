@@ -496,6 +496,18 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.55 — VOLUME SLIDERS ACTUALLY WORK + AMBIENCE OPTION GONE (owner
+  bugs)**: (1) **Volume sliders did nothing** (only mute worked): the
+  `Screens.settings` audio slider + mute callbacks called `Settings.save()`
+  but NEVER pushed the value to the live gain nodes, so `this.ch.*.gain`
+  stayed at its init value. Muting only "worked" because the generative music
+  scheduler bails when `volume('music')===0`. Fix: both callbacks now call
+  `AudioSys.setVolumes()` (smooth `setTargetAtTime`; NOT the full
+  `Settings.applyAudio()`, whose `applyOutputRouting()` disconnects/reconnects
+  master and would click on every drag tick). (2) **Ambience FX row deleted**
+  from the Settings `chans` list (owner "delete ambience sound option") — the
+  ambience beds still play under Master, they just have no separate slider.
+  No art change.
 - **v1.7.54 — TOWN SPEED, STATIC IMP WINGS, JOURNAL-LEFT ON MOBILE (owner list)**:
   (1) **Town speed**: v1.7.53's `p.speed*0.6` was "way too slow" — bumped to
   `p.speed*0.9` in `updateTown` (a walk, just under the wilds sprint). (2) **IMP

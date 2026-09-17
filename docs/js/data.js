@@ -672,13 +672,20 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.54-alpha';
+const GAME_VERSION = 'v1.7.55-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.55-alpha', date: '17 September 2026',
+    notes: [
+      'Fixed the volume sliders — lowering Music (or any channel) now actually turns it down in real time, not just muting',
+      'Removed the Ambience FX slider from Settings'
+    ]
+  },
   {
     v: 'v1.7.54-alpha', date: '17 July 2026',
     notes: [
