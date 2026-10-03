@@ -350,8 +350,9 @@ const AudioSys = {
     this.ambienceNodes = nodes;
   },
 
-  // weatherKind: 'rain' | 'wind' | null
+  // weatherKind: 'wind' | null   ('rain' is removed from the game — owner rule)
   setWeather(kind) {
+    if (kind === 'rain') kind = null;   // no rain, ever (sound or otherwise)
     if (!this.ctx || kind === this.currentWeather) return;
     this.currentWeather = kind;
     if (this.weatherNodes) {
@@ -363,28 +364,20 @@ const AudioSys = {
     const out = this.makeLoop(src => {
       const f = this.ctx.createBiquadFilter();
       const g = this.ctx.createGain();
-      if (kind === 'rain') {
-        f.type = 'highpass';
-        f.frequency.value = 1600;
-        g.gain.value = 0.10;
-      } else {
-        f.type = 'bandpass';
-        f.frequency.value = 300;
-        f.Q.value = 0.7;
-        g.gain.value = 0.12;
-        const lfo = this.ctx.createOscillator();
-        lfo.frequency.value = 0.16;
-        const lfoG = this.ctx.createGain();
-        lfoG.gain.value = 160;
-        lfo.connect(lfoG).connect(f.frequency);
-        lfo.start(t);
-        src.connect(f).connect(g).connect(this.ch.weather);
-        src.start(t);
-        return { nodes: [src, lfo, g, f] };
-      }
+      // Wind: a slow bandpass drift (the only weather left).
+      f.type = 'bandpass';
+      f.frequency.value = 300;
+      f.Q.value = 0.7;
+      g.gain.value = 0.12;
+      const lfo = this.ctx.createOscillator();
+      lfo.frequency.value = 0.16;
+      const lfoG = this.ctx.createGain();
+      lfoG.gain.value = 160;
+      lfo.connect(lfoG).connect(f.frequency);
+      lfo.start(t);
       src.connect(f).connect(g).connect(this.ch.weather);
       src.start(t);
-      return { nodes: [src, g, f] };
+      return { nodes: [src, lfo, g, f] };
     });
     this.weatherNodes = out.nodes;
   },

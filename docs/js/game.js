@@ -2526,24 +2526,13 @@ const Game = {
     ctx.restore();
   },
 
-  // Screen-space weather: rain streaks / drifting dust, honoring settings.
+  // Screen-space weather: drifting dust (wind). Rain is removed (owner rule) —
+  // a leftover zone still tagged 'rain' simply renders nothing.
   drawWeather(ctx) {
     if (!this.zone || !this.zone.weather) return;
     const n = Settings.g.lowFx ? 28 : 60;
     const t = this.time;
-    if (this.zone.weather === 'rain') {
-      ctx.strokeStyle = 'rgba(150,170,200,0.22)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let i = 0; i < n; i++) {
-        const speed = 520 + (i % 7) * 40;
-        const x = ((i * 137.51 + t * 90) % (this.W + 60)) - 30;
-        const y = ((i * 211.73 + t * speed) % (this.H + 40)) - 20;
-        ctx.moveTo(x, y);
-        ctx.lineTo(x - 3, y + 13);
-      }
-      ctx.stroke();
-    } else if (this.zone.weather === 'wind') {
+    if (this.zone.weather === 'wind') {
       ctx.fillStyle = 'rgba(190,170,130,0.14)';
       for (let i = 0; i < n * 0.6; i++) {
         const x = ((i * 173.13 + t * (160 + (i % 5) * 60)) % (this.W + 40)) - 20;
