@@ -496,6 +496,24 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.56 — SPAWN-SWARM DEATH FIX + DESKTOP SHIFT-STAND-AIM (owner bugs)**:
+  (1) **"Takes damage and dies on its own" on Disciple+**: `Game.startLand`'s
+  EXTRA packs (line ~1429, spawned only when `DIFFICULTIES[diff].enemyMult > 1`,
+  i.e. Disciple and up — NOT Apprenticeship) were placed at fully RANDOM
+  `rand(120, W-120)` coords with NO spawn-clear check, so one could land right on
+  the hero's entrance and swarm them to death the instant the land loaded. Now
+  each extra pack requires `isFloorAt && dist(.., World.spawn) >= 540` (matches
+  the regular packs' `openPoint(240)` = 240+300), up to 24 tries, else the pack
+  is skipped. Verified headless: nearest enemy to spawn went from 8px → ≥546px
+  across trials; idle hero survives. (2) **Desktop SHIFT = stand your ground**:
+  `Input.standStill()` (ShiftLeft/Right, non-touch) gates the click-to-move block
+  in `Input.update`, so Shift+LMB stops walking and attacks in place.
+  (3) **Precise cursor targeting**: `resolveAim` already aimed the ANGLE at the
+  cursor; now `aimPoint` (ground-targeted spells) also lands at the exact cursor
+  WORLD point clamped to the skill's reach when `Input.mouseAiming()` (desktop,
+  button held, no touch-aim) — snapping to a foe directly under the cursor so
+  homing still latches — instead of auto-picking the nearest enemy. New
+  `Input.mouseAiming()`/`mouseWorld()` helpers. No art change.
 - **v1.7.55 — VOLUME SLIDERS ACTUALLY WORK + AMBIENCE OPTION GONE (owner
   bugs)**: (1) **Volume sliders did nothing** (only mute worked): the
   `Screens.settings` audio slider + mute callbacks called `Settings.save()`

@@ -1425,11 +1425,19 @@ const Game = {
     };
     // Populate packs (asleep until approached). Rifts crawl with rare elites.
     for (const pk of World.packs) spawnPack(pk.x, pk.y, this.riftMode ? 0.5 : 0.16);
-    // Extra packs scattered across the map as difficulty climbs.
+    // Extra packs scattered across the map as difficulty climbs. They MUST keep
+    // clear of the hero's spawn (≥540px, same as the regular packs' openPoint)
+    // — otherwise a random extra pack can land right on top of the entrance and
+    // swarm the hero to death the instant a land loads (owner bug: "takes damage
+    // and dies on their own" — only above Apprenticeship, where extras exist).
     const extra = Math.min(30, Math.round(World.packs.length * Math.min(em - 1, 3)));
     for (let k = 0; k < extra; k++) {
-      let ex, ey, tries = 0;
-      do { ex = rand(120, World.W - 120); ey = rand(120, World.H - 120); } while (!World.isFloorAt(ex, ey) && tries++ < 12);
+      let ex, ey, tries = 0, ok = false;
+      do {
+        ex = rand(120, World.W - 120); ey = rand(120, World.H - 120);
+        ok = World.isFloorAt(ex, ey) && dist(ex, ey, World.spawn.x, World.spawn.y) >= 540;
+      } while (!ok && tries++ < 24);
+      if (!ok) continue;   // no safe spot found — skip this extra pack rather than dump it on the hero
       spawnPack(ex, ey, this.riftMode ? 0.5 : 0.25);
     }
     // A Treasure Goblin sometimes wanders the wilds (never the King's grave).
