@@ -496,6 +496,15 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.57 — RAIN REMOVED ENTIRELY (owner rule "remove all rain / rain
+  sounds")**: (1) `data.js`: every `weather: 'rain'` zone → `'wind'`, and the
+  two `pick([...])` weather rolls dropped `'rain'` (so no zone ever rolls rain).
+  (2) `audio.setWeather`: coerces `kind==='rain' → null` at the top (defensive —
+  an old saved zone can't make it rain) and the loop builder is now wind-only
+  (the rain highpass branch deleted). (3) `game.drawWeather`: the rain-streak
+  branch removed — only the wind dust drift remains; a leftover 'rain' zone
+  renders nothing. Verified headless: zone weather is only wind/null/unset, zero
+  errors. No art change.
 - **v1.7.56 — SPAWN-SWARM DEATH FIX + DESKTOP SHIFT-STAND-AIM (owner bugs)**:
   (1) **"Takes damage and dies on its own" on Disciple+**: `Game.startLand`'s
   EXTRA packs (line ~1429, spawned only when `DIFFICULTIES[diff].enemyMult > 1`,

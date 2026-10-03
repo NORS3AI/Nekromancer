@@ -672,13 +672,19 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.56-alpha';
+const GAME_VERSION = 'v1.7.57-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.57-alpha', date: '3 October 2026',
+    notes: [
+      'Removed rain from the game entirely — no more rain sound and no rain on screen. Lands that used to rain now carry a dry wind instead'
+    ]
+  },
   {
     v: 'v1.7.56-alpha', date: '3 October 2026',
     notes: [
@@ -3826,7 +3832,7 @@ const MONGREL_NAMES = [
 const ZONES = [
   {
     id: 'hollow', name: 'The Weeping Hollow', kind: 'open', mLvl: 1,
-    ground: '#16121b', accent: '#2c4230', weather: 'rain',
+    ground: '#16121b', accent: '#2c4230', weather: 'wind',
     monsters: ['zombie', 'zombie', 'skeleton', 'ghoul', 'hound'],
     boss: 'The Grave Warden', packs: 11,
     sizeMul: 1.0, rivers: 1, forest: true, edge: 'forest',
@@ -3850,7 +3856,7 @@ const ZONES = [
   },
   {
     id: 'marsh', name: 'The Blood Marsh', kind: 'open', mLvl: 16,
-    ground: '#121a16', accent: '#2c4230', weather: 'rain',
+    ground: '#121a16', accent: '#2c4230', weather: 'wind',
     monsters: ['zombie', 'ghoul', 'ghoul', 'cultist', 'bloat', 'soldier', 'knight'],
     boss: 'Mother of Maggots', packs: 14,
     sizeMul: 1.2, rivers: 2, forest: true, edge: 'ocean',
@@ -3965,7 +3971,7 @@ function makeRiftZone(riftKind = 'greater') {
     kind: Math.random() < 0.5 ? 'dungeon' : 'open',
     mLvl: at70 ? 70 + Math.min(12, (Hero.riftsCleared || 0)) : clamp(Hero.level + 2, 1, 69),
     ground: theme.ground, accent: theme.accent,
-    weather: pick(['rain', 'wind', null]),
+    weather: pick(['wind', null]),
     monsters: ['zombie', 'skeleton', 'archer', 'ghoul', 'imp', 'cultist', 'hound', 'soldier', 'knight', 'bloat', 'catapult'],
     boss: pick(RIFT_GUARDIANS) + ', Rift Guardian',
     packs: Math.round(tiles * 2.2), tiles,
@@ -3986,7 +3992,7 @@ function makeAdventureZone() {
     kind: Math.random() < 0.4 ? 'dungeon' : 'open',
     mLvl: clamp(Hero.level, 1, 70),
     ground: theme.ground, accent: theme.accent,
-    weather: pick(['rain', 'wind', null, null]),
+    weather: pick(['wind', null, null]),
     monsters: ['zombie', 'skeleton', 'archer', 'ghoul', 'imp', 'cultist', 'hound', 'soldier', 'knight', 'bloat', 'catapult'],
     boss: pick(ELITE_PREFIX) + pick(ELITE_SUFFIX) + ' the ' + pick(['Endless', 'Vile', 'Forgotten', 'Ravenous']),
     packs: tiles * 2 + 3, tiles,
@@ -4013,11 +4019,11 @@ const BIOMES = {
               monsters: ['skeleton', 'archer', 'ghoul', 'hound', 'soldier'] },
   jungle:   { name: 'Tangled Jungle',     ground: '#0f2418', accent: '#2c6a3c', tree: 'palm',
               props: ['palm', 'palm', 'oak', 'rock', 'bush'], deco: ['grass', 'grass', 'moss'],
-              border: 'jungle', edge: 'forest', weather: 'rain', forest: true, rivers: 1,
+              border: 'jungle', edge: 'forest', weather: 'wind', forest: true, rivers: 1,
               monsters: ['ghoul', 'imp', 'cultist', 'hound', 'bloat'] },
   swamp:    { name: 'Sunken Mire',        ground: '#131a15', accent: '#2c3a2a', tree: 'tree',
               props: ['tree', 'tree', 'rock', 'tomb', 'bush'], deco: ['moss', 'grass', 'bones', 'blood'],
-              border: 'forest', edge: 'ocean', weather: 'rain', forest: true, rivers: 2,
+              border: 'forest', edge: 'ocean', weather: 'wind', forest: true, rivers: 2,
               monsters: ['zombie', 'ghoul', 'ghoul', 'cultist', 'bloat'] },
   desert:   { name: 'Scorched Dunes',     ground: '#241d10', accent: '#6a5326', tree: 'cactus',
               props: ['cactus', 'cactus', 'rock', 'obelisk'], deco: ['crack', 'rubble', 'bones'],
