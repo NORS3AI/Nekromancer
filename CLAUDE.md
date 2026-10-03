@@ -496,8 +496,16 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
-- **v1.7.57 — RAIN REMOVED ENTIRELY (owner rule "remove all rain / rain
-  sounds")**: (1) `data.js`: every `weather: 'rain'` zone → `'wind'`, and the
+- **v1.7.58 — RAIN VISUALS RESTORED, WEATHER SOUND SILENCED (owner correction)**:
+  v1.7.57 over-reached — the owner only wanted the rain SOUND gone (it was loud
+  static), not rain itself. Reverted: the six rain zones/picks in `data.js` are
+  `'rain'` again, and `game.drawWeather`'s rain-streak branch is restored (rain
+  AND wind visuals both play). `audio.setWeather` now plays NO generative weather
+  loop for either rain or wind — it stops any existing nodes and returns (the
+  plumbing is kept for when real rain/wind audio is supplied). Owner is making
+  proper weather visuals + sound later. No art change.
+- **v1.7.57 — RAIN REMOVED ENTIRELY (superseded by v1.7.58 — owner only wanted
+  the rain SOUND gone, not the rain)**: (1) `data.js`: every `weather: 'rain'` zone → `'wind'`, and the
   two `pick([...])` weather rolls dropped `'rain'` (so no zone ever rolls rain).
   (2) `audio.setWeather`: coerces `kind==='rain' → null` at the top (defensive —
   an old saved zone can't make it rain) and the loop builder is now wind-only

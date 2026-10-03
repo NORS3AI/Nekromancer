@@ -350,36 +350,19 @@ const AudioSys = {
     this.ambienceNodes = nodes;
   },
 
-  // weatherKind: 'wind' | null   ('rain' is removed from the game — owner rule)
+  // weatherKind: 'rain' | 'wind' | null
+  // The weather VISUALS stay (rain streaks / wind dust), but the generative
+  // weather SOUND is SILENCED for now (owner: the old rain/wind loops just
+  // sounded like loud static). The plumbing is kept — when real rain/wind
+  // audio is added, build the loop here and route it to this.ch.weather.
   setWeather(kind) {
-    if (kind === 'rain') kind = null;   // no rain, ever (sound or otherwise)
     if (!this.ctx || kind === this.currentWeather) return;
     this.currentWeather = kind;
     if (this.weatherNodes) {
       this.weatherNodes.forEach(n => { try { n.stop ? n.stop() : n.disconnect(); } catch (e) { /* */ } });
       this.weatherNodes = null;
     }
-    if (!kind) return;
-    const t = this.now();
-    const out = this.makeLoop(src => {
-      const f = this.ctx.createBiquadFilter();
-      const g = this.ctx.createGain();
-      // Wind: a slow bandpass drift (the only weather left).
-      f.type = 'bandpass';
-      f.frequency.value = 300;
-      f.Q.value = 0.7;
-      g.gain.value = 0.12;
-      const lfo = this.ctx.createOscillator();
-      lfo.frequency.value = 0.16;
-      const lfoG = this.ctx.createGain();
-      lfoG.gain.value = 160;
-      lfo.connect(lfoG).connect(f.frequency);
-      lfo.start(t);
-      src.connect(f).connect(g).connect(this.ch.weather);
-      src.start(t);
-      return { nodes: [src, lfo, g, f] };
-    });
-    this.weatherNodes = out.nodes;
+    // No weather sound is played until proper audio is supplied.
   },
 
   // ----------------------------------------------------------------- sfx
