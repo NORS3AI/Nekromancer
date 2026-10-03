@@ -375,7 +375,10 @@ const Input = {
       // DESKTOP CLICK-TO-MOVE (v1.7.16, owner rule — Diablo style): hold the
       // left button and the hero follows the cursor; pointing at a nearby
       // enemy attacks instead (mouseMoveVector yields null there).
-      if (this.mousePrimary && !this.touchMode && !UI.screen) {
+      // Holding SHIFT roots the hero in place (owner rule) — click-to-move is
+      // suppressed so Shift+LMB stands still and attacks toward the cursor
+      // instead of walking onto it.
+      if (this.mousePrimary && !this.touchMode && !UI.screen && !this.standStill()) {
         const v = this.mouseMoveVector();
         if (v) { this.move.x = v.x; this.move.y = v.y; this.mouseMoving = true; }
       }
@@ -406,6 +409,29 @@ const Input = {
     const d = Math.hypot(dx, dy);
     if (d < 16) return null;   // arrived — don't jitter on the spot
     return { x: dx / d, y: dy / d };
+  },
+
+  // SHIFT = stand your ground (desktop): hold it to stop click-to-move so the
+  // hero attacks in place aimed at the cursor (owner rule).
+  standStill() {
+    return !this.touchMode && !!(this.keys['ShiftLeft'] || this.keys['ShiftRight']);
+  },
+
+  // True while the hero is aiming by MOUSE on desktop (a button held, no touch
+  // aim-stick) — ground-targeted spells then land under the cursor, not on an
+  // auto-picked nearest enemy.
+  mouseAiming() {
+    return !this.touchMode && !this.aim.active && (this.mousePrimary || this.mouseSecondary);
+  },
+
+  // The WORLD point under the cursor while playing, or null.
+  mouseWorld() {
+    if (this.touchMode || Game.state !== 'playing' || !Game.player || Game.player.dead) return null;
+    const m = this.mousePos, Z = Game.viewZoom(), TY = Game.viewTilt();
+    return {
+      x: (m.x - Game.W / 2) / Z + Game.camera.x + Game.W / 2,
+      y: (m.y - Game.H / 2) / (Z * TY) + Game.camera.y + Game.H / 2
+    };
   },
 
   // Bulk-click modifiers (v1.7.16 Renown): shift ×10 · ctrl ×100 · both ×1000.

@@ -672,13 +672,21 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.55-alpha';
+const GAME_VERSION = 'v1.7.56-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.56-alpha', date: '3 October 2026',
+    notes: [
+      'Fixed a nasty bug where the hero could take damage and die the instant a land loaded — on Disciple and higher, an extra monster pack could spawn right on top of your entrance. Packs now always keep clear of where you arrive',
+      'Desktop: hold SHIFT (with left mouse) to stand your ground and attack in place instead of walking to the cursor',
+      'Desktop: ground-targeted spells now land exactly where your mouse points (within the skill’s range), instead of auto-picking a spot — more precise aiming'
+    ]
+  },
   {
     v: 'v1.7.55-alpha', date: '17 September 2026',
     notes: [

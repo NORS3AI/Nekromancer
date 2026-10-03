@@ -39,8 +39,27 @@ function resolveAim(explicit) {
 }
 
 // A point to target: the nearest enemy, or a spot along the aim.
+// DESKTOP (owner rule): when aiming with the mouse, land the spell exactly
+// where the cursor points (clamped to the skill's reach) rather than on an
+// auto-picked nearest enemy — it's more precise. A foe directly under the
+// cursor still snaps so homing/attach effects latch onto it.
 function aimPoint(a, reach = 240) {
   const p = Game.player;
+  if (typeof Input !== 'undefined' && Input.mouseAiming && Input.mouseAiming()) {
+    const w = Input.mouseWorld();
+    if (w) {
+      let snap = null, sd = 1e9;
+      for (const e of Game.enemies) {
+        if (e.dead || e.sleep) continue;
+        const dd = dist(w.x, w.y, e.x, e.y);
+        if (dd < e.r + 30 && dd < sd) { sd = dd; snap = e; }
+      }
+      if (snap) return { x: snap.x, y: snap.y, enemy: snap };
+      const dx = w.x - p.x, dy = w.y - p.y, d = Math.hypot(dx, dy);
+      if (d <= reach || d === 0) return { x: w.x, y: w.y, enemy: null };
+      return { x: p.x + dx / d * reach, y: p.y + dy / d * reach, enemy: null };
+    }
+  }
   const e = nearestEnemy(p.x, p.y, 480);
   if (e) return { x: e.x, y: e.y, enemy: e };
   return { x: p.x + Math.cos(a) * reach, y: p.y + Math.sin(a) * reach, enemy: null };
