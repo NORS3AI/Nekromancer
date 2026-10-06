@@ -496,6 +496,16 @@ loot at the artisans. The hero is persistent (localStorage).
   W≥900, only when the player never chose one). (7) Character sheet
   inset px+28/pw−56 (numbers off the plate), reagent icons carry their
   NAMES; fountain TOSS = 172px centered chip.
+- **v1.7.59 — HERO FACING FLIP FIXED (owner bug "moving left faces right")**:
+  `Player.drawAvatarModel`'s sideways mirror used `ctx.scale(fx < 0 ? -1 : 1, 1)`
+  with a comment claiming the side art "faces RIGHT natively" — but it actually
+  faces LEFT, so mirroring on a left-walk flipped the figure to face RIGHT (and
+  made the walk read as a moonwalk). Flipped BOTH side branches (real side art +
+  the front-shear fallback) to `fx > 0 ? -1 : 1` so the figure always leads the
+  walk. The POSITION movement was never wrong (verified headless: A → dx −96,
+  D → dx +96, facing angle correct) — only the sprite was mirrored. Confirmed
+  with offscreen renders: male & female, hair 0 (side art) and hair 1
+  (front-shear), both directions now face the way they move. No art change.
 - **v1.7.58 — RAIN VISUALS RESTORED, WEATHER SOUND SILENCED (owner correction)**:
   v1.7.57 over-reached — the owner only wanted the rain SOUND gone (it was loud
   static), not rain itself. Reverted: the six rain zones/picks in `data.js` are
