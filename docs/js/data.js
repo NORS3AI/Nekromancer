@@ -672,13 +672,19 @@ function questRewardTextFor(entry, short) {
   return questRewardTextSrc(entry.src === 'A' ? 'A' : 'L', entry.idx, short);
 }
 
-const GAME_VERSION = 'v1.7.58-alpha';
+const GAME_VERSION = 'v1.7.59-alpha';
 
 // Newest entry first. OWNER RULE: append a new entry (and bump
 // GAME_VERSION) with EVERY addition and bug fix. `date` reads as
 // "day month year" (e.g. 17 July 2026) — the patch screen titles each
 // entry by its date, newest day first.
 const PATCH_NOTES = [
+  {
+    v: 'v1.7.59-alpha', date: '6 October 2026',
+    notes: [
+      'Fixed the hero facing the wrong way — walking left (or right) now turns the model to face the direction you’re actually moving, instead of moonwalking backward. (The movement itself was always correct; only the sprite was mirrored.)'
+    ]
+  },
   {
     v: 'v1.7.58-alpha', date: '3 October 2026',
     notes: [

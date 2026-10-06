@@ -549,11 +549,13 @@ class Player {
     ctx.translate(0, -bobY);
     if (this.flash > 0.4) ctx.globalAlpha = 0.65;   // hurt blink
     if (sideways && side) {
-      // Real painted PROFILE (faces RIGHT natively) — mirror when walking left.
-      ctx.scale(fx < 0 ? -1 : 1, 1);
+      // Real painted PROFILE (faces LEFT natively) — mirror when walking RIGHT
+      // so the figure always faces the way it's moving (owner bug: left-walk
+      // was facing right).
+      ctx.scale(fx > 0 ? -1 : 1, 1);
       ctx.rotate(moving ? Math.sin(ph) * 0.03 + 0.02 : 0.015);  // lean into the stride
     } else if (sideways) {
-      ctx.scale(fx < 0 ? -1 : 1, 1);                 // profile leads the walk
+      ctx.scale(fx > 0 ? -1 : 1, 1);                 // profile leads the walk
       ctx.transform(1, 0, -0.14, 1, 0, 0);           // shear = cheap 3/4 turn
       ctx.scale(0.9, 1);                             // profile narrows the body
       ctx.rotate(moving ? Math.sin(ph) * 0.03 + 0.03 : 0.02);   // lean into the stride
